@@ -1,0 +1,157 @@
+# Spec: NeuLedger Domain Model
+
+## Requirements
+
+---
+
+### Requirement: Core Enums
+Define shared enumerations used across the domain.
+
+#### Scenario: TransactionType
+- **WHEN** classifying a financial record
+- **THEN** `TransactionType` must be one of:
+    - `.expense`
+    - `.income`
+    - `.transfer` (between own accounts)
+
+#### Scenario: AccountType
+- **WHEN** classifying an account
+- **THEN** `AccountType` must be one of:
+    - `.cash`
+    - `.bank`
+    - `.creditCard`
+    - `.eWallet` (e.g., Line Pay, Apple Pay balance)
+
+#### Scenario: Currency
+- **GIVEN** the first version only supports a single currency
+- **THEN** use a `Currency` enum with only `.TWD` active:
+    - `.TWD` — symbol: "NT$", code: "TWD", decimalPlaces: 0
+- **AND** the enum is kept in code for future multi-currency extensibility, but all UI and logic assumes TWD.
+- **AND** all amounts are displayed as integers (no decimal places).
+
+---
+
+### Requirement: Transaction Entity
+The primary financial record.
+
+#### Scenario: Transaction Fields
+- **WHEN** a financial record is stored
+- **THEN** it must have:
+    - `id`: UUID — unique identifier.
+    - `amount`: Decimal — always positive. Direction determined by `type`.
+    - `date`: Date — when the transaction occurred (user-editable).
+    - `note`: String? — optional free text description.
+    - `categoryId`: Category.ID? — reference to a Category. Nil for `.transfer` type.
+    - `accountId`: Account.ID — reference to an Account.
+    - `type`: TransactionType — expense, income, or transfer.
+    - `tags`: [Tag] — zero or more user-defined tags.
+    - `aiSuggested`: Bool — whether category was auto-suggested by AI.
+    - `createdAt`: Date — system timestamp of record creation.
+    - `updatedAt`: Date — system timestamp of last modification.
+- **AND** no `currency` field — all transactions are in TWD (single currency).
+
+#### Scenario: Transfer Transaction
+- **WHEN** `type == .transfer`
+- **THEN** the transaction must also have:
+    - `toAccountId`: Account.ID — the destination account.
+- **AND** the source account balance decreases and destination increases by `amount`.
+
+---
+
+### Requirement: Category Entity
+For organizing and classifying transactions.
+
+#### Scenario: Category Fields
+- **WHEN** organizing transactions
+- **THEN** Categories must have:
+    - `id`: UUID — unique identifier.
+    - `name`: String — display name (e.g., "Food", "Transport").
+    - `icon`: String — SF Symbol name (e.g., "fork.knife", "car.fill").
+    - `color`: String — hex color code (e.g., "#FF6B6B").
+    - `type`: TransactionType — `.expense` or `.income` (categories are type-specific).
+    - `sortOrder`: Int — user-defined display order.
+    - `isDefault`: Bool — whether this is a system default category (non-deletable).
+
+#### Scenario: Default Categories
+- **WHEN** the app is first launched
+- **THEN** a set of default categories should be seeded:
+    - **Expense**: Food, Transport, Entertainment, Shopping, Housing, Utilities, Health, Education, Other.
+    - **Income**: Salary, Freelance, Investment, Gift, Other.
+
+---
+
+### Requirement: Account Entity
+For managing different sources/pools of funds.
+
+#### Scenario: Account Fields
+- **WHEN** managing funds
+- **THEN** Accounts must have:
+    - `id`: UUID — unique identifier.
+    - `name`: String — account name (e.g., "現金", "中信銀行").
+    - `type`: AccountType — cash, bank, credit card, e-wallet.
+    - `icon`: String — SF Symbol name.
+    - `color`: String — hex color code.
+    - `sortOrder`: Int — user-defined display order.
+    - `isArchived`: Bool — soft-delete; hidden from active list but preserved for history.
+    - `createdAt`: Date — system timestamp.
+- **AND** no `currency` field — all accounts use TWD.
+
+#### Scenario: Account Balance Calculation
+- **WHEN** displaying an account balance
+- **THEN** the balance must be **computed on-the-fly** by summing related transactions.
+- **AND** it should **not** be stored as a field (to avoid sync issues on transaction edits/deletes).
+- **AND** for performance, a precomputed cache may be used but must be invalidated when transactions change.
+
+---
+
+### Requirement: Tag Entity
+Flexible, user-defined labels for cross-cutting categorization.
+
+#### Scenario: Tag Fields
+- **WHEN** tagging a transaction
+- **THEN** Tags must have:
+    - `id`: UUID — unique identifier.
+    - `name`: String — display name (e.g., "Trip to Japan", "Tax Deductible").
+    - `color`: String? — optional hex color code.
+
+#### Scenario: Tag-Transaction Relationship
+- **WHEN** a tag is applied
+- **THEN** a Transaction may have 0 or more Tags (many-to-many relationship).
+- **AND** a Tag may be applied to 0 or more Transactions.
+
+---
+
+### Requirement: Budget Entity
+For setting spending limits and tracking progress.
+
+#### Scenario: Budget Fields
+- **WHEN** setting a spending target
+- **THEN** Budgets must have:
+    - `id`: UUID — unique identifier.
+    - `name`: String — budget name (e.g., "每月飲食預算").
+    - `amount`: Decimal — spending limit (TWD).
+    - `categoryId`: Category.ID? — optional; if nil, applies to total spending.
+    - `period`: BudgetPeriod — `.weekly`, `.monthly`, `.yearly`.
+    - `startDate`: Date — beginning of the budget period.
+    - `isActive`: Bool — whether this budget is currently being tracked.
+- **AND** no `currency` field — all budgets use TWD.
+
+#### Scenario: Budget Progress
+- **WHEN** viewing a budget
+- **THEN** the system should compute:
+    - `spent`: Decimal — sum of matching expense transactions in the period.
+    - `remaining`: Decimal — `amount - spent`.
+    - `percentage`: Double — `spent / amount`.
+- **AND** these values are computed, not stored.
+
+---
+
+### Requirement: Entity Relationships Summary
+
+| Relationship | Type | Description |
+|---|---|---|
+| Transaction → Account | Many-to-One | Each transaction belongs to one account |
+| Transaction → Category | Many-to-One (optional) | Each transaction has one category (nil for transfers) |
+| Transaction ↔ Tag | Many-to-Many | Transactions can have multiple tags |
+| Budget → Category | Many-to-One (optional) | A budget may target a specific category |
+| Transfer Transaction → Account (destination) | Many-to-One | Transfer has source + destination account |

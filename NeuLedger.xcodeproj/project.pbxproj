@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A249D8AF2F418E0E00CBA03D /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = A249D8AE2F418E0E00CBA03D /* Features */; };
+		A249D8C92F419BCC00CBA03D /* NeuLedgerUI in Frameworks */ = {isa = PBXBuildFile; productRef = A2CF1C2F2F40ABE000BDE292 /* NeuLedgerUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		A24BD48B2F3B344A0046D6A4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,13 +29,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A249D8A82F418AC300CBA03D /* Features */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Features; sourceTree = "<group>"; };
 		A24BD4792F3B34480046D6A4 /* NeuLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A24BD49C2F3B344A0046D6A4 /* Exceptions for "NeuLedger" folder in "NeuLedger" target */ = {
+		A249D8B42F418FD200CBA03D /* Exceptions for "NeuLedger" folder in "NeuLedger" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -43,7 +49,7 @@
 		A24BD47B2F3B34480046D6A4 /* NeuLedger */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				A24BD49C2F3B344A0046D6A4 /* Exceptions for "NeuLedger" folder in "NeuLedger" target */,
+				A249D8B42F418FD200CBA03D /* Exceptions for "NeuLedger" folder in "NeuLedger" target */,
 			);
 			path = NeuLedger;
 			sourceTree = "<group>";
@@ -65,6 +71,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A249D8C92F419BCC00CBA03D /* NeuLedgerUI in Frameworks */,
+				A249D8AF2F418E0E00CBA03D /* Features in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,12 +93,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A249D8A92F418C2000CBA03D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A24BD4702F3B34480046D6A4 = {
 			isa = PBXGroup;
 			children = (
+				A249D8A82F418AC300CBA03D /* Features */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
 				A24BD48D2F3B344A0046D6A4 /* NeuLedgerTests */,
 				A24BD4972F3B344A0046D6A4 /* NeuLedgerUITests */,
+				A249D8A92F418C2000CBA03D /* Frameworks */,
 				A24BD47A2F3B34480046D6A4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -125,6 +142,8 @@
 			);
 			name = NeuLedger;
 			packageProductDependencies = (
+				A2CF1C2F2F40ABE000BDE292 /* NeuLedgerUI */,
+				A249D8AE2F418E0E00CBA03D /* Features */,
 			);
 			productName = NeuLedger;
 			productReference = A24BD4792F3B34480046D6A4 /* NeuLedger.app */;
@@ -188,6 +207,7 @@
 				TargetAttributes = {
 					A24BD4782F3B34480046D6A4 = {
 						CreatedOnToolsVersion = 26.3;
+						LastSwiftMigration = 2630;
 					};
 					A24BD4892F3B344A0046D6A4 = {
 						CreatedOnToolsVersion = 26.3;
@@ -208,6 +228,8 @@
 			);
 			mainGroup = A24BD4702F3B34480046D6A4;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A24BD47A2F3B34480046D6A4 /* Products */;
 			projectDirPath = "";
@@ -287,18 +309,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = NeuLedger/NeuLedger.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GVHFFWK64F;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NeuLedger/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -310,6 +334,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -321,18 +346,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = NeuLedger/NeuLedger.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GVHFFWK64F;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NeuLedger/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -595,6 +622,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A249D8AE2F418E0E00CBA03D /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
+		};
+		A2CF1C2F2F40ABE000BDE292 /* NeuLedgerUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NeuLedgerUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A24BD4712F3B34480046D6A4 /* Project object */;
 }

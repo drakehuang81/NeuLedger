@@ -1,5 +1,5 @@
-
 import SwiftUI
+import DesignTokens
 
 /// A container view with a Liquid Glass background.
 ///
@@ -39,7 +39,7 @@ public struct GlassCard<Content: View>: View {
         .glassEffect(
             Glass.clear
                 .interactive()
-                .tint(.Design.background),
+                .tint(Color.Design.background),
             in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         )
     }

@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A249D8AF2F418E0E00CBA03D /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = A249D8AE2F418E0E00CBA03D /* Features */; };
-		A249D8C92F419BCC00CBA03D /* NeuLedgerUI in Frameworks */ = {isa = PBXBuildFile; productRef = A2CF1C2F2F40ABE000BDE292 /* NeuLedgerUI */; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,7 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A249D8C92F419BCC00CBA03D /* NeuLedgerUI in Frameworks */,
+
 				A249D8AF2F418E0E00CBA03D /* Features in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -142,7 +142,7 @@
 			);
 			name = NeuLedger;
 			packageProductDependencies = (
-				A2CF1C2F2F40ABE000BDE292 /* NeuLedgerUI */,
+
 				A249D8AE2F418E0E00CBA03D /* Features */,
 			);
 			productName = NeuLedger;
@@ -628,10 +628,7 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Features;
 		};
-		A2CF1C2F2F40ABE000BDE292 /* NeuLedgerUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NeuLedgerUI;
-		};
+
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A24BD4712F3B34480046D6A4 /* Project object */;

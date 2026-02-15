@@ -24,8 +24,13 @@ let package = Package(
         .target(
             name: "Features",
             dependencies: [
-                .tca
+                .tca,
+                "DesignTokens"
             ]
+        ),
+        .target(
+            name: "DesignTokens",
+            dependencies: []
         ),
         .testTarget(
             name: "FeaturesTests",

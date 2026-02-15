@@ -1,5 +1,5 @@
-
 import SwiftUI
+import DesignTokens
 
 /// A header view for list sections or content groups.
 ///
@@ -36,12 +36,12 @@ public struct GlassHeader<Action: View>: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.Design.title2)
-                    .foregroundColor(.Design.textPrimary)
+                    .foregroundStyle(Color.Design.textPrimary)
                 
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.Design.subheadline)
-                        .foregroundColor(.Design.textSecondary)
+                        .foregroundStyle(Color.Design.textSecondary)
                 }
             }
             

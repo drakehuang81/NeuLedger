@@ -1,21 +1,23 @@
 import SwiftUI
 import DesignTokens
 
-/// A custom ButtonStyle with a Liquid Glass appearance.
+/// A custom Button using the native Liquid Glass appearance.
 public struct GlassButton: View {
 
     var title: String
+    var tint: Color?
     var action: () -> Void
-    var style: GlassButtonStyle
     
-    public init(title: String, action: @escaping () -> Void, style: GlassButtonStyle = .glass(.clear)) {
+    public init(_ title: String, tint: Color? = nil, action: @escaping () -> Void) {
         self.title = title
+        self.tint = tint
         self.action = action
-        self.style = style
     }
+    
     public var body: some View {
         Button(title, action: action)
-            .buttonStyle(style)
+            .buttonStyle(.glass)
+            .tint(tint)
     }
 }
 
@@ -23,7 +25,9 @@ public struct GlassButton: View {
 #Preview {
     ZStack {
         Color.red
-        GlassButton(title: "Test") {
+        VStack {
+            GlassButton("Default") { }
+            GlassButton("Tinted", tint: .blue) { }
         }
     }
 }

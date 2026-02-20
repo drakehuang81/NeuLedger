@@ -19,7 +19,7 @@
           "name": "TransactionRow",
           "reusable": true,
           "width": 358,
-          "fill": "$--surface",
+          "fill": "\\$--text-inverse",
           "cornerRadius": "$--radius-md",
           "gap": 12,
           "padding": [
@@ -66,7 +66,7 @@
                   "name": "titleText",
                   "fill": "$--text-primary",
                   "content": "午餐",
-                  "fontFamily": "Bricolage Grotesque",
+                  "fontFamily": "\\$--font-display",
                   "fontSize": 16,
                   "fontWeight": "500"
                 },
@@ -76,7 +76,7 @@
                   "name": "subtitleText",
                   "fill": "$--text-secondary",
                   "content": "食物 · 現金",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "normal"
                 }
@@ -96,7 +96,7 @@
                   "name": "amountText",
                   "fill": "$--expense-red",
                   "content": "-$120",
-                  "fontFamily": "DM Mono",
+                  "fontFamily": "\\$--font-mono",
                   "fontSize": 16,
                   "fontWeight": "600"
                 },
@@ -106,7 +106,7 @@
                   "name": "dateText",
                   "fill": "$--text-tertiary",
                   "content": "今天 12:30",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 12,
                   "fontWeight": "normal"
                 }
@@ -154,7 +154,7 @@
                   "name": "accountName",
                   "fill": "$--text-primary",
                   "content": "銀行帳戶",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 14,
                   "fontWeight": "500"
                 }
@@ -166,7 +166,7 @@
               "name": "balanceAmount",
               "fill": "$--text-primary",
               "content": "$45,230",
-              "fontFamily": "DM Mono",
+              "fontFamily": "\\$--font-mono",
               "fontSize": 22,
               "fontWeight": "600"
             },
@@ -176,7 +176,7 @@
               "name": "accountType",
               "fill": "$--text-secondary",
               "content": "銀行",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 12,
               "fontWeight": "normal"
             }
@@ -216,7 +216,7 @@
               "name": "chipLabel",
               "fill": "$--text-primary",
               "content": "飲食",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "500"
             }
@@ -250,7 +250,7 @@
               "name": "tagLabel",
               "fill": "$--text-secondary",
               "content": "$128,450",
-              "fontFamily": "DM Mono",
+              "fontFamily": "\\$--font-mono",
               "fontSize": 12,
               "fontWeight": "500"
             }
@@ -279,7 +279,7 @@
               "name": "balanceLabel",
               "fill": "$--text-secondary",
               "content": "總餘額",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 14,
               "fontWeight": "normal"
             },
@@ -289,7 +289,7 @@
               "name": "balanceAmount",
               "fill": "$--text-primary",
               "content": "$128,450",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 36,
               "fontWeight": "700"
             },
@@ -323,7 +323,7 @@
                       "name": "incomeText",
                       "fill": "$--income-green",
                       "content": "$52,000",
-                      "fontFamily": "DM Mono",
+                      "fontFamily": "\\$--font-mono",
                       "fontSize": 13,
                       "fontWeight": "500"
                     }
@@ -352,7 +352,7 @@
                       "name": "expenseText",
                       "fill": "$--expense-red",
                       "content": "$38,200",
-                      "fontFamily": "DM Mono",
+                      "fontFamily": "\\$--font-mono",
                       "fontSize": 13,
                       "fontWeight": "500"
                     }
@@ -401,7 +401,7 @@
                   "name": "insightTitle",
                   "fill": "$--text-primary",
                   "content": "AI 分析建議",
-                  "fontFamily": "Bricolage Grotesque",
+                  "fontFamily": "\\$--font-display",
                   "fontSize": 15,
                   "fontWeight": "600"
                 },
@@ -414,7 +414,7 @@
                   "width": "fill_container",
                   "content": "本月飲食支出較上月增加 15%，建議注意外食頻率",
                   "lineHeight": 1.4,
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "normal"
                 }
@@ -438,7 +438,7 @@
           "name": "BudgetGauge",
           "reusable": true,
           "width": 358,
-          "fill": "$--surface",
+          "fill": "\\$--text-inverse",
           "cornerRadius": "$--radius-lg",
           "layout": "vertical",
           "gap": 10,
@@ -465,7 +465,7 @@
                       "name": "budgetName",
                       "fill": "$--text-primary",
                       "content": "飲食",
-                      "fontFamily": "Bricolage Grotesque",
+                      "fontFamily": "\\$--font-display",
                       "fontSize": 15,
                       "fontWeight": "500"
                     }
@@ -483,7 +483,7 @@
                       "name": "spentAmount",
                       "fill": "$--text-primary",
                       "content": "$8,500",
-                      "fontFamily": "DM Mono",
+                      "fontFamily": "\\$--font-mono",
                       "fontSize": 14,
                       "fontWeight": "600"
                     },
@@ -493,7 +493,7 @@
                       "name": "separator",
                       "fill": "$--text-tertiary",
                       "content": "/",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 13,
                       "fontWeight": "normal"
                     },
@@ -503,7 +503,7 @@
                       "name": "totalAmount",
                       "fill": "$--text-tertiary",
                       "content": "$12,000",
-                      "fontFamily": "DM Mono",
+                      "fontFamily": "\\$--font-mono",
                       "fontSize": 13,
                       "fontWeight": "normal"
                     }
@@ -555,7 +555,7 @@
               "name": "remainingText",
               "fill": "$--text-secondary",
               "content": "剩餘 $3,500 (29%)",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 12,
               "fontWeight": "normal"
             }
@@ -596,7 +596,7 @@
               "name": "buttonLabel",
               "fill": "$--brand-primary",
               "content": "新增",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 15,
               "fontWeight": "600"
             }
@@ -625,7 +625,7 @@
               "name": "containerLabel",
               "fill": "$--text-secondary",
               "content": "Glass Surface",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 12,
               "fontWeight": "500"
             }
@@ -682,7 +682,7 @@
                   "name": "actionLabel",
                   "fill": "$--text-primary",
                   "content": "記帳",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -961,7 +961,7 @@
           "name": "exportNote",
           "fill": "$--text-secondary",
           "content": "Export @ 2x for App Store (1024px)",
-          "fontFamily": "DM Sans",
+          "fontFamily": "\\$--font-body",
           "fontSize": 13,
           "fontWeight": "normal"
         }
@@ -1365,7 +1365,7 @@
                       "name": "welcomeTitle",
                       "fill": "$--text-primary",
                       "content": "NeuLedger",
-                      "fontFamily": "Bricolage Grotesque",
+                      "fontFamily": "\\$--font-display",
                       "fontSize": 34,
                       "fontWeight": "700"
                     },
@@ -1376,7 +1376,7 @@
                       "fill": "$--text-secondary",
                       "content": "AI 驅動的極簡記帳體驗",
                       "textAlign": "center",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     }
@@ -1402,7 +1402,7 @@
                   "name": "btnLabel",
                   "fill": "#FFFFFF",
                   "content": "開始使用",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "600"
                 },
@@ -1414,7 +1414,7 @@
                   "height": 20,
                   "iconFontName": "arrow_forward",
                   "iconFontFamily": "Material Symbols Rounded",
-                  "fill": "#FFFFFF"
+                  "fill": "\\$--text-inverse"
                 }
               ]
             }
@@ -1456,7 +1456,7 @@
                       "name": "setupTitle",
                       "fill": "$--text-primary",
                       "content": "第一個帳戶",
-                      "fontFamily": "Bricolage Grotesque",
+                      "fontFamily": "\\$--font-display",
                       "fontSize": 28,
                       "fontWeight": "700"
                     },
@@ -1466,7 +1466,7 @@
                       "name": "setupSubtitle",
                       "fill": "$--text-secondary",
                       "content": "為你的主要錢包命名",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     }
@@ -1494,7 +1494,7 @@
                           "name": "inputLabel",
                           "fill": "$--text-secondary",
                           "content": "帳戶名稱",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 13,
                           "fontWeight": "500"
                         },
@@ -1504,7 +1504,7 @@
                           "name": "inputField",
                           "width": "fill_container",
                           "height": 50,
-                          "fill": "$--surface",
+                          "fill": "\\$--text-inverse",
                           "cornerRadius": "$--radius-md",
                           "padding": [
                             0,
@@ -1518,7 +1518,7 @@
                               "name": "inputText",
                               "fill": "$--text-primary",
                               "content": "日常錢包",
-                              "fontFamily": "DM Sans",
+                              "fontFamily": "\\$--font-body",
                               "fontSize": 17,
                               "fontWeight": "normal"
                             }
@@ -1540,7 +1540,7 @@
                           "name": "typeLabel",
                           "fill": "$--text-secondary",
                           "content": "帳戶類型",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 13,
                           "fontWeight": "500"
                         },
@@ -1580,7 +1580,7 @@
                                   "name": "textCash",
                                   "fill": "$--brand-primary",
                                   "content": "現金",
-                                  "fontFamily": "DM Sans",
+                                  "fontFamily": "\\$--font-body",
                                   "fontSize": 15,
                                   "fontWeight": "600"
                                 }
@@ -1592,7 +1592,7 @@
                               "name": "typeBank",
                               "width": "fill_container",
                               "height": 80,
-                              "fill": "$--surface",
+                              "fill": "\\$--text-inverse",
                               "cornerRadius": "$--radius-lg",
                               "layout": "vertical",
                               "gap": 8,
@@ -1615,7 +1615,7 @@
                                   "name": "textBank",
                                   "fill": "$--text-secondary",
                                   "content": "銀行",
-                                  "fontFamily": "DM Sans",
+                                  "fontFamily": "\\$--font-body",
                                   "fontSize": 15,
                                   "fontWeight": "normal"
                                 }
@@ -1647,7 +1647,7 @@
                   "name": "btnLabel",
                   "fill": "#FFFFFF",
                   "content": "下一步",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "600"
                 }
@@ -1703,7 +1703,7 @@
                       "height": 48,
                       "iconFontName": "check_circle",
                       "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "#FFFFFF"
+                      "fill": "\\$--text-inverse"
                     }
                   ]
                 },
@@ -1721,7 +1721,7 @@
                       "name": "readyTitle",
                       "fill": "$--text-primary",
                       "content": "準備就緒",
-                      "fontFamily": "Bricolage Grotesque",
+                      "fontFamily": "\\$--font-display",
                       "fontSize": 34,
                       "fontWeight": "700"
                     },
@@ -1732,7 +1732,7 @@
                       "fill": "$--text-secondary",
                       "content": "你的個人財務助手已設定完成",
                       "textAlign": "center",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     }
@@ -1759,7 +1759,7 @@
                       "name": "prevTitle",
                       "fill": "$--text-secondary",
                       "content": "目前資產",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 13,
                       "fontWeight": "500"
                     },
@@ -1769,7 +1769,7 @@
                       "name": "prevAmount",
                       "fill": "$--text-primary",
                       "content": "$0",
-                      "fontFamily": "DM Mono",
+                      "fontFamily": "\\$--font-mono",
                       "fontSize": 24,
                       "fontWeight": "700"
                     }
@@ -1795,11 +1795,258 @@
                   "name": "btnLabel",
                   "fill": "#FFFFFF",
                   "content": "前往主畫面",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "600"
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "NwpY0",
+      "x": 4191,
+      "y": 2097,
+      "name": "Profile Screen",
+      "width": 390,
+      "height": 844,
+      "fill": "$--background",
+      "cornerRadius": 40,
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        60,
+        20,
+        40,
+        20
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "I8mQn",
+          "fill": "$--text-primary",
+          "content": "個人帳戶",
+          "fontFamily": "Bricolage Grotesque",
+          "fontSize": 34,
+          "fontWeight": "700"
+        },
+        {
+          "type": "frame",
+          "id": "Q62Ow",
+          "name": "userCard",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": 24,
+          "gap": 16,
+          "padding": 24,
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "vcv0D",
+              "name": "userInfo",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "91fcZ",
+                  "name": "avatar",
+                  "width": 64,
+                  "height": 64,
+                  "fill": "$--surface-secondary",
+                  "cornerRadius": 32,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "mEzWh",
+                      "width": 32,
+                      "height": 32,
+                      "iconFontName": "person",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "2C3Fc",
+                  "name": "textGroup",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RU6gQ",
+                      "fill": "$--text-primary",
+                      "content": "Drake Huang",
+                      "fontFamily": "Bricolage Grotesque",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Pkop7",
+                      "fill": "$--text-secondary",
+                      "content": "drake@neuledger.app",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "icon_font",
+              "id": "GZ5yJ",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "edit",
+              "iconFontFamily": "lucide",
+              "fill": "$--text-tertiary"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "2AMfl",
+          "name": "featureList",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": 16,
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "zKtDN",
+              "name": "f1",
+              "width": "fill_container",
+              "padding": [
+                16,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ziZZ6",
+                  "name": "f1L",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "H9LTE",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "credit_card",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--brand-primary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FYeK1",
+                      "fill": "$--text-primary",
+                      "content": "我的卡片錢包",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "icon_font",
+                  "id": "hRgVf",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "chevron_right",
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "$--text-tertiary"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UzzXR",
+              "name": "f2",
+              "width": "fill_container",
+              "padding": [
+                16,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fedY8",
+                  "name": "f2L",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "HITlP",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "workspace_premium",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--brand-accent"
+                    },
+                    {
+                      "type": "text",
+                      "id": "iPMJy",
+                      "fill": "$--text-primary",
+                      "content": "Pro 高級版",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "icon_font",
+                  "id": "6jw5L",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "chevron_right",
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "$--text-tertiary"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "e8iSs",
+          "name": "signOutBtn",
+          "width": "fill_container",
+          "fill": "$--surface-secondary",
+          "cornerRadius": 100,
+          "padding": [
+            14,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "0UVq6",
+              "fill": "$--expense-red",
+              "content": "登出帳號",
+              "fontFamily": "Inter",
+              "fontSize": 17,
+              "fontWeight": "600"
             }
           ]
         }
@@ -1837,7 +2084,7 @@
               "name": "screenTitle",
               "fill": "$--text-primary",
               "content": "總覽",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 34,
               "fontWeight": "700"
             },
@@ -1875,7 +2122,7 @@
           "descendants": {
             "K02LM": {
               "content": "本週餐飲支出比上週高出 15%，建議減少外食頻率。",
-              "fontFamily": "DM Sans"
+              "fontFamily": "\\$--font-body"
             }
           }
         },
@@ -1901,7 +2148,7 @@
                   "name": "secTitle",
                   "fill": "$--text-primary",
                   "content": "我的錢包",
-                  "fontFamily": "Bricolage Grotesque",
+                  "fontFamily": "\\$--font-display",
                   "fontSize": 20,
                   "fontWeight": "600"
                 },
@@ -1911,7 +2158,7 @@
                   "name": "seeAll",
                   "fill": "$--brand-primary",
                   "content": "查看全部",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1945,11 +2192,11 @@
                     },
                     "nRCGE": {
                       "content": "現金錢包",
-                      "fontFamily": "DM Sans"
+                      "fontFamily": "\\$--font-body"
                     },
                     "IBcZz": {
                       "content": "$3,200",
-                      "fontFamily": "DM Mono"
+                      "fontFamily": "\\$--font-mono"
                     }
                   }
                 }
@@ -1971,7 +2218,7 @@
               "name": "secTitle",
               "fill": "$--text-primary",
               "content": "最近交易",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 20,
               "fontWeight": "600"
             },
@@ -2002,15 +2249,15 @@
                     },
                     "1xFfz": {
                       "content": "捷運儲值",
-                      "fontFamily": "Bricolage Grotesque"
+                      "fontFamily": "\\$--font-display"
                     },
                     "27WJo": {
                       "content": "交通 · 悠遊卡",
-                      "fontFamily": "DM Sans"
+                      "fontFamily": "\\$--font-body"
                     },
                     "dZGfR": {
                       "content": "-$500",
-                      "fontFamily": "DM Mono"
+                      "fontFamily": "\\$--font-mono"
                     }
                   }
                 },
@@ -2030,18 +2277,154 @@
                     },
                     "1xFfz": {
                       "content": "薪資收入",
-                      "fontFamily": "Bricolage Grotesque"
+                      "fontFamily": "\\$--font-display"
                     },
                     "27WJo": {
                       "content": "收入 · 銀行",
-                      "fontFamily": "DM Sans"
+                      "fontFamily": "\\$--font-body"
                     },
                     "dZGfR": {
                       "content": "+$45,000",
                       "fill": "$--income-green",
-                      "fontFamily": "DM Mono"
+                      "fontFamily": "\\$--font-mono"
                     }
                   }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "u71fa",
+          "name": "v1",
+          "width": "fill_container",
+          "height": 80,
+          "fill": "transparent",
+          "justifyContent": "center",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Cyo49",
+              "name": "splitTabContainer",
+              "width": "fill_container",
+              "height": 60,
+              "gap": 12,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "OcTzd",
+                  "name": "navCapsule",
+                  "height": 60,
+                  "fill": "$--glass-prominent",
+                  "cornerRadius": 40,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 24
+                  },
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "m9qpb",
+                      "name": "tab1",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$--surface-secondary",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "xylA9",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "home",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LPvqE",
+                      "name": "tab3",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "pRtI8",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "pie_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "WKekV",
+                      "name": "tab4",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "M5cEv",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "settings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f8DuK",
+                  "name": "contextCapsule",
+                  "width": 52,
+                  "height": 52,
+                  "fill": "$--glass-surface",
+                  "cornerRadius": 26,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 16
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "ckeO1",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-secondary"
+                    }
+                  ]
                 }
               ]
             }
@@ -2082,7 +2465,7 @@
               "name": "cancelBtn",
               "fill": "$--brand-primary",
               "content": "取消",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 17,
               "fontWeight": "normal"
             },
@@ -2092,7 +2475,7 @@
               "name": "sheetTitle",
               "fill": "$--text-primary",
               "content": "新交易",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 17,
               "fontWeight": "600"
             },
@@ -2113,7 +2496,7 @@
                   "name": "saveText",
                   "fill": "#FFFFFF",
                   "content": "儲存",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 15,
                   "fontWeight": "600"
                 }
@@ -2138,7 +2521,7 @@
               "name": "segExpense",
               "width": "fill_container",
               "height": "fill_container",
-              "fill": "#FFFFFF",
+              "fill": "\\$--text-inverse",
               "cornerRadius": 8,
               "justifyContent": "center",
               "alignItems": "center",
@@ -2149,7 +2532,7 @@
                   "name": "expText",
                   "fill": "$--text-primary",
                   "content": "支出",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 15,
                   "fontWeight": "600"
                 }
@@ -2170,7 +2553,7 @@
                   "name": "incText",
                   "fill": "$--text-secondary",
                   "content": "收入",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 15,
                   "fontWeight": "500"
                 }
@@ -2191,7 +2574,7 @@
                   "name": "transText",
                   "fill": "$--text-secondary",
                   "content": "轉帳",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 15,
                   "fontWeight": "500"
                 }
@@ -2218,7 +2601,7 @@
               "name": "currency",
               "fill": "$--text-secondary",
               "content": "TWD",
-              "fontFamily": "DM Mono",
+              "fontFamily": "\\$--font-mono",
               "fontSize": 15,
               "fontWeight": "500"
             },
@@ -2228,7 +2611,7 @@
               "name": "amountDisplay",
               "fill": "$--text-primary",
               "content": "$0",
-              "fontFamily": "DM Mono",
+              "fontFamily": "\\$--font-mono",
               "fontSize": 60,
               "fontWeight": "700"
             }
@@ -2240,7 +2623,7 @@
           "name": "noteInput",
           "width": "fill_container",
           "height": 50,
-          "fill": "$--surface",
+          "fill": "\\$--text-inverse",
           "cornerRadius": "$--radius-lg",
           "gap": 12,
           "padding": [
@@ -2265,7 +2648,7 @@
               "name": "notePlaceholder",
               "fill": "$--text-tertiary",
               "content": "輸入備註自動記帳...",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 17,
               "fontWeight": "normal"
             }
@@ -2285,7 +2668,7 @@
               "name": "catLabel",
               "fill": "$--text-secondary",
               "content": "分類",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -2378,7 +2761,7 @@
                   "name": "labelAccount",
                   "fill": "$--text-primary",
                   "content": "帳戶",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -2388,7 +2771,7 @@
                   "name": "valueAccount",
                   "fill": "$--text-secondary",
                   "content": "現金錢包",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -2409,7 +2792,7 @@
                   "name": "labelDate",
                   "fill": "$--text-primary",
                   "content": "日期",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -2419,7 +2802,7 @@
                   "name": "valueDate",
                   "fill": "$--text-secondary",
                   "content": "今天 13:05",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -2445,7 +2828,7 @@
               "fill": "$--text-secondary",
               "content": "（數字鍵盤示意）",
               "textAlign": "center",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "normal"
             },
@@ -2463,7 +2846,7 @@
                   "name": "k1",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2473,7 +2856,7 @@
                       "id": "xZrnY",
                       "fill": "$--text-primary",
                       "content": "1",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2485,7 +2868,7 @@
                   "name": "k2",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2495,7 +2878,7 @@
                       "id": "KIbTW",
                       "fill": "$--text-primary",
                       "content": "2",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2507,7 +2890,7 @@
                   "name": "k3",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2517,7 +2900,7 @@
                       "id": "Ek073",
                       "fill": "$--text-primary",
                       "content": "3",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2539,7 +2922,7 @@
                   "name": "k4",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2549,7 +2932,7 @@
                       "id": "6ygjG",
                       "fill": "$--text-primary",
                       "content": "4",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2561,7 +2944,7 @@
                   "name": "k5",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2571,7 +2954,7 @@
                       "id": "KDATp",
                       "fill": "$--text-primary",
                       "content": "5",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2583,7 +2966,7 @@
                   "name": "k6",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2593,7 +2976,7 @@
                       "id": "W3GGV",
                       "fill": "$--text-primary",
                       "content": "6",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2615,7 +2998,7 @@
                   "name": "k7",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2625,7 +3008,7 @@
                       "id": "PmCM7",
                       "fill": "$--text-primary",
                       "content": "7",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2637,7 +3020,7 @@
                   "name": "k8",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2647,7 +3030,7 @@
                       "id": "SG90K",
                       "fill": "$--text-primary",
                       "content": "8",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2659,7 +3042,7 @@
                   "name": "k9",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2669,7 +3052,7 @@
                       "id": "zKUdv",
                       "fill": "$--text-primary",
                       "content": "9",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2701,7 +3084,7 @@
                       "id": "234bP",
                       "fill": "$--text-primary",
                       "content": ".",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2713,7 +3096,7 @@
                   "name": "k0",
                   "width": "fill_container",
                   "height": "fill_container",
-                  "fill": "#FFFFFF",
+                  "fill": "\\$--text-inverse",
                   "cornerRadius": 12,
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2723,7 +3106,7 @@
                       "id": "Ssf08",
                       "fill": "$--text-primary",
                       "content": "0",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 24,
                       "fontWeight": "normal"
                     }
@@ -2747,7 +3130,7 @@
                       "height": 0,
                       "iconFontName": "backspace",
                       "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "$--text-primary"
+                      "fill": "\\$--surface-inverse"
                     }
                   ]
                 }
@@ -2781,7 +3164,7 @@
           "name": "screenTitle",
           "fill": "$--text-primary",
           "content": "交易紀錄",
-          "fontFamily": "Bricolage Grotesque",
+          "fontFamily": "\\$--font-display",
           "fontSize": 34,
           "fontWeight": "700"
         },
@@ -2809,7 +3192,7 @@
                   "name": "fAllText",
                   "fill": "#FFFFFF",
                   "content": "全部",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "600"
                 }
@@ -2819,7 +3202,7 @@
               "type": "frame",
               "id": "ddru4",
               "name": "chipExpense",
-              "fill": "$--surface",
+              "fill": "\\$--text-inverse",
               "cornerRadius": "$--radius-pill",
               "padding": [
                 6,
@@ -2832,7 +3215,7 @@
                   "name": "fExpText",
                   "fill": "$--text-secondary",
                   "content": "支出",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -2842,7 +3225,7 @@
               "type": "frame",
               "id": "mFxtX",
               "name": "chipIncome",
-              "fill": "$--surface",
+              "fill": "\\$--text-inverse",
               "cornerRadius": "$--radius-pill",
               "padding": [
                 6,
@@ -2855,7 +3238,7 @@
                   "name": "fIncText",
                   "fill": "$--text-secondary",
                   "content": "收入",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -2865,7 +3248,7 @@
               "type": "frame",
               "id": "WMo7C",
               "name": "chipTransfer",
-              "fill": "$--surface",
+              "fill": "\\$--text-inverse",
               "cornerRadius": "$--radius-pill",
               "padding": [
                 6,
@@ -2878,7 +3261,7 @@
                   "name": "fTransText",
                   "fill": "$--text-secondary",
                   "content": "轉帳",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -2900,7 +3283,7 @@
               "name": "sec1Title",
               "fill": "$--text-secondary",
               "content": "今天",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -2948,7 +3331,7 @@
               "name": "sec2Title",
               "fill": "$--text-secondary",
               "content": "昨天 — 2/13",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -3068,7 +3451,7 @@
                   "height": 24,
                   "iconFontName": "edit",
                   "iconFontFamily": "Material Symbols Rounded",
-                  "fill": "#FFFFFF"
+                  "fill": "\\$--text-inverse"
                 }
               ]
             },
@@ -3096,7 +3479,7 @@
                   "height": 24,
                   "iconFontName": "delete",
                   "iconFontFamily": "Material Symbols Rounded",
-                  "fill": "#FFFFFF"
+                  "fill": "\\$--text-inverse"
                 }
               ]
             }
@@ -3148,7 +3531,7 @@
                   "id": "Kzkm1",
                   "fill": "$--text-tertiary",
                   "content": "搜尋交易...",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 16,
                   "fontWeight": "normal"
                 },
@@ -3177,7 +3560,7 @@
     {
       "type": "frame",
       "id": "6oyUM",
-      "x": 3045,
+      "x": 3044,
       "y": 964,
       "name": "Transaction Detail Screen",
       "width": 390,
@@ -3223,7 +3606,7 @@
                   "id": "iK3E5",
                   "fill": "$--brand-primary",
                   "content": "交易紀錄",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -3243,7 +3626,7 @@
                   "id": "ZqjJd",
                   "fill": "$--text-primary",
                   "content": "詳情",
-                  "fontFamily": "Bricolage Grotesque",
+                  "fontFamily": "\\$--font-display",
                   "fontSize": 17,
                   "fontWeight": "600"
                 }
@@ -3263,7 +3646,7 @@
                   "id": "rkWJn",
                   "fill": "$--brand-primary",
                   "content": "編輯",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -3290,8 +3673,12 @@
               "name": "heroIconContainer",
               "width": 64,
               "height": 64,
-              "fill": "$--surface-secondary",
-              "cornerRadius": "$--radius-lg",
+              "fill": "$--glass-prominent",
+              "cornerRadius": 24,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
               "justifyContent": "center",
               "alignItems": "center",
               "children": [
@@ -3313,7 +3700,7 @@
               "name": "heroTitle",
               "fill": "$--text-primary",
               "content": "午餐",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 22,
               "fontWeight": "700"
             },
@@ -3323,7 +3710,7 @@
               "name": "heroAmount",
               "fill": "$--expense-red",
               "content": "-$120",
-              "fontFamily": "DM Mono",
+              "fontFamily": "\\$--font-mono",
               "fontSize": 36,
               "fontWeight": "700"
             },
@@ -3332,10 +3719,10 @@
               "id": "HUFDk",
               "name": "aiBadge",
               "fill": "$--glass-surface",
-              "cornerRadius": "$--radius-pill",
+              "cornerRadius": 16,
               "effect": {
                 "type": "background_blur",
-                "radius": 12
+                "radius": 16
               },
               "gap": 6,
               "padding": [
@@ -3360,7 +3747,7 @@
                   "name": "aiLabel",
                   "fill": "$--text-secondary",
                   "content": "AI 自動分類",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 12,
                   "fontWeight": "500"
                 }
@@ -3373,8 +3760,12 @@
           "id": "FNyn5",
           "name": "formSection",
           "width": "fill_container",
-          "fill": "$--surface",
-          "cornerRadius": "$--radius-lg",
+          "fill": "$--glass-surface",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "background_blur",
+            "radius": 16
+          },
           "layout": "vertical",
           "children": [
             {
@@ -3394,7 +3785,7 @@
                   "id": "InEur",
                   "fill": "$--text-primary",
                   "content": "分類",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -3403,7 +3794,7 @@
                   "id": "7HoMw",
                   "fill": "$--text-secondary",
                   "content": "飲食",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -3426,7 +3817,7 @@
                   "id": "jAwbU",
                   "fill": "$--text-primary",
                   "content": "帳戶",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -3435,7 +3826,7 @@
                   "id": "mWXIn",
                   "fill": "$--text-secondary",
                   "content": "現金錢包",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -3458,7 +3849,7 @@
                   "id": "p7IhV",
                   "fill": "$--text-primary",
                   "content": "日期",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -3467,7 +3858,7 @@
                   "id": "TbZMw",
                   "fill": "$--text-secondary",
                   "content": "2025/2/14 12:30",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -3490,7 +3881,7 @@
                   "id": "BRICr",
                   "fill": "$--text-primary",
                   "content": "備註",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -3499,7 +3890,7 @@
                   "id": "g8L83",
                   "fill": "$--text-secondary",
                   "content": "公司附近的便當",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 }
@@ -3522,7 +3913,7 @@
                   "id": "7500J",
                   "fill": "$--text-primary",
                   "content": "標籤",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 17,
                   "fontWeight": "normal"
                 },
@@ -3540,7 +3931,7 @@
                       "descendants": {
                         "j06Xu": {
                           "content": "工作日",
-                          "fontFamily": "DM Sans"
+                          "fontFamily": "\\$--font-body"
                         }
                       }
                     },
@@ -3552,7 +3943,7 @@
                       "descendants": {
                         "j06Xu": {
                           "content": "外食",
-                          "fontFamily": "DM Sans"
+                          "fontFamily": "\\$--font-body"
                         }
                       }
                     }
@@ -3568,8 +3959,12 @@
           "name": "deleteButton",
           "width": "fill_container",
           "height": 50,
-          "fill": "transparent",
-          "cornerRadius": "$--radius-lg",
+          "fill": "$--glass-surface",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "background_blur",
+            "radius": 16
+          },
           "gap": 8,
           "justifyContent": "center",
           "alignItems": "center",
@@ -3590,7 +3985,7 @@
               "name": "delText",
               "fill": "$--expense-red",
               "content": "刪除交易",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 17,
               "fontWeight": "500"
             }
@@ -3622,7 +4017,7 @@
           "name": "settingsTitle",
           "fill": "$--text-primary",
           "content": "設定",
-          "fontFamily": "Bricolage Grotesque",
+          "fontFamily": "\\$--font-display",
           "fontSize": 34,
           "fontWeight": "700"
         },
@@ -3640,7 +4035,7 @@
               "name": "sec1Label",
               "fill": "$--text-secondary",
               "content": "管理",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -3649,8 +4044,12 @@
               "id": "ReDkV",
               "name": "manageCard",
               "width": "fill_container",
-              "fill": "$--surface",
-              "cornerRadius": "$--radius-lg",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
               "layout": "vertical",
               "children": [
                 {
@@ -3686,7 +4085,7 @@
                           "id": "A1aMC",
                           "fill": "$--text-primary",
                           "content": "帳戶管理",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -3736,7 +4135,7 @@
                           "id": "IVn0G",
                           "fill": "$--text-primary",
                           "content": "分類管理",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -3786,7 +4185,7 @@
                           "id": "LOLco",
                           "fill": "$--text-primary",
                           "content": "預算設定",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -3827,16 +4226,16 @@
                           "id": "jvOlm",
                           "width": 22,
                           "height": 22,
-                          "iconFontName": "sell",
+                          "iconFontName": "label",
                           "iconFontFamily": "Material Symbols Rounded",
-                          "fill": "#FF9500"
+                          "fill": "\\$--brand-accent"
                         },
                         {
                           "type": "text",
                           "id": "tqMBp",
                           "fill": "$--text-primary",
                           "content": "標籤管理",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -3870,7 +4269,7 @@
               "id": "LT0UY",
               "fill": "$--text-secondary",
               "content": "偏好設定",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -3879,8 +4278,12 @@
               "id": "QIT8t",
               "name": "prefCard",
               "width": "fill_container",
-              "fill": "$--surface",
-              "cornerRadius": "$--radius-lg",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
               "layout": "vertical",
               "children": [
                 {
@@ -3916,7 +4319,7 @@
                           "id": "kL4Me",
                           "fill": "$--text-primary",
                           "content": "預設帳戶",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -3927,7 +4330,7 @@
                       "id": "6Zc9r",
                       "fill": "$--text-secondary",
                       "content": "現金錢包",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     }
@@ -3966,7 +4369,7 @@
                           "id": "iVftk",
                           "fill": "$--text-primary",
                           "content": "語言",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -3977,7 +4380,7 @@
                       "id": "v0VTF",
                       "fill": "$--text-secondary",
                       "content": "繁體中文",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     }
@@ -4016,7 +4419,7 @@
                           "id": "cS66E",
                           "fill": "$--text-primary",
                           "content": "AI 智慧功能",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -4034,7 +4437,7 @@
                         {
                           "type": "ellipse",
                           "id": "IffPd",
-                          "fill": "#FFFFFF",
+                          "fill": "\\$--text-inverse",
                           "width": 27,
                           "height": 27
                         }
@@ -4059,7 +4462,7 @@
               "id": "68xtj",
               "fill": "$--text-secondary",
               "content": "資料",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -4068,8 +4471,12 @@
               "id": "iMZZq",
               "name": "dataCard",
               "width": "fill_container",
-              "fill": "$--surface",
-              "cornerRadius": "$--radius-lg",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
               "layout": "vertical",
               "children": [
                 {
@@ -4105,7 +4512,7 @@
                           "id": "jVSdw",
                           "fill": "$--text-primary",
                           "content": "匯出 CSV",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -4155,7 +4562,7 @@
                           "id": "6Nasx",
                           "fill": "$--text-primary",
                           "content": "匯出 JSON",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -4189,7 +4596,7 @@
               "id": "Q9lK7",
               "fill": "$--text-secondary",
               "content": "關於",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 13,
               "fontWeight": "600"
             },
@@ -4198,8 +4605,12 @@
               "id": "FPiF6",
               "name": "aboutCard",
               "width": "fill_container",
-              "fill": "$--surface",
-              "cornerRadius": "$--radius-lg",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
               "layout": "vertical",
               "children": [
                 {
@@ -4235,7 +4646,7 @@
                           "id": "bjOhU",
                           "fill": "$--text-primary",
                           "content": "版本",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -4246,7 +4657,7 @@
                       "id": "LYmDA",
                       "fill": "$--text-tertiary",
                       "content": "1.0.0",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     }
@@ -4285,7 +4696,7 @@
                           "id": "E8HNi",
                           "fill": "$--text-primary",
                           "content": "隱私權政策",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 17,
                           "fontWeight": "normal"
                         }
@@ -4299,6 +4710,142 @@
                       "iconFontName": "chevron_right",
                       "iconFontFamily": "Material Symbols Rounded",
                       "fill": "$--text-tertiary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "g2T77",
+          "name": "v3",
+          "width": "fill_container",
+          "height": 80,
+          "fill": "transparent",
+          "justifyContent": "center",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "UzavT",
+              "name": "splitTabContainer",
+              "width": "fill_container",
+              "height": 60,
+              "gap": 12,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "cemQW",
+                  "name": "navCapsule",
+                  "height": 60,
+                  "fill": "$--glass-prominent",
+                  "cornerRadius": 40,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 24
+                  },
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "cbAAc",
+                      "name": "tab1",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$--surface-secondary",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "oIsM7",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "home",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "KiMIK",
+                      "name": "tab3",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "hZ1IU",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "pie_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MtCyH",
+                      "name": "tab4",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "MvQzi",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "settings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yrI1r",
+                  "name": "contextCapsule",
+                  "width": 52,
+                  "height": 52,
+                  "fill": "$--glass-surface",
+                  "cornerRadius": 26,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 16
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "ugTET",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-secondary"
                     }
                   ]
                 }
@@ -4332,7 +4879,7 @@
           "name": "aTitle",
           "fill": "$--text-primary",
           "content": "分析",
-          "fontFamily": "Bricolage Grotesque",
+          "fontFamily": "\\$--font-display",
           "fontSize": 34,
           "fontWeight": "700"
         },
@@ -4342,10 +4889,10 @@
           "name": "periodSelector",
           "width": "fill_container",
           "height": 36,
-          "fill": "$--surface-secondary",
-          "cornerRadius": 10,
+          "fill": "$--glass-prominent",
+          "cornerRadius": 14,
           "gap": 2,
-          "padding": 2,
+          "padding": 4,
           "children": [
             {
               "type": "frame",
@@ -4353,7 +4900,7 @@
               "name": "seg1",
               "width": "fill_container",
               "height": "fill_container",
-              "fill": "#FFFFFF",
+              "fill": "$--surface",
               "cornerRadius": 8,
               "justifyContent": "center",
               "alignItems": "center",
@@ -4363,7 +4910,7 @@
                   "id": "CgKk1",
                   "fill": "$--text-primary",
                   "content": "本週",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "600"
                 }
@@ -4385,7 +4932,7 @@
                   "id": "SkAOd",
                   "fill": "$--text-secondary",
                   "content": "本月",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -4407,7 +4954,7 @@
                   "id": "TqAEO",
                   "fill": "$--text-secondary",
                   "content": "本年",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -4421,12 +4968,12 @@
           "name": "summaryCard",
           "width": "fill_container",
           "fill": "$--glass-surface",
-          "cornerRadius": "$--radius-lg",
+          "cornerRadius": 24,
           "effect": {
             "type": "background_blur",
             "radius": 16
           },
-          "padding": 20,
+          "padding": 24,
           "justifyContent": "space_around",
           "children": [
             {
@@ -4442,7 +4989,7 @@
                   "id": "r0B2Q",
                   "fill": "$--text-secondary",
                   "content": "收入",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "normal"
                 },
@@ -4451,7 +4998,7 @@
                   "id": "aTARj",
                   "fill": "$--income-green",
                   "content": "$45,000",
-                  "fontFamily": "DM Mono",
+                  "fontFamily": "\\$--font-mono",
                   "fontSize": 20,
                   "fontWeight": "700"
                 }
@@ -4470,7 +5017,7 @@
                   "id": "JnLKy",
                   "fill": "$--text-secondary",
                   "content": "支出",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "normal"
                 },
@@ -4479,7 +5026,7 @@
                   "id": "j9kPG",
                   "fill": "$--expense-red",
                   "content": "$18,320",
-                  "fontFamily": "DM Mono",
+                  "fontFamily": "\\$--font-mono",
                   "fontSize": 20,
                   "fontWeight": "700"
                 }
@@ -4498,7 +5045,7 @@
                   "id": "SsD27",
                   "fill": "$--text-secondary",
                   "content": "淨額",
-                  "fontFamily": "DM Sans",
+                  "fontFamily": "\\$--font-body",
                   "fontSize": 13,
                   "fontWeight": "normal"
                 },
@@ -4507,7 +5054,7 @@
                   "id": "KYSJQ",
                   "fill": "$--income-green",
                   "content": "+$26,680",
-                  "fontFamily": "DM Mono",
+                  "fontFamily": "\\$--font-mono",
                   "fontSize": 20,
                   "fontWeight": "700"
                 }
@@ -4520,8 +5067,15 @@
           "id": "KA0kp",
           "name": "pieChartSection",
           "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "background_blur",
+            "radius": 16
+          },
           "layout": "vertical",
           "gap": 16,
+          "padding": 20,
           "children": [
             {
               "type": "text",
@@ -4529,7 +5083,7 @@
               "name": "pieSectionTitle",
               "fill": "$--text-primary",
               "content": "支出分類",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 20,
               "fontWeight": "600"
             },
@@ -4547,38 +5101,65 @@
                   "name": "pieChartVisual",
                   "width": 140,
                   "height": 140,
+                  "layout": "none",
                   "children": [
                     {
                       "type": "ellipse",
                       "id": "jJnwm",
+                      "x": 0,
+                      "y": 0,
                       "name": "pieRing",
-                      "fill": "transparent",
+                      "startAngle": -90,
+                      "sweepAngle": 151,
+                      "fill": "$--brand-primary",
                       "width": 140,
                       "height": 140
                     },
                     {
                       "type": "ellipse",
                       "id": "2ytnZ",
+                      "x": 0,
+                      "y": 0,
                       "name": "pieRing2",
-                      "fill": "transparent",
+                      "startAngle": 61,
+                      "sweepAngle": 101,
+                      "fill": "$--brand-secondary",
                       "width": 140,
                       "height": 140
                     },
                     {
                       "type": "ellipse",
                       "id": "v5mwU",
+                      "x": 0,
+                      "y": 0,
                       "name": "pieRing3",
-                      "fill": "transparent",
+                      "startAngle": 162,
+                      "sweepAngle": 65,
+                      "fill": "\\$--brand-accent",
+                      "width": 140,
+                      "height": 140
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "7g34J",
+                      "x": 0,
+                      "y": 0,
+                      "name": "pieRing4",
+                      "startAngle": 227,
+                      "sweepAngle": 43,
+                      "fill": "$--text-tertiary",
                       "width": 140,
                       "height": 140
                     },
                     {
                       "type": "frame",
                       "id": "PprCV",
+                      "x": 20,
+                      "y": 20,
                       "name": "pieCenter",
                       "width": 100,
                       "height": 100,
-                      "fill": "$--background",
+                      "fill": "$--surface",
                       "cornerRadius": 50,
                       "justifyContent": "center",
                       "alignItems": "center",
@@ -4588,7 +5169,7 @@
                           "id": "nRcHG",
                           "fill": "$--text-primary",
                           "content": "$18,320",
-                          "fontFamily": "DM Mono",
+                          "fontFamily": "\\$--font-mono",
                           "fontSize": 16,
                           "fontWeight": "700"
                         }
@@ -4623,7 +5204,7 @@
                           "id": "KiKty",
                           "fill": "$--text-primary",
                           "content": "飲食",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 14,
                           "fontWeight": "normal"
                         },
@@ -4632,7 +5213,7 @@
                           "id": "iepn9",
                           "fill": "$--text-secondary",
                           "content": "42%",
-                          "fontFamily": "DM Mono",
+                          "fontFamily": "\\$--font-mono",
                           "fontSize": 13,
                           "fontWeight": "normal"
                         }
@@ -4657,7 +5238,7 @@
                           "id": "VgNAe",
                           "fill": "$--text-primary",
                           "content": "交通",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 14,
                           "fontWeight": "normal"
                         },
@@ -4666,7 +5247,7 @@
                           "id": "VTLPy",
                           "fill": "$--text-secondary",
                           "content": "28%",
-                          "fontFamily": "DM Mono",
+                          "fontFamily": "\\$--font-mono",
                           "fontSize": 13,
                           "fontWeight": "normal"
                         }
@@ -4682,7 +5263,7 @@
                         {
                           "type": "ellipse",
                           "id": "MC3gq",
-                          "fill": "#FF9500",
+                          "fill": "\\$--brand-accent",
                           "width": 10,
                           "height": 10
                         },
@@ -4691,7 +5272,7 @@
                           "id": "5y7el",
                           "fill": "$--text-primary",
                           "content": "購物",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 14,
                           "fontWeight": "normal"
                         },
@@ -4700,7 +5281,7 @@
                           "id": "u6YW5",
                           "fill": "$--text-secondary",
                           "content": "18%",
-                          "fontFamily": "DM Mono",
+                          "fontFamily": "\\$--font-mono",
                           "fontSize": 13,
                           "fontWeight": "normal"
                         }
@@ -4725,7 +5306,7 @@
                           "id": "vE2gE",
                           "fill": "$--text-primary",
                           "content": "其他",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 14,
                           "fontWeight": "normal"
                         },
@@ -4734,7 +5315,7 @@
                           "id": "2R45B",
                           "fill": "$--text-secondary",
                           "content": "12%",
-                          "fontFamily": "DM Mono",
+                          "fontFamily": "\\$--font-mono",
                           "fontSize": 13,
                           "fontWeight": "normal"
                         }
@@ -4751,15 +5332,22 @@
           "id": "rGTG3",
           "name": "barChartSection",
           "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "background_blur",
+            "radius": 16
+          },
           "layout": "vertical",
           "gap": 16,
+          "padding": 20,
           "children": [
             {
               "type": "text",
               "id": "5Uf83",
               "fill": "$--text-primary",
               "content": "每日趨勢",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 20,
               "fontWeight": "600"
             },
@@ -4769,14 +5357,14 @@
               "name": "barChartContainer",
               "width": "fill_container",
               "height": 160,
-              "fill": "$--surface",
+              "fill": "transparent",
               "cornerRadius": "$--radius-lg",
               "gap": 6,
               "padding": [
                 16,
-                12,
-                8,
-                12
+                0,
+                0,
+                0
               ],
               "alignItems": "end",
               "children": [
@@ -4821,7 +5409,7 @@
                       "id": "x6WVe",
                       "fill": "$--text-tertiary",
                       "content": "一",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "normal"
                     }
@@ -4868,7 +5456,7 @@
                       "id": "9UOiv",
                       "fill": "$--text-tertiary",
                       "content": "二",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "normal"
                     }
@@ -4915,7 +5503,7 @@
                       "id": "PRi6y",
                       "fill": "$--text-tertiary",
                       "content": "三",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "normal"
                     }
@@ -4962,7 +5550,7 @@
                       "id": "IhMG8",
                       "fill": "$--text-tertiary",
                       "content": "四",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "normal"
                     }
@@ -5009,7 +5597,7 @@
                       "id": "cKLR5",
                       "fill": "$--text-primary",
                       "content": "五",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "600"
                     }
@@ -5056,7 +5644,7 @@
                       "id": "DS3UI",
                       "fill": "$--text-tertiary",
                       "content": "六",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "normal"
                     }
@@ -5103,7 +5691,7 @@
                       "id": "Hy50o",
                       "fill": "$--text-tertiary",
                       "content": "日",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 11,
                       "fontWeight": "normal"
                     }
@@ -5118,15 +5706,22 @@
           "id": "4ifBv",
           "name": "budgetSection",
           "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "background_blur",
+            "radius": 16
+          },
           "layout": "vertical",
           "gap": 12,
+          "padding": 20,
           "children": [
             {
               "type": "text",
               "id": "BZEEp",
               "fill": "$--text-primary",
               "content": "預算進度",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 20,
               "fontWeight": "600"
             },
@@ -5201,6 +5796,142 @@
               "content": "本週五的支出最高，達 $5,200。主要集中在飲食與交通。建議週末準備便當可節省約 $800。"
             }
           }
+        },
+        {
+          "type": "frame",
+          "id": "jiZvo",
+          "name": "v2",
+          "width": "fill_container",
+          "height": 80,
+          "fill": "transparent",
+          "justifyContent": "center",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "yKrOZ",
+              "name": "splitTabContainer",
+              "width": "fill_container",
+              "height": 60,
+              "gap": 12,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "1Jz6A",
+                  "name": "navCapsule",
+                  "height": 60,
+                  "fill": "$--glass-prominent",
+                  "cornerRadius": 40,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 24
+                  },
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Xgre7",
+                      "name": "tab1",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$--surface-secondary",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "eZXkA",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "home",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MYFCM",
+                      "name": "tab3",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "Rl5zK",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "pie_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vx8tW",
+                      "name": "tab4",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "jbaas",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "settings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RfYgU",
+                  "name": "contextCapsule",
+                  "width": 52,
+                  "height": 52,
+                  "fill": "$--glass-surface",
+                  "cornerRadius": 26,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 16
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "WKd03",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-secondary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -5228,7 +5959,7 @@
           "name": "sh1",
           "fill": "$--text-primary",
           "content": "系統元件",
-          "fontFamily": "Bricolage Grotesque",
+          "fontFamily": "\\$--font-display",
           "fontSize": 34,
           "fontWeight": "700"
         },
@@ -5246,7 +5977,7 @@
               "id": "Hxnxv",
               "fill": "$--text-secondary",
               "content": "Floating TabBar",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 15,
               "fontWeight": "600"
             },
@@ -5403,7 +6134,7 @@
               "fill": "$--text-secondary",
               "content": "Custom Alert",
               "textAlign": "center",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 15,
               "fontWeight": "600"
             },
@@ -5458,7 +6189,7 @@
                       "id": "vnUef",
                       "fill": "$--text-primary",
                       "content": "刪除此筆交易？",
-                      "fontFamily": "Bricolage Grotesque",
+                      "fontFamily": "\\$--font-display",
                       "fontSize": 18,
                       "fontWeight": "600"
                     },
@@ -5468,7 +6199,7 @@
                       "fill": "$--text-secondary",
                       "content": "此動作無法復原，確定要繼續嗎？",
                       "textAlign": "center",
-                      "fontFamily": "DM Sans",
+                      "fontFamily": "\\$--font-body",
                       "fontSize": 15,
                       "fontWeight": "normal"
                     }
@@ -5497,7 +6228,7 @@
                           "id": "4ZAw7",
                           "fill": "$--text-primary",
                           "content": "取消",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 15,
                           "fontWeight": "600"
                         }
@@ -5519,7 +6250,7 @@
                           "id": "gwvxb",
                           "fill": "#FFFFFF",
                           "content": "刪除",
-                          "fontFamily": "DM Sans",
+                          "fontFamily": "\\$--font-body",
                           "fontSize": 15,
                           "fontWeight": "600"
                         }
@@ -5544,27 +6275,29 @@
               "id": "ItBFe",
               "fill": "$--text-secondary",
               "content": "Empty State",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 15,
               "fontWeight": "600"
             },
             {
               "type": "frame",
-              "id": "TGoyy",
-              "name": "emptyState",
+              "id": "IkEeV",
+              "name": "EmptyStateView",
+              "reusable": true,
               "width": "fill_container",
-              "height": 200,
-              "fill": "$--surface",
+              "height": 300,
+              "fill": "\\$--text-inverse",
               "cornerRadius": 24,
               "layout": "vertical",
               "gap": 16,
+              "padding": 32,
               "justifyContent": "center",
               "alignItems": "center",
               "children": [
                 {
                   "type": "frame",
-                  "id": "3qCMI",
-                  "name": "emptyIcon",
+                  "id": "jsO8W",
+                  "name": "iconContainer",
                   "width": 80,
                   "height": 80,
                   "fill": "$--surface-secondary",
@@ -5574,30 +6307,56 @@
                   "children": [
                     {
                       "type": "icon_font",
-                      "id": "9F3lh",
+                      "id": "APkVJ",
                       "width": 40,
                       "height": 40,
-                      "iconFontName": "history_edu",
-                      "iconFontFamily": "Material Symbols Rounded",
+                      "iconFontName": "search",
+                      "iconFontFamily": "lucide",
                       "fill": "$--text-tertiary"
                     }
                   ]
                 },
                 {
+                  "type": "text",
+                  "id": "XQu2l",
+                  "name": "title",
+                  "fill": "$--text-primary",
+                  "content": "No Data",
+                  "textAlign": "center",
+                  "fontFamily": "\\$--font-display",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "g9cyA",
+                  "name": "desc",
+                  "fill": "$--text-secondary",
+                  "content": "Description text goes here",
+                  "textAlign": "center",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
                   "type": "frame",
-                  "id": "o6rdY",
-                  "name": "emptyText",
-                  "layout": "vertical",
-                  "gap": 4,
-                  "alignItems": "center",
+                  "id": "yNVgs",
+                  "name": "actionBtn",
+                  "fill": "\\$--surface-inverse",
+                  "cornerRadius": 100,
+                  "padding": [
+                    12,
+                    24
+                  ],
                   "children": [
                     {
                       "type": "text",
-                      "id": "ivsZB",
-                      "fill": "$--text-secondary",
-                      "content": "尚無交易紀錄",
-                      "fontFamily": "DM Sans",
-                      "fontSize": 16,
+                      "id": "QtCdZ",
+                      "name": "btnText",
+                      "fill": "$--text-inverse",
+                      "content": "Action",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
                       "fontWeight": "600"
                     }
                   ]
@@ -5634,7 +6393,7 @@
               "name": "title",
               "fill": "$--text-primary",
               "content": "載入失敗",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 20,
               "fontWeight": "600"
             },
@@ -5645,7 +6404,7 @@
               "fill": "$--text-secondary",
               "content": "無法連接伺服器，請稍後再試。",
               "textAlign": "center",
-              "fontFamily": "DM Sans",
+              "fontFamily": "\\$--font-body",
               "fontSize": 15,
               "fontWeight": "normal"
             },
@@ -5734,7 +6493,7 @@
               "opacity": 0.9,
               "fill": "#FFFFFF",
               "content": "N",
-              "fontFamily": "Bricolage Grotesque",
+              "fontFamily": "\\$--font-display",
               "fontSize": 72,
               "fontWeight": "700"
             }
@@ -5746,7 +6505,7 @@
           "name": "title",
           "fill": "$--text-primary",
           "content": "NeuLedger",
-          "fontFamily": "Bricolage Grotesque",
+          "fontFamily": "\\$--font-display",
           "fontSize": 42,
           "fontWeight": "700"
         },
@@ -5756,7 +6515,7 @@
           "name": "tagline",
           "fill": "$--text-secondary",
           "content": "AI-Powered Finance",
-          "fontFamily": "DM Sans",
+          "fontFamily": "\\$--font-body",
           "fontSize": 17,
           "fontWeight": "500"
         },
@@ -5811,127 +6570,124 @@
     },
     {
       "type": "frame",
-      "id": "IkEeV",
-      "x": 3500,
-      "y": 0,
-      "name": "EmptyStateView",
-      "reusable": true,
-      "width": 350,
-      "height": 300,
-      "layout": "vertical",
-      "gap": 16,
-      "padding": 32,
-      "justifyContent": "center",
-      "alignItems": "center",
-      "children": [
-        {
-          "type": "frame",
-          "id": "jsO8W",
-          "name": "iconContainer",
-          "width": 80,
-          "height": 80,
-          "fill": "$--surface-secondary",
-          "cornerRadius": 40,
-          "justifyContent": "center",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "SIPiJ",
-              "name": "icon",
-              "fill": "$--text-tertiary",
-              "content": "doc.text.magnifyingglass",
-              "fontFamily": "SF Pro Text",
-              "fontSize": 32,
-              "fontWeight": "normal"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "id": "XQu2l",
-          "name": "title",
-          "fill": "$--text-primary",
-          "content": "No Data",
-          "textAlign": "center",
-          "fontFamily": "Bricolage Grotesque",
-          "fontSize": 20,
-          "fontWeight": "700"
-        },
-        {
-          "type": "text",
-          "id": "g9cyA",
-          "name": "desc",
-          "fill": "$--text-secondary",
-          "content": "Description text goes here",
-          "textAlign": "center",
-          "fontFamily": "DM Sans",
-          "fontSize": 15,
-          "fontWeight": "normal"
-        },
-        {
-          "type": "frame",
-          "id": "yNVgs",
-          "name": "actionBtn",
-          "fill": "#000000",
-          "cornerRadius": 100,
-          "padding": [
-            12,
-            24
-          ],
-          "children": [
-            {
-              "type": "text",
-              "id": "QtCdZ",
-              "name": "btnText",
-              "fill": "#FFFFFF",
-              "content": "Action",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fontWeight": "600"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "oejo2",
-      "x": 4000,
-      "y": 964,
+      "x": 3567,
+      "y": 2623,
       "name": "Analysis Screen - Empty",
       "width": 390,
       "height": 844,
       "fill": "$--background",
+      "cornerRadius": 40,
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        60,
+        20,
+        40,
+        20
+      ],
       "children": [
         {
           "type": "text",
           "id": "HGcB2",
           "name": "header",
+          "rotation": 0.6295487649961394,
           "fill": "$--text-primary",
           "content": "分析",
-          "fontFamily": "Bricolage Grotesque",
+          "fontFamily": "\\$--font-display",
           "fontSize": 34,
           "fontWeight": "700"
         },
         {
           "type": "frame",
-          "id": "klqaG",
-          "name": "periodSelector",
-          "width": 350,
+          "id": "At0B5",
+          "name": "newPeriodSel",
+          "width": "fill_container",
           "height": 36,
           "fill": "$--surface-secondary",
-          "cornerRadius": 10
+          "cornerRadius": 10,
+          "gap": 2,
+          "padding": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "dCAmE",
+              "name": "seg1",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "\\$--text-inverse",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CTVht",
+                  "fill": "$--text-primary",
+                  "content": "本週",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9YnZ4",
+              "name": "seg2",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "transparent",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Wnbb2",
+                  "fill": "$--text-secondary",
+                  "content": "本月",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "5g8lN",
+              "name": "seg3",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "transparent",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iWFy9",
+                  "fill": "$--text-secondary",
+                  "content": "本年",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
         },
         {
           "id": "mWS0o",
           "type": "ref",
           "ref": "IkEeV",
-          "y": 0,
-          "x": 418,
+          "y": 193.7441906374703,
+          "x": 20,
           "name": "emptyInstance1",
+          "width": "fill_container",
+          "height": "fill_container",
           "descendants": {
-            "SIPiJ": {
+            "APkVJ": {
               "content": "chart.pie.fill"
             },
             "XQu2l": {
@@ -5944,38 +6700,203 @@
               "opacity": 0
             }
           }
+        },
+        {
+          "type": "frame",
+          "id": "jFd5C",
+          "name": "v5",
+          "width": "fill_container",
+          "height": 80,
+          "fill": "transparent",
+          "justifyContent": "center",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "8xBvu",
+              "name": "splitTabContainer",
+              "width": "fill_container",
+              "height": 60,
+              "gap": 12,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rr7iG",
+                  "name": "navCapsule",
+                  "height": 60,
+                  "fill": "$--glass-prominent",
+                  "cornerRadius": 40,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 24
+                  },
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Fxmiz",
+                      "name": "tab1",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$--surface-secondary",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "jGH1q",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "home",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Wh0Oc",
+                      "name": "tab3",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "yxoqu",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "pie_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "P3uvo",
+                      "name": "tab4",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "K8Jsp",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "settings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XhN84",
+                  "name": "contextCapsule",
+                  "width": 52,
+                  "height": 52,
+                  "fill": "$--glass-surface",
+                  "cornerRadius": 26,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 16
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "cpBAR",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-secondary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     },
     {
       "type": "frame",
       "id": "LMoBV",
-      "x": 4450,
-      "y": 964,
+      "x": 1495,
+      "y": 2189,
       "name": "Dashboard Screen - Empty",
       "width": 390,
       "height": 844,
       "fill": "$--background",
+      "cornerRadius": 40,
+      "layout": "vertical",
+      "padding": [
+        60,
+        20,
+        40,
+        20
+      ],
       "children": [
         {
-          "type": "text",
-          "id": "l82t1",
-          "name": "dashHeader",
-          "fill": "$--text-primary",
-          "content": "Dashboard",
-          "fontFamily": "Bricolage Grotesque",
-          "fontSize": 34,
-          "fontWeight": "700"
+          "type": "frame",
+          "id": "k3K5m",
+          "name": "newHeader",
+          "width": "fill_container",
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "nREC2",
+              "name": "screenTitle",
+              "fill": "$--text-primary",
+              "content": "總覽",
+              "fontFamily": "\\$--font-display",
+              "fontSize": 34,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "iW6sQ",
+              "name": "profileIcon",
+              "width": 36,
+              "height": 36,
+              "fill": "$--surface-secondary",
+              "cornerRadius": "$--radius-pill"
+            }
+          ]
         },
         {
           "id": "I7Z8K",
           "type": "ref",
           "ref": "IkEeV",
-          "y": 0,
-          "x": 164,
+          "y": 109,
+          "x": 20,
           "name": "dashEmptyInstance",
+          "width": "fill_container",
+          "height": "fill_container",
           "descendants": {
-            "SIPiJ": {
+            "APkVJ": {
               "content": "tray.fill"
             },
             "XQu2l": {
@@ -5988,6 +6909,1848 @@
               "content": "記一筆"
             }
           }
+        },
+        {
+          "type": "frame",
+          "id": "e1nWK",
+          "name": "v4",
+          "width": "fill_container",
+          "height": 80,
+          "fill": "transparent",
+          "justifyContent": "center",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "90tFd",
+              "name": "splitTabContainer",
+              "width": "fill_container",
+              "height": 60,
+              "gap": 12,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zLakj",
+                  "name": "navCapsule",
+                  "height": 60,
+                  "fill": "$--glass-prominent",
+                  "cornerRadius": 40,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 24
+                  },
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "t0MVs",
+                      "name": "tab1",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$--surface-secondary",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "oQbCm",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "home",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "320R0",
+                      "name": "tab3",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "NCXgw",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "pie_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "7kULw",
+                      "name": "tab4",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "t1DnV",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "settings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "7OtzO",
+                  "name": "contextCapsule",
+                  "width": 52,
+                  "height": 52,
+                  "fill": "$--glass-surface",
+                  "cornerRadius": 26,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 16
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "LY3CS",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-secondary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "xbGT9",
+      "x": -600,
+      "y": 200,
+      "name": "App Flow Documentation",
+      "width": 800,
+      "height": 400,
+      "fill": "$--surface-secondary",
+      "cornerRadius": 24,
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 32,
+      "children": [
+        {
+          "type": "text",
+          "id": "4gcTU",
+          "fill": "$--text-primary",
+          "content": "App Flow Architecture",
+          "fontFamily": "Inter",
+          "fontSize": 40,
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "MIr4C",
+          "fill": "$--text-secondary",
+          "content": "1. Launch Screen → Onboarding Flow\n2. Onboarding Flow → Dashboard Screen\n3. Dashboard Screen (Tabs) → Analysis / Profile (Missing)\n4. Dashboard Screen (Actions) → Add Tx / Detail / List\n5. Transaction List → Search & Filters (Missing) / Detail\n6. Transaction Detail → Edit Transaction (Missing)\n7. Empty States trigger when list counts are 0.",
+          "lineHeight": 32,
+          "fontFamily": "Inter",
+          "fontSize": 20,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "dnSqz",
+      "x": 3044,
+      "y": 1900,
+      "name": "Edit Transaction Sheet",
+      "width": 390,
+      "fill": "$--background",
+      "cornerRadius": 40,
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        20,
+        20,
+        40,
+        20
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "THhTG",
+          "name": "toolbar",
+          "width": "fill_container",
+          "height": 44,
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "JOxS9",
+              "name": "cancelBtn",
+              "fill": "$--brand-primary",
+              "content": "取消",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "3mswF",
+              "name": "sheetTitle",
+              "fill": "$--text-primary",
+              "content": "編輯交易",
+              "fontFamily": "\\$--font-display",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "JqXpB",
+              "name": "saveBtn",
+              "fill": "$--brand-primary",
+              "cornerRadius": "$--radius-pill",
+              "padding": [
+                8,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "nYvhp",
+                  "name": "saveText",
+                  "fill": "#FFFFFF",
+                  "content": "儲存",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "yPO93",
+          "name": "segmentControl",
+          "width": "fill_container",
+          "height": 36,
+          "fill": "$--surface-secondary",
+          "cornerRadius": 10,
+          "gap": 2,
+          "padding": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "2LUoo",
+              "name": "segExpense",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "\\$--text-inverse",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "MrRnq",
+                  "name": "expText",
+                  "fill": "$--text-primary",
+                  "content": "支出",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "unuLz",
+              "name": "segIncome",
+              "width": "fill_container",
+              "height": "fill_container",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "oKF0x",
+                  "name": "incText",
+                  "fill": "$--text-secondary",
+                  "content": "收入",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 15,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "0CE6z",
+              "name": "segTransfer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LKbbB",
+                  "name": "transText",
+                  "fill": "$--text-secondary",
+                  "content": "轉帳",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 15,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "VHQCe",
+          "name": "amountSection",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": [
+            20,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "jsRqg",
+              "name": "currency",
+              "fill": "$--text-secondary",
+              "content": "TWD",
+              "fontFamily": "\\$--font-mono",
+              "fontSize": 15,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "aYUjd",
+              "name": "amountDisplay",
+              "fill": "$--text-primary",
+              "content": "$120",
+              "fontFamily": "\\$--font-mono",
+              "fontSize": 60,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "4pL65",
+          "name": "noteInput",
+          "width": "fill_container",
+          "height": 50,
+          "fill": "\\$--text-inverse",
+          "cornerRadius": "$--radius-lg",
+          "gap": 12,
+          "padding": [
+            0,
+            16
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "2Eirf",
+              "name": "sparkleIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "auto_awesome",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--brand-primary"
+            },
+            {
+              "type": "text",
+              "id": "zAQvG",
+              "name": "notePlaceholder",
+              "fill": "$--text-tertiary",
+              "content": "輸入備註自動記帳...",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "eAbPM",
+          "name": "categoryGrid",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "kOo8q",
+              "name": "catLabel",
+              "fill": "$--text-secondary",
+              "content": "分類",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "T6jwx",
+              "name": "catRow1",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "vyCRb",
+                  "type": "ref",
+                  "ref": "gZiWV",
+                  "name": "c1",
+                  "descendants": {
+                    "1aNC0": {
+                      "iconFontName": "restaurant"
+                    },
+                    "NtcEa": {
+                      "fill": "$--brand-primary",
+                      "content": "飲食"
+                    }
+                  }
+                },
+                {
+                  "id": "o44sL",
+                  "type": "ref",
+                  "ref": "gZiWV",
+                  "name": "c2",
+                  "descendants": {
+                    "1aNC0": {
+                      "iconFontName": "directions_bus"
+                    },
+                    "NtcEa": {
+                      "content": "交通"
+                    }
+                  }
+                },
+                {
+                  "id": "qNhCx",
+                  "type": "ref",
+                  "ref": "gZiWV",
+                  "name": "c3",
+                  "descendants": {
+                    "1aNC0": {
+                      "iconFontName": "shopping_bag"
+                    },
+                    "NtcEa": {
+                      "content": "購物"
+                    }
+                  }
+                },
+                {
+                  "id": "l820q",
+                  "type": "ref",
+                  "ref": "gZiWV",
+                  "name": "c4",
+                  "descendants": {
+                    "1aNC0": {
+                      "iconFontName": "movie"
+                    },
+                    "NtcEa": {
+                      "content": "娛樂"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "BYAHD",
+          "name": "detailGroup",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "lejJw",
+              "name": "rowAccount",
+              "width": "fill_container",
+              "height": 44,
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2SEL0",
+                  "name": "labelAccount",
+                  "fill": "$--text-primary",
+                  "content": "帳戶",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "8ikPX",
+                  "name": "valueAccount",
+                  "fill": "$--text-secondary",
+                  "content": "現金錢包",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sOVXR",
+              "name": "rowDate",
+              "width": "fill_container",
+              "height": 44,
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "4lIhf",
+                  "name": "labelDate",
+                  "fill": "$--text-primary",
+                  "content": "日期",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "7WHkQ",
+                  "name": "valueDate",
+                  "fill": "$--text-secondary",
+                  "content": "今天 13:05",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "5JiF9",
+          "name": "numpad",
+          "width": "fill_container",
+          "height": 260,
+          "fill": "$--glass-surface",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 10,
+          "children": [
+            {
+              "type": "text",
+              "id": "bKAHn",
+              "fill": "$--text-secondary",
+              "content": "（數字鍵盤示意）",
+              "textAlign": "center",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "jDcW9",
+              "name": "row1",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "0N35X",
+                  "name": "k1",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ihSfZ",
+                      "fill": "$--text-primary",
+                      "content": "1",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RlR0G",
+                  "name": "k2",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "4NXkB",
+                      "fill": "$--text-primary",
+                      "content": "2",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "PgoQH",
+                  "name": "k3",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zX2VP",
+                      "fill": "$--text-primary",
+                      "content": "3",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SY7SE",
+              "name": "row2",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "hbxwM",
+                  "name": "k4",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "z2lBy",
+                      "fill": "$--text-primary",
+                      "content": "4",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Qgi7R",
+                  "name": "k5",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tGNey",
+                      "fill": "$--text-primary",
+                      "content": "5",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Tmpdy",
+                  "name": "k6",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LqQNO",
+                      "fill": "$--text-primary",
+                      "content": "6",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "2fwYP",
+              "name": "row3",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "0RJGs",
+                  "name": "k7",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "sGcgF",
+                      "fill": "$--text-primary",
+                      "content": "7",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "N9FpR",
+                  "name": "k8",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Fyx2i",
+                      "fill": "$--text-primary",
+                      "content": "8",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Foct8",
+                  "name": "k9",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "rmFis",
+                      "fill": "$--text-primary",
+                      "content": "9",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "0p4pC",
+              "name": "row4",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oQFM6",
+                  "name": "kDot",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "transparent",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "j1s5r",
+                      "fill": "$--text-primary",
+                      "content": ".",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eNsRr",
+                  "name": "k0",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "\\$--text-inverse",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Jmtvt",
+                      "fill": "$--text-primary",
+                      "content": "0",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 24,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hCW4e",
+                  "name": "kDel",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "transparent",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "yU6fW",
+                      "width": 0,
+                      "height": 0,
+                      "iconFontName": "backspace",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "\\$--surface-inverse"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "p3BQc",
+      "x": 2550,
+      "y": 1900,
+      "name": "Search Filters Modal",
+      "width": 390,
+      "fill": "$--background",
+      "cornerRadius": 40,
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        60,
+        20,
+        40,
+        20
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "D8DLA",
+          "name": "settingsTitle",
+          "fill": "$--text-primary",
+          "content": "篩選及搜尋",
+          "fontFamily": "\\$--font-display",
+          "fontSize": 34,
+          "fontWeight": "700"
+        },
+        {
+          "type": "frame",
+          "id": "WfiYg",
+          "name": "searchBar",
+          "width": "fill_container",
+          "height": 50,
+          "fill": "$--glass-surface",
+          "cornerRadius": 16,
+          "gap": 12,
+          "padding": [
+            0,
+            16
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "rqubp",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "search",
+              "iconFontFamily": "lucide",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "QP8KP",
+              "fill": "$--text-tertiary",
+              "content": "嘗試搜尋「午餐」或「全聯」...",
+              "fontFamily": "DM Sans",
+              "fontSize": 17,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cETo6",
+          "name": "sectionManage",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "g6xtL",
+              "name": "sec1Label",
+              "fill": "$--text-secondary",
+              "content": "交易狀態（多選）",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "Z3cmq",
+              "name": "manageCard",
+              "width": "fill_container",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zFEYJ",
+                  "name": "m1",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "knuZi",
+                      "name": "m1Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "2cWqj",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "account_balance_wallet",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "3dwI0",
+                          "fill": "$--text-primary",
+                          "content": "帳戶管理",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "IX1Qr",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KMYku",
+                  "name": "m2",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "8d3n5",
+                      "name": "m2Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "uykC5",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "category",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "YlHyj",
+                          "fill": "$--text-primary",
+                          "content": "分類管理",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "D5RGa",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "25l7j",
+                  "name": "m3",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "LNuEc",
+                      "name": "m3Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "QxKsv",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "savings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--income-green"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Akqv9",
+                          "fill": "$--text-primary",
+                          "content": "預算設定",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "zG8IE",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "y3u9C",
+                  "name": "m4",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "K5Lu2",
+                      "name": "m4Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "Valvo",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "label",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "\\$--brand-accent"
+                        },
+                        {
+                          "type": "text",
+                          "id": "5s6nW",
+                          "fill": "$--text-primary",
+                          "content": "包含轉帳",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "dMGxo",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "1eOqb",
+          "name": "sectionPreferences",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "kPUdV",
+              "fill": "$--text-secondary",
+              "content": "時間範圍",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "msIfi",
+              "name": "prefCard",
+              "width": "fill_container",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CcI87",
+                  "name": "p1",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "tnQXF",
+                      "name": "p1Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "7nwhM",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "credit_card",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "box9N",
+                          "fill": "$--text-primary",
+                          "content": "預設帳戶",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "WBwrr",
+                      "fill": "$--text-secondary",
+                      "content": "2025/1/1",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ClcUW",
+                  "name": "p2",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ahI03",
+                      "name": "p2Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "tLSCy",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "language",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lbwYq",
+                          "fill": "$--text-primary",
+                          "content": "語言",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ji5kZ",
+                      "fill": "$--text-secondary",
+                      "content": "今天",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dElUW",
+                  "name": "p3",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ITwfs",
+                      "name": "p3Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "w87tr",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "auto_awesome",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VCw9W",
+                          "fill": "$--text-primary",
+                          "content": "AI 智慧功能",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E3yib",
+                      "name": "toggleOn",
+                      "width": 51,
+                      "height": 31,
+                      "fill": "$--income-green",
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "9EeHF",
+                          "fill": "\\$--text-inverse",
+                          "width": 27,
+                          "height": 27
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "N7HAO",
+          "name": "sectionData",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "i7VhV",
+              "fill": "$--text-secondary",
+              "content": "排序方式",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "u7Q6K",
+              "name": "dataCard",
+              "width": "fill_container",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "z30fj",
+                  "name": "d1",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "uoqcf",
+                      "name": "d1Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "JO3iN",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "download",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "HP4mI",
+                          "fill": "$--text-primary",
+                          "content": "匯出 CSV",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "snju3",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "9reFU",
+                  "name": "d2",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "4OKAu",
+                      "name": "d2Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "P6YBI",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "table_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "G4s0K",
+                          "fill": "$--text-primary",
+                          "content": "匯出 JSON",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "faX2S",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "yziLM",
+          "name": "sectionAbout",
+          "opacity": 0,
+          "width": "fill_container",
+          "height": 0,
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "nGhDc",
+              "fill": "$--text-secondary",
+              "content": "關於",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "0nPSJ",
+              "name": "aboutCard",
+              "width": "fill_container",
+              "fill": "$--glass-surface",
+              "cornerRadius": 16,
+              "effect": {
+                "type": "background_blur",
+                "radius": 16
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "hfhdi",
+                  "name": "a1",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YFooP",
+                      "name": "a1Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "vwgHO",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "info",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "zvGRr",
+                          "fill": "$--text-primary",
+                          "content": "版本",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "bjiSs",
+                      "fill": "$--text-tertiary",
+                      "content": "1.0.0",
+                      "fontFamily": "\\$--font-body",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LJaeV",
+                  "name": "a2",
+                  "width": "fill_container",
+                  "padding": [
+                    14,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "0rmrL",
+                      "name": "a2Left",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "b1CID",
+                          "width": 22,
+                          "height": 22,
+                          "iconFontName": "description",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lLQ2P",
+                          "fill": "$--text-primary",
+                          "content": "隱私權政策",
+                          "fontFamily": "\\$--font-body",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "r5qmh",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "chevron_right",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-tertiary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rgPqy",
+          "name": "v3",
+          "opacity": 0,
+          "width": "fill_container",
+          "height": 0,
+          "fill": "transparent",
+          "justifyContent": "center",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "WrC3w",
+              "name": "splitTabContainer",
+              "width": "fill_container",
+              "height": 60,
+              "gap": 12,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pjUBS",
+                  "name": "navCapsule",
+                  "height": 60,
+                  "fill": "$--glass-prominent",
+                  "cornerRadius": 40,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 24
+                  },
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "mMq71",
+                      "name": "tab1",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$--surface-secondary",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "ao5lt",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "home",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--brand-primary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "naH3M",
+                      "name": "tab3",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "UoIyq",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "pie_chart",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QapYV",
+                      "name": "tab4",
+                      "width": 44,
+                      "height": 44,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "4lBdA",
+                          "width": 24,
+                          "height": 24,
+                          "iconFontName": "settings",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "$--text-tertiary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "S0o99",
+                  "name": "contextCapsule",
+                  "width": 52,
+                  "height": 52,
+                  "fill": "$--glass-surface",
+                  "cornerRadius": 26,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 16
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "GUPXX",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$--text-secondary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "AF2pi",
+          "name": "bottomBar",
+          "width": "fill_container",
+          "gap": 16,
+          "padding": [
+            20,
+            0
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "nzKMD",
+              "name": "resetBtn",
+              "fill": "$--surface-secondary",
+              "cornerRadius": 100,
+              "padding": [
+                14,
+                24
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "os5tM",
+                  "fill": "$--text-primary",
+                  "content": "重設",
+                  "fontFamily": "Inter",
+                  "fontSize": 17,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "LScmk",
+              "name": "applyBtn",
+              "width": "fill_container",
+              "fill": "$--brand-primary",
+              "cornerRadius": 100,
+              "padding": [
+                14,
+                24
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0Ye1N",
+                  "fill": "$--text-inverse",
+                  "content": "套用結果 (12)",
+                  "fontFamily": "Inter",
+                  "fontSize": 17,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
@@ -6136,15 +8899,36 @@
     },
     "--font-body": {
       "type": "string",
-      "value": "SF Pro Text"
+      "value": [
+        {
+          "value": "SF Pro Text"
+        },
+        {
+          "value": "DM Sans"
+        }
+      ]
     },
     "--font-display": {
       "type": "string",
-      "value": "SF Pro Display"
+      "value": [
+        {
+          "value": "SF Pro Display"
+        },
+        {
+          "value": "Bricolage Grotesque"
+        }
+      ]
     },
     "--font-mono": {
       "type": "string",
-      "value": "SF Mono"
+      "value": [
+        {
+          "value": "SF Mono"
+        },
+        {
+          "value": "DM Mono"
+        }
+      ]
     },
     "--glass-prominent": {
       "type": "color",
@@ -6330,6 +9114,40 @@
         },
         {
           "value": "dark",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "--surface-inverse": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#000000",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#FFFFFF",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "--text-inverse": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#FFFFFF",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#000000",
           "theme": {
             "mode": "dark"
           }

@@ -35,7 +35,7 @@ All screen designs are created and maintained using the **Pencil** tool, produci
 ---
 
 ### Requirement: Color System
-Prefer **system semantic colors** over hardcoded hex values. Custom brand colors are defined in Asset Catalog with Light/Dark variants.
+Prefer **system semantic colors** over hardcoded hex values. Prevent Dark Mode visibility issues by avoiding hardcoded raw hex colors (like `#000000`). Custom brand colors are defined in Asset Catalog with Light/Dark variants.
 
 #### Scenario: System Colors (Primary Palette)
 - **WHEN** styling UI elements
@@ -57,10 +57,11 @@ Prefer **system semantic colors** over hardcoded hex values. Custom brand colors
 
 | Token | Light Mode | Dark Mode | Usage |
 |-------|-----------|-----------|-------|
-| `accentColor` | #007AFF (System Blue) | #0A84FF | App-wide accent / tint |
+| `accentColor` | #FF9500 (Brand Orange) | #FF9F0A | App-wide accent / tint (`--brand-accent`) |
 | `incomeGreen` | #34C759 | #30D158 | Income amounts, positive deltas |
 | `expenseRed` | #FF3B30 | #FF453A | Expense amounts, negative deltas |
-| `warningAmber` | #FF9500 | #FF9F0A | Budget warnings |
+| `surfaceInverse` | #000000 | #FFFFFF | Solid inverse surfaces (e.g. Action Buttons) |
+| `textInverse` | #FFFFFF | #000000 | Text on inverse surfaces |
 
 #### Scenario: Category Colors
 - **WHEN** displaying category chips or charts
@@ -69,18 +70,13 @@ Prefer **system semantic colors** over hardcoded hex values. Custom brand colors
 ---
 
 ### Requirement: Typography
-Use **system text styles** (`Font.TextStyle`) exclusively — no hardcoded point sizes. This ensures Dynamic Type support by default.
+Use **system text styles** (`Font.TextStyle`) wrapped around specific design tokens. Avoid hardcoding font names in views; bind them through variables to ensure maintainability and Dynamic Type support.
 
-| Style | SwiftUI Font | Usage |
-|-------|-------------|-------|
-| Large Title | `.largeTitle` | Screen headings |
-| Title 2 | `.title2` | Section headings |
-| Headline | `.headline` | Card titles, labels |
-| Body | `.body` | General content |
-| Callout | `.callout` | Supporting text |
-| Subheadline | `.subheadline` | List subtitles |
-| Caption | `.caption` | Timestamps, metadata |
-| Amount (custom) | `.system(.title, design: .rounded, weight: .bold).monospacedDigit()` | Monetary values — monospaced digits |
+| Design Token | Font Family | Default SwiftUI Style Mapping | Usage |
+|-------|-------------|-------------|-------|
+| `--font-display` | **Bricolage Grotesque** | `.largeTitle`, `.title2`, `.title3` | Screen headings, section headers |
+| `--font-body` | **DM Sans** | `.headline`, `.body`, `.callout`, `.subheadline` | General content, labels, descriptions |
+| `--font-mono` | **DM Mono** | `.system(.title, design: .rounded, weight: .bold).monospacedDigit()` | Monetary values — monospaced digits |
 
 ---
 
@@ -147,12 +143,27 @@ The system SHALL use the official `GlassButtonStyle` API provided by iOS 26, ins
   - `Picker`, `Toggle`, `Stepper` — native controls only.
   - `LabeledContent` for display-only rows.
 
-#### Scenario: SF Symbols
+#### Scenario: Icons & Visual Elements
 - **WHEN** displaying icons throughout the app
-- **THEN** use SF Symbols exclusively via `Image(systemName:)`:
-  - `.symbolRenderingMode(.hierarchical)` for multi-layered icons.
+- **THEN** adhere to UI/UX Pro Max Consistency guidelines.
+- **RULE**: Do not mix Icon Styles (e.g. mixing Material Symbols and Lucide lines). Choose one unified set (the design prototype utilizes **Lucide**) or use strictly **SF Symbols**.
+- **RULE**: Use fixed icon sizing and do not use emojis as functional UI icons.
+  - `.symbolRenderingMode(.hierarchical)` for multi-layered icons if relying on SF Symbols.
   - `.symbolEffect(.bounce)` for interactive feedback.
-  - Category icons: map each category to an SF Symbol name.
+  - Category icons: map each category to an SF Symbol name if using them.
+
+---
+
+### Requirement: App Flow Architecture
+The application follows a structured navigation flow, ensuring logical transitions and states between screens.
+- **Launch & Onboarding**: `Launch Screen` → `Onboarding Flow`
+- **Main Navigation**: `Onboarding Flow` → `Dashboard Screen`
+- **Tab Switching**: `Dashboard Screen (Tabs)` → `Analysis` / `Settings`
+- **Action Flows**: `Dashboard Screen (Actions)` → `Add Transaction` / `Transaction Detail` / `Transaction List`
+- **List Interactions**: `Transaction List` → `Search & Filters Modal` / `Transaction Detail`
+- **Editing**: `Transaction Detail` → `Edit Transaction Sheet`
+- **User Profile**: `Settings Screen` → `Profile Screen`
+- **Empty States**: Triggered automatically when list counts are 0 on `Dashboard` or `Analysis`.
 
 ---
 
@@ -233,6 +244,27 @@ The system SHALL use the official `GlassButtonStyle` API provided by iOS 26, ins
         - Export (CSV / JSON) — `Button`
         - Backup & Restore — `Button`
     - **Section "關於"**: Version (`LabeledContent`), licenses, privacy.
+
+#### Scenario: 8. Profile Screen (User Account)
+- **WHEN** tapping the user profile section
+- **THEN** push to a Profile detail view with `ScrollView`:
+    - **User Card**: Glass card showing avatar, name ("Drake Huang"), and email.
+    - **Feature List**: Glass-styled list featuring items like "我的卡片錢包" and "Pro 高級版" with right chevrons.
+    - **Sign Out Button**: `.buttonStyle(.glass)` with destructive (red) coloring at the bottom of the content.
+
+#### Scenario: 9. Search & Filters Modal (Sheet)
+- **WHEN** tapping search/filter from the Transaction List
+- **THEN** present via `.sheet(item:)`:
+    - **Search Bar**: Large Glassmorphism search input ("搜尋備註、分類...").
+    - **Filters**: Scrollable or grouped forms for "狀態", "時間範圍", and "排序" using native controls in Glass containers.
+    - **Bottom Action Bar**: Fixed bottom bar with "重設" (Reset) and "套用結果 (12)" (Apply) buttons.
+
+#### Scenario: 10. Edit Transaction Sheet (Modal Sheet)
+- **WHEN** tapping Edit on a Transaction Detail view or swiping in Transaction List
+- **THEN** present via `.sheet(item:)` reusing the structure of "Add Transaction":
+    - Pre-filled with the existing transaction data.
+    - Title changed to "編輯交易" (Edit Transaction).
+    - Save action overrides the existing record instead of creating a new one.
 
 ---
 
@@ -326,3 +358,12 @@ The design system SHALL provide a reusable `EmptyStateView` for consistent messa
 - **THEN** use `GlassEffectContainer` + `@Namespace` + `.glassEffectID` for Liquid Glass morphing transitions.
 - **WHEN** charts update data
 - **THEN** use Swift Charts built-in animations.
+
+---
+
+### Requirement: UI/UX Pro Max Quality Checklist
+Adhere to the professional design requirements audited by the UI/UX Pro Max engine:
+1. **Light/Dark Mode Safety**: Glass card light mode MUST stay legible against backgrounds. No `#000000` hardcoded colors without dark mode inversions (`--surface-inverse` / `--text-inverse`).
+2. **Interaction**: Tap targets must be clear; add interactive feedback (opacity/color shifts based on states). Hover states must not cause layout shift.
+3. **Consistent UI Elements**: Components strictly pull from `--font-display`, `--font-body`, and `--font-mono` design tokens rather than defining specific fonts randomly. Emphasize visual consistency.
+4. **Layout**: Floating Navigation (`Split TabBar`) requires dedicated padding at the bottom of scrollviews so no content hides behind the fixed floating layer.

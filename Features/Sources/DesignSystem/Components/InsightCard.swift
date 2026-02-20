@@ -1,5 +1,5 @@
 import SwiftUI
-import DesignTokens
+import DesignSystem
 
 /// A card displaying AI insights or tips.
 ///

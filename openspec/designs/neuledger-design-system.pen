@@ -5237,6 +5237,7 @@
           "id": "BqkWA",
           "name": "tabBarDemo",
           "width": "fill_container",
+          "height": 125,
           "layout": "vertical",
           "gap": 16,
           "children": [
@@ -5805,6 +5806,188 @@
               "height": 10
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "IkEeV",
+      "x": 3500,
+      "y": 0,
+      "name": "EmptyStateView",
+      "reusable": true,
+      "width": 350,
+      "height": 300,
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 32,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "jsO8W",
+          "name": "iconContainer",
+          "width": 80,
+          "height": 80,
+          "fill": "$--surface-secondary",
+          "cornerRadius": 40,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "SIPiJ",
+              "name": "icon",
+              "fill": "$--text-tertiary",
+              "content": "doc.text.magnifyingglass",
+              "fontFamily": "SF Pro Text",
+              "fontSize": 32,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "XQu2l",
+          "name": "title",
+          "fill": "$--text-primary",
+          "content": "No Data",
+          "textAlign": "center",
+          "fontFamily": "Bricolage Grotesque",
+          "fontSize": 20,
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "g9cyA",
+          "name": "desc",
+          "fill": "$--text-secondary",
+          "content": "Description text goes here",
+          "textAlign": "center",
+          "fontFamily": "DM Sans",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "yNVgs",
+          "name": "actionBtn",
+          "fill": "#000000",
+          "cornerRadius": 100,
+          "padding": [
+            12,
+            24
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "QtCdZ",
+              "name": "btnText",
+              "fill": "#FFFFFF",
+              "content": "Action",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "oejo2",
+      "x": 4000,
+      "y": 964,
+      "name": "Analysis Screen - Empty",
+      "width": 390,
+      "height": 844,
+      "fill": "$--background",
+      "children": [
+        {
+          "type": "text",
+          "id": "HGcB2",
+          "name": "header",
+          "fill": "$--text-primary",
+          "content": "分析",
+          "fontFamily": "Bricolage Grotesque",
+          "fontSize": 34,
+          "fontWeight": "700"
+        },
+        {
+          "type": "frame",
+          "id": "klqaG",
+          "name": "periodSelector",
+          "width": 350,
+          "height": 36,
+          "fill": "$--surface-secondary",
+          "cornerRadius": 10
+        },
+        {
+          "id": "mWS0o",
+          "type": "ref",
+          "ref": "IkEeV",
+          "y": 0,
+          "x": 418,
+          "name": "emptyInstance1",
+          "descendants": {
+            "SIPiJ": {
+              "content": "chart.pie.fill"
+            },
+            "XQu2l": {
+              "content": "此期間無資料"
+            },
+            "g9cyA": {
+              "content": "嘗試選擇不同的日期範圍"
+            },
+            "yNVgs": {
+              "opacity": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LMoBV",
+      "x": 4450,
+      "y": 964,
+      "name": "Dashboard Screen - Empty",
+      "width": 390,
+      "height": 844,
+      "fill": "$--background",
+      "children": [
+        {
+          "type": "text",
+          "id": "l82t1",
+          "name": "dashHeader",
+          "fill": "$--text-primary",
+          "content": "Dashboard",
+          "fontFamily": "Bricolage Grotesque",
+          "fontSize": 34,
+          "fontWeight": "700"
+        },
+        {
+          "id": "I7Z8K",
+          "type": "ref",
+          "ref": "IkEeV",
+          "y": 0,
+          "x": 164,
+          "name": "dashEmptyInstance",
+          "descendants": {
+            "SIPiJ": {
+              "content": "tray.fill"
+            },
+            "XQu2l": {
+              "content": "尚無交易"
+            },
+            "g9cyA": {
+              "content": "開始記下您的第一筆花費吧！"
+            },
+            "QtCdZ": {
+              "content": "記一筆"
+            }
+          }
         }
       ]
     }

@@ -1,5 +1,5 @@
 import SwiftUI
-import DesignTokens
+import DesignSystem
 
 /// A prominent display for total balance and monthly summary.
 ///

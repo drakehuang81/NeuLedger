@@ -1,5 +1,5 @@
 import SwiftUI
-import DesignTokens
+import DesignSystem
 
 /// A header view for list sections or content groups.
 ///

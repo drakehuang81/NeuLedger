@@ -1,5 +1,5 @@
 import SwiftUI
-import DesignTokens
+import DesignSystem
 
 /// A generic container with a glassmorphism background effect.
 ///

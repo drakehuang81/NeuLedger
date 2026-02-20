@@ -1,5 +1,5 @@
 import SwiftUI
-import DesignTokens
+import DesignSystem
 
 /// A row displaying transaction details.
 ///

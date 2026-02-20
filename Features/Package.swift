@@ -25,11 +25,11 @@ let package = Package(
             name: "Features",
             dependencies: [
                 .tca,
-                "DesignTokens"
+                "DesignSystem"
             ]
         ),
         .target(
-            name: "DesignTokens",
+            name: "DesignSystem",
             dependencies: []
         ),
         .testTarget(

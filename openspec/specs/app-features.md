@@ -25,6 +25,12 @@
 - **AND** 日期預設為今天
 - **AND** 分類預設為空（需選擇或由 AI 建議）
 
+##### Scenario: 快速新增支出 (from Dashboard Empty State)
+- **GIVEN** 使用者在 Dashboard 且無任何交易
+- **WHEN** 點擊 Empty State 的「記一筆」按鈕
+- **THEN** 開啟新增交易 Sheet（類型預設為 `.expense`）
+- **AND** 金額欄位為必填，預設為空
+
 ##### Scenario: 快速新增收入
 - **GIVEN** 使用者在 Dashboard 或 Transactions tab
 - **WHEN** 點擊「收入」快速操作
@@ -205,6 +211,13 @@
 - **WHEN** 顯示圓餅圖
 - **THEN** 按分類分組計算支出金額
 - **AND** 點擊某一塊可查看該分類的交易明細
+
+#### Scenario: 無資料狀態
+- **GIVEN** 使用者在 Analysis tab
+- **WHEN** 選定的日期範圍內無任何交易資料
+- **THEN** 隱藏所有圖表和摘要卡片
+- **AND** 顯示 Analysis Empty State View
+- **AND** 提示用戶「此期間無資料」
 
 #### Scenario: 長條圖（每日/每週趨勢）
 - **WHEN** 顯示長條圖

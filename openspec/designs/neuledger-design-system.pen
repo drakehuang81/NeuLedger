@@ -7050,36 +7050,498 @@
     },
     {
       "type": "frame",
-      "id": "xbGT9",
-      "x": -600,
-      "y": 200,
+      "id": "ENR2u",
+      "x": 0,
+      "y": -932,
       "name": "App Flow Documentation",
-      "width": 800,
-      "height": 400,
-      "fill": "$--surface-secondary",
-      "cornerRadius": 24,
+      "width": 960,
+      "fill": "$--surface",
+      "cornerRadius": 40,
       "layout": "vertical",
       "gap": 16,
-      "padding": 32,
+      "padding": 60,
       "children": [
         {
-          "type": "text",
-          "id": "4gcTU",
-          "fill": "$--text-primary",
-          "content": "App Flow Architecture",
-          "fontFamily": "Inter",
-          "fontSize": 40,
-          "fontWeight": "700"
+          "type": "frame",
+          "id": "KuZnz",
+          "name": "titleAndSubtitle",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": [
+            0,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "r6eeC",
+              "fill": "$--text-primary",
+              "content": "App Flow Architecture",
+              "fontFamily": "\\$--font-display",
+              "fontSize": 40,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "bU1BC",
+              "fill": "$--brand-primary",
+              "content": "NeuLedger Core Screen Navigation & States",
+              "fontFamily": "\\$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "600"
+            }
+          ]
         },
         {
-          "type": "text",
-          "id": "MIr4C",
-          "fill": "$--text-secondary",
-          "content": "1. Launch Screen → Onboarding Flow\n2. Onboarding Flow → Dashboard Screen\n3. Dashboard Screen (Tabs) → Analysis / Profile (Missing)\n4. Dashboard Screen (Actions) → Add Tx / Detail / List\n5. Transaction List → Search & Filters (Missing) / Detail\n6. Transaction Detail → Edit Transaction (Missing)\n7. Empty States trigger when list counts are 0.",
-          "lineHeight": 32,
-          "fontFamily": "Inter",
-          "fontSize": 20,
-          "fontWeight": "normal"
+          "type": "frame",
+          "id": "dx7cs",
+          "name": "s1",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "8LiPe",
+              "fill": "$--text-tertiary",
+              "content": "01",
+              "fontFamily": "\\$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "K3onw",
+              "fill": "$--text-primary",
+              "content": "Launch Screen",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "Z89Ja",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "qKmMw",
+              "fill": "$--text-secondary",
+              "content": "Onboarding Flow",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "UFL3R",
+          "name": "s2",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "T63mA",
+              "fill": "$--text-tertiary",
+              "content": "02",
+              "fontFamily": "\\$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "XFK3P",
+              "fill": "$--text-primary",
+              "content": "Onboarding Flow",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "NC46g",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "GtEjU",
+              "fill": "$--text-secondary",
+              "content": "Dashboard Screen",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rfS5X",
+          "name": "s3",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "JnwPF",
+              "fill": "$--text-tertiary",
+              "content": "03",
+              "fontFamily": "\\$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "RQoWo",
+              "fill": "$--text-primary",
+              "content": "Dashboard Screen (Tabs)",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "AlR4p",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "YJLWE",
+              "fill": "$--text-secondary",
+              "content": "Analysis / Profile",
+              "fontFamily": "\\$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "uZDGy",
+              "width": "fill_container",
+              "height": "fit_content(0)",
+              "layout": "none"
+            },
+            {
+              "type": "frame",
+              "id": "Vmdvy",
+              "name": "tag",
+              "fill": "#FF3B3015",
+              "cornerRadius": "$--radius-pill",
+              "padding": [
+                6,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "3Kv3E",
+                  "fill": "$--expense-red",
+                  "content": "Missing",
+                  "fontFamily": "\\$--font-body",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "u1ldG",
+          "name": "s4",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "m5N6z",
+              "fill": "$--text-tertiary",
+              "content": "04",
+              "fontFamily": "$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "WhEBS",
+              "fill": "$--text-primary",
+              "content": "Dashboard Screen (Actions)",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "eXCJZ",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "sqs0q",
+              "fill": "$--text-secondary",
+              "content": "Add Tx / Detail / List",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "4B7Xg",
+          "name": "s5",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "59TAH",
+              "fill": "$--text-tertiary",
+              "content": "05",
+              "fontFamily": "$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "WwZr2",
+              "fill": "$--text-primary",
+              "content": "Transaction List",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "7NZos",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "AIOTe",
+              "fill": "$--text-secondary",
+              "content": "Search / Filters",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "kAmzk",
+              "width": "fill_container",
+              "height": 0
+            },
+            {
+              "type": "frame",
+              "id": "GWCTK",
+              "name": "tag5",
+              "fill": "#FF3B3015",
+              "cornerRadius": "$--radius-pill",
+              "padding": [
+                6,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ttk5B",
+                  "fill": "$--expense-red",
+                  "content": "Missing",
+                  "fontFamily": "$--font-body",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "PWWPJ",
+          "name": "s6",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "b2Syo",
+              "fill": "$--text-tertiary",
+              "content": "06",
+              "fontFamily": "$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "KCCmg",
+              "fill": "$--text-primary",
+              "content": "Transaction Detail",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "I322f",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "RVX9u",
+              "fill": "$--text-secondary",
+              "content": "Edit Transaction",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "ZacNy",
+              "width": "fill_container",
+              "height": 0
+            },
+            {
+              "type": "frame",
+              "id": "nk9LP",
+              "name": "tag6",
+              "fill": "#FF3B3015",
+              "cornerRadius": "$--radius-pill",
+              "padding": [
+                6,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iZOXc",
+                  "fill": "$--expense-red",
+                  "content": "Missing",
+                  "fontFamily": "$--font-body",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Yx6mL",
+          "name": "s7",
+          "width": "fill_container",
+          "fill": "$--glass-surface",
+          "cornerRadius": "$--radius-lg",
+          "gap": 16,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "HpsiF",
+              "fill": "$--text-tertiary",
+              "content": "07",
+              "fontFamily": "$--font-mono",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "7bg2Z",
+              "fill": "$--text-primary",
+              "content": "Empty States",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon_font",
+              "id": "0pQWD",
+              "width": 24,
+              "height": 24,
+              "iconFontName": "arrow_right_alt",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "$--text-tertiary"
+            },
+            {
+              "type": "text",
+              "id": "L1rUc",
+              "fill": "$--text-secondary",
+              "content": "Triggered on empty list counts",
+              "fontFamily": "$--font-body",
+              "fontSize": 17,
+              "fontWeight": "500"
+            }
+          ]
         }
       ]
     },

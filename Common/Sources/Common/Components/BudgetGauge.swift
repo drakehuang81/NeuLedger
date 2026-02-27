@@ -1,5 +1,4 @@
 import SwiftUI
-import DesignSystem
 
 /// A gauge showing budget progress.
 ///

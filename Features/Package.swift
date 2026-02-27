@@ -17,7 +17,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.23.1"),
-        .package(name: "Domain", path: "../Domain")
+        .package(name: "Domain", path: "../Domain"),
+        .package(name: "Common", path: "../Common")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -26,13 +27,9 @@ let package = Package(
             name: "Features",
             dependencies: [
                 .tca,
-                "DesignSystem",
-                .product(name: "Domain", package: "Domain")
+                .common,
+                .domain,
             ]
-        ),
-        .target(
-            name: "DesignSystem",
-            dependencies: []
         ),
         .testTarget(
             name: "FeaturesTests",
@@ -42,6 +39,8 @@ let package = Package(
 )
 
 extension Target.Dependency {
+    static let common: Target.Dependency = .product(name: "Common", package: "Common")
+    static let domain: Target.Dependency = .product(name: "Domain", package: "Domain")
     static let tca: Target.Dependency = .product(
         name: "ComposableArchitecture",
         package: "swift-composable-architecture"

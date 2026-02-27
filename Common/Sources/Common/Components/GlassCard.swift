@@ -1,5 +1,4 @@
 import SwiftUI
-import DesignSystem
 
 /// A container view with a Liquid Glass background.
 ///

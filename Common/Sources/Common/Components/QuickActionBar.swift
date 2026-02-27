@@ -1,5 +1,4 @@
 import SwiftUI
-import DesignSystem
 
 /// A bottom action bar with quick access buttons.
 ///

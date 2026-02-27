@@ -33,6 +33,7 @@
 		A24BD4792F3B34480046D6A4 /* NeuLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A26927F72F514C2F00BDA7FA /* Common */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Common; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -102,6 +103,7 @@
 		A24BD4702F3B34480046D6A4 = {
 			isa = PBXGroup;
 			children = (
+				A26927F72F514C2F00BDA7FA /* Common */,
 				A2242AC92F5142DF00AFBCFF /* Domain */,
 				A249D8A82F418AC300CBA03D /* Features */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,

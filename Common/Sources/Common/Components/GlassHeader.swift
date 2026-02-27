@@ -1,5 +1,4 @@
 import SwiftUI
-import DesignSystem
 
 /// A header view for list sections or content groups.
 ///

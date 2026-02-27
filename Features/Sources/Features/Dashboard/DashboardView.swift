@@ -1,4 +1,4 @@
-import DesignSystem
+import Common
 import SwiftUI
 
 public struct DashboardView: View {

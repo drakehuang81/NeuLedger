@@ -1,5 +1,4 @@
 import SwiftUI
-import DesignSystem
 
 /// A small pill-shaped chip representing a category.
 ///

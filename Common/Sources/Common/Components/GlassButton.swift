@@ -1,5 +1,4 @@
 import SwiftUI
-import DesignSystem
 
 /// A pill-shaped button with glassmorphism style, supporting icon and title.
 ///

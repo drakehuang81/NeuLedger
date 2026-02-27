@@ -11,28 +11,9 @@
 		BA24DB8F2F418E0E00CBA03D /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = BA24DB8E2F418E0E00CBA03D /* Core */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		A24BD48B2F3B344A0046D6A4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A24BD4712F3B34480046D6A4 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A24BD4782F3B34480046D6A4;
-			remoteInfo = NeuLedger;
-		};
-		A24BD4952F3B344A0046D6A4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A24BD4712F3B34480046D6A4 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A24BD4782F3B34480046D6A4;
-			remoteInfo = NeuLedger;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		A249D8A82F418AC300CBA03D /* Features */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Features; sourceTree = "<group>"; };
 		A24BD4792F3B34480046D6A4 /* NeuLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -54,16 +35,6 @@
 			path = NeuLedger;
 			sourceTree = "<group>";
 		};
-		A24BD48D2F3B344A0046D6A4 /* NeuLedgerTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = NeuLedgerTests;
-			sourceTree = "<group>";
-		};
-		A24BD4972F3B344A0046D6A4 /* NeuLedgerUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = NeuLedgerUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,20 +44,6 @@
 			files = (
 				A249D8AF2F418E0E00CBA03D /* Features in Frameworks */,
 				BA24DB8F2F418E0E00CBA03D /* Core in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A24BD4872F3B344A0046D6A4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A24BD4912F3B344A0046D6A4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,8 +62,6 @@
 			children = (
 				A249D8A82F418AC300CBA03D /* Features */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
-				A24BD48D2F3B344A0046D6A4 /* NeuLedgerTests */,
-				A24BD4972F3B344A0046D6A4 /* NeuLedgerUITests */,
 				A249D8A92F418C2000CBA03D /* Frameworks */,
 				A24BD47A2F3B34480046D6A4 /* Products */,
 			);
@@ -116,8 +71,6 @@
 			isa = PBXGroup;
 			children = (
 				A24BD4792F3B34480046D6A4 /* NeuLedger.app */,
-				A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */,
-				A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -149,52 +102,6 @@
 			productReference = A24BD4792F3B34480046D6A4 /* NeuLedger.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A24BD4892F3B344A0046D6A4 /* NeuLedgerTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A24BD4A22F3B344A0046D6A4 /* Build configuration list for PBXNativeTarget "NeuLedgerTests" */;
-			buildPhases = (
-				A24BD4862F3B344A0046D6A4 /* Sources */,
-				A24BD4872F3B344A0046D6A4 /* Frameworks */,
-				A24BD4882F3B344A0046D6A4 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A24BD48C2F3B344A0046D6A4 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				A24BD48D2F3B344A0046D6A4 /* NeuLedgerTests */,
-			);
-			name = NeuLedgerTests;
-			packageProductDependencies = (
-			);
-			productName = NeuLedgerTests;
-			productReference = A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		A24BD4932F3B344A0046D6A4 /* NeuLedgerUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A24BD4A52F3B344A0046D6A4 /* Build configuration list for PBXNativeTarget "NeuLedgerUITests" */;
-			buildPhases = (
-				A24BD4902F3B344A0046D6A4 /* Sources */,
-				A24BD4912F3B344A0046D6A4 /* Frameworks */,
-				A24BD4922F3B344A0046D6A4 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A24BD4962F3B344A0046D6A4 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				A24BD4972F3B344A0046D6A4 /* NeuLedgerUITests */,
-			);
-			name = NeuLedgerUITests;
-			packageProductDependencies = (
-			);
-			productName = NeuLedgerUITests;
-			productReference = A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -208,14 +115,6 @@
 					A24BD4782F3B34480046D6A4 = {
 						CreatedOnToolsVersion = 26.3;
 						LastSwiftMigration = 2630;
-					};
-					A24BD4892F3B344A0046D6A4 = {
-						CreatedOnToolsVersion = 26.3;
-						TestTargetID = A24BD4782F3B34480046D6A4;
-					};
-					A24BD4932F3B344A0046D6A4 = {
-						CreatedOnToolsVersion = 26.3;
-						TestTargetID = A24BD4782F3B34480046D6A4;
 					};
 				};
 			};
@@ -238,28 +137,12 @@
 			projectRoot = "";
 			targets = (
 				A24BD4782F3B34480046D6A4 /* NeuLedger */,
-				A24BD4892F3B344A0046D6A4 /* NeuLedgerTests */,
-				A24BD4932F3B344A0046D6A4 /* NeuLedgerUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A24BD4772F3B34480046D6A4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A24BD4882F3B344A0046D6A4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A24BD4922F3B344A0046D6A4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -276,34 +159,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A24BD4862F3B344A0046D6A4 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A24BD4902F3B344A0046D6A4 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		A24BD48C2F3B344A0046D6A4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A24BD4782F3B34480046D6A4 /* NeuLedger */;
-			targetProxy = A24BD48B2F3B344A0046D6A4 /* PBXContainerItemProxy */;
-		};
-		A24BD4962F3B344A0046D6A4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A24BD4782F3B34480046D6A4 /* NeuLedger */;
-			targetProxy = A24BD4952F3B344A0046D6A4 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A24BD49E2F3B344A0046D6A4 /* Debug */ = {
@@ -333,13 +189,17 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -370,12 +230,16 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -500,90 +364,6 @@
 			};
 			name = Release;
 		};
-		A24BD4A32F3B344A0046D6A4 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GVHFFWK64F;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedgerTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeuLedger.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NeuLedger";
-			};
-			name = Debug;
-		};
-		A24BD4A42F3B344A0046D6A4 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GVHFFWK64F;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedgerTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeuLedger.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NeuLedger";
-			};
-			name = Release;
-		};
-		A24BD4A62F3B344A0046D6A4 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GVHFFWK64F;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedgerUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = NeuLedger;
-			};
-			name = Debug;
-		};
-		A24BD4A72F3B344A0046D6A4 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GVHFFWK64F;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedgerUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = NeuLedger;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -601,24 +381,6 @@
 			buildConfigurations = (
 				A24BD49E2F3B344A0046D6A4 /* Debug */,
 				A24BD49F2F3B344A0046D6A4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A24BD4A22F3B344A0046D6A4 /* Build configuration list for PBXNativeTarget "NeuLedgerTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A24BD4A32F3B344A0046D6A4 /* Debug */,
-				A24BD4A42F3B344A0046D6A4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A24BD4A52F3B344A0046D6A4 /* Build configuration list for PBXNativeTarget "NeuLedgerUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A24BD4A62F3B344A0046D6A4 /* Debug */,
-				A24BD4A72F3B344A0046D6A4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

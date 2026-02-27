@@ -8,7 +8,6 @@
 import SwiftUI
 import ComposableArchitecture
 import Domain
-
 import SwiftData
 import Core
 
@@ -27,7 +26,7 @@ struct NeuLedgerApp: App {
 
 struct RootView: View {
     @Dependency(\.accountClient) var accountClient
-    @Dependency(\.categoryClient) var categoryClient    
+    @Dependency(\.categoryClient) var categoryClient
 
     var body: some View {
         Text("app_greeting")

@@ -4,7 +4,7 @@ import Domain
 import Dependencies
 
 /// Live implementation of `CategoryClient` backed by SwiftData.
-extension CategoryClient: @retroactive DependencyKey {
+extension CategoryClient: DependencyKey {
     public static var liveValue: CategoryClient {
         @Dependency(\.databaseClient) var databaseClient
 

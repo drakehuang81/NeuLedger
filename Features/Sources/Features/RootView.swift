@@ -9,13 +9,27 @@ import SwiftUI
 import ComposableArchitecture
 import Domain
 
-public struct RootView: View {
+import SwiftData
+import Core
+
+
+@main
+struct NeuLedgerApp: App {
+    @Dependency(\.databaseClient) var databaseClient
+
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+        }
+        .modelContainer(databaseClient.modelContainer())
+    }
+}
+
+struct RootView: View {
     @Dependency(\.accountClient) var accountClient
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.categoryClient) var categoryClient    
 
-    public init() {}
-
-    public var body: some View {
+    var body: some View {
         Text("app_greeting")
             .task {
                 do {

@@ -140,7 +140,7 @@ let response = try await session.respond(to: "How much did I spend on food last 
 All AI interactions SHALL be abstracted behind a TCA `@DependencyClient`.
 
 #### Scenario: AIServiceClient Definition
-- **WHEN** defining the AI service interface in `Domain/Clients/AIServiceClient.swift`
+- **WHEN** defining the AI service interface in `Features/Domain/Clients/AIServiceClient.swift`
 - **THEN** it SHALL provide the following methods:
 
 ```swift

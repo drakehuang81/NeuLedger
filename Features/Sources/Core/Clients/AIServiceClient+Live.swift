@@ -6,7 +6,7 @@ import Dependencies
 ///
 /// This phase provides stub implementations that return empty/default values.
 /// The real Foundation Models integration will be implemented in a future change.
-extension AIServiceClient: @retroactive DependencyKey {
+extension AIServiceClient: DependencyKey {
     public static let liveValue = AIServiceClient(
         extractTransaction: { _ in
             ExtractedTransaction()

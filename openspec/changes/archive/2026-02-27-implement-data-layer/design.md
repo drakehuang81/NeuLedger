@@ -23,7 +23,7 @@ The existing architecture spec mandates Clean Architecture separation: Features 
 
 ### 1. Separate `Core` Swift Package (local SPM)
 
-**Decision**: Create `Core/` as a local Swift Package at the project root, alongside `Domain/`, `Features/`, and `Common/`.
+**Decision**: Create `Core` as a module inside the `Features` local Swift Package at the project root, alongside `Domain` and `Common`.
 
 **Rationale**: Keeping Core as its own package enforces compile-time isolation — Features physically cannot import SwiftData and hence cannot bypass Clean Architecture boundaries. It also enables independent testing of persistence logic.
 
@@ -116,7 +116,7 @@ final class SDTag {
 **Decision**: Organize `Core/Sources/Core/` as follows:
 ```
 Core/
-├── Package.swift
+├── Package.swift (now part of Features/Package.swift)
 ├── Sources/
 │   └── Core/
 │       ├── Persistence/

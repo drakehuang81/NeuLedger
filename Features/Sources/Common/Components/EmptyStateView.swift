@@ -60,7 +60,7 @@ public struct EmptyStateView: View {
 
 #Preview {
     ZStack {
-        Color(uiColor: .white).ignoresSafeArea()
+        Color.white.ignoresSafeArea()
         EmptyStateView(
             icon: "tray.fill",
             title: "尚無交易",

@@ -315,7 +315,7 @@
 The system SHALL provide a `TagClient` dependency for managing user-defined tags.
 
 #### Scenario: TagClient Definition
-- **WHEN** defining the tag service interface in `Domain/Clients/TagClient.swift`
+- **WHEN** defining the tag service interface in `Features/Domain/Clients/TagClient.swift`
 - **THEN** it SHALL provide the following methods:
 
 ```swift
@@ -336,7 +336,7 @@ public struct TagClient: Sendable {
 The system SHALL provide a `BudgetClient` dependency for managing budgets.
 
 #### Scenario: BudgetClient Definition
-- **WHEN** defining the budget service interface in `Domain/Clients/BudgetClient.swift`
+- **WHEN** defining the budget service interface in `Features/Domain/Clients/BudgetClient.swift`
 - **THEN** it SHALL provide the following methods:
 
 ```swift
@@ -375,7 +375,7 @@ The system SHALL provide a `TransactionFilter` struct for composable transaction
 The `TransactionClient` SHALL include search and filter capabilities.
 
 #### Scenario: TransactionClient Definition
-- **WHEN** a Client is defined in `Domain/Clients/TransactionClient.swift`
+- **WHEN** a Client is defined in `Features/Domain/Clients/TransactionClient.swift`
 - **THEN** its interface SHALL be:
 
 ```swift

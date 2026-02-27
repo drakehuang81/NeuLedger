@@ -4,7 +4,7 @@ import Domain
 import Dependencies
 
 /// Live implementation of `TagClient` backed by SwiftData.
-extension TagClient: @retroactive DependencyKey {
+extension TagClient: DependencyKey {
     public static var liveValue: TagClient {
         @Dependency(\.databaseClient) var databaseClient
 

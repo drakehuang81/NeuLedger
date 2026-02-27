@@ -29,13 +29,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A2242AC92F5142DF00AFBCFF /* Domain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Domain; sourceTree = "<group>"; };
 		A249D8A82F418AC300CBA03D /* Features */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Features; sourceTree = "<group>"; };
 		A24BD4792F3B34480046D6A4 /* NeuLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A26927F72F514C2F00BDA7FA /* Common */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Common; sourceTree = "<group>"; };
-		A2E645142F51A70A00B5043E /* Core */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Core; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -106,9 +103,6 @@
 		A24BD4702F3B34480046D6A4 = {
 			isa = PBXGroup;
 			children = (
-				A2E645142F51A70A00B5043E /* Core */,
-				A26927F72F514C2F00BDA7FA /* Common */,
-				A2242AC92F5142DF00AFBCFF /* Domain */,
 				A249D8A82F418AC300CBA03D /* Features */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
 				A24BD48D2F3B344A0046D6A4 /* NeuLedgerTests */,
@@ -236,6 +230,7 @@
 			mainGroup = A24BD4702F3B34480046D6A4;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				BA24DB8D2F418E0E00CBA03D /* XCLocalSwiftPackageReference "Features" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A24BD47A2F3B34480046D6A4 /* Products */;
@@ -630,13 +625,22 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		BA24DB8D2F418E0E00CBA03D /* XCLocalSwiftPackageReference "Features" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Features;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		A249D8AE2F418E0E00CBA03D /* Features */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = BA24DB8D2F418E0E00CBA03D /* XCLocalSwiftPackageReference "Features" */;
 			productName = Features;
 		};
 		BA24DB8E2F418E0E00CBA03D /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = BA24DB8D2F418E0E00CBA03D /* XCLocalSwiftPackageReference "Features" */;
 			productName = Core;
 		};
 /* End XCSwiftPackageProductDependency section */

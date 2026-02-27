@@ -4,7 +4,7 @@ import Domain
 import Dependencies
 
 /// Live implementation of `AccountClient` backed by SwiftData.
-extension AccountClient: @retroactive DependencyKey {
+extension AccountClient: DependencyKey {
     public static var liveValue: AccountClient {
         @Dependency(\.databaseClient) var databaseClient
 

@@ -22,28 +22,28 @@ NeuLedger/
 ├── App/
 │   ├── NeuLedgerApp.swift          # @main entry point, root Store creation
 │   └── AppDelegate.swift           # (if needed for push notifications etc.)
-├── Common/
-│   ├── Extensions/                 # Swift extensions (Date+, Decimal+, etc.)
-│   ├── Utilities/                  # Shared helpers, formatters
-│   └── DesignSystem/               # Colors, Typography, shared SwiftUI UIComponents and SwiftUI modifiers
-├── Domain/
-│   ├── Entities/                   # Pure Swift structs (Transaction, Account, Category, Budget, Tag)
-│   ├── Enums/                      # TransactionType, AccountType, Currency, etc.
-│   └── Clients/                    # Protocol definitions (interface only)
-│       ├── TransactionClient.swift
-│       ├── AccountClient.swift
-│       ├── CategoryClient.swift
-│       └── AIServiceClient.swift
-├── Core/
-│   ├── Persistence/                # SwiftData models and configuration
-│   │   ├── Models/                 # @Model classes (SwiftData schema)
-│   │   └── ModelContainer+.swift   # Container configuration
-│   ├── Clients/                    # Live implementations of Domain/Clients protocols
-│   │   ├── TransactionClient+Live.swift
-│   │   ├── AccountClient+Live.swift
-│   │   └── AIServiceClient+Live.swift
-│   └── Mappers/                    # Domain ↔ SwiftData model mappers
 ├── Features/
+│   ├── Common/
+│   │   ├── Extensions/                 # Swift extensions (Date+, Decimal+, etc.)
+│   │   ├── Utilities/                  # Shared helpers, formatters
+│   │   └── DesignSystem/               # Colors, Typography, shared SwiftUI UIComponents and SwiftUI modifiers
+│   ├── Domain/
+│   │   ├── Entities/                   # Pure Swift structs (Transaction, Account, Category, Budget, Tag)
+│   │   ├── Enums/                      # TransactionType, AccountType, Currency, etc.
+│   │   └── Clients/                    # Protocol definitions (interface only)
+│   │       ├── TransactionClient.swift
+│   │       ├── AccountClient.swift
+│   │       ├── CategoryClient.swift
+│   │       └── AIServiceClient.swift
+│   ├── Core/
+│   │   ├── Persistence/                # SwiftData models and configuration
+│   │   │   ├── Models/                 # @Model classes (SwiftData schema)
+│   │   │   └── ModelContainer+.swift   # Container configuration
+│   │   ├── Clients/                    # Live implementations of Domain/Clients protocols
+│   │   │   ├── TransactionClient+Live.swift
+│   │   │   ├── AccountClient+Live.swift
+│   │   │   └── AIServiceClient+Live.swift
+│   │   └── Mappers/                    # Domain ↔ SwiftData model mappers
 │   ├── App/                        # Root AppFeature (TabView composition)
 │   │   ├── AppFeature.swift
 │   │   └── AppView.swift
@@ -183,10 +183,10 @@ Use TCA's **Stack-based navigation** for push flows within each tab, and **Tree-
 All external services must be abstracted behind `DependencyKey` conformances.
 
 #### Scenario: Registering a Live Client
-- **WHEN** a Client is defined in `Domain/Clients/`
-- **THEN** its live implementation must be in `Core/Clients/` and registered:
+- **WHEN** a Client is defined in `Features/Domain/Clients/`
+- **THEN** its live implementation must be in `Features/Core/Clients/` and registered:
 ```swift
-// Domain/Clients/TransactionClient.swift
+// Features/Domain/Clients/TransactionClient.swift
 @DependencyClient
 struct TransactionClient {
     var fetchRecent: @Sendable () async throws -> [Transaction]
@@ -215,8 +215,8 @@ Use **SwiftData** as the primary persistence mechanism.
 #### Scenario: SwiftData Configuration
 - **WHEN** the app starts
 - **THEN** a `ModelContainer` should be configured with all `@Model` types.
-- **AND** `@Model` classes should reside in `Core/Persistence/Models/`.
-- **AND** Domain entities (plain structs) should be mapped to/from SwiftData models via `Core/Mappers/`.
+- **AND** `@Model` classes should reside in `Features/Core/Persistence/Models/`.
+- **AND** Domain entities (plain structs) should be mapped to/from SwiftData models via `Features/Core/Mappers/`.
 
 #### Scenario: Data Separation
 - **WHEN** a Feature needs data

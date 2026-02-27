@@ -4,7 +4,7 @@ import Domain
 import Dependencies
 
 /// Live implementation of `BudgetClient` backed by SwiftData.
-extension BudgetClient: @retroactive DependencyKey {
+extension BudgetClient: DependencyKey {
     public static var liveValue: BudgetClient {
         @Dependency(\.databaseClient) var databaseClient
 

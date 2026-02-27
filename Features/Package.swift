@@ -69,22 +69,21 @@ let package = Package(
             name: "FeaturesTests",
             dependencies: ["Features", .tca],
             path: "Tests/FeaturesTests",
-            sources: ["FeaturesTests.swift"]
         ),
         .testTarget(
             name: "CommonTests",
             dependencies: ["Common"],
-            path: "Tests/FeaturesTests/CommonTests"
+            path: "Tests/CommonTests"
         ),
         .testTarget(
             name: "CoreTests",
             dependencies: ["Core", "Domain"],
-            path: "Tests/FeaturesTests/CoreTests"
+            path: "Tests/CoreTests"
         ),
         .testTarget(
             name: "DomainTests",
             dependencies: ["Domain"],
-            path: "Tests/FeaturesTests/DomainTests"
+            path: "Tests/DomainTests"
         ),
     ]
 )

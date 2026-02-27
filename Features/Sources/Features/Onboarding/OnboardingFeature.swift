@@ -25,7 +25,7 @@ struct OnboardingFeature {
     @ObservableState
     struct State: Equatable {
         var currentStep: Step = .welcome
-        var accountName: String = "現金"
+        var accountName: String = String(localized: "onboarding_setup_name_placeholder")
         var accountType: AccountType = .cash
     }
 
@@ -43,6 +43,10 @@ struct OnboardingFeature {
             case onboardingCompleted
         }
     }
+
+    // MARK: - Dependencies
+
+    @Dependency(\.userSettingsClient) var userSettingsClient
 
     // MARK: - Body
 
@@ -62,10 +66,8 @@ struct OnboardingFeature {
                 return .none
 
             case .finishButtonTapped:
-                return .run { send in
-                    UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                    await send(.delegate(.onboardingCompleted))
-                }
+                userSettingsClient.setBool(true, .hasCompletedOnboarding)
+                return .send(.delegate(.onboardingCompleted))
 
             case .delegate:
                 return .none

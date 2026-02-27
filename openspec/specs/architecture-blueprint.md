@@ -22,7 +22,7 @@ NeuLedger/
 ├── App/
 │   ├── NeuLedgerApp.swift          # @main entry point, root Store creation
 │   └── AppDelegate.swift           # (if needed for push notifications etc.)
-├── Core/
+├── Common/
 │   ├── Extensions/                 # Swift extensions (Date+, Decimal+, etc.)
 │   ├── Utilities/                  # Shared helpers, formatters
 │   └── DesignSystem/               # Colors, Typography, shared SwiftUI modifiers

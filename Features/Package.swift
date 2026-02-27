@@ -16,7 +16,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.23.1")
+        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.23.1"),
+        .package(name: "Domain", path: "../Domain")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -25,7 +26,8 @@ let package = Package(
             name: "Features",
             dependencies: [
                 .tca,
-                "DesignSystem"
+                "DesignSystem",
+                .product(name: "Domain", package: "Domain")
             ]
         ),
         .target(

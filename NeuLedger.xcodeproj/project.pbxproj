@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		A249D8AF2F418E0E00CBA03D /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = A249D8AE2F418E0E00CBA03D /* Features */; };
-
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A2242AC92F5142DF00AFBCFF /* Domain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Domain; sourceTree = "<group>"; };
 		A249D8A82F418AC300CBA03D /* Features */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Features; sourceTree = "<group>"; };
 		A24BD4792F3B34480046D6A4 /* NeuLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -71,7 +71,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-
 				A249D8AF2F418E0E00CBA03D /* Features in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -103,6 +102,7 @@
 		A24BD4702F3B34480046D6A4 = {
 			isa = PBXGroup;
 			children = (
+				A2242AC92F5142DF00AFBCFF /* Domain */,
 				A249D8A82F418AC300CBA03D /* Features */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
 				A24BD48D2F3B344A0046D6A4 /* NeuLedgerTests */,
@@ -142,7 +142,6 @@
 			);
 			name = NeuLedger;
 			packageProductDependencies = (
-
 				A249D8AE2F418E0E00CBA03D /* Features */,
 			);
 			productName = NeuLedger;
@@ -628,7 +627,6 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Features;
 		};
-
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A24BD4712F3B34480046D6A4 /* Project object */;

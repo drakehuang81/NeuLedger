@@ -1,5 +1,4 @@
 import DesignSystem
-
 import SwiftUI
 
 public struct DashboardView: View {

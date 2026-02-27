@@ -1,35 +1,4 @@
-# Spec: NeuLedger Domain Model
-
-## Requirements
-
----
-
-### Requirement: Core Enums
-Define shared enumerations used across the domain.
-
-#### Scenario: TransactionType
-- **WHEN** classifying a financial record
-- **THEN** `TransactionType` must be one of:
-    - `.expense`
-    - `.income`
-    - `.transfer` (between own accounts)
-
-#### Scenario: AccountType
-- **WHEN** classifying an account
-- **THEN** `AccountType` must be one of:
-    - `.cash`
-    - `.bank`
-    - `.creditCard`
-    - `.eWallet` (e.g., Line Pay, Apple Pay balance)
-
-#### Scenario: Currency
-- **GIVEN** the first version only supports a single currency
-- **THEN** use a `Currency` enum with only `.TWD` active:
-    - `.TWD` — symbol: "NT$", code: "TWD", decimalPlaces: 0
-- **AND** the enum is kept in code for future multi-currency extensibility, but all UI and logic assumes TWD.
-- **AND** all amounts are displayed as integers (no decimal places).
-
----
+## MODIFIED Requirements
 
 ### Requirement: Transaction Entity
 The primary financial record.
@@ -148,15 +117,3 @@ For setting spending limits and tracking progress.
     - `remaining`: Decimal — `amount - spent`.
     - `percentage`: Double — `spent / amount`.
 - **AND** these values are computed, not stored.
-
----
-
-### Requirement: Entity Relationships Summary
-
-| Relationship | Type | Description |
-|---|---|---|
-| Transaction → Account | Many-to-One | Each transaction belongs to one account |
-| Transaction → Category | Many-to-One (optional) | Each transaction has one category (nil for transfers) |
-| Transaction ↔ Tag | Many-to-Many | Transactions can have multiple tags |
-| Budget → Category | Many-to-One (optional) | A budget may target a specific category |
-| Transfer Transaction → Account (destination) | Many-to-One | Transfer has source + destination account |

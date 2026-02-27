@@ -137,36 +137,57 @@ let response = try await session.respond(to: "How much did I spend on food last 
 ---
 
 ### Requirement: AI Client Interface (TCA Dependency)
-All AI interactions must be abstracted behind a TCA `@DependencyClient`.
+All AI interactions SHALL be abstracted behind a TCA `@DependencyClient`.
 
 #### Scenario: AIServiceClient Definition
+- **WHEN** defining the AI service interface in `Domain/Clients/AIServiceClient.swift`
+- **THEN** it SHALL provide the following methods:
+
 ```swift
 @DependencyClient
-struct AIServiceClient {
+public struct AIServiceClient: Sendable {
     /// Extract structured transaction details from natural language input
-    var extractTransaction: @Sendable (String) async throws -> ExtractedTransaction
+    public var extractTransaction: @Sendable (String) async throws -> ExtractedTransaction
 
-    /// Suggest categories based on a transaction note
-    var suggestCategories: @Sendable (String, [String]) async throws -> CategorySuggestions
-    // Parameters: (userInput, availableCategoryNames)
+    /// Suggest categories based on a transaction note and available category names
+    public var suggestCategories: @Sendable (String, [String]) async throws -> CategorySuggestions
 
-    /// Generate a spending insight summary
-    var generateInsight: @Sendable (SpendingSummary) async throws -> String
+    /// Generate a spending insight summary in natural language
+    public var generateInsight: @Sendable (SpendingSummary) async throws -> String
 
-    /// Check if AI features are available on this device
-    var isAvailable: @Sendable () -> Bool
+    /// Check if AI features are available on this device (synchronous)
+    public var isAvailable: @Sendable () -> Bool
 }
 ```
 
-- **AND** register as a TCA dependency:
-```swift
-extension AIServiceClient: DependencyKey {
-    static let liveValue: AIServiceClient = {
-        // Implementation using LanguageModelSession
-    }()
-    static let testValue = AIServiceClient() // unimplemented
-}
-```
+- **AND** it SHALL be registered via `TestDependencyKey` and `DependencyValues`.
+- **AND** the `analyzeReceipt(Data)` method is **REMOVED** — replaced by `extractTransaction(String)` for text-based extraction.
+- **AND** the `TransactionParseResult` type is **REMOVED**.
+
+#### Scenario: ExtractedTransaction Domain Type
+- **WHEN** the AI extracts transaction details from natural language
+- **THEN** the result SHALL be an `ExtractedTransaction` struct with:
+    - `amount`: Double? — the monetary amount extracted from text
+    - `suggestedCategory`: String? — the suggested category name
+    - `description`: String? — a cleaned-up transaction description
+    - `type`: String? — "expense" or "income"
+- **AND** `ExtractedTransaction` SHALL conform to `Equatable` and `Sendable`.
+
+#### Scenario: CategorySuggestions Domain Type
+- **WHEN** the AI suggests categories
+- **THEN** the result SHALL be a `CategorySuggestions` struct with:
+    - `suggestions`: [String] — ranked list of suggested category names (most likely first)
+    - `confidence`: String — "high", "medium", or "low"
+- **AND** `CategorySuggestions` SHALL conform to `Equatable` and `Sendable`.
+
+#### Scenario: SpendingSummary Domain Type
+- **WHEN** generating spending insights
+- **THEN** the input SHALL be a `SpendingSummary` struct with:
+    - `totalIncome`: Decimal — total income for the period
+    - `totalExpense`: Decimal — total expense for the period
+    - `categoryBreakdown`: [String: Decimal] — spending by category name
+    - `periodDescription`: String — human-readable period (e.g., "2026年2月")
+- **AND** `SpendingSummary` SHALL conform to `Equatable` and `Sendable`.
 
 ---
 

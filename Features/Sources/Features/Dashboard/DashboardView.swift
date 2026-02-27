@@ -13,14 +13,14 @@ public struct DashboardView: View {
             if isEmpty {
                 EmptyStateView(
                     icon: "tray.fill",
-                    title: "尚無交易",
-                    description: "開始記下您的第一筆花費吧！",
-                    actionTitle: "記一筆",
+                    title: "dashboard_empty_title",
+                    description: "dashboard_empty_desc",
+                    actionTitle: "dashboard_empty_action",
                     action: { print("Open Add Transaction Sheet") } // Placeholder for future action
                 )
             } else {
-                Text("Transaction List Placeholder")
-                    .navigationTitle("Dashboard")
+                Text("dashboard_placeholder")
+                    .navigationTitle("dashboard_title")
             }
         }
     }

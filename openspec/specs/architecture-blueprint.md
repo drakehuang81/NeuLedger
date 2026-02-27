@@ -25,7 +25,7 @@ NeuLedger/
 ├── Common/
 │   ├── Extensions/                 # Swift extensions (Date+, Decimal+, etc.)
 │   ├── Utilities/                  # Shared helpers, formatters
-│   └── DesignSystem/               # Colors, Typography, shared SwiftUI modifiers
+│   └── DesignSystem/               # Colors, Typography, shared SwiftUI UIComponents and SwiftUI modifiers
 ├── Domain/
 │   ├── Entities/                   # Pure Swift structs (Transaction, Account, Category, Budget, Tag)
 │   ├── Enums/                      # TransactionType, AccountType, Currency, etc.

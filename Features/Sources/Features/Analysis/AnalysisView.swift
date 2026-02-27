@@ -13,15 +13,15 @@ public struct AnalysisView: View {
             if !hasData {
                 EmptyStateView(
                     icon: "chart.pie.fill",
-                    title: "此期間無資料",
-                    description: "嘗試選擇不同的日期範圍"
+                    title: "analysis_empty_title",
+                    description: "analysis_empty_desc"
                 )
             } else {
                 ScrollView {
                     // Charts content
-                    Text("Analysis Charts Placeholder")
+                    Text("analysis_placeholder")
                 }
-                .navigationTitle("Analysis")
+                .navigationTitle("analysis_title")
             }
         }
     }

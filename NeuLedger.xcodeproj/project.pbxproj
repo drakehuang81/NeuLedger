@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A249D8AF2F418E0E00CBA03D /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = A249D8AE2F418E0E00CBA03D /* Features */; };
+		BA24DB8F2F418E0E00CBA03D /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = BA24DB8E2F418E0E00CBA03D /* Core */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,6 +35,7 @@
 		A24BD48A2F3B344A0046D6A4 /* NeuLedgerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A24BD4942F3B344A0046D6A4 /* NeuLedgerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A26927F72F514C2F00BDA7FA /* Common */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Common; sourceTree = "<group>"; };
+		A2E645142F51A70A00B5043E /* Core */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Core; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -73,6 +75,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A249D8AF2F418E0E00CBA03D /* Features in Frameworks */,
+				BA24DB8F2F418E0E00CBA03D /* Core in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +106,7 @@
 		A24BD4702F3B34480046D6A4 = {
 			isa = PBXGroup;
 			children = (
+				A2E645142F51A70A00B5043E /* Core */,
 				A26927F72F514C2F00BDA7FA /* Common */,
 				A2242AC92F5142DF00AFBCFF /* Domain */,
 				A249D8A82F418AC300CBA03D /* Features */,
@@ -145,6 +149,7 @@
 			name = NeuLedger;
 			packageProductDependencies = (
 				A249D8AE2F418E0E00CBA03D /* Features */,
+				BA24DB8E2F418E0E00CBA03D /* Core */,
 			);
 			productName = NeuLedger;
 			productReference = A24BD4792F3B34480046D6A4 /* NeuLedger.app */;
@@ -629,6 +634,10 @@
 		A249D8AE2F418E0E00CBA03D /* Features */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Features;
+		};
+		BA24DB8E2F418E0E00CBA03D /* Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Core;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

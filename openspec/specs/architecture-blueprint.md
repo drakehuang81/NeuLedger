@@ -11,7 +11,7 @@
 ---
 
 ### Requirement: Clean Architecture Organization
-The project follows Clean Architecture with clear separation between Domain, Data, and Presentation layers.
+The project follows Clean Architecture with clear separation between Domain, Core, and Presentation layers.
 
 #### Scenario: Verify Folder Structure
 - **WHEN** the project is inspected
@@ -34,7 +34,7 @@ NeuLedger/
 │       ├── AccountClient.swift
 │       ├── CategoryClient.swift
 │       └── AIServiceClient.swift
-├── Data/
+├── Core/
 │   ├── Persistence/                # SwiftData models and configuration
 │   │   ├── Models/                 # @Model classes (SwiftData schema)
 │   │   └── ModelContainer+.swift   # Container configuration
@@ -184,7 +184,7 @@ All external services must be abstracted behind `DependencyKey` conformances.
 
 #### Scenario: Registering a Live Client
 - **WHEN** a Client is defined in `Domain/Clients/`
-- **THEN** its live implementation must be in `Data/Clients/` and registered:
+- **THEN** its live implementation must be in `Core/Clients/` and registered:
 ```swift
 // Domain/Clients/TransactionClient.swift
 @DependencyClient
@@ -215,8 +215,8 @@ Use **SwiftData** as the primary persistence mechanism.
 #### Scenario: SwiftData Configuration
 - **WHEN** the app starts
 - **THEN** a `ModelContainer` should be configured with all `@Model` types.
-- **AND** `@Model` classes should reside in `Data/Persistence/Models/`.
-- **AND** Domain entities (plain structs) should be mapped to/from SwiftData models via `Data/Mappers/`.
+- **AND** `@Model` classes should reside in `Core/Persistence/Models/`.
+- **AND** Domain entities (plain structs) should be mapped to/from SwiftData models via `Core/Mappers/`.
 
 #### Scenario: Data Separation
 - **WHEN** a Feature needs data

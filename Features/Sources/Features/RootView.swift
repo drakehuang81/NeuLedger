@@ -25,20 +25,32 @@ struct NeuLedgerApp: App {
 }
 
 struct RootView: View {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
 
     var body: some View {
-        Text("app_greeting")
-            .task {
-                do {
-                    let accounts = try await accountClient.fetchActive()
-                    print("✅ Accounts seeded (\(accounts.count)): \(accounts.map(\.name))")
-                    let categories = try await categoryClient.fetchAll()
-                    print("✅ Categories seeded (\(categories.count))")
-                } catch {
-                    print("❌ Fetch failed: \(error)")
+        if hasCompletedOnboarding {
+            // Main content (placeholder for now)
+            Text("app_greeting")
+                .task {
+                    do {
+                        let accounts = try await accountClient.fetchActive()
+                        print("✅ Accounts seeded (\(accounts.count)): \(accounts.map(\.name))")
+                        let categories = try await categoryClient.fetchAll()
+                        print("✅ Categories seeded (\(categories.count))")
+                    } catch {
+                        print("❌ Fetch failed: \(error)")
+                    }
                 }
-            }
+        } else {
+            OnboardingView(
+                store: Store(
+                    initialState: OnboardingFeature.State()
+                ) {
+                    OnboardingFeature()
+                }
+            )
+        }
     }
 }

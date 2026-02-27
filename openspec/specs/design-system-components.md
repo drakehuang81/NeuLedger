@@ -25,8 +25,16 @@ The application MUST provide a set of reusable UI components that strictly adher
 - **THEN** it MUST show a "sparkle" icon
 - **THEN** it MUST show a title (e.g., "AI Insight") and the body text
 
+#### Scenario: PrimaryButton Display
+- **WHEN** displaying a primary call-to-action button (e.g., in Onboarding)
+- **THEN** it MUST use `Color.Design.brandPrimary` as the background color
+- **THEN** it MUST use a `Capsule` (pill) shape for the corner radius
+- **THEN** it MUST have a height of `56pt` and span the full width of its container
+- **THEN** it MUST show the title text in `17pt` Semibold, White color
+- **THEN** it MAY optionally show a trailing SF Symbol icon
+
 #### Scenario: Component Previews
-- **WHEN** developing any of the components (`TransactionRow`, `AccountCard`, `CategoryChip`, `TagPill`, `BalanceDisplay`, `InsightCard`, `BudgetGauge`, `GlassButton`, `GlassContainer`, `QuickActionBar`)
+- **WHEN** developing any of the components (`TransactionRow`, `AccountCard`, `CategoryChip`, `TagPill`, `BalanceDisplay`, `InsightCard`, `BudgetGauge`, `GlassButton`, `PrimaryButton`, `GlassContainer`, `QuickActionBar`)
 - **THEN** each component file MUST include a SwiftUI `#Preview` block
 - **THEN** the preview MUST demonstrate the component in its primary state
 

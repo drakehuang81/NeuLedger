@@ -17,4 +17,14 @@ public enum AccountType: String, Codable, CaseIterable, Equatable, Sendable {
     
     /// A digital wallet account, such as Apple Pay Cash, LINE Pay, or other electronic payment services.
     case eWallet
+
+    /// A user-facing display label for this account type.
+    public var displayLabel: String {
+        switch self {
+        case .cash: "Cash"
+        case .bank: "Bank"
+        case .creditCard: "Credit Card"
+        case .eWallet: "E-Wallet"
+        }
+    }
 }

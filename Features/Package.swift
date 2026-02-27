@@ -45,8 +45,9 @@ let package = Package(
             name: "Features",
             dependencies: [
                 .tca,
-                .common,
-                .domain,
+                "Core",
+                "Common",
+                "Domain",
             ]
         ),
         .target(
@@ -59,7 +60,7 @@ let package = Package(
         .target(
             name: "Core",
             dependencies: [
-                .domain,
+                "Domain",
                 .dependencies,
             ]
         ),
@@ -72,27 +73,23 @@ let package = Package(
         ),
         .testTarget(
             name: "CommonTests",
-            dependencies: [.common],
+            dependencies: ["Common"],
             path: "Tests/FeaturesTests/CommonTests"
         ),
         .testTarget(
             name: "CoreTests",
-            dependencies: [.core, .domain],
+            dependencies: ["Core", "Domain"],
             path: "Tests/FeaturesTests/CoreTests"
         ),
         .testTarget(
             name: "DomainTests",
-            dependencies: [.domain],
+            dependencies: ["Domain"],
             path: "Tests/FeaturesTests/DomainTests"
         ),
     ]
 )
 
 extension Target.Dependency {
-    static let common: Target.Dependency = .target(name: "Common")
-    static let domain: Target.Dependency = .target(name: "Domain")
-    static let core: Target.Dependency = .target(name: "Core")
-    
     static let dependencies: Target.Dependency = .product(
         name: "Dependencies",
         package: "swift-dependencies"

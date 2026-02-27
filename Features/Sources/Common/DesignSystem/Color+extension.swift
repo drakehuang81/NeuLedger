@@ -9,11 +9,11 @@ import AppKit
 // MARK: - SwiftUI Color Hex Helper
 extension Color {
     init(hex: String) {
-        let hex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
         var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
+        Scanner(string: hexString).scanHexInt64(&int)
         let a, r, g, b: UInt64
-        switch hex.count {
+        switch hexString.count {
         case 6: // RGB (24-bit)
             (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
         case 8: // RRGGBBAA (32-bit)

@@ -18,15 +18,31 @@ struct OnboardingView: View {
             Color.Design.background
                 .ignoresSafeArea()
 
-            switch store.currentStep {
-            case .welcome:
-                welcomeStep
-            case .accountSetup:
-                accountSetupStep
-            case .ready:
-                readyStep
+            Group {
+                switch store.currentStep {
+                case .welcome:
+                    welcomeStep
+                        .transition(stepTransition)
+                case .accountSetup:
+                    accountSetupStep
+                        .transition(stepTransition)
+                case .ready:
+                    readyStep
+                        .transition(stepTransition)
+                }
             }
+            // 綁定 currentStep 加動畫
+            .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.currentStep)
         }
+    }
+
+    // MARK: - Transitions
+    
+    private var stepTransition: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .leading).combined(with: .opacity)
+        )
     }
 
     // MARK: - Step 1: Welcome

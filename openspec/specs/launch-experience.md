@@ -5,13 +5,14 @@
 ---
 
 ### Requirement: 啟動畫面視覺呈現
-啟動畫面 (Launch Screen) 必須展現 NeuLedger 的品牌形象，並提供平滑的視覺體驗。
+啟動畫面 (Launch Screen) 必須展現 NeuLedger 的品牌形象，並提供平滑的視覺體驗。透過 `SplashView` 實作品牌動畫。
 
 #### Scenario: 應用程式冷啟動 (Cold Launch)
 - **WHEN** 使用者首次打開 App 或從完全關閉狀態啟動
-- **THEN** 顯示包含 App Logo 與品牌名稱的啟動畫面
-- **THEN** 背景色應與系統主題 (System Theme) 一致
-- **THEN** 經過適當的轉場動畫 (如淡出) 進入主畫面 (Dashboard)
+- **THEN** 顯示包含 App Logo 與品牌名稱的 `SplashView`
+- **AND** 顯示品牌 Logo 的縮放與透明度脈動動畫 (Scale & Pulsing)
+- **AND** 背景色應與系統主題 (System Theme) 一致
+- **AND** 經過由 Reducer 控制的非同步路由判斷後，過渡到 Onboarding 或主畫面。
 
 ---
 

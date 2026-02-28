@@ -109,3 +109,12 @@ iOSInjectionProject/
 .tuist-bin/
 Derived/
 Tuist/Derived/
+
+# Firebase
+firebase-debug.log
+firebase-debug.*.log
+
+# ZIP Archives
+*.zip
+*.tar.gz
+*.rar

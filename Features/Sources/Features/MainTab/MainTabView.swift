@@ -9,33 +9,31 @@ struct MainTabView: View {
     }
     
     var body: some View {
-        // Our ZStack is mostly conceptually handled by .safeAreaInset which provides the best 
-        // natural layout behaviour for underlying ScrollViews (so they don't get cut off).
-        // For the sake of matching custom ZStack designs often used with floating bars:
-        ZStack {
-            // Main content layer
-            Group {
-                switch store.selectedTab {
-                case .home:
-                    PlaceholderView(title: "Home", color: .blue)
-                case .ledger:
-                    PlaceholderView(title: "Ledger", color: .orange)
-                case .analysis:
-                    PlaceholderView(title: "Analysis", color: .purple)
-                case .settings:
-                    PlaceholderView(title: "Settings", color: .gray)
-                }
+        TabView(selection: Binding(
+            get: { store.selectedTab },
+            set: { store.send(.tabSelected($0)) }
+        )) {
+            Tab("Ledger", systemImage: "chart.pie.fill", value: MainTabFeature.Tab.ledger) {
+                PlaceholderView(title: "Ledger", color: .orange)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // TabBar overlay layer
-            VStack {
-                Spacer()
-                GlobalTabBarView(store: store)
-                    .padding(.bottom, 16) // Padding above the absolute bottom/home indicator area
+
+            Tab("Analysis", systemImage: "chart.bar.fill", value: MainTabFeature.Tab.analysis) {
+                PlaceholderView(title: "Analysis", color: .purple)
             }
-            // Ignore the bottom safe area here, as we manually add bottom padding,
-            // or we respect it and add padding from the safe area edge.
+
+            Tab("Settings", systemImage: "gearshape.fill", value: MainTabFeature.Tab.settings) {
+                PlaceholderView(title: "Settings", color: .gray)
+            }
+            Tab(value: MainTabFeature.Tab.search, role: .search) {
+                // TODO: 用搜尋頁面替代
+                PlaceholderView(title: "Search", color: .black)
+            }
+            .hidden(!(store.selectedTab == .search || store.selectedTab == .ledger))
+        }
+        .tabViewStyle(.sidebarAdaptable)
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .tabViewBottomAccessory {
+            // TODO: 到時候會有一個按鈕，可以新增記帳 ＆ AI 
         }
     }
 }

@@ -5,15 +5,15 @@ import ComposableArchitecture
 struct MainTabFeature {
     // MARK: - State
     enum Tab: String, CaseIterable, Equatable {
-        case home
         case ledger
         case analysis
         case settings
+        case search
     }
     
     @ObservableState
     struct State: Equatable {
-        var selectedTab: Tab = .home
+        var selectedTab: Tab = .ledger
         // Placeholder for inner tab states if needed later
     }
     

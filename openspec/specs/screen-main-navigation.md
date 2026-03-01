@@ -1,9 +1,15 @@
-# Spec: Main Navigation
-
-## Purpose
-Define the primary navigation experience for authenticated or onboarded users.
+# Spec: Screen - Main Navigation
+**Purpose**: Define how the application routes between major flows like Onboarding and the Main Tab experience, and the floating TabBar behaviors.
 
 ## Requirements
+
+### Requirement: Transition to Main Routing
+The `AppView` must present the `MainTabView` when the application finishes onboarding or immediately launches into the `.main` state.
+
+#### Scenario: App launches with `.main` state
+- **WHEN** the `AppFeature`'s destination transitions to or starts with `.main` (after completing onboarding).
+- **THEN** the `AppView` presents the `MainTabView` corresponding to the `MainTabFeature` scope.
+- **AND** the transition matches the existing styling (e.g. opacity-based transition).
 
 ### Requirement: Display Custom Floating TabBar
 The main routing view must present a custom floating split `TabBar` composed of `navCapsule` (primary navigation) and `contextCapsule` (global contextual action) over the main content without obscuring it permanently.
@@ -27,4 +33,4 @@ The `contextCapsule` portion of the `GlobalTabBar` must support global actions (
 #### Scenario: Activating a global context action
 - **WHEN** the user taps the button (e.g. search icon) inside the `contextCapsule`.
 - **THEN** the `MainTabFeature` receives a global action trigger.
-- **AND** for this phase, the system confirms routing to a dummy action (e.g., printing a debug log).
+- **AND** for this phase, the system confirms routing to a dummy action (e.g., printing a debug log) or opening the `Add Transaction` sheet contextually.

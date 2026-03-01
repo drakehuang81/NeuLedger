@@ -8,6 +8,15 @@ context: |
   Domain: Personal Finance / Bookkeeping (NeuLedger)
   Key Features: AI-powered ledger, smart categorization
 
+  OpenSpec Organization Rules (3-Layered Specs):
+  When creating or modifying specs, STRICTLY categorise them into one of these 3 layers:
+   1. Core & Tech (`xxxxx.md`): Global architecture, data models, persistence, design systems, and external client implementation details.
+       Example: `architecture-blueprint.md`, `domain-model.md`, `swiftdata-persistence.md`, `design-system.md`
+   2. Feature Specs (`feature-xxxxx.md`): Pure business logic, Domain clients/interfaces definition, validations, and rules. Do not include UI details here.
+       Example: `feature-transactions.md`, `feature-accounts.md`, `feature-budgets.md`, `feature-tags-categories.md`
+   3. Screen Specs (`screen-xxxxx.md`): Focus on UI structure, interactions, and visual layout. Point to Feature Specs for business logic.
+       Example: `screen-analysis.md`, `screen-onboarding.md`, `screen-settings.md`, `screen-main-navigation.md`
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
 # Example:

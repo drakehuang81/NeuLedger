@@ -43,7 +43,7 @@ public struct GlassButton: View {
                 }
                 
                 Text(title)
-                    .font(.Design.headline) // 15pt Semibold? Or .headline equivalent
+                    .font(Font.Design.headline) // 15pt Semibold? Or .headline equivalent
                     // Design spec: 15pt Semibold (DMSans-SemiBold)
                     // If .Design.headline is 17pt, maybe use .subheadline (15pt).
                     // FontTokens.swift might have it. I'll use .body for safety or specific if I knew.
@@ -61,7 +61,7 @@ public struct GlassButton: View {
         .buttonStyle(.plain) // Remove default button modification
         // Tint is handled by foreground style typically.
         // Design usually has brand color text.
-        .foregroundStyle(Color.accentColor) 
+        .foregroundStyle(Color.Design.brandPrimary)
     }
 }
 
@@ -70,11 +70,11 @@ public struct GlassButton: View {
         Color.blue.opacity(0.2).ignoresSafeArea()
         
         VStack(spacing: 20) {
-            GlassButton(title: "Add Item", systemImage: "plus") {
+            GlassButton(title: "component_add_item", systemImage: "plus") {
                 print("Tapped")
             }
             
-            GlassButton("Simple Button") {
+            GlassButton(String(localized: "component_simple_button")) {
                 print("Simple")
             }
             .foregroundStyle(.red) // Override tint

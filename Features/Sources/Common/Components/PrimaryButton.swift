@@ -41,11 +41,11 @@ public struct PrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Text(titleKey)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(Font.Design.headline)
 
                 if let systemImage {
                     Image(systemName: systemImage)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.headline)
                 }
             }
             .foregroundStyle(.white)
@@ -61,11 +61,11 @@ public struct PrimaryButton: View {
 
 #Preview {
     VStack(spacing: 20) {
-        PrimaryButton("Get Started", systemImage: "arrow.forward") {
+        PrimaryButton("component_get_started", systemImage: "arrow.forward") {
             print("Tapped")
         }
 
-        PrimaryButton("Next") {
+        PrimaryButton("component_next") {
             print("Next")
         }
     }

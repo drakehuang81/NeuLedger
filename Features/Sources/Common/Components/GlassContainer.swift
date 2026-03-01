@@ -72,15 +72,15 @@ public struct GlassContainer<Content: View>: View {
         
         VStack(spacing: 20) {
             GlassContainer {
-                Text("Default Container")
+                Text("component_default_container")
                     .foregroundStyle(.white)
             }
             
             GlassContainer(padding: 32) {
                 VStack(alignment: .leading) {
-                    Text("More Padding")
+                    Text("component_more_padding")
                         .font(.headline)
-                    Text("Subtitle here")
+                    Text("component_subtitle_here")
                         .font(.caption)
                 }
                 .foregroundStyle(.white)

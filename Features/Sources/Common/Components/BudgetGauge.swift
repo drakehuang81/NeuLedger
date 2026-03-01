@@ -27,14 +27,14 @@ public struct BudgetGauge: View {
         VStack(spacing: 12) {
             // Header
             HStack {
-                Text(label ?? "Monthly Budget")
-                    .font(.caption)
-                    .foregroundStyle(Color.secondary)
+                Text(LocalizedStringKey(label ?? "gauge_monthly_budget"))
+                    .font(Font.Design.caption)
+                    .foregroundStyle(Color.Design.textSecondary)
                 Spacer()
                 Text("\(Int(progress * 100))%")
-                    .font(.caption)
+                    .font(Font.Design.caption)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(Color.Design.textPrimary)
             }
             
             // Bar
@@ -42,7 +42,7 @@ public struct BudgetGauge: View {
                 ZStack(alignment: .leading) {
                     // Track
                     Capsule()
-                        .fill(Color(uiColor: .secondarySystemBackground))
+                        .fill(Color.Design.surfaceSecondary)
                         .frame(height: 8)
                     
                     // Fill
@@ -61,17 +61,17 @@ public struct BudgetGauge: View {
             
             // Footer
             HStack {
-                Text("Used: \(used.formattedCurrency)")
-                    .font(.caption2)
-                    .foregroundStyle(Color.secondary)
+                Text("gauge_used") + Text(" \(used.formattedCurrency)")
+                    .font(Font.Design.amount)
+                    .foregroundStyle(Color.Design.textSecondary)
                 Spacer()
-                Text("Remaining: \((total - used).formattedCurrency)")
-                    .font(.caption2)
-                    .foregroundStyle(Color.secondary)
+                Text("gauge_remaining") + Text(" \((total - used).formattedCurrency)")
+                    .font(Font.Design.amount)
+                    .foregroundStyle(Color.Design.textSecondary)
             }
         }
         .padding(16)
-        .background(Color(uiColor: .systemBackground)) // Surface
+        .background(Color.Design.surface) // Surface
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }

@@ -32,24 +32,24 @@ public struct AccountCard: View {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.Design.brandPrimary)
                     .frame(width: 20, height: 20)
                 
                 Text(name)
-                    .font(.caption) // 14pt approx
+                    .font(Font.Design.caption) // 14pt approx
                     .fontWeight(.medium)
                     .lineLimit(1)
             }
             
             // Amount
             Text(balance.currencyFormat)
-                .font(.system(size: 22, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.primary)
+                .font(Font.Design.title2.weight(.bold).monospacedDigit())
+                .foregroundStyle(Color.Design.textPrimary)
             
             // Type
             Text(type)
-                .font(.caption2)
-                .foregroundStyle(Color.secondary)
+                .font(Font.Design.caption)
+                .foregroundStyle(Color.Design.textSecondary)
         }
         .padding(16)
         .frame(width: 160, alignment: .leading) // Fixed width per design spec? Or flexible?
@@ -77,8 +77,8 @@ private extension Decimal {
     ZStack {
         Color.gray.opacity(0.3).ignoresSafeArea()
         HStack {
-            AccountCard(name: "Bank Account", balance: 45230, type: "Bank", icon: "building.columns")
-            AccountCard(name: "Wallet", balance: 1200, type: "Cash", icon: "wallet.pass")
+            AccountCard(name: String(localized: "component_bank_account"), balance: 45230, type: String(localized: "component_bank"), icon: "building.columns")
+            AccountCard(name: String(localized: "component_wallet"), balance: 1200, type: String(localized: "component_cash"), icon: "wallet.pass")
         }
     }
 }

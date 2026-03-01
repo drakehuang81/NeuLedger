@@ -5,7 +5,7 @@ import ComposableArchitecture
 struct MainTabFeature {
     // MARK: - State
     enum Tab: String, CaseIterable, Equatable {
-        case ledger
+        case dashboard
         case analysis
         case settings
         case search
@@ -13,7 +13,8 @@ struct MainTabFeature {
     
     @ObservableState
     struct State: Equatable {
-        var selectedTab: Tab = .ledger
+        var selectedTab: Tab = .dashboard
+        var analysis = AnalysisFeature.State()
         // Placeholder for inner tab states if needed later
     }
     
@@ -22,10 +23,14 @@ struct MainTabFeature {
         case tabSelected(Tab)
         case contextActionTapped // Global context action, e.g., search or add
         case innerTabPlaceholderAction // Placeholder action for inner tabs
+        case analysis(AnalysisFeature.Action)
     }
     
     // MARK: - Body
     var body: some ReducerOf<Self> {
+        Scope(state: \.analysis, action: \.analysis) {
+            AnalysisFeature()
+        }
         Reduce { state, action in
             switch action {
             case let .tabSelected(tab):
@@ -38,6 +43,9 @@ struct MainTabFeature {
                 return .none
                 
             case .innerTabPlaceholderAction:
+                return .none
+                
+            case .analysis:
                 return .none
             }
         }

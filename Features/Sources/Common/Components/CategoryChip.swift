@@ -30,8 +30,8 @@ public struct CategoryChip: View {
                 .foregroundStyle(color)
             
             Text(title)
-                .font(.system(size: 13, weight: .medium)) // 13pt Medium
-                .foregroundStyle(Color.primary)
+                .font(Font.Design.caption.weight(.medium)) // 13pt Medium
+                .foregroundStyle(Color.Design.textPrimary)
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 14)
@@ -49,7 +49,7 @@ public struct CategoryChip: View {
         Color.gray.ignoresSafeArea()
         
         CategoryChip(
-            title: "Food & Dining",
+            title: String(localized: "component_food_and_dining"),
             systemImage: "fork.knife",
             color: .orange
         )

@@ -46,9 +46,9 @@ public struct GlassCard<Content: View>: View {
 
 #Preview {
     ZStack {
-        Color.red
+        Color.white
         GlassCard(cornerRadius: 12) {
-            Text("Hello")
+            Text("component_hello")
         }.padding(.all, 20)
     }
 }

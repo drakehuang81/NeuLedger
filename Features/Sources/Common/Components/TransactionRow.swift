@@ -41,7 +41,7 @@ public struct TransactionRow: View {
             // Icon Container
             ZStack {
                 Circle()
-                    .fill(Color(uiColor: .systemGroupedBackground)) // Surface Secondary
+                    .fill(Color.Design.surfaceSecondary) // Surface Secondary
                     .frame(width: 40, height: 40)
                 
                 Image(systemName: icon)
@@ -52,12 +52,12 @@ public struct TransactionRow: View {
             // Content
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.headline) // 16pt Medium
-                    .foregroundStyle(Color.primary)
+                    .font(Font.Design.headline) // 16pt Medium
+                    .foregroundStyle(Color.Design.textPrimary)
                 
                 Text(subtitle)
-                    .font(.caption) // 13pt
-                    .foregroundStyle(Color.secondary)
+                    .font(Font.Design.caption) // 13pt
+                    .foregroundStyle(Color.Design.textSecondary)
             }
             
             Spacer()
@@ -65,17 +65,17 @@ public struct TransactionRow: View {
             // Right Content
             VStack(alignment: .trailing, spacing: 2) {
                 Text(amount.formattedCurrency)
-                    .font(.system(size: 16, weight: .semibold, design: .monospaced)) // 16pt Mono Semibold
+                    .font(Font.Design.amount.weight(.semibold)) // 16pt Mono Semibold
                     .foregroundStyle(isExpense ? Color.Design.expenseRed : Color.Design.incomeGreen)
                 
                 Text(date)
-                    .font(.caption2) // 12pt
-                    .foregroundStyle(Color.secondary)
+                    .font(Font.Design.caption) // 12pt
+                    .foregroundStyle(Color.Design.textSecondary)
             }
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground)) // Surface (Card)
+        .background(Color.Design.surface) // Surface (Card)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

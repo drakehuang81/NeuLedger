@@ -29,20 +29,20 @@ public struct TagPill: View {
             }
             
             Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.secondary)
+                .font(Font.Design.caption.weight(.medium))
+                .foregroundStyle(Color.Design.textSecondary)
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 10)
-        .background(Color(uiColor: .secondarySystemBackground)) // Surface Secondary
+        .background(Color.Design.surfaceSecondary) // Surface Secondary
         .clipShape(Capsule())
     }
 }
 
 #Preview {
     VStack {
-        TagPill(text: "Cash", color: .green)
-        TagPill(text: "Pending", color: .orange)
-        TagPill(text: "No Color")
+        TagPill(text: String(localized: "component_cash"), color: .green)
+        TagPill(text: String(localized: "component_pending"), color: .orange)
+        TagPill(text: String(localized: "component_no_color"))
     }
 }

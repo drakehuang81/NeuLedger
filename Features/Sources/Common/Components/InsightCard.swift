@@ -31,12 +31,12 @@ public struct InsightCard: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.headline)
-                    .foregroundStyle(Color.primary)
+                    .font(Font.Design.headline)
+                    .foregroundStyle(Color.Design.textPrimary)
                 
                 Text(bodyText)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.secondary)
+                    .font(Font.Design.subheadline)
+                    .foregroundStyle(Color.Design.textSecondary)
                     .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true) // Allow multiline growth
             }
@@ -46,10 +46,10 @@ public struct InsightCard: View {
             if let onClose {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.caption)
-                        .foregroundStyle(Color.secondary)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.textSecondary)
                         .padding(8)
-                        .background(Color.secondary.opacity(0.1))
+                        .background(Color.Design.separator)
                         .clipShape(Circle())
                 }
             }

@@ -13,12 +13,12 @@ struct MainTabView: View {
             get: { store.selectedTab },
             set: { store.send(.tabSelected($0)) }
         )) {
-            Tab("Ledger", systemImage: "chart.pie.fill", value: MainTabFeature.Tab.ledger) {
+            Tab("Ledger", systemImage: "chart.pie.fill", value: MainTabFeature.Tab.dashboard) {
                 PlaceholderView(title: "Ledger", color: .orange)
             }
 
             Tab("Analysis", systemImage: "chart.bar.fill", value: MainTabFeature.Tab.analysis) {
-                PlaceholderView(title: "Analysis", color: .purple)
+                AnalysisView(store: store.scope(state: \.analysis, action: \.analysis))
             }
 
             Tab("Settings", systemImage: "gearshape.fill", value: MainTabFeature.Tab.settings) {
@@ -28,13 +28,15 @@ struct MainTabView: View {
                 // TODO: 用搜尋頁面替代
                 PlaceholderView(title: "Search", color: .black)
             }
-            .hidden(!(store.selectedTab == .search || store.selectedTab == .ledger))
+            .hidden(!(store.selectedTab == .search || store.selectedTab == .dashboard))
         }
         .tabViewStyle(.sidebarAdaptable)
+#if os(iOS)
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
             // TODO: 到時候會有一個按鈕，可以新增記帳 ＆ AI 
         }
+#endif
     }
 }
 

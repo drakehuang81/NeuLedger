@@ -24,7 +24,7 @@ public struct QuickActionBar: View {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 18))
                     
-                    Text("Record") // "記帳"
+                    Text("action_record")
                         .font(.system(size: 13, weight: .medium))
                 }
                 .padding(.vertical, 8)

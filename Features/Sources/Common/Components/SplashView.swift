@@ -7,7 +7,7 @@ public struct SplashView: View {
     
     public var body: some View {
         ZStack {
-            Rectangle().fill(.background).ignoresSafeArea()
+            Rectangle().fill(Color.Design.background).ignoresSafeArea()
             
             VStack(spacing: 24) {
                 Image(systemName: "creditcard.circle.fill")
@@ -16,7 +16,7 @@ public struct SplashView: View {
                     .frame(width: 80, height: 80)
                     .foregroundStyle(
                         .linearGradient(
-                            colors: [.blue, .purple],
+                            colors: [Color.Design.brandPrimary, .purple],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -25,8 +25,9 @@ public struct SplashView: View {
                     .opacity(isAnimating ? 1.0 : 0.7)
                 
                 Text("NeuLedger")
-                    .font(.system(.title, design: .rounded))
+                    .font(Font.Design.largeTitle)
                     .fontWeight(.bold)
+                    .foregroundStyle(Color.Design.textPrimary)
                     .opacity(isAnimating ? 1.0 : 0.0)
                     .offset(y: isAnimating ? 0 : 10)
             }

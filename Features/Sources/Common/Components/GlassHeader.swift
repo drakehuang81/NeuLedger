@@ -34,12 +34,12 @@ public struct GlassHeader<Action: View>: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.Design.title2)
+                    .font(Font.Design.title2)
                     .foregroundStyle(Color.Design.textPrimary)
                 
                 if let subtitle = subtitle {
                     Text(subtitle)
-                        .font(.Design.subheadline)
+                        .font(Font.Design.subheadline)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
             }
@@ -63,6 +63,6 @@ public extension GlassHeader where Action == EmptyView {
 }
 
 #Preview {
-    GlassHeader(title: "This is a test title", subtitle: "This is a test subtitle")
+    GlassHeader(title: String(localized: "component_test_title"), subtitle: String(localized: "component_test_subtitle"))
         .padding(.all, 20)
 }

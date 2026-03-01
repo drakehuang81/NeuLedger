@@ -20,13 +20,13 @@ public struct BalanceDisplay: View {
     
     public var body: some View {
         VStack(spacing: 8) {
-            Text("Total Balance")
-                .font(.subheadline)
-                .foregroundStyle(Color.secondary)
+            Text("balance_total")
+                .font(Font.Design.subheadline)
+                .foregroundStyle(Color.Design.textSecondary)
             
             Text(totalBalance.currencyFormat)
-                .font(.system(size: 36, weight: .bold, design: .rounded)) // Bricolage equivalent
-                .foregroundStyle(Color.primary)
+                .font(Font.Design.largeTitle.weight(.bold).monospacedDigit()) // Bricolage equivalent
+                .foregroundStyle(Color.Design.textPrimary)
             
             HStack(spacing: 12) {
                 // Income
@@ -35,8 +35,8 @@ public struct BalanceDisplay: View {
                         .foregroundStyle(Color.Design.incomeGreen)
                         .font(.caption)
                     Text(income.currencyFormat)
-                        .font(.caption)
-                        .foregroundStyle(Color.secondary)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.textSecondary)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -49,8 +49,8 @@ public struct BalanceDisplay: View {
                         .foregroundStyle(Color.Design.expenseRed)
                         .font(.caption)
                     Text(expense.currencyFormat)
-                        .font(.caption)
-                        .foregroundStyle(Color.secondary)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.textSecondary)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)

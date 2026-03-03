@@ -14,7 +14,7 @@ struct MainTabView: View {
             set: { store.send(.tabSelected($0)) }
         )) {
             Tab("Ledger", systemImage: "chart.pie.fill", value: MainTabFeature.Tab.dashboard) {
-                PlaceholderView(title: "Ledger", color: .orange)
+                DashboardScreen(store: store.scope(state: \.dashboard, action: \.dashboard))
             }
 
             Tab("Analysis", systemImage: "chart.bar.fill", value: MainTabFeature.Tab.analysis) {

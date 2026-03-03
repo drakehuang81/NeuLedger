@@ -1,5 +1,6 @@
 import Foundation
 import ComposableArchitecture
+import Domain
 
 @Reducer
 struct MainTabFeature {
@@ -14,8 +15,8 @@ struct MainTabFeature {
     @ObservableState
     struct State: Equatable {
         var selectedTab: Tab = .dashboard
+        var dashboard = DashboardFeature.State()
         var analysis = AnalysisFeature.State()
-        // Placeholder for inner tab states if needed later
     }
     
     // MARK: - Action
@@ -23,11 +24,15 @@ struct MainTabFeature {
         case tabSelected(Tab)
         case contextActionTapped // Global context action, e.g., search or add
         case innerTabPlaceholderAction // Placeholder action for inner tabs
+        case dashboard(DashboardFeature.Action)
         case analysis(AnalysisFeature.Action)
     }
     
     // MARK: - Body
     var body: some ReducerOf<Self> {
+        Scope(state: \.dashboard, action: \.dashboard) {
+            DashboardFeature()
+        }
         Scope(state: \.analysis, action: \.analysis) {
             AnalysisFeature()
         }
@@ -44,6 +49,24 @@ struct MainTabFeature {
                 
             case .innerTabPlaceholderAction:
                 return .none
+
+            // Task 4.2: Intercept DashboardFeature.Action.delegate actions
+            case .dashboard(.delegate(.seeAllTransactionsTapped)):
+                // Navigate to the analysis/transactions tab
+                state.selectedTab = .analysis
+                return .none
+
+            case .dashboard(.delegate(.accountTapped)):
+                // Navigate to the analysis tab for account details
+                state.selectedTab = .analysis
+                return .none
+
+            case .dashboard(.delegate(.transactionTapped)):
+                // Could navigate to transaction details — for now stay on dashboard
+                return .none
+                
+            case .dashboard:
+                return .none
                 
             case .analysis:
                 return .none
@@ -51,3 +74,4 @@ struct MainTabFeature {
         }
     }
 }
+

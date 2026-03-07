@@ -10,27 +10,21 @@ extension TransactionClient: DependencyKey {
 
         return TransactionClient(
             fetchRecent: {
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
                 var descriptor = FetchDescriptor<SDTransaction>(
                     sortBy: [SortDescriptor(\.date, order: .reverse)]
                 )
                 descriptor.fetchLimit = 20
-                let results = try context.fetch(descriptor)
-                return results.map { $0.toDomain() }
+                return try databaseClient.fetch(descriptor)
             },
             fetchAll: {
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                let descriptor = FetchDescriptor<SDTransaction>(
-                    sortBy: [SortDescriptor(\.date, order: .reverse)]
+                try databaseClient.fetch(
+                    FetchDescriptor<SDTransaction>(
+                        sortBy: [SortDescriptor(\.date, order: .reverse)]
+                    )
                 )
-                let results = try context.fetch(descriptor)
-                return results.map { $0.toDomain() }
             },
             fetch: { filter in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
+                let context = databaseClient.makeContext()
 
                 // Build base descriptor and fetch all, then filter in-memory
                 // for complex multi-criteria filtering that SwiftData predicates
@@ -71,8 +65,7 @@ extension TransactionClient: DependencyKey {
                 return results.map { $0.toDomain() }
             },
             search: { query in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
+                let context = databaseClient.makeContext()
                 let lowered = query.lowercased()
                 let descriptor = FetchDescriptor<SDTransaction>(
                     sortBy: [SortDescriptor(\.date, order: .reverse)]
@@ -84,45 +77,33 @@ extension TransactionClient: DependencyKey {
                 return filtered.map { $0.toDomain() }
             },
             add: { transaction in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                SDTransaction.from(transaction, context: context)
-                try context.save()
+                try databaseClient.add(transaction, as: SDTransaction.self)
             },
             update: { transaction in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
                 let txnId = transaction.id
-                let descriptor = FetchDescriptor<SDTransaction>(
-                    predicate: #Predicate { $0.id == txnId }
-                )
-                guard let existing = try context.fetch(descriptor).first else {
-                    throw CoreError.notFound("Transaction \(transaction.id)")
+                try databaseClient.update(
+                    matching: FetchDescriptor<SDTransaction>(
+                        predicate: #Predicate { $0.id == txnId }
+                    )
+                ) { existing, context in
+                    existing.amount = transaction.amount
+                    existing.date = transaction.date
+                    existing.note = transaction.note
+                    existing.categoryId = transaction.categoryId
+                    existing.accountId = transaction.accountId
+                    existing.toAccountId = transaction.toAccountId
+                    existing.type = transaction.type.rawValue
+                    existing.aiSuggested = transaction.aiSuggested
+                    existing.updatedAt = transaction.updatedAt
+                    existing.tags = transaction.tags.map { SDTag.resolve($0, context: context) }
                 }
-                existing.amount = transaction.amount
-                existing.date = transaction.date
-                existing.note = transaction.note
-                existing.categoryId = transaction.categoryId
-                existing.accountId = transaction.accountId
-                existing.toAccountId = transaction.toAccountId
-                existing.type = transaction.type.rawValue
-                existing.aiSuggested = transaction.aiSuggested
-                existing.updatedAt = transaction.updatedAt
-                // Resolve tags
-                existing.tags = transaction.tags.map { SDTag.resolve($0, context: context) }
-                try context.save()
             },
             delete: { id in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                let descriptor = FetchDescriptor<SDTransaction>(
-                    predicate: #Predicate { $0.id == id }
+                try databaseClient.deleteFirst(
+                    matching: FetchDescriptor<SDTransaction>(
+                        predicate: #Predicate { $0.id == id }
+                    )
                 )
-                guard let existing = try context.fetch(descriptor).first else {
-                    throw CoreError.notFound("Transaction \(id)")
-                }
-                context.delete(existing)
-                try context.save()
             }
         )
     }

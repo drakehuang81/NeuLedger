@@ -10,56 +10,39 @@ extension BudgetClient: DependencyKey {
 
         return BudgetClient(
             fetchAll: {
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                let descriptor = FetchDescriptor<SDBudget>()
-                let results = try context.fetch(descriptor)
-                return results.map { $0.toDomain() }
+                try databaseClient.fetch(FetchDescriptor<SDBudget>())
             },
             fetchActive: {
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                let descriptor = FetchDescriptor<SDBudget>(
-                    predicate: #Predicate { $0.isActive == true }
+                try databaseClient.fetch(
+                    FetchDescriptor<SDBudget>(
+                        predicate: #Predicate { $0.isActive == true }
+                    )
                 )
-                let results = try context.fetch(descriptor)
-                return results.map { $0.toDomain() }
             },
             add: { budget in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                SDBudget.from(budget, context: context)
-                try context.save()
+                try databaseClient.add(budget, as: SDBudget.self)
             },
             update: { budget in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
                 let budgetId = budget.id
-                let descriptor = FetchDescriptor<SDBudget>(
-                    predicate: #Predicate { $0.id == budgetId }
-                )
-                guard let existing = try context.fetch(descriptor).first else {
-                    throw CoreError.notFound("Budget \(budget.id)")
+                try databaseClient.update(
+                    matching: FetchDescriptor<SDBudget>(
+                        predicate: #Predicate { $0.id == budgetId }
+                    )
+                ) { existing, _ in
+                    existing.name = budget.name
+                    existing.amount = budget.amount
+                    existing.categoryId = budget.categoryId
+                    existing.period = budget.period.rawValue
+                    existing.startDate = budget.startDate
+                    existing.isActive = budget.isActive
                 }
-                existing.name = budget.name
-                existing.amount = budget.amount
-                existing.categoryId = budget.categoryId
-                existing.period = budget.period.rawValue
-                existing.startDate = budget.startDate
-                existing.isActive = budget.isActive
-                try context.save()
             },
             delete: { id in
-                let container = databaseClient.modelContainer()
-                let context = ModelContext(container)
-                let descriptor = FetchDescriptor<SDBudget>(
-                    predicate: #Predicate { $0.id == id }
+                try databaseClient.deleteFirst(
+                    matching: FetchDescriptor<SDBudget>(
+                        predicate: #Predicate { $0.id == id }
+                    )
                 )
-                guard let existing = try context.fetch(descriptor).first else {
-                    throw CoreError.notFound("Budget \(id)")
-                }
-                context.delete(existing)
-                try context.save()
             }
         )
     }

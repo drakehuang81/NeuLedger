@@ -3,7 +3,7 @@ import SwiftData
 import Domain
 
 /// Bidirectional mapping between `SDAccount` and `Account`.
-extension SDAccount {
+extension SDAccount: DomainConvertible {
     /// Converts this SwiftData model to a Domain `Account` value type.
     func toDomain() -> Account {
         Account(

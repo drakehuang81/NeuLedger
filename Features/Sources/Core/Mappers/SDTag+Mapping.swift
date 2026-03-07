@@ -3,7 +3,7 @@ import SwiftData
 import Domain
 
 /// Bidirectional mapping between `SDTag` and `Tag`.
-extension SDTag {
+extension SDTag: DomainConvertible {
     /// Converts this SwiftData model to a Domain `Tag` value type.
     func toDomain() -> Tag {
         Tag(

@@ -17,8 +17,9 @@ struct MainTabFeature {
         var selectedTab: Tab = .dashboard
         var dashboard = DashboardFeature.State()
         var analysis = AnalysisFeature.State()
+        var settings = SettingsFeature.State()
     }
-    
+
     // MARK: - Action
     enum Action: Equatable {
         case tabSelected(Tab)
@@ -26,6 +27,7 @@ struct MainTabFeature {
         case innerTabPlaceholderAction // Placeholder action for inner tabs
         case dashboard(DashboardFeature.Action)
         case analysis(AnalysisFeature.Action)
+        case settings(SettingsFeature.Action)
     }
     
     // MARK: - Body
@@ -35,6 +37,9 @@ struct MainTabFeature {
         }
         Scope(state: \.analysis, action: \.analysis) {
             AnalysisFeature()
+        }
+        Scope(state: \.settings, action: \.settings) {
+            SettingsFeature()
         }
         Reduce { state, action in
             switch action {
@@ -67,8 +72,23 @@ struct MainTabFeature {
                 
             case .dashboard:
                 return .none
-                
+
             case .analysis:
+                return .none
+
+            case .settings(.delegate(.navigateToAccounts)):
+                return .none
+
+            case .settings(.delegate(.navigateToCategories)):
+                return .none
+
+            case .settings(.delegate(.navigateToBudgets)):
+                return .none
+
+            case .settings(.delegate(.navigateToTags)):
+                return .none
+
+            case .settings:
                 return .none
             }
         }

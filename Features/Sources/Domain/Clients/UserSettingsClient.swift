@@ -36,6 +36,12 @@ public extension SettingsKey where Value == Bool {
         rawValue: "hasCompletedOnboarding",
         defaultValue: false
     )
+
+    /// Whether AI smart features are enabled.
+    static let aiEnabled = SettingsKey(
+        rawValue: "aiEnabled",
+        defaultValue: true
+    )
 }
 
 // MARK: - UserSettingsClient

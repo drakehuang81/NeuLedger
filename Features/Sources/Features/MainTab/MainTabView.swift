@@ -22,7 +22,7 @@ struct MainTabView: View {
             }
 
             Tab("Settings", systemImage: "gearshape.fill", value: MainTabFeature.Tab.settings) {
-                PlaceholderView(title: "Settings", color: .gray)
+                SettingsView(store: store.scope(state: \.settings, action: \.settings))
             }
             Tab(value: MainTabFeature.Tab.search, role: .search) {
                 // TODO: 用搜尋頁面替代

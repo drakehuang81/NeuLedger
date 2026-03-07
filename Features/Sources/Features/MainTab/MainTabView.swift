@@ -7,7 +7,7 @@ struct MainTabView: View {
     init(store: StoreOf<MainTabFeature>) {
         self.store = store
     }
-    
+
     var body: some View {
         TabView(selection: Binding(
             get: { store.selectedTab },
@@ -17,6 +17,10 @@ struct MainTabView: View {
                 DashboardScreen(store: store.scope(state: \.dashboard, action: \.dashboard))
             }
 
+            Tab("記帳", systemImage: "list.bullet.rectangle.fill", value: MainTabFeature.Tab.transactions) {
+                TransactionsView(store: store.scope(state: \.transactions, action: \.transactions))
+            }
+
             Tab("Analysis", systemImage: "chart.bar.fill", value: MainTabFeature.Tab.analysis) {
                 AnalysisView(store: store.scope(state: \.analysis, action: \.analysis))
             }
@@ -24,47 +28,25 @@ struct MainTabView: View {
             Tab("Settings", systemImage: "gearshape.fill", value: MainTabFeature.Tab.settings) {
                 SettingsView(store: store.scope(state: \.settings, action: \.settings))
             }
-            Tab(value: MainTabFeature.Tab.search, role: .search) {
-                // TODO: 用搜尋頁面替代
-                PlaceholderView(title: "Search", color: .black)
-            }
-            .hidden(!(store.selectedTab == .search || store.selectedTab == .dashboard))
         }
         .tabViewStyle(.sidebarAdaptable)
 #if os(iOS)
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
-            // TODO: 到時候會有一個按鈕，可以新增記帳 ＆ AI 
+            HStack {
+                Spacer()
+                Button {
+                    store.send(.contextActionTapped)
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .symbolRenderingMode(.hierarchical)
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 8)
+            }
         }
 #endif
-    }
-}
-
-// A simple placeholder to demonstrate inner scrollable areas and safe area management
-private struct PlaceholderView: View {
-    let title: String
-    let color: Color
-    
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Text(title)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                
-                ForEach(0..<20) { i in
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(color.opacity(0.2))
-                        .frame(height: 100)
-                        .overlay(Text("Item \(i)"))
-                        .padding(.horizontal)
-                }
-            }
-            // Adding bottom padding to ensure the last item is not permanently covered by the floating tab bar
-            .padding(.bottom, 100)
-        }
-        .background(Color.gray.opacity(0.1).ignoresSafeArea())
     }
 }
 

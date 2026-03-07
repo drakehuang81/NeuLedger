@@ -276,7 +276,7 @@ struct DashboardFeatureTests {
         }
 
         await store.send(.addTransactionButtonTapped) {
-            $0.addTransaction = AddTransactionFeature.State()
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
         }
     }
 

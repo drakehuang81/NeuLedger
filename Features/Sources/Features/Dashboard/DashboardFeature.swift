@@ -217,7 +217,7 @@ public struct DashboardFeature: Sendable {
 
             // MARK: User interactions
             case .addTransactionButtonTapped:
-                state.addTransaction = AddTransactionFeature.State()
+                state.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
                 return .none
 
             case .seeAllTransactionsTapped:

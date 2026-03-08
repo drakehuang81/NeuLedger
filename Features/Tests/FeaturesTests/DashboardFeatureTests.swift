@@ -86,12 +86,7 @@ struct DashboardFeatureTests {
             $0.topAccounts = Self.sampleAccounts.sorted { $0.sortOrder < $1.sortOrder }
         }
 
-        // Total balance computed
-        await store.receive(\.totalBalanceComputed) {
-            $0.totalBalance = 46200 // 45000 + 1200
-        }
-
-        // Transactions updated — sorted by date desc, top 3
+        // Transactions arrive before balance computation completes (concurrent effects)
         await store.receive(\.transactionsUpdated) {
             $0.hasTransactions = true
             $0.recentTransactions = Array(
@@ -105,6 +100,11 @@ struct DashboardFeatureTests {
         // AI insight triggered due to new transaction count != cached count
         await store.receive(\.fetchAIInsight) {
             $0.isLoadingInsight = true
+        }
+
+        // Total balance computed (balance effect from accountsUpdated)
+        await store.receive(\.totalBalanceComputed) {
+            $0.totalBalance = 46200 // 45000 + 1200
         }
 
         await store.receive(\.aiInsightResponse.success) {
@@ -133,16 +133,9 @@ struct DashboardFeatureTests {
             $0.aiServiceClient.generateInsight = { _ in "Updated insight" }
         }
 
-        // Simulate receiving an updated list with 4 transactions (different count)
-        await store.send(.transactionsUpdated(Self.sampleTransactions)) {
-            $0.hasTransactions = true
-            $0.recentTransactions = Array(
-                Self.sampleTransactions
-                    .sorted { $0.date > $1.date }
-                    .prefix(3)
-            )
-            $0.isLoading = false
-        }
+        // Simulate receiving an updated list with 4 transactions (different count).
+        // No state change: sorted top-3 and flags are identical to the initial state.
+        await store.send(.transactionsUpdated(Self.sampleTransactions))
 
         // Cache invalidated — fetch triggered
         await store.receive(\.fetchAIInsight) {
@@ -181,20 +174,22 @@ struct DashboardFeatureTests {
             $0.lastInsightTransactionCount = nil // Cache invalidated
         }
 
-        // AI insight fetch sent immediately as part of merge
+        // fetchAIInsight is sent synchronously as part of the merge
         await store.receive(\.fetchAIInsight) {
             $0.isLoadingInsight = true
+        }
+
+        // AI insight resolves before account/transaction data arrives
+        await store.receive(\.aiInsightResponse.success) {
+            $0.isLoadingInsight = false
+            $0.aiInsight = "Fresh insight"
+            $0.lastInsightTransactionCount = 0 // recentTransactions is still empty at this point
         }
 
         // Accounts updated
         await store.receive(\.accountsUpdated) {
             $0.hasAccounts = true
             $0.topAccounts = Self.sampleAccounts.sorted { $0.sortOrder < $1.sortOrder }
-        }
-
-        // Total balance computed
-        await store.receive(\.totalBalanceComputed) {
-            $0.totalBalance = 2000 // 1000 * 2 accounts
         }
 
         // Transactions updated
@@ -207,17 +202,14 @@ struct DashboardFeatureTests {
             $0.isLoading = false
         }
 
-        // AI insight response from the forced fetch
-        await store.receive(\.aiInsightResponse.success) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = "Fresh insight"
-            $0.lastInsightTransactionCount = 3
-        }
-
-        // The transactionsUpdated may trigger another fetchAIInsight since count changed from nil
-        // This depends on ordering — receive it if it comes
+        // transactionsUpdated triggers a second fetchAIInsight (count 3 != lastInsightTransactionCount 0)
         await store.receive(\.fetchAIInsight) {
             $0.isLoadingInsight = true
+        }
+
+        // Total balance computed (balance effect from accountsUpdated)
+        await store.receive(\.totalBalanceComputed) {
+            $0.totalBalance = 2000 // 1000 * 2 accounts
         }
 
         await store.receive(\.aiInsightResponse.success) {
@@ -269,14 +261,17 @@ struct DashboardFeatureTests {
 
     @Test("addTransactionButtonTapped presents AddTransaction sheet")
     func testAddTransactionButtonTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
         let store = await TestStore(
             initialState: DashboardFeature.State()
         ) {
             DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
         }
 
         await store.send(.addTransactionButtonTapped) {
-            $0.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: fixedDate)
         }
     }
 

@@ -81,6 +81,7 @@ public struct DashboardFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.date.now) var now
 
     // MARK: - Body
 
@@ -217,7 +218,7 @@ public struct DashboardFeature: Sendable {
 
             // MARK: User interactions
             case .addTransactionButtonTapped:
-                state.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
+                state.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: now)
                 return .none
 
             case .seeAllTransactionsTapped:

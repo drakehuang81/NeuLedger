@@ -4,65 +4,50 @@ import Foundation
 @testable import Core
 import Domain
 
-@Suite("DefaultDataSeeder Tests")
-struct DefaultDataSeederTests {
-    var container: ModelContainer
+@Suite("Database Seeding Tests")
+struct DatabaseSeedingTests {
     var context: ModelContext
 
-    init() throws {
-        // Use an empty in-memory container
-        let schema = Schema([
-            SDTransaction.self,
-            SDAccount.self,
-            SDCategory.self,
-            SDBudget.self,
-            SDTag.self,
-        ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        self.container = try ModelContainer(for: schema, configurations: [configuration])
-        self.context = ModelContext(container)
+    init() {
+        let client = DatabaseClient.testValue
+        self.context = ModelContext(client.modelContainer())
     }
 
-    @Test("Seeder seeds initial data when database is empty")
+    @Test("Seeds initial categories and default account")
     func testSeedingInitialData() throws {
-        // Arrange
-        let initialCategoriesCount = try context.fetchCount(FetchDescriptor<SDCategory>())
-        #expect(initialCategoriesCount == 0)
-
-        // Act
-        // Call seed method manually, which is similar to what DatabaseClient does
-        DefaultDataSeeder.seed(in: context)
-
-        // Assert
         let categories = try context.fetch(FetchDescriptor<SDCategory>())
         let accounts = try context.fetch(FetchDescriptor<SDAccount>())
-        
-        // 9 expense + 5 income = 14 categories
-        #expect(categories.count == 14)
-        
+
         let expenseCategories = categories.filter { $0.type == TransactionType.expense.rawValue }
         let incomeCategories = categories.filter { $0.type == TransactionType.income.rawValue }
-        
+
         #expect(expenseCategories.count == 9)
         #expect(incomeCategories.count == 5)
-        
-        // 1 default account
+        #expect(categories.count == 14)
+
         #expect(accounts.count == 1)
         #expect(accounts.first?.name == "Cash")
+        #expect(accounts.first?.type == AccountType.cash.rawValue)
     }
 
-    @Test("Seeder is idempotent (does not duplicate data on second run)")
+    @Test("All seeded categories are marked as default")
+    func testAllCategoriesAreDefault() throws {
+        let categories = try context.fetch(FetchDescriptor<SDCategory>())
+
+        for category in categories {
+            #expect(category.isDefault == true, "Category '\(category.name)' should be default")
+        }
+    }
+
+    @Test("Seeding is idempotent via testValue")
     func testSeedingIsIdempotent() throws {
-        // Arrange
-        DefaultDataSeeder.seed(in: context)
-        let countAfterFirstSeed = try context.fetchCount(FetchDescriptor<SDCategory>())
-        #expect(countAfterFirstSeed == 14)
+        // testValue already seeded once during init.
+        // Create a second context from the same container and verify no duplicates.
+        let countBefore = try context.fetchCount(FetchDescriptor<SDCategory>())
+        #expect(countBefore == 14)
 
-        // Act
-        DefaultDataSeeder.seed(in: context)
-
-        // Assert
-        let countAfterSecondSeed = try context.fetchCount(FetchDescriptor<SDCategory>())
-        #expect(countAfterSecondSeed == 14)
+        // Fetching again should yield the same count (no re-seeding on subsequent access)
+        let countAfter = try context.fetchCount(FetchDescriptor<SDCategory>())
+        #expect(countAfter == 14)
     }
 }

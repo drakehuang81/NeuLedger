@@ -38,7 +38,7 @@ public struct AddTransactionFeature: Sendable {
         public var categories: [Domain.Category]
         public var isLoading: Bool
 
-        public init(mode: Mode = .add(.expense)) {
+        public init(mode: Mode = .add(.expense), date: Date = Date()) {
             self.mode = mode
             self.accounts = []
             self.categories = []
@@ -52,7 +52,7 @@ public struct AddTransactionFeature: Sendable {
                 self.toAccountId = nil
                 self.categoryId = nil
                 self.note = ""
-                self.date = Date()
+                self.date = date
 
             case let .edit(transaction):
                 self.type = transaction.type

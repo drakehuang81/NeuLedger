@@ -75,7 +75,7 @@ Features/Sources/
   - `databaseClient.update(matching:mutation:)` — find (fetchLimit=1) + mutate closure + save
   - `databaseClient.deleteFirst(matching:validation:)` — find (fetchLimit=1) + optional guard + delete + save
 - `CoreError.notFound` / `.operationDenied` are the only error types thrown from the Core layer
-- `DefaultDataSeeder` seeds default categories and the default "Cash" account at `DatabaseClient.liveValue` initialisation (only when `SDCategory` count == 0)
+- Default data seeding (via `seedIfNeeded(in:)` in `DatabaseClient.swift`) populates default categories and the default "Cash" account on first launch (only when `SDCategory` count == 0)
 - All SwiftData operations run on a `@ModelActor`-isolated context for thread safety
 
 ### Features Layer

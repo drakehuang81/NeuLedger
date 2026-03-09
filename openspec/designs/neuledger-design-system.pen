@@ -19,8 +19,12 @@
           "name": "TransactionRow",
           "reusable": true,
           "width": 358,
-          "fill": "\\$--text-inverse",
+          "fill": "$--glass-surface",
           "cornerRadius": "$--radius-md",
+          "effect": {
+            "type": "background_blur",
+            "radius": 20
+          },
           "gap": 12,
           "padding": [
             12,
@@ -438,8 +442,12 @@
           "name": "BudgetGauge",
           "reusable": true,
           "width": 358,
-          "fill": "\\$--text-inverse",
+          "fill": "$--glass-surface",
           "cornerRadius": "$--radius-lg",
+          "effect": {
+            "type": "background_blur",
+            "radius": 20
+          },
           "layout": "vertical",
           "gap": 10,
           "padding": 16,
@@ -2105,13 +2113,6 @@
           "ref": "YvP0Y",
           "width": "fill_container",
           "name": "refBalance"
-        },
-        {
-          "id": "bjmDh",
-          "type": "ref",
-          "ref": "PUTOE",
-          "width": "fill_container",
-          "name": "refActions"
         },
         {
           "id": "A3qoT",

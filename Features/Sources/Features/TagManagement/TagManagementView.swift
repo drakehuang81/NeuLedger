@@ -1,0 +1,91 @@
+import Common
+import ComposableArchitecture
+import Domain
+import SwiftUI
+
+public struct TagManagementView: View {
+    @Bindable var store: StoreOf<TagManagementFeature>
+
+    public init(store: StoreOf<TagManagementFeature>) {
+        self.store = store
+    }
+
+    public var body: some View {
+        NavigationStack {
+            Group {
+                if store.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if store.tags.isEmpty {
+                    emptyState
+                } else {
+                    tagList
+                }
+            }
+            .navigationTitle("標籤管理")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        store.send(.addButtonTapped)
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .task {
+                await store.send(.task).finish()
+            }
+            .sheet(item: $store.scope(state: \.addEdit, action: \.addEdit)) { addEditStore in
+                AddEditTagView(store: addEditStore)
+            }
+            .alert($store.scope(state: \.alert, action: \.alert))
+        }
+    }
+
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        EmptyStateView(
+            icon: "tag",
+            title: "尚無標籤",
+            description: "新增標籤來更細緻地分類交易",
+            actionTitle: "新增標籤"
+        ) {
+            store.send(.addButtonTapped)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Tag List
+
+    private var tagList: some View {
+        List {
+            ForEach(store.tags) { tag in
+                Button {
+                    store.send(.tagTapped(tag))
+                } label: {
+                    tagRow(tag)
+                }
+                .buttonStyle(.plain)
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        store.send(.deleteRequested(tag.id))
+                    } label: {
+                        Label("刪除", systemImage: "trash")
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+
+    private func tagRow(_ tag: Tag) -> some View {
+        TagPill(
+            text: tag.name,
+            color: tag.color.map { Color(hex: $0) }
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
+    }
+}

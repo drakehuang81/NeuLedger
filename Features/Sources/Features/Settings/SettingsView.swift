@@ -2,6 +2,16 @@ import ComposableArchitecture
 import Common
 import SwiftUI
 
+// MARK: - Navigation Destination
+
+enum SettingsRoute: Hashable {
+    case accountManagement
+    case categoryManagement
+    case tagManagement
+}
+
+// MARK: - SettingsView
+
 public struct SettingsView: View {
     @Bindable var store: StoreOf<SettingsFeature>
 
@@ -10,31 +20,55 @@ public struct SettingsView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // MARK: Title
-                Text("設定")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // MARK: Title
+                    Text("設定")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                // MARK: 管理
-                sectionManage
+                    // MARK: 管理
+                    sectionManage
 
-                // MARK: 偏好設定
-                sectionPreferences
+                    // MARK: 偏好設定
+                    sectionPreferences
 
-                // MARK: 資料
-                sectionData
+                    // MARK: 資料
+                    sectionData
 
-                // MARK: 關於
-                sectionAbout
+                    // MARK: 關於
+                    sectionAbout
+                }
+                .padding(.top, 60)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 100)
             }
-            .padding(.top, 60)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 100)
+            .task { await store.send(.task).finish() }
+            .navigationDestination(for: SettingsRoute.self) { route in
+                switch route {
+                case .accountManagement:
+                    AccountManagementView(
+                        store: Store(initialState: AccountManagementFeature.State()) {
+                            AccountManagementFeature()
+                        }
+                    )
+                case .categoryManagement:
+                    CategoryManagementView(
+                        store: Store(initialState: CategoryManagementFeature.State()) {
+                            CategoryManagementFeature()
+                        }
+                    )
+                case .tagManagement:
+                    TagManagementView(
+                        store: Store(initialState: TagManagementFeature.State()) {
+                            TagManagementFeature()
+                        }
+                    )
+                }
+            }
         }
-        .task { await store.send(.task).finish() }
     }
 
     // MARK: - 管理
@@ -43,7 +77,7 @@ public struct SettingsView: View {
         VStack(spacing: 6) {
             sectionHeader("管理")
             glassCard {
-                Button { store.send(.navigateToAccounts) } label: {
+                NavigationLink(value: SettingsRoute.accountManagement) {
                     settingsRow(
                         icon: "wallet.bifold",
                         iconColor: Color.Design.brandPrimary,
@@ -51,7 +85,7 @@ public struct SettingsView: View {
                         trailing: chevron
                     )
                 }
-                Button { store.send(.navigateToCategories) } label: {
+                NavigationLink(value: SettingsRoute.categoryManagement) {
                     settingsRow(
                         icon: "square.grid.2x2",
                         iconColor: Color.Design.brandSecondary,
@@ -59,15 +93,15 @@ public struct SettingsView: View {
                         trailing: chevron
                     )
                 }
-                Button { store.send(.navigateToBudgets) } label: {
-                    settingsRow(
-                        icon: "banknote",
-                        iconColor: Color.Design.incomeGreen,
-                        label: "預算設定",
-                        trailing: chevron
-                    )
-                }
-                Button { store.send(.navigateToTags) } label: {
+                // Budget management placeholder (separate future change)
+                settingsRow(
+                    icon: "banknote",
+                    iconColor: Color.Design.incomeGreen,
+                    label: "預算設定",
+                    trailing: chevron
+                )
+                .foregroundStyle(Color.Design.textTertiary)
+                NavigationLink(value: SettingsRoute.tagManagement) {
                     settingsRow(
                         icon: "tag",
                         iconColor: Color.Design.brandAccent,

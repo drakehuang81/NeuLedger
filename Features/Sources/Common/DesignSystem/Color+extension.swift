@@ -7,7 +7,7 @@ import AppKit
 #endif
 
 // MARK: - SwiftUI Color Hex Helper
-extension Color {
+public extension Color {
     init(hex: String) {
         let hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
         var int: UInt64 = 0

@@ -79,18 +79,6 @@ struct MainTabFeature {
             case .analysis:
                 return .none
 
-            case .settings(.delegate(.navigateToAccounts)):
-                return .none
-
-            case .settings(.delegate(.navigateToCategories)):
-                return .none
-
-            case .settings(.delegate(.navigateToBudgets)):
-                return .none
-
-            case .settings(.delegate(.navigateToTags)):
-                return .none
-
             case .settings:
                 return .none
             }

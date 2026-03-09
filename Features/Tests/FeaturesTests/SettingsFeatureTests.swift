@@ -119,56 +119,6 @@ struct SettingsFeatureTests {
         }
     }
 
-    // MARK: - Delegate Navigation Actions
-
-    @Test("navigateToAccounts sends delegate action")
-    func testNavigateToAccounts() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State()
-        ) {
-            SettingsFeature()
-        }
-
-        await store.send(.navigateToAccounts)
-        await store.receive(\.delegate.navigateToAccounts)
-    }
-
-    @Test("navigateToCategories sends delegate action")
-    func testNavigateToCategories() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State()
-        ) {
-            SettingsFeature()
-        }
-
-        await store.send(.navigateToCategories)
-        await store.receive(\.delegate.navigateToCategories)
-    }
-
-    @Test("navigateToBudgets sends delegate action")
-    func testNavigateToBudgets() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State()
-        ) {
-            SettingsFeature()
-        }
-
-        await store.send(.navigateToBudgets)
-        await store.receive(\.delegate.navigateToBudgets)
-    }
-
-    @Test("navigateToTags sends delegate action")
-    func testNavigateToTags() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State()
-        ) {
-            SettingsFeature()
-        }
-
-        await store.send(.navigateToTags)
-        await store.receive(\.delegate.navigateToTags)
-    }
-
     // MARK: - Placeholder Actions
 
     @Test("exportCSVTapped does not mutate state")

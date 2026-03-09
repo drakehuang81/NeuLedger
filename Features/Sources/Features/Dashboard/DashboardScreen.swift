@@ -19,19 +19,12 @@ public struct DashboardScreen: View {
         // Task 3.7: Wrap in ScrollView with .refreshable
         ScrollView {
             VStack(spacing: 24) {
-                // Task 3.2: Header and balance
                 balanceSection
 
-                // Task 3.3: Quick actions
-                actionsSection
-
-                // Task 3.4: AI Insight card
                 insightSection
 
-                // Task 3.5: My Wallets (Accounts) horizontal scroll
                 accountsSection
 
-                // Task 3.6: Recent Transactions vertical list
                 transactionsSection
             }
             .padding(.horizontal, 16)
@@ -84,23 +77,6 @@ public struct DashboardScreen: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    // MARK: - Actions Section (Task 3.3)
-
-    private var actionsSection: some View {
-        HStack(spacing: 16) {
-            // Quick action: Add transaction
-            Button {
-                store.send(.addTransactionButtonTapped)
-            } label: {
-                Label("記帳", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-            }
-            .buttonStyle(.borderedProminent)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-    }
 
     // MARK: - Insight Section (Task 3.4)
 

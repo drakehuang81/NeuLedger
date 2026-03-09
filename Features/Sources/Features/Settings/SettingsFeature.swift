@@ -28,22 +28,9 @@ public struct SettingsFeature: Sendable {
         case task
         case aiToggleChanged(Bool)
         case accountsLoaded([Account])
-        case navigateToAccounts
-        case navigateToCategories
-        case navigateToBudgets
-        case navigateToTags
         case exportCSVTapped
         case exportJSONTapped
         case privacyPolicyTapped
-        case delegate(Delegate)
-
-        @CasePathable
-        public enum Delegate: Sendable, Equatable {
-            case navigateToAccounts
-            case navigateToCategories
-            case navigateToBudgets
-            case navigateToTags
-        }
     }
 
     // MARK: - Dependencies
@@ -77,18 +64,6 @@ public struct SettingsFeature: Sendable {
                 state.defaultAccountName = accounts.first?.name ?? "無"
                 return .none
 
-            case .navigateToAccounts:
-                return .send(.delegate(.navigateToAccounts))
-
-            case .navigateToCategories:
-                return .send(.delegate(.navigateToCategories))
-
-            case .navigateToBudgets:
-                return .send(.delegate(.navigateToBudgets))
-
-            case .navigateToTags:
-                return .send(.delegate(.navigateToTags))
-
             case .exportCSVTapped:
                 print("[Settings] Export CSV tapped — not yet implemented")
                 return .none
@@ -99,9 +74,6 @@ public struct SettingsFeature: Sendable {
 
             case .privacyPolicyTapped:
                 print("[Settings] Privacy policy tapped — not yet implemented")
-                return .none
-
-            case .delegate:
                 return .none
             }
         }

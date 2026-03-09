@@ -17,7 +17,7 @@ struct MainTabView: View {
                 DashboardScreen(store: store.scope(state: \.dashboard, action: \.dashboard))
             }
 
-            Tab("記帳", systemImage: "list.bullet.rectangle.fill", value: MainTabFeature.Tab.transactions) {
+            Tab("Search", systemImage: "list.bullet.rectangle.fill", value: MainTabFeature.Tab.transactions) {
                 TransactionsView(store: store.scope(state: \.transactions, action: \.transactions))
             }
 

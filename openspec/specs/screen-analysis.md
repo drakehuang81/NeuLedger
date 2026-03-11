@@ -48,12 +48,13 @@ The system SHALL visualize the historical daily or weekly spending patterns via 
 - **AND** 使用 Swift Charts
 
 ### Requirement: Budget Status Display
-The system SHALL display predefined budgets for categories alongside a progress bar indicating current consumption relative to the available budget threshold.
+The system SHALL display active budgets for categories alongside a progress bar indicating current consumption relative to the available budget threshold, loaded live via `BudgetClient`.
 
 #### Scenario: Displaying category budgets
-- **WHEN** there is a planned budget and tracked expenditures for that category
-- **THEN** a progress gauge displays showing the name of the budget, progress bar visually depicting the spent/limit ratio, and the remaining amount alongside percentage used
+- **WHEN** there is an active planned budget (retrieved via `fetchActive()`) and the view is presented
+- **THEN** a progress gauge displays the aggregated `BudgetGaugeMetrics` computed from the current budget and expenditures
 - **AND** 預算進度條與生命週期計算參見 `feature-budgets.md`
+- **AND** the gauge visually depicts the spent/limit ratio, and the remaining amount alongside percentage used
 
 ### Requirement: Period Snapshot Insights (AI)
 The system SHALL present AI-generated insights regarding recent spending, analyzing key trends or anomalies in the ledger data.

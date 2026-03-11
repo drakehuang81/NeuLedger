@@ -7,6 +7,7 @@ import SwiftUI
 enum SettingsRoute: Hashable {
     case accountManagement
     case categoryManagement
+    case budgetManagement
     case tagManagement
 }
 
@@ -60,6 +61,12 @@ public struct SettingsView: View {
                             CategoryManagementFeature()
                         }
                     )
+                case .budgetManagement:
+                    BudgetManagementView(
+                        store: Store(initialState: BudgetManagementFeature.State()) {
+                            BudgetManagementFeature()
+                        }
+                    )
                 case .tagManagement:
                     TagManagementView(
                         store: Store(initialState: TagManagementFeature.State()) {
@@ -93,14 +100,14 @@ public struct SettingsView: View {
                         trailing: chevron
                     )
                 }
-                // Budget management placeholder (separate future change)
-                settingsRow(
-                    icon: "banknote",
-                    iconColor: Color.Design.incomeGreen,
-                    label: "預算設定",
-                    trailing: chevron
-                )
-                .foregroundStyle(Color.Design.textTertiary)
+                NavigationLink(value: SettingsRoute.budgetManagement) {
+                    settingsRow(
+                        icon: "banknote",
+                        iconColor: Color.Design.incomeGreen,
+                        label: "預算設定",
+                        trailing: chevron
+                    )
+                }
                 NavigationLink(value: SettingsRoute.tagManagement) {
                     settingsRow(
                         icon: "tag",

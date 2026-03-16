@@ -103,6 +103,7 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.dismiss) var dismiss
 
     private enum CancelID { case task }
@@ -127,7 +128,13 @@ public struct AddTransactionFeature: Sendable {
                 state.accounts = accounts
                 state.categories = categories
                 if case .add = state.mode, state.accountId == nil {
-                    state.accountId = accounts.first?.id
+                    let defaultId = userSettingsClient.string(.defaultAccountId)
+                    if !defaultId.isEmpty,
+                       let match = accounts.first(where: { $0.id.uuidString == defaultId }) {
+                        state.accountId = match.id
+                    } else {
+                        state.accountId = accounts.first?.id
+                    }
                 }
                 return .none
 

@@ -24,18 +24,23 @@ struct SettingsFeatureTests {
             SettingsFeature()
         } withDependencies: {
             $0.userSettingsClient.bool = { _ in false }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.userSettingsClient.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
         }
 
         await store.send(.task)
 
         await store.receive(\.accountsLoaded) {
+            $0.accounts = Self.sampleAccounts
             $0.defaultAccountName = "現金錢包"
         }
 
         await store.receive(\.aiToggleChanged) {
             $0.isAIEnabled = false
         }
+
+        await store.receive(\.defaultAccountSelected)
     }
 
     @Test(".task shows '無' when no active accounts")
@@ -46,17 +51,21 @@ struct SettingsFeatureTests {
             SettingsFeature()
         } withDependencies: {
             $0.userSettingsClient.bool = { _ in true }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.userSettingsClient.setString = { _, _ in }
             $0.accountClient.fetchActive = { [] }
         }
 
         await store.send(.task)
 
         await store.receive(\.accountsLoaded) {
-            $0.defaultAccountName = "無"
+            $0.defaultAccountName = String(localized: "settings_none")
         }
 
         // aiEnabled is already true (default), so no state mutation expected
         await store.receive(\.aiToggleChanged)
+
+        await store.receive(\.defaultAccountSelected)
     }
 
     // MARK: - AI Toggle
@@ -102,6 +111,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.accountsLoaded(Self.sampleAccounts)) {
+            $0.accounts = Self.sampleAccounts
             $0.defaultAccountName = "現金錢包"
         }
     }
@@ -115,8 +125,34 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.accountsLoaded([])) {
-            $0.defaultAccountName = "無"
+            $0.defaultAccountName = String(localized: "settings_none")
         }
+    }
+
+    // MARK: - Default Account Selection
+
+    @Test("defaultAccountSelected persists choice and updates display name")
+    func testDefaultAccountSelected() async throws {
+        let savedValues: LockIsolated<[String]> = LockIsolated([])
+
+        var initialState = SettingsFeature.State()
+        initialState.accounts = Self.sampleAccounts
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.userSettingsClient.setString = { value, _ in
+                savedValues.withValue { $0.append(value) }
+            }
+        }
+
+        let targetId = Self.sampleAccounts[1].id.uuidString
+        await store.send(.defaultAccountSelected(targetId)) {
+            $0.selectedDefaultAccountId = targetId
+            $0.defaultAccountName = "銀行帳戶"
+        }
+
+        #expect(savedValues.value == [targetId])
     }
 
     // MARK: - Placeholder Actions

@@ -126,14 +126,19 @@ public struct SettingsView: View {
         VStack(spacing: 6) {
             sectionHeader(String(localized: "settings_preferences"))
             glassCard {
-                settingsRow(
+                Picker(selection: Binding(
+                    get: { store.selectedDefaultAccountId },
+                    set: { store.send(.defaultAccountSelected($0)) }
+                ), label: settingsRow(
                     icon: "creditcard",
                     iconColor: Color.Design.textSecondary,
                     label: String(localized: "settings_default_account"),
-                    trailing: Text(store.defaultAccountName.isEmpty ? String(localized: "settings_none") : store.defaultAccountName)
-                        .font(.body)
-                        .foregroundStyle(Color.Design.textSecondary)
-                )
+                    trailing: EmptyView()
+                )) {
+                    ForEach(store.accounts) { account in
+                        Text(account.name).tag(account.id.uuidString)
+                    }
+                }
                 settingsRow(
                     icon: "globe",
                     iconColor: Color.Design.textSecondary,

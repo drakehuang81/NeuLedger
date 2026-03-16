@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Domain
 import Foundation
+import UIKit
 
 @Reducer
 public struct SettingsFeature: Sendable {
@@ -14,17 +15,20 @@ public struct SettingsFeature: Sendable {
         public var accounts: [Account] = []
         public var selectedDefaultAccountId: String = ""
         public var defaultAccountName: String = ""
+        public var currentLanguage: String = ""
 
         public init(
             isAIEnabled: Bool = true,
             accounts: [Account] = [],
             selectedDefaultAccountId: String = "",
-            defaultAccountName: String = ""
+            defaultAccountName: String = "",
+            currentLanguage: String = ""
         ) {
             self.isAIEnabled = isAIEnabled
             self.accounts = accounts
             self.selectedDefaultAccountId = selectedDefaultAccountId
             self.defaultAccountName = defaultAccountName
+            self.currentLanguage = currentLanguage
         }
     }
 
@@ -35,6 +39,8 @@ public struct SettingsFeature: Sendable {
         case aiToggleChanged(Bool)
         case accountsLoaded([Account])
         case defaultAccountSelected(String)
+        case languageTapped
+        case languageLoaded(String)
         case exportCSVTapped
         case exportJSONTapped
         case privacyPolicyTapped
@@ -44,6 +50,7 @@ public struct SettingsFeature: Sendable {
 
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.accountClient) var accountClient
+    @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task }
 
@@ -61,6 +68,9 @@ public struct SettingsFeature: Sendable {
                     await send(.accountsLoaded(fetched))
                     await send(.aiToggleChanged(isAIEnabled))
                     await send(.defaultAccountSelected(defaultId))
+                    let langCode = Locale.current.language.languageCode?.identifier ?? "zh"
+                    let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
+                    await send(.languageLoaded(displayName))
                 }
                 .cancellable(id: CancelID.task)
 
@@ -85,6 +95,17 @@ public struct SettingsFeature: Sendable {
                     state.defaultAccountName = account.name
                 }
                 return .none
+
+            case let .languageLoaded(name):
+                state.currentLanguage = name
+                return .none
+
+            case .languageTapped:
+                return .run { _ in
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        await openURL(url)
+                    }
+                }
 
             case .exportCSVTapped:
                 print("[Settings] Export CSV tapped — not yet implemented")

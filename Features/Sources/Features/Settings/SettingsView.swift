@@ -139,14 +139,19 @@ public struct SettingsView: View {
                         Text(account.name).tag(account.id.uuidString)
                     }
                 }
-                settingsRow(
-                    icon: "globe",
-                    iconColor: Color.Design.textSecondary,
-                    label: String(localized: "settings_language"),
-                    trailing: Text("settings_language_value")
-                        .font(.body)
-                        .foregroundStyle(Color.Design.textSecondary)
-                )
+                Button { store.send(.languageTapped) } label: {
+                    settingsRow(
+                        icon: "globe",
+                        iconColor: Color.Design.textSecondary,
+                        label: String(localized: "settings_language"),
+                        trailing: HStack(spacing: 4) {
+                            Text(store.currentLanguage)
+                                .font(.body)
+                                .foregroundStyle(Color.Design.textSecondary)
+                            chevron
+                        }
+                    )
+                }
                 settingsRow(
                     icon: "sparkles",
                     iconColor: Color.Design.brandPrimary,

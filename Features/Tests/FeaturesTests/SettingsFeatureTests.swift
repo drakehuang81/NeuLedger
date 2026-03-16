@@ -2,6 +2,7 @@ import Testing
 import Foundation
 import ComposableArchitecture
 import Domain
+import UIKit
 @testable import Features
 
 @Suite("SettingsFeature Tests")
@@ -41,6 +42,12 @@ struct SettingsFeatureTests {
         }
 
         await store.receive(\.defaultAccountSelected)
+
+        await store.receive(\.languageLoaded) {
+            $0.currentLanguage = Locale.current.localizedString(
+                forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
+            )?.localizedCapitalized ?? "zh"
+        }
     }
 
     @Test(".task shows '無' when no active accounts")
@@ -66,6 +73,12 @@ struct SettingsFeatureTests {
         await store.receive(\.aiToggleChanged)
 
         await store.receive(\.defaultAccountSelected)
+
+        await store.receive(\.languageLoaded) {
+            $0.currentLanguage = Locale.current.localizedString(
+                forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
+            )?.localizedCapitalized ?? "zh"
+        }
     }
 
     // MARK: - AI Toggle
@@ -188,5 +201,28 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.privacyPolicyTapped)
+    }
+
+    // MARK: - Language
+
+    @Test("languageTapped opens system settings URL")
+    func testLanguageTapped() async throws {
+        let openedURLs: LockIsolated<[URL]> = LockIsolated([])
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.openURL = .init { url in
+                openedURLs.withValue { $0.append(url) }
+                return true
+            }
+        }
+
+        await store.send(.languageTapped)
+
+        #expect(openedURLs.value.count == 1)
+        #expect(openedURLs.value.first?.absoluteString == UIApplication.openSettingsURLString)
     }
 }

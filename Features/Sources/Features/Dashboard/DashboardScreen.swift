@@ -42,18 +42,7 @@ public struct DashboardScreen: View {
         .sheet(
             item: $store.scope(state: \.addTransaction, action: \.addTransaction)
         ) { addTransactionStore in
-            NavigationStack {
-                // Placeholder view for AddTransaction
-                Text("Add Transaction")
-                    .navigationTitle("記帳")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("取消") {
-                                addTransactionStore.send(.dismiss)
-                            }
-                        }
-                    }
-            }
+            AddTransactionView(store: addTransactionStore)
         }
     }
 
@@ -61,7 +50,7 @@ public struct DashboardScreen: View {
 
     private var balanceSection: some View {
         VStack(spacing: 8) {
-            Text("總資產")
+            Text("dashboard_total_balance")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -84,13 +73,13 @@ public struct DashboardScreen: View {
         Group {
             if store.isLoadingInsight {
                 // Skeleton loader using redacted
-                insightCard(text: "正在為您分析最近的消費模式，請稍候...")
+                insightCard(text: String(localized: "dashboard_ai_loading"))
                     .redacted(reason: .placeholder)
             } else if let insight = store.aiInsight {
                 insightCard(text: insight)
             } else if store.hasTransactions {
                 // Fallback: no insight available but has data
-                insightCard(text: "暫時無法取得 AI 洞察，請稍後重試。")
+                insightCard(text: String(localized: "dashboard_ai_unavailable"))
                     .opacity(0.6)
             }
             // If no transactions at all, don't show the insight card
@@ -101,8 +90,8 @@ public struct DashboardScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "sparkles")
-                    .foregroundStyle(.purple)
-                Text("AI 洞察")
+                    .foregroundStyle(Color.Design.brandSecondary)
+                Text("dashboard_ai_insight")
                     .font(.headline)
             }
 
@@ -121,7 +110,7 @@ public struct DashboardScreen: View {
 
     private var accountsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("我的錢包")
+            Text("dashboard_my_wallets")
                 .font(.headline)
 
             if store.hasAccounts {
@@ -146,9 +135,9 @@ public struct DashboardScreen: View {
                 // Global EmptyStateView if no accounts
                 EmptyStateView(
                     icon: "wallet.pass.fill",
-                    title: "尚無錢包",
-                    description: "新增您的第一個錢包或帳戶來開始管理財務。",
-                    actionTitle: "新增錢包",
+                    title: String(localized: "dashboard_no_wallets_title"),
+                    description: String(localized: "dashboard_no_wallets_desc"),
+                    actionTitle: String(localized: "dashboard_add_wallet"),
                     action: { store.send(.addTransactionButtonTapped) }
                 )
                 .frame(maxWidth: .infinity)
@@ -161,13 +150,13 @@ public struct DashboardScreen: View {
     private var transactionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("最近交易")
+                Text("dashboard_recent_transactions")
                     .font(.headline)
 
                 Spacer()
 
                 if store.hasTransactions {
-                    Button("查看全部") {
+                    Button(String(localized: "dashboard_see_all")) {
                         store.send(.seeAllTransactionsTapped)
                     }
                     .font(.subheadline)
@@ -181,7 +170,7 @@ public struct DashboardScreen: View {
                             store.send(.transactionTapped(transaction.id))
                         } label: {
                             TransactionRow(
-                                title: transaction.note ?? "交易",
+                                title: transaction.note ?? String(localized: "dashboard_transaction_default"),
                                 subtitle: transaction.type.rawValue,
                                 amount: transaction.type == .expense ? -transaction.amount : transaction.amount,
                                 date: transaction.date.formatted(date: .abbreviated, time: .shortened),
@@ -196,9 +185,9 @@ public struct DashboardScreen: View {
                 // Has accounts but no transactions
                 EmptyStateView(
                     icon: "tray.fill",
-                    title: "尚無交易",
-                    description: "記錄您的第一筆花費吧！",
-                    actionTitle: "記一筆",
+                    title: String(localized: "dashboard_no_transactions_title"),
+                    description: String(localized: "dashboard_no_transactions_desc"),
+                    actionTitle: String(localized: "dashboard_add_first"),
                     action: { store.send(.addTransactionButtonTapped) }
                 )
                 .frame(maxWidth: .infinity)
@@ -218,9 +207,9 @@ public struct DashboardScreen: View {
 
     private func colorForTransactionType(_ type: TransactionType) -> Color {
         switch type {
-        case .expense: return .red
-        case .income: return .green
-        case .transfer: return .blue
+        case .expense: return Color.Design.expenseRed
+        case .income: return Color.Design.incomeGreen
+        case .transfer: return Color.Design.accentBlue
         }
     }
 }

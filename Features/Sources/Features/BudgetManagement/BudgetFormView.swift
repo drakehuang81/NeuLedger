@@ -16,7 +16,7 @@ public struct BudgetFormView: View {
                 // MARK: Name Field
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("預算名稱", text: Binding(
+                        TextField(String(localized: "budget_form_name_placeholder"), text: Binding(
                             get: { store.name },
                             set: { store.send(.nameChanged($0)) }
                         ))
@@ -27,7 +27,7 @@ public struct BudgetFormView: View {
                         }
                     }
                 } header: {
-                    Text("名稱")
+                    Text("common_name")
                 }
 
                 // MARK: Amount Field
@@ -49,12 +49,12 @@ public struct BudgetFormView: View {
                         }
                     }
                 } header: {
-                    Text("金額")
+                    Text("budget_form_amount")
                 }
 
                 // MARK: Period Picker
                 Section {
-                    Picker("週期", selection: Binding(
+                    Picker(String(localized: "budget_form_period"), selection: Binding(
                         get: { store.period },
                         set: { store.send(.periodChanged($0)) }
                     )) {
@@ -64,13 +64,13 @@ public struct BudgetFormView: View {
                     }
                     .pickerStyle(.segmented)
                 } header: {
-                    Text("週期")
+                    Text("budget_form_period")
                 }
 
                 // MARK: Start Date
                 Section {
                     DatePicker(
-                        "起始日期",
+                        String(localized: "budget_form_start_date"),
                         selection: Binding(
                             get: { store.startDate },
                             set: { store.send(.startDateChanged($0)) }
@@ -78,25 +78,25 @@ public struct BudgetFormView: View {
                         displayedComponents: .date
                     )
                 } header: {
-                    Text("起始日期")
+                    Text("budget_form_start_date")
                 }
 
                 // MARK: Category (optional)
                 if !store.availableCategories.isEmpty {
                     Section {
-                        Picker("分類", selection: Binding(
+                        Picker(String(localized: "add_transaction_category"), selection: Binding(
                             get: { store.categoryId },
                             set: { store.send(.categoryChanged($0)) }
                         )) {
-                            Text("全部支出（全域預算）").tag(Domain.Category.ID?.none)
+                            Text("budget_form_all_expenses").tag(Domain.Category.ID?.none)
                             ForEach(store.availableCategories) { category in
                                 Text(category.name).tag(Optional(category.id))
                             }
                         }
                     } header: {
-                        Text("套用分類")
+                        Text("budget_form_apply_category")
                     } footer: {
-                        Text("選擇「全部支出」表示此預算適用所有支出類別。")
+                        Text("budget_form_all_expenses_hint")
                             .font(Font.Design.caption)
                     }
                 }
@@ -105,12 +105,12 @@ public struct BudgetFormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") {
+                    Button(String(localized: "common_cancel")) {
                         store.send(.cancelTapped)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("儲存") {
+                    Button(String(localized: "common_save")) {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
@@ -124,9 +124,9 @@ public struct BudgetFormView: View {
 
     private func periodDisplayName(_ period: BudgetPeriod) -> String {
         switch period {
-        case .weekly: return "每週"
-        case .monthly: return "每月"
-        case .yearly: return "每年"
+        case .weekly: return String(localized: "budget_period_weekly")
+        case .monthly: return String(localized: "budget_period_monthly")
+        case .yearly: return String(localized: "budget_period_yearly")
         }
     }
 }

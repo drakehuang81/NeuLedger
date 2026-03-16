@@ -19,15 +19,15 @@ public struct CategoryManagementView: View {
                 } else if store.filteredCategories.isEmpty {
                     EmptyStateView(
                         icon: "tag.slash",
-                        title: "尚無分類",
-                        description: "點擊右上角「+」新增分類"
+                        title: String(localized: "category_management_empty_title"),
+                        description: String(localized: "category_management_empty_desc")
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     categoriesList
                 }
             }
-            .navigationTitle("分類管理")
+            .navigationTitle(String(localized: "category_management_title"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -63,14 +63,14 @@ public struct CategoryManagementView: View {
 
     private var typePicker: some View {
         Picker(
-            "類型",
+            String(localized: "common_type"),
             selection: Binding(
                 get: { store.selectedType },
                 set: { store.send(.selectedTypeChanged($0)) }
             )
         ) {
-            Text("支出").tag(TransactionType.expense)
-            Text("收入").tag(TransactionType.income)
+            Text("common_expense").tag(TransactionType.expense)
+            Text("common_income").tag(TransactionType.income)
         }
         .pickerStyle(.segmented)
     }
@@ -102,7 +102,7 @@ public struct CategoryManagementView: View {
                         .frame(width: 40, height: 40)
                     Image(systemName: category.icon)
                         .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.Design.textInverse)
                         .font(.system(size: 18, weight: .medium))
                 }
 
@@ -114,7 +114,7 @@ public struct CategoryManagementView: View {
                         .foregroundStyle(Color.Design.textPrimary)
 
                     if category.isDefault {
-                        Text("預設")
+                        Text("category_management_default")
                             .font(Font.Design.caption)
                             .foregroundStyle(Color.Design.textSecondary)
                             .padding(.horizontal, 6)
@@ -140,7 +140,7 @@ public struct CategoryManagementView: View {
                 Button(role: .destructive) {
                     store.send(.deleteRequested(category.id))
                 } label: {
-                    Label("刪除", systemImage: "trash")
+                    Label(String(localized: "common_delete"), systemImage: "trash")
                 }
             }
         }

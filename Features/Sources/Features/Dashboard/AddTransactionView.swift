@@ -20,13 +20,13 @@ public struct AddTransactionView: View {
             Form {
                 // MARK: 交易類型
                 Section {
-                    Picker("類型", selection: Binding(
+                    Picker(String(localized: "common_type"), selection: Binding(
                         get: { store.type },
                         set: { store.send(.typeChanged($0)) }
                     )) {
-                        Text("支出").tag(TransactionType.expense)
-                        Text("收入").tag(TransactionType.income)
-                        Text("轉帳").tag(TransactionType.transfer)
+                        Text("common_expense").tag(TransactionType.expense)
+                        Text("common_income").tag(TransactionType.income)
+                        Text("common_transfer").tag(TransactionType.transfer)
                     }
                     .pickerStyle(.segmented)
                     .listRowInsets(.init(top: 12, leading: 16, bottom: 12, trailing: 16))
@@ -52,38 +52,38 @@ public struct AddTransactionView: View {
                             .foregroundStyle(Color.Design.expenseRed)
                     }
                 } header: {
-                    Text("金額")
+                    Text("add_transaction_amount")
                 }
 
                 // MARK: 帳戶
                 Section {
                     if store.type == .transfer {
                         // 來源帳戶
-                        Picker("從", selection: Binding(
+                        Picker(String(localized: "add_transaction_from"), selection: Binding(
                             get: { store.accountId },
                             set: { store.send(.accountSelected($0)) }
                         )) {
-                            Text("請選擇").tag(Optional<Account.ID>.none)
+                            Text("common_please_select").tag(Optional<Account.ID>.none)
                             ForEach(store.accounts) { account in
                                 Text(account.name).tag(Optional(account.id))
                             }
                         }
                         // 目標帳戶
-                        Picker("至", selection: Binding(
+                        Picker(String(localized: "add_transaction_to"), selection: Binding(
                             get: { store.toAccountId },
                             set: { store.send(.toAccountSelected($0)) }
                         )) {
-                            Text("請選擇").tag(Optional<Account.ID>.none)
+                            Text("common_please_select").tag(Optional<Account.ID>.none)
                             ForEach(store.accounts.filter { $0.id != store.accountId }) { account in
                                 Text(account.name).tag(Optional(account.id))
                             }
                         }
                     } else {
-                        Picker("帳戶", selection: Binding(
+                        Picker(String(localized: "add_transaction_account"), selection: Binding(
                             get: { store.accountId },
                             set: { store.send(.accountSelected($0)) }
                         )) {
-                            Text("請選擇").tag(Optional<Account.ID>.none)
+                            Text("common_please_select").tag(Optional<Account.ID>.none)
                             ForEach(store.accounts) { account in
                                 Text(account.name).tag(Optional(account.id))
                             }
@@ -95,21 +95,21 @@ public struct AddTransactionView: View {
                             .foregroundStyle(Color.Design.expenseRed)
                     }
                 } header: {
-                    Text(store.type == .transfer ? "帳戶" : "帳戶")
+                    Text("add_transaction_account")
                 }
 
                 // MARK: 分類（非轉帳）
                 if store.type != .transfer {
                     Section {
                         if store.filteredCategories.isEmpty {
-                            Text("無可用分類")
+                            Text("add_transaction_no_categories")
                                 .foregroundStyle(Color.Design.textTertiary)
                         } else {
-                            Picker("分類", selection: Binding(
+                            Picker(String(localized: "add_transaction_category"), selection: Binding(
                                 get: { store.categoryId },
                                 set: { store.send(.categorySelected($0)) }
                             )) {
-                                Text("請選擇").tag(Optional<Domain.Category.ID>.none)
+                                Text("common_please_select").tag(Optional<Domain.Category.ID>.none)
                                 ForEach(store.filteredCategories) { category in
                                 Label(category.name, systemImage: category.icon)
                                     .tag(Optional<Domain.Category.ID>(category.id))
@@ -122,24 +122,24 @@ public struct AddTransactionView: View {
                                 .foregroundStyle(Color.Design.expenseRed)
                         }
                     } header: {
-                        Text("分類")
+                        Text("add_transaction_category")
                     }
                 }
 
                 // MARK: 備註
                 Section {
-                    TextField("選填", text: Binding(
+                    TextField(String(localized: "add_transaction_note_placeholder"), text: Binding(
                         get: { store.note },
                         set: { store.send(.noteChanged($0)) }
                     ))
                 } header: {
-                    Text("備註")
+                    Text("add_transaction_note")
                 }
 
                 // MARK: 日期
                 Section {
                     DatePicker(
-                        "日期",
+                        String(localized: "add_transaction_date"),
                         selection: Binding(
                             get: { store.date },
                             set: { store.send(.dateChanged($0)) }
@@ -148,16 +148,16 @@ public struct AddTransactionView: View {
                     )
                 }
             }
-            .navigationTitle(isEditMode ? "編輯交易" : "新增交易")
+            .navigationTitle(isEditMode ? String(localized: "add_transaction_edit_title") : String(localized: "add_transaction_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button(String(localized: "common_cancel")) {
                         store.send(.dismiss)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") {
+                    Button(String(localized: "common_save")) {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)

@@ -36,28 +36,28 @@ public struct TransactionDetailView: View {
             .task { await store.send(.task).finish() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("關閉") {
+                    Button(String(localized: "common_close")) {
                         store.send(.dismiss)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("編輯") {
+                    Button(String(localized: "common_edit")) {
                         store.send(.editTapped)
                     }
                 }
             }
             .confirmationDialog(
-                "確定要刪除這筆交易嗎？",
+                String(localized: "transactions_delete_confirm"),
                 isPresented: Binding(
                     get: { store.showDeleteConfirmation },
                     set: { if !$0 { store.send(.deleteCancelled) } }
                 ),
                 titleVisibility: .visible
             ) {
-                Button("刪除", role: .destructive) {
+                Button(String(localized: "common_delete"), role: .destructive) {
                     store.send(.deleteConfirmed)
                 }
-                Button("取消", role: .cancel) {
+                Button(String(localized: "common_cancel"), role: .cancel) {
                     store.send(.deleteCancelled)
                 }
             }
@@ -96,30 +96,30 @@ public struct TransactionDetailView: View {
     private var detailsCard: some View {
         VStack(spacing: 0) {
             // 日期
-            detailRow(icon: "calendar", label: "日期", value: transaction.date.formatted(date: .long, time: .shortened))
+            detailRow(icon: "calendar", label: String(localized: "transaction_detail_date"), value: transaction.date.formatted(date: .long, time: .shortened))
             Divider().padding(.leading, 56)
 
             // 帳戶
             if let accountName = store.accountName {
-                detailRow(icon: "wallet.bifold", label: "帳戶", value: accountName)
+                detailRow(icon: "wallet.bifold", label: String(localized: "transaction_detail_account"), value: accountName)
                 Divider().padding(.leading, 56)
             }
 
             // 轉帳目標帳戶
             if transaction.type == .transfer, let toName = store.toAccountName {
-                detailRow(icon: "arrow.right", label: "轉至", value: toName)
+                detailRow(icon: "arrow.right", label: String(localized: "transaction_detail_to_account"), value: toName)
                 Divider().padding(.leading, 56)
             }
 
             // 分類
             if transaction.type != .transfer, let categoryName = store.categoryName {
-                detailRow(icon: "square.grid.2x2", label: "分類", value: categoryName)
+                detailRow(icon: "square.grid.2x2", label: String(localized: "transaction_detail_category"), value: categoryName)
                 Divider().padding(.leading, 56)
             }
 
             // 備註
             if let note = transaction.note, !note.isEmpty {
-                detailRow(icon: "text.bubble", label: "備註", value: note)
+                detailRow(icon: "text.bubble", label: String(localized: "transaction_detail_note"), value: note)
                 Divider().padding(.leading, 56)
             }
 
@@ -129,7 +129,7 @@ public struct TransactionDetailView: View {
                     Image(systemName: "tag")
                         .frame(width: 24)
                         .foregroundStyle(Color.Design.textSecondary)
-                    Text("標籤")
+                    Text("transaction_detail_tags")
                         .foregroundStyle(Color.Design.textSecondary)
                     Spacer()
                     FlowLayout(spacing: 4) {
@@ -169,7 +169,7 @@ public struct TransactionDetailView: View {
         Button(role: .destructive) {
             store.send(.deleteTapped)
         } label: {
-            Label("刪除交易", systemImage: "trash")
+            Label(String(localized: "transaction_detail_delete"), systemImage: "trash")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color.Design.expenseRed.opacity(0.1))
@@ -225,9 +225,9 @@ private struct FlowLayout: Layout {
 private extension TransactionType {
     var displayName: String {
         switch self {
-        case .expense: return "支出"
-        case .income: return "收入"
-        case .transfer: return "轉帳"
+        case .expense: return String(localized: "common_expense")
+        case .income: return String(localized: "common_income")
+        case .transfer: return String(localized: "common_transfer")
         }
     }
 

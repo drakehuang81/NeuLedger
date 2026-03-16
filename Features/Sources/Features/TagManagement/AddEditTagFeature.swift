@@ -36,8 +36,8 @@ public struct AddEditTagFeature: Sendable {
 
         var navigationTitle: String {
             switch mode {
-            case .add: return "新增標籤"
-            case .edit: return "編輯標籤"
+            case .add: return String(localized: "tag_form_add_title")
+            case .edit: return String(localized: "tag_form_edit_title")
             }
         }
     }
@@ -81,7 +81,7 @@ public struct AddEditTagFeature: Sendable {
             case .saveTapped:
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedName.isEmpty else {
-                    state.nameError = "標籤名稱不能為空"
+                    state.nameError = String(localized: "error_tag_name_empty")
                     return .none
                 }
 

@@ -39,7 +39,7 @@ struct OnboardingView: View {
                 Button {
                     store.send(.skipButtonTapped)
                 } label: {
-                    Text("跳過")
+                    Text("common_skip")
                         .font(.system(size: 17))
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -176,7 +176,7 @@ struct OnboardingView: View {
                     .overlay {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 48))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.Design.textInverse)
                     }
 
                 // Title Group

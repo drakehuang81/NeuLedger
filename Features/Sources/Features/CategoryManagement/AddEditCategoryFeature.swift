@@ -98,7 +98,7 @@ public struct AddEditCategoryFeature: Sendable {
             case .saveTapped:
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedName.isEmpty else {
-                    state.nameError = "請輸入分類名稱"
+                    state.nameError = String(localized: "error_category_name_empty")
                     return .none
                 }
 

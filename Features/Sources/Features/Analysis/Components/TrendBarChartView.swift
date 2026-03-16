@@ -9,14 +9,14 @@ struct TrendBarChartView: View {
     var body: some View {
         GlassContainer(padding: 20) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("每日趨勢")
+                Text("analysis_trend_bar_chart_title")
                     .font(Font.Design.headline)
                     .foregroundStyle(Color.Design.textPrimary)
                 
                 Chart(trends) { item in
                     BarMark(
-                        x: .value("日期", item.date, unit: .day),
-                        y: .value("金額", (item.amount as NSDecimalNumber).doubleValue)
+                        x: .value(String(localized: "add_transaction_date"), item.date, unit: .day),
+                        y: .value(String(localized: "budget_form_amount"), (item.amount as NSDecimalNumber).doubleValue)
                     )
                     .foregroundStyle(Color.Design.brandPrimary.gradient)
                     .cornerRadius(4)

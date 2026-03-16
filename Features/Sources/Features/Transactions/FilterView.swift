@@ -14,7 +14,7 @@ public struct FilterView: View {
         NavigationStack {
             Form {
                 // MARK: 類型
-                Section("類型") {
+                Section(String(localized: "common_type")) {
                     ForEach([TransactionType.expense, .income, .transfer], id: \.self) { type in
                         Button {
                             store.send(.typeToggled(type))
@@ -34,7 +34,7 @@ public struct FilterView: View {
 
                 // MARK: 分類
                 if !store.categories.isEmpty {
-                    Section("分類") {
+                    Section(String(localized: "add_transaction_category")) {
                         ForEach(store.categories) { category in
                             Button {
                                 store.send(.categoryToggled(category.id))
@@ -55,7 +55,7 @@ public struct FilterView: View {
 
                 // MARK: 帳戶
                 if !store.accounts.isEmpty {
-                    Section("帳戶") {
+                    Section(String(localized: "add_transaction_account")) {
                         ForEach(store.accounts) { account in
                             Button {
                                 store.send(.accountToggled(account.id))
@@ -76,7 +76,7 @@ public struct FilterView: View {
 
                 // MARK: 標籤
                 if !store.tags.isEmpty {
-                    Section("標籤") {
+                    Section(String(localized: "common_tags")) {
                         ForEach(store.tags) { tag in
                             Button {
                                 store.send(.tagToggled(tag.id))
@@ -96,9 +96,9 @@ public struct FilterView: View {
                 }
 
                 // MARK: 日期區間
-                Section("日期區間") {
+                Section(String(localized: "filter_date_range")) {
                     DatePicker(
-                        "開始日期",
+                        String(localized: "filter_start_date"),
                         selection: Binding(
                             get: { store.startDate ?? Date() },
                             set: { store.send(.startDateChanged($0)) }
@@ -106,7 +106,7 @@ public struct FilterView: View {
                         displayedComponents: .date
                     )
                     DatePicker(
-                        "結束日期",
+                        String(localized: "filter_end_date"),
                         selection: Binding(
                             get: { store.endDate ?? Date() },
                             set: { store.send(.endDateChanged($0)) }
@@ -114,7 +114,7 @@ public struct FilterView: View {
                         displayedComponents: .date
                     )
                     if store.startDate != nil || store.endDate != nil {
-                        Button("清除日期") {
+                        Button(String(localized: "filter_clear_dates")) {
                             store.send(.startDateChanged(nil))
                             store.send(.endDateChanged(nil))
                         }
@@ -122,17 +122,17 @@ public struct FilterView: View {
                     }
                 }
             }
-            .navigationTitle("篩選")
+            .navigationTitle(String(localized: "filter_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("清除全部") {
+                    Button(String(localized: "filter_clear_all")) {
                         store.send(.clearAllTapped)
                     }
                     .foregroundStyle(Color.Design.expenseRed)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("套用") {
+                    Button(String(localized: "filter_apply")) {
                         store.send(.applyTapped)
                     }
                     .fontWeight(.semibold)
@@ -148,9 +148,9 @@ public struct FilterView: View {
 private extension TransactionType {
     var displayName: String {
         switch self {
-        case .expense: return "支出"
-        case .income: return "收入"
-        case .transfer: return "轉帳"
+        case .expense: return String(localized: "common_expense")
+        case .income: return String(localized: "common_income")
+        case .transfer: return String(localized: "common_transfer")
         }
     }
 }

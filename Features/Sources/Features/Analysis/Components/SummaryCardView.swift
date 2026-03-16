@@ -10,7 +10,7 @@ struct SummaryCardView: View {
             HStack(spacing: 0) {
                 // Income
                 VStack(spacing: 4) {
-                    Text("收入")
+                    Text("analysis_summary_income")
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                     Text(summary.totalIncome.formattedCurrency)
@@ -26,7 +26,7 @@ struct SummaryCardView: View {
                 
                 // Expense
                 VStack(spacing: 4) {
-                    Text("支出")
+                    Text("analysis_summary_expense")
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                     Text(summary.totalExpense.formattedCurrency)
@@ -42,7 +42,7 @@ struct SummaryCardView: View {
                 
                 // Net Balance
                 VStack(spacing: 4) {
-                    Text("結餘")
+                    Text("analysis_summary_net_balance")
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                     Text(summary.netBalance.formattedCurrency)

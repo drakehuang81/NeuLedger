@@ -21,7 +21,7 @@ public struct BudgetManagementView: View {
                 budgetList
             }
         }
-        .navigationTitle("預算設定")
+        .navigationTitle(String(localized: "settings_budget_management"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -46,9 +46,9 @@ public struct BudgetManagementView: View {
     private var emptyState: some View {
         EmptyStateView(
             icon: "banknote",
-            title: "尚無預算",
-            description: "新增預算來追蹤你的支出目標",
-            actionTitle: "新增預算"
+            title: String(localized: "budget_management_empty_title"),
+            description: String(localized: "budget_management_empty_desc"),
+            actionTitle: String(localized: "budget_management_add")
         ) {
             store.send(.addButtonTapped)
         }
@@ -72,7 +72,7 @@ public struct BudgetManagementView: View {
                     Button(role: .destructive) {
                         store.send(.deleteRequested(budget.id))
                     } label: {
-                        Label("刪除", systemImage: "trash")
+                        Label(String(localized: "common_delete"), systemImage: "trash")
                     }
                 }
             }

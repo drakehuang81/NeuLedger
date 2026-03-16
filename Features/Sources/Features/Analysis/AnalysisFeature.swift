@@ -9,10 +9,19 @@ public struct AnalysisFeature: Sendable {
     @ObservableState
     public struct State: Equatable {
         public enum Period: String, Equatable, CaseIterable, Identifiable, Sendable {
-            case week = "本週"
-            case month = "本月"
-            case year = "今年"
+            case week
+            case month
+            case year
+
             public var id: Self { self }
+
+            var displayName: String {
+                switch self {
+                case .week: return String(localized: "analysis_period_week")
+                case .month: return String(localized: "analysis_period_month")
+                case .year: return String(localized: "analysis_period_year")
+                }
+            }
         }
 
         public var selectedPeriod: Period = .month
@@ -104,9 +113,9 @@ public struct AnalysisFeature: Sendable {
                         for txn in transactions where txn.type == .expense {
                             let name: String
                             if let catId = txn.categoryId {
-                                name = categoryMap[catId] ?? "其他"
+                                name = categoryMap[catId] ?? String(localized: "analysis_other_category")
                             } else {
-                                name = "其他"
+                                name = String(localized: "analysis_other_category")
                             }
                             categoryTotals[name, default: .zero] += txn.amount
                         }
@@ -132,11 +141,11 @@ public struct AnalysisFeature: Sendable {
                                 totalIncome: totalIncome,
                                 totalExpense: totalExpense,
                                 categoryBreakdown: categoryTotals,
-                                periodDescription: period.rawValue
+                                periodDescription: period.displayName
                             )
                             if let text = try? await aiServiceClient.generateInsight(spendingSummary) {
                                 insight = InsightDetail(
-                                    title: "AI 洞察",
+                                    title: String(localized: "analysis_ai_insight_title"),
                                     description: text
                                 )
                             }

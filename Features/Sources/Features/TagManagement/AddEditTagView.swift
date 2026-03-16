@@ -33,7 +33,7 @@ public struct AddEditTagView: View {
                 // MARK: Name Field
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("標籤名稱", text: Binding(
+                        TextField(String(localized: "tag_form_name_placeholder"), text: Binding(
                             get: { store.name },
                             set: { store.send(.nameChanged($0)) }
                         ))
@@ -45,26 +45,26 @@ public struct AddEditTagView: View {
                         }
                     }
                 } header: {
-                    Text("名稱")
+                    Text("common_name")
                 }
 
                 // MARK: Color Picker
                 Section {
                     colorPickerGrid
                 } header: {
-                    Text("顏色")
+                    Text("common_color")
                 }
             }
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") {
+                    Button(String(localized: "common_cancel")) {
                         store.send(.cancelTapped)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("儲存") {
+                    Button(String(localized: "common_save")) {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
@@ -104,7 +104,7 @@ public struct AddEditTagView: View {
 
                     Image(systemName: "checkmark")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.Design.textInverse)
                 }
             }
         }

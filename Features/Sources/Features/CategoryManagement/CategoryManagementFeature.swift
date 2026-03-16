@@ -130,16 +130,16 @@ public struct CategoryManagementFeature: Sendable {
                 else { return .none }
 
                 state.alert = AlertState {
-                    TextState("刪除分類")
+                    TextState(String(localized: "alert_delete_category"))
                 } actions: {
                     ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
-                        TextState("刪除")
+                        TextState(String(localized: "common_delete"))
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState(String(localized: "common_cancel"))
                     }
                 } message: {
-                    TextState("確定要刪除「\(category.name)」嗎？此操作無法復原。")
+                    TextState(String(localized: "alert_delete_category_message"))
                 }
                 return .none
 

@@ -22,7 +22,7 @@ public struct TagManagementView: View {
                     tagList
                 }
             }
-            .navigationTitle("標籤管理")
+            .navigationTitle(String(localized: "tag_management_title"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -48,9 +48,9 @@ public struct TagManagementView: View {
     private var emptyState: some View {
         EmptyStateView(
             icon: "tag",
-            title: "尚無標籤",
-            description: "新增標籤來更細緻地分類交易",
-            actionTitle: "新增標籤"
+            title: String(localized: "tag_management_empty_title"),
+            description: String(localized: "tag_management_empty_desc"),
+            actionTitle: String(localized: "tag_management_add")
         ) {
             store.send(.addButtonTapped)
         }
@@ -72,7 +72,7 @@ public struct TagManagementView: View {
                     Button(role: .destructive) {
                         store.send(.deleteRequested(tag.id))
                     } label: {
-                        Label("刪除", systemImage: "trash")
+                        Label(String(localized: "common_delete"), systemImage: "trash")
                     }
                 }
             }

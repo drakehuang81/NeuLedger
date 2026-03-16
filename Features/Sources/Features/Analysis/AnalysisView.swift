@@ -22,7 +22,7 @@ public struct AnalysisView: View {
                     // Segmented Picker / Period Selector at the top of the view.
                     Picker("Period", selection: $store.selectedPeriod) {
                         ForEach(AnalysisFeature.State.Period.allCases) { period in
-                            Text(period.rawValue).tag(period)
+                            Text(period.displayName).tag(period)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -34,8 +34,8 @@ public struct AnalysisView: View {
                         Spacer()
                         EmptyStateView(
                             icon: "chart.pie.fill",
-                            title: "目前無資料",
-                            description: "切換不同時間區間或是新增記帳紀錄來解鎖分析功能。"
+                            title: String(localized: "analysis_no_data_title"),
+                            description: String(localized: "analysis_no_data_desc")
                         )
                         Spacer()
                     } else {
@@ -59,7 +59,7 @@ public struct AnalysisView: View {
                                 if !store.budgetMetrics.isEmpty {
                                     GlassContainer(padding: 20) {
                                         VStack(alignment: .leading, spacing: 16) {
-                                            Text("預算進度")
+                                            Text("analysis_budget_progress")
                                                 .font(Font.Design.headline)
                                                 .foregroundStyle(Color.Design.textPrimary)
                                             
@@ -88,7 +88,7 @@ public struct AnalysisView: View {
                     }
                 }
             }
-            .navigationTitle("分析")
+            .navigationTitle(String(localized: "analysis_title"))
             .onAppear {
                 store.send(.loadData)
             }

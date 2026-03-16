@@ -81,16 +81,16 @@ public struct BudgetManagementFeature: Sendable {
 
             case let .deleteRequested(id):
                 state.alert = AlertState {
-                    TextState("刪除預算")
+                    TextState(String(localized: "alert_delete_budget"))
                 } actions: {
                     ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
-                        TextState("刪除")
+                        TextState(String(localized: "common_delete"))
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState(String(localized: "common_cancel"))
                     }
                 } message: {
-                    TextState("確定要刪除此預算嗎？")
+                    TextState(String(localized: "alert_delete_budget_message"))
                 }
                 return .none
 

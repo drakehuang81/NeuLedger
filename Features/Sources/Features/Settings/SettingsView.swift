@@ -25,7 +25,7 @@ public struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // MARK: Title
-                    Text("設定")
+                    Text("settings_title")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -82,13 +82,13 @@ public struct SettingsView: View {
 
     private var sectionManage: some View {
         VStack(spacing: 6) {
-            sectionHeader("管理")
+            sectionHeader(String(localized: "settings_manage"))
             glassCard {
                 NavigationLink(value: SettingsRoute.accountManagement) {
                     settingsRow(
                         icon: "wallet.bifold",
                         iconColor: Color.Design.brandPrimary,
-                        label: "帳戶管理",
+                        label: String(localized: "settings_account_management"),
                         trailing: chevron
                     )
                 }
@@ -96,7 +96,7 @@ public struct SettingsView: View {
                     settingsRow(
                         icon: "square.grid.2x2",
                         iconColor: Color.Design.brandSecondary,
-                        label: "分類管理",
+                        label: String(localized: "settings_category_management"),
                         trailing: chevron
                     )
                 }
@@ -104,7 +104,7 @@ public struct SettingsView: View {
                     settingsRow(
                         icon: "banknote",
                         iconColor: Color.Design.incomeGreen,
-                        label: "預算設定",
+                        label: String(localized: "settings_budget_management"),
                         trailing: chevron
                     )
                 }
@@ -112,7 +112,7 @@ public struct SettingsView: View {
                     settingsRow(
                         icon: "tag",
                         iconColor: Color.Design.brandAccent,
-                        label: "標籤管理",
+                        label: String(localized: "settings_tag_management"),
                         trailing: chevron
                     )
                 }
@@ -124,28 +124,28 @@ public struct SettingsView: View {
 
     private var sectionPreferences: some View {
         VStack(spacing: 6) {
-            sectionHeader("偏好設定")
+            sectionHeader(String(localized: "settings_preferences"))
             glassCard {
                 settingsRow(
                     icon: "creditcard",
                     iconColor: Color.Design.textSecondary,
-                    label: "預設帳戶",
-                    trailing: Text(store.defaultAccountName.isEmpty ? "無" : store.defaultAccountName)
+                    label: String(localized: "settings_default_account"),
+                    trailing: Text(store.defaultAccountName.isEmpty ? String(localized: "settings_none") : store.defaultAccountName)
                         .font(.body)
                         .foregroundStyle(Color.Design.textSecondary)
                 )
                 settingsRow(
                     icon: "globe",
                     iconColor: Color.Design.textSecondary,
-                    label: "語言",
-                    trailing: Text("繁體中文")
+                    label: String(localized: "settings_language"),
+                    trailing: Text("settings_language_value")
                         .font(.body)
                         .foregroundStyle(Color.Design.textSecondary)
                 )
                 settingsRow(
                     icon: "sparkles",
                     iconColor: Color.Design.brandPrimary,
-                    label: "AI 智慧功能",
+                    label: String(localized: "settings_ai_features"),
                     trailing: Toggle("", isOn: $store.isAIEnabled.sending(\.aiToggleChanged))
                         .labelsHidden()
                         .tint(Color.Design.incomeGreen)
@@ -158,13 +158,13 @@ public struct SettingsView: View {
 
     private var sectionData: some View {
         VStack(spacing: 6) {
-            sectionHeader("資料")
+            sectionHeader(String(localized: "settings_data"))
             glassCard {
                 Button { store.send(.exportCSVTapped) } label: {
                     settingsRow(
                         icon: "square.and.arrow.down",
                         iconColor: Color.Design.textSecondary,
-                        label: "匯出 CSV",
+                        label: String(localized: "settings_export_csv"),
                         trailing: chevron
                     )
                 }
@@ -172,7 +172,7 @@ public struct SettingsView: View {
                     settingsRow(
                         icon: "tablecells",
                         iconColor: Color.Design.textSecondary,
-                        label: "匯出 JSON",
+                        label: String(localized: "settings_export_json"),
                         trailing: chevron
                     )
                 }
@@ -184,12 +184,12 @@ public struct SettingsView: View {
 
     private var sectionAbout: some View {
         VStack(spacing: 6) {
-            sectionHeader("關於")
+            sectionHeader(String(localized: "settings_about"))
             glassCard {
                 settingsRow(
                     icon: "info.circle",
                     iconColor: Color.Design.textSecondary,
-                    label: "版本",
+                    label: String(localized: "settings_version"),
                     trailing: Text(appVersion)
                         .font(.body)
                         .foregroundStyle(Color.Design.textTertiary)
@@ -198,7 +198,7 @@ public struct SettingsView: View {
                     settingsRow(
                         icon: "doc.text",
                         iconColor: Color.Design.textSecondary,
-                        label: "隱私權政策",
+                        label: String(localized: "settings_privacy"),
                         trailing: chevron
                     )
                 }

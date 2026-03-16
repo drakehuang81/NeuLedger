@@ -72,16 +72,16 @@ public struct TagManagementFeature: Sendable {
 
             case let .deleteRequested(id):
                 state.alert = AlertState {
-                    TextState("刪除標籤")
+                    TextState(String(localized: "alert_delete_tag"))
                 } actions: {
                     ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
-                        TextState("刪除")
+                        TextState(String(localized: "common_delete"))
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState(String(localized: "common_cancel"))
                     }
                 } message: {
-                    TextState("此標籤將從所有關聯交易中移除。確定要刪除嗎？")
+                    TextState(String(localized: "alert_delete_tag_message"))
                 }
                 return .none
 

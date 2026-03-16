@@ -104,16 +104,16 @@ public struct AccountManagementFeature: Sendable {
             case let .accountTapped(account):
                 if account.isArchived {
                     state.alert = AlertState {
-                        TextState("已封存帳戶")
+                        TextState(String(localized: "alert_archived_account"))
                     } actions: {
                         ButtonState(action: .unarchiveConfirmed(account.id)) {
-                            TextState("解除封存")
+                            TextState(String(localized: "account_management_unarchive"))
                         }
                         ButtonState(role: .cancel) {
-                            TextState("取消")
+                            TextState(String(localized: "common_cancel"))
                         }
                     } message: {
-                        TextState("是否要解除封存此帳戶？")
+                        TextState(String(localized: "alert_unarchive_account_message"))
                     }
                 } else {
                     let existingNames = state.accounts
@@ -140,31 +140,31 @@ public struct AccountManagementFeature: Sendable {
 
             case let .showArchiveConfirmation(id):
                 state.alert = AlertState {
-                    TextState("無法刪除")
+                    TextState(String(localized: "alert_cannot_delete"))
                 } actions: {
                     ButtonState(action: .archiveConfirmed(id)) {
-                        TextState("改為封存")
+                        TextState(String(localized: "alert_archive_instead"))
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState(String(localized: "common_cancel"))
                     }
                 } message: {
-                    TextState("此帳戶有關聯交易，無法刪除。是否改為封存？")
+                    TextState(String(localized: "alert_archive_account_message"))
                 }
                 return .none
 
             case let .showDeleteConfirmation(id):
                 state.alert = AlertState {
-                    TextState("確定要刪除？")
+                    TextState(String(localized: "alert_cannot_delete"))
                 } actions: {
                     ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
-                        TextState("刪除")
+                        TextState(String(localized: "common_delete"))
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState(String(localized: "common_cancel"))
                     }
                 } message: {
-                    TextState("此操作無法還原。")
+                    TextState(String(localized: "alert_delete_account_message"))
                 }
                 return .none
 

@@ -47,8 +47,8 @@ public struct BudgetFormFeature: Sendable {
 
         var navigationTitle: String {
             switch mode {
-            case .add: return "新增預算"
-            case .edit: return "編輯預算"
+            case .add: return String(localized: "budget_form_add_title")
+            case .edit: return String(localized: "budget_form_edit_title")
             }
         }
     }
@@ -121,11 +121,11 @@ public struct BudgetFormFeature: Sendable {
             case .saveTapped:
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedName.isEmpty else {
-                    state.nameError = "預算名稱不能為空"
+                    state.nameError = String(localized: "error_budget_name_empty")
                     return .none
                 }
                 guard let amount = Decimal(string: state.amountText), amount > 0 else {
-                    state.amountError = "金額必須大於零"
+                    state.amountError = String(localized: "error_amount_must_be_positive")
                     return .none
                 }
 

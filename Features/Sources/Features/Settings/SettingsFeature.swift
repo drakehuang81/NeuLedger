@@ -61,7 +61,7 @@ public struct SettingsFeature: Sendable {
                 return .none
 
             case let .accountsLoaded(accounts):
-                state.defaultAccountName = accounts.first?.name ?? "無"
+                state.defaultAccountName = accounts.first?.name ?? String(localized: "settings_none")
                 return .none
 
             case .exportCSVTapped:

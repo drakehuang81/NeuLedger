@@ -30,7 +30,7 @@ public struct AddEditAccountView: View {
             Form {
                 // MARK: 名稱
                 Section {
-                    TextField("帳戶名稱", text: Binding(
+                    TextField(String(localized: "account_form_name_placeholder"), text: Binding(
                         get: { store.name },
                         set: { store.send(.nameChanged($0)) }
                     ))
@@ -40,12 +40,12 @@ public struct AddEditAccountView: View {
                             .foregroundStyle(Color.Design.expenseRed)
                     }
                 } header: {
-                    Text("名稱")
+                    Text("common_name")
                 }
 
                 // MARK: 帳戶類型
                 Section {
-                    Picker("帳戶類型", selection: Binding(
+                    Picker(String(localized: "common_type"), selection: Binding(
                         get: { store.type },
                         set: { store.send(.typeChanged($0)) }
                     )) {
@@ -55,7 +55,7 @@ public struct AddEditAccountView: View {
                     }
                     .pickerStyle(.menu)
                 } header: {
-                    Text("類型")
+                    Text("common_type")
                 }
 
                 // MARK: 圖示
@@ -97,7 +97,7 @@ public struct AddEditAccountView: View {
                         .padding(.vertical, 8)
                     }
                 } header: {
-                    Text("圖示")
+                    Text("common_icon")
                 }
 
                 // MARK: 顏色
@@ -128,7 +128,7 @@ public struct AddEditAccountView: View {
                         .padding(.vertical, 8)
                     }
                 } header: {
-                    Text("顏色")
+                    Text("common_color")
                 }
 
                 // MARK: 預覽
@@ -143,7 +143,7 @@ public struct AddEditAccountView: View {
                                 .foregroundStyle(Color(hex: store.colorHex))
                                 .font(.system(size: 20))
                         }
-                        Text(store.name.isEmpty ? "帳戶名稱" : store.name)
+                        Text(store.name.isEmpty ? String(localized: "account_form_name_placeholder") : store.name)
                             .font(Font.Design.body)
                             .foregroundStyle(
                                 store.name.isEmpty
@@ -153,19 +153,19 @@ public struct AddEditAccountView: View {
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("預覽")
+                    Text("common_preview")
                 }
             }
-            .navigationTitle(isEditMode ? "編輯帳戶" : "新增帳戶")
+            .navigationTitle(isEditMode ? String(localized: "account_form_edit_title") : String(localized: "account_form_add_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button(String(localized: "common_cancel")) {
                         store.send(.cancelTapped)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") {
+                    Button(String(localized: "common_save")) {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)

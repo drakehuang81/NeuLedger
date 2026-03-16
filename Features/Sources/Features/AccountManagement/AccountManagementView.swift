@@ -18,9 +18,9 @@ public struct AccountManagementView: View {
             } else if store.accounts.isEmpty {
                 EmptyStateView(
                     icon: "wallet.bifold",
-                    title: "尚無帳戶",
-                    description: "新增您的第一個帳戶開始記帳",
-                    actionTitle: "新增帳戶"
+                    title: String(localized: "account_management_empty_title"),
+                    description: String(localized: "account_management_empty_desc"),
+                    actionTitle: String(localized: "account_management_add")
                 ) {
                     store.send(.addButtonTapped)
                 }
@@ -29,7 +29,7 @@ public struct AccountManagementView: View {
                 accountList
             }
         }
-        .navigationTitle("帳戶管理")
+        .navigationTitle(String(localized: "account_management_title"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -53,7 +53,7 @@ public struct AccountManagementView: View {
 
     private var accountList: some View {
         List {
-            Section("啟用中") {
+            Section(String(localized: "account_management_active")) {
                 ForEach(store.activeAccounts) { account in
                     Button {
                         store.send(.accountTapped(account))
@@ -71,19 +71,19 @@ public struct AccountManagementView: View {
             }
 
             if !store.archivedAccounts.isEmpty {
-                Section("已封存") {
+                Section(String(localized: "account_management_archived")) {
                     ForEach(store.archivedAccounts) { account in
                         archivedAccountRow(account)
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     store.send(.deleteRequested(account.id))
                                 } label: {
-                                    Label("刪除", systemImage: "trash")
+                                    Label(String(localized: "common_delete"), systemImage: "trash")
                                 }
                                 Button {
                                     store.send(.unarchiveTapped(account.id))
                                 } label: {
-                                    Label("解除封存", systemImage: "tray.and.arrow.up")
+                                    Label(String(localized: "account_management_unarchive"), systemImage: "tray.and.arrow.up")
                                 }
                                 .tint(Color.Design.brandPrimary)
                             }
@@ -128,7 +128,7 @@ public struct AccountManagementView: View {
                     .foregroundStyle(Color.Design.textTertiary)
             }
             Spacer()
-            Text("已封存")
+            Text("account_management_archived")
                 .font(Font.Design.caption)
                 .foregroundStyle(Color.Design.textTertiary)
         }

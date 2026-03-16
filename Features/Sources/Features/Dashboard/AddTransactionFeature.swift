@@ -167,17 +167,17 @@ public struct AddTransactionFeature: Sendable {
 
                 let amountValue = Decimal(string: state.amountText) ?? 0
                 if amountValue <= 0 {
-                    state.amountError = "請輸入有效金額"
+                    state.amountError = String(localized: "add_transaction_error_amount")
                     hasError = true
                 }
 
                 if state.accountId == nil {
-                    state.accountError = "請選擇帳戶"
+                    state.accountError = String(localized: "add_transaction_error_account")
                     hasError = true
                 }
 
                 if state.type != .transfer && state.categoryId == nil {
-                    state.categoryError = "請選擇分類"
+                    state.categoryError = String(localized: "add_transaction_error_category")
                     hasError = true
                 }
 

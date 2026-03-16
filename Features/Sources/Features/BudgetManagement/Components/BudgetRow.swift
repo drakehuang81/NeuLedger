@@ -54,9 +54,9 @@ public struct BudgetRow: View {
 
     private func periodDisplayName(_ period: BudgetPeriod) -> String {
         switch period {
-        case .weekly: return "每週"
-        case .monthly: return "每月"
-        case .yearly: return "每年"
+        case .weekly: return String(localized: "budget_period_weekly")
+        case .monthly: return String(localized: "budget_period_monthly")
+        case .yearly: return String(localized: "budget_period_yearly")
         }
     }
 }

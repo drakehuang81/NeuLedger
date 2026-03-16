@@ -22,7 +22,7 @@ public struct TransactionsView: View {
                     transactionsList
                 }
             }
-            .navigationTitle("記帳記錄")
+            .navigationTitle(String(localized: "transactions_title"))
             .navigationBarTitleDisplayMode(.large)
             .searchable(
                 text: Binding(
@@ -30,7 +30,7 @@ public struct TransactionsView: View {
                     set: { store.send(.searchTextChanged($0)) }
                 ),
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: "搜尋備註"
+                prompt: String(localized: "transactions_search_prompt")
             )
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -41,17 +41,17 @@ public struct TransactionsView: View {
                 await store.send(.task).finish()
             }
             .confirmationDialog(
-                "確定要刪除這筆交易嗎？",
+                String(localized: "transactions_delete_confirm"),
                 isPresented: Binding(
                     get: { store.deleteConfirmationId != nil },
                     set: { if !$0 { store.send(.deleteCancelled) } }
                 ),
                 titleVisibility: .visible
             ) {
-                Button("刪除", role: .destructive) {
+                Button(String(localized: "common_delete"), role: .destructive) {
                     store.send(.deleteConfirmed)
                 }
-                Button("取消", role: .cancel) {
+                Button(String(localized: "common_cancel"), role: .cancel) {
                     store.send(.deleteCancelled)
                 }
             }
@@ -98,11 +98,11 @@ public struct TransactionsView: View {
         EmptyStateView(
             icon: "list.bullet.rectangle",
             title: store.hasActiveFilters || !store.searchText.isEmpty
-                ? "沒有符合的交易"
-                : "尚無交易記錄",
+                ? String(localized: "transactions_no_match_title")
+                : String(localized: "transactions_no_records_title"),
             description: store.hasActiveFilters || !store.searchText.isEmpty
-                ? "試試調整搜尋或篩選條件"
-                : "從 Dashboard 或右上角按鈕新增第一筆記錄"
+                ? String(localized: "transactions_no_match_desc")
+                : String(localized: "transactions_no_records_desc")
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -157,7 +157,7 @@ public struct TransactionsView: View {
             Button(role: .destructive) {
                 store.send(.deleteTransaction(transaction.id))
             } label: {
-                Label("刪除", systemImage: "trash")
+                Label(String(localized: "common_delete"), systemImage: "trash")
             }
         }
     }
@@ -189,8 +189,8 @@ public struct TransactionsView: View {
 
     private func sectionTitle(for date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "今天" }
-        if calendar.isDateInYesterday(date) { return "昨天" }
+        if calendar.isDateInToday(date) { return String(localized: "transactions_today") }
+        if calendar.isDateInYesterday(date) { return String(localized: "transactions_yesterday") }
         return date.formatted(.dateTime.year().month().day())
     }
 
@@ -206,9 +206,9 @@ public struct TransactionsView: View {
 private extension TransactionType {
     var displayName: String {
         switch self {
-        case .expense: return "支出"
-        case .income: return "收入"
-        case .transfer: return "轉帳"
+        case .expense: return String(localized: "common_expense")
+        case .income: return String(localized: "common_income")
+        case .transfer: return String(localized: "common_transfer")
         }
     }
 

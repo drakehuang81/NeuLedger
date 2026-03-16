@@ -98,11 +98,11 @@ public struct AddEditAccountFeature: Sendable {
             case .saveTapped:
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmedName.isEmpty {
-                    state.nameError = "請輸入帳戶名稱"
+                    state.nameError = String(localized: "error_account_name_empty")
                     return .none
                 }
                 if state.existingNames.contains(trimmedName) {
-                    state.nameError = "此名稱已被使用"
+                    state.nameError = String(localized: "error_account_name_taken")
                     return .none
                 }
 

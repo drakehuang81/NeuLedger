@@ -34,7 +34,7 @@ public struct AddEditCategoryView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         TextField(
-                            "分類名稱",
+                            String(localized: "category_form_name_placeholder"),
                             text: Binding(
                                 get: { store.name },
                                 set: { store.send(.nameChanged($0)) }
@@ -47,26 +47,26 @@ public struct AddEditCategoryView: View {
                         }
                     }
                 } header: {
-                    Text("名稱")
+                    Text("common_name")
                 }
 
                 // MARK: 類型
                 Section {
                     Picker(
-                        "類型",
+                        String(localized: "common_type"),
                         selection: Binding(
                             get: { store.type },
                             set: { store.send(.typeChanged($0)) }
                         )
                     ) {
-                        Text("支出").tag(TransactionType.expense)
-                        Text("收入").tag(TransactionType.income)
+                        Text("common_expense").tag(TransactionType.expense)
+                        Text("common_income").tag(TransactionType.income)
                     }
                     .pickerStyle(.segmented)
                     .disabled(store.isDefault)
                     .listRowInsets(.init(top: 12, leading: 16, bottom: 12, trailing: 16))
                 } header: {
-                    Text("類型")
+                    Text("common_type")
                 }
 
                 // MARK: 圖示
@@ -81,7 +81,7 @@ public struct AddEditCategoryView: View {
                     }
                     .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
                 } header: {
-                    Text("圖示")
+                    Text("common_icon")
                 }
 
                 // MARK: 顏色
@@ -96,7 +96,7 @@ public struct AddEditCategoryView: View {
                     }
                     .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
                 } header: {
-                    Text("顏色")
+                    Text("common_color")
                 }
 
                 // MARK: Preview
@@ -108,10 +108,10 @@ public struct AddEditCategoryView: View {
                                 .frame(width: 44, height: 44)
                             Image(systemName: store.icon)
                                 .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color.Design.textInverse)
                                 .font(.system(size: 20, weight: .medium))
                         }
-                        Text(store.name.isEmpty ? "分類名稱" : store.name)
+                        Text(store.name.isEmpty ? String(localized: "category_form_name_placeholder") : store.name)
                             .font(Font.Design.body)
                             .fontWeight(.semibold)
                             .foregroundStyle(
@@ -122,19 +122,19 @@ public struct AddEditCategoryView: View {
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("預覽")
+                    Text("common_preview")
                 }
             }
-            .navigationTitle(isEditMode ? "編輯分類" : "新增分類")
+            .navigationTitle(isEditMode ? String(localized: "category_form_edit_title") : String(localized: "category_form_add_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button(String(localized: "common_cancel")) {
                         store.send(.cancelTapped)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") {
+                    Button(String(localized: "common_save")) {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
@@ -162,7 +162,7 @@ public struct AddEditCategoryView: View {
                     }
                 Image(systemName: iconName)
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(isSelected ? .white : Color.Design.textSecondary)
+                    .foregroundStyle(isSelected ? Color.Design.textInverse : Color.Design.textSecondary)
                     .font(.system(size: 18, weight: .medium))
             }
         }
@@ -182,10 +182,10 @@ public struct AddEditCategoryView: View {
                     .frame(width: 36, height: 36)
                 if isSelected {
                     Circle()
-                        .strokeBorder(.white, lineWidth: 2.5)
+                        .strokeBorder(Color.Design.textInverse, lineWidth: 2.5)
                         .frame(width: 36, height: 36)
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.Design.textInverse)
                         .font(.system(size: 12, weight: .bold))
                 }
             }

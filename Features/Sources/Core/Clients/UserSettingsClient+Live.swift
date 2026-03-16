@@ -14,6 +14,12 @@ extension UserSettingsClient: DependencyKey {
             },
             setBool: { value, key in
                 UserDefaults.standard.set(value, forKey: key.rawValue)
+            },
+            string: { key in
+                UserDefaults.standard.string(forKey: key.rawValue) ?? key.defaultValue
+            },
+            setString: { value, key in
+                UserDefaults.standard.set(value, forKey: key.rawValue)
             }
         )
     }

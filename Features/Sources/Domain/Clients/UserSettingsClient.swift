@@ -44,6 +44,16 @@ public extension SettingsKey where Value == Bool {
     )
 }
 
+// MARK: - String Keys
+
+public extension SettingsKey where Value == String {
+    /// The ID of the user's preferred default account for new transactions.
+    static let defaultAccountId = SettingsKey(
+        rawValue: "defaultAccountId",
+        defaultValue: ""
+    )
+}
+
 // MARK: - UserSettingsClient
 
 /// A client interface for type-safe UserDefaults access.
@@ -63,6 +73,12 @@ public struct UserSettingsClient: Sendable {
 
     /// Writes a Bool value for the given key.
     public var setBool: @Sendable (_ value: Bool, _ key: SettingsKey<Bool>) -> Void
+
+    /// Reads a String value for the given key, returning `defaultValue` if unset.
+    public var string: @Sendable (_ key: SettingsKey<String>) -> String = { $0.defaultValue }
+
+    /// Writes a String value for the given key.
+    public var setString: @Sendable (_ value: String, _ key: SettingsKey<String>) -> Void
 }
 
 // MARK: - TestDependencyKey
@@ -70,7 +86,9 @@ public struct UserSettingsClient: Sendable {
 extension UserSettingsClient: TestDependencyKey {
     public static let testValue = Self(
         bool: { $0.defaultValue },
-        setBool: { _, _ in }
+        setBool: { _, _ in },
+        string: { $0.defaultValue },
+        setString: { _, _ in }
     )
 }
 

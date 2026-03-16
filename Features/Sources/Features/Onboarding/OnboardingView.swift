@@ -34,6 +34,19 @@ struct OnboardingView: View {
             // 綁定 currentStep 加動畫
             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.currentStep)
         }
+        .overlay(alignment: .topTrailing) {
+            if store.currentStep != .ready {
+                Button {
+                    store.send(.skipButtonTapped)
+                } label: {
+                    Text("跳過")
+                        .font(.system(size: 17))
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
+                .padding(.trailing, 24)
+                .padding(.top, 16)
+            }
+        }
     }
 
     // MARK: - Transitions

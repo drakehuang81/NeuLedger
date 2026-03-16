@@ -98,7 +98,7 @@ public struct AnalysisView: View {
 
 #Preview("Data") {
     AnalysisView(
-        store: Store(initialState: AnalysisFeature.State(hasData: true)) {
+        store: Store(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         }
     )
@@ -106,7 +106,7 @@ public struct AnalysisView: View {
 
 #Preview("Empty State") {
     AnalysisView(
-        store: Store(initialState: AnalysisFeature.State(hasData: false)) {
+        store: Store(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         }
     )

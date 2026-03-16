@@ -16,7 +16,7 @@ public struct AnalysisFeature: Sendable {
         }
 
         public var selectedPeriod: Period = .month
-        public var hasData: Bool = false
+        public var isLoading: Bool = false
 
         public var summary: FinancialSummary?
         public var categoryProportions: [CategoryProportion] = []
@@ -24,12 +24,12 @@ public struct AnalysisFeature: Sendable {
         public var budgetMetrics: [BudgetGaugeMetrics] = []
         public var insight: InsightDetail?
 
-        public init(
-            selectedPeriod: Period = .month,
-            hasData: Bool = false
-        ) {
+        public var hasData: Bool {
+            summary != nil
+        }
+
+        public init(selectedPeriod: Period = .month) {
             self.selectedPeriod = selectedPeriod
-            self.hasData = hasData
         }
     }
 
@@ -37,7 +37,7 @@ public struct AnalysisFeature: Sendable {
         case binding(BindingAction<State>)
         case periodChanged(State.Period)
         case loadData
-        case loadedData(TaskResult<AnalysisData>)
+        case loadedData(TaskResult<AnalysisData?>)
         case budgetMetricsLoaded([BudgetGaugeMetrics])
     }
 
@@ -46,7 +46,7 @@ public struct AnalysisFeature: Sendable {
         let categoryProportions: [CategoryProportion]
         let dailyTrends: [DailyTrend]
         let budgetMetrics: [BudgetGaugeMetrics]
-        let insight: InsightDetail
+        let insight: InsightDetail?
     }
 
     // MARK: - Dependencies
@@ -54,6 +54,7 @@ public struct AnalysisFeature: Sendable {
     @Dependency(\.budgetClient) var budgetClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.aiServiceClient) var aiServiceClient
 
     private enum CancelID { case budgets }
 
@@ -69,47 +70,119 @@ public struct AnalysisFeature: Sendable {
                 return .send(.loadData)
 
             case .loadData:
+                state.isLoading = true
                 let period = state.selectedPeriod
-                let hasData = state.hasData
+                return .merge(
+                    .run { [transactionClient, categoryClient, aiServiceClient] send in
+                        let dateRange = Self.dateRange(for: period)
+                        let filter = TransactionFilter(dateRange: dateRange)
+                        let transactions = try await transactionClient.fetch(filter)
 
-                // Always fetch real budget metrics regardless of hasData
-                let budgetEffect = Effect<Action>.run { [budgetClient, transactionClient, categoryClient] send in
-                    let metrics = await AnalysisFeature.computeBudgetMetrics(
-                        budgetClient: budgetClient,
-                        transactionClient: transactionClient,
-                        categoryClient: categoryClient
-                    )
-                    await send(.budgetMetricsLoaded(metrics))
-                }
-                .cancellable(id: CancelID.budgets, cancelInFlight: true)
-
-                if hasData {
-                    return .merge(
-                        budgetEffect,
-                        .run { [period] send in
-                            // MOCK DATA implementation
-                            try await Task.sleep(for: .seconds(0.3))
-                            let mockData = AnalysisFeature.generateMockData(for: period)
-                            await send(.loadedData(.success(mockData)))
+                        guard !transactions.isEmpty else {
+                            await send(.loadedData(.success(nil)))
+                            return
                         }
-                    )
-                } else {
-                    return budgetEffect
-                }
+
+                        // Summary (exclude transfers)
+                        let totalIncome = transactions
+                            .filter { $0.type == .income }
+                            .reduce(Decimal.zero) { $0 + $1.amount }
+                        let totalExpense = transactions
+                            .filter { $0.type == .expense }
+                            .reduce(Decimal.zero) { $0 + $1.amount }
+                        let summary = FinancialSummary(
+                            totalIncome: totalIncome,
+                            totalExpense: totalExpense
+                        )
+
+                        // Category proportions (expenses only)
+                        let categories = try await categoryClient.fetchAll()
+                        let categoryMap = Dictionary(
+                            uniqueKeysWithValues: categories.map { ($0.id, $0.name) }
+                        )
+                        var categoryTotals: [String: Decimal] = [:]
+                        for txn in transactions where txn.type == .expense {
+                            let name: String
+                            if let catId = txn.categoryId {
+                                name = categoryMap[catId] ?? "其他"
+                            } else {
+                                name = "其他"
+                            }
+                            categoryTotals[name, default: .zero] += txn.amount
+                        }
+                        let proportions = categoryTotals
+                            .sorted { $0.value > $1.value }
+                            .map { CategoryProportion(name: $0.key, amount: $0.value) }
+
+                        // Daily trends (expenses only)
+                        let cal = Calendar.current
+                        var dailyTotals: [Date: Decimal] = [:]
+                        for txn in transactions where txn.type == .expense {
+                            let day = cal.startOfDay(for: txn.date)
+                            dailyTotals[day, default: .zero] += txn.amount
+                        }
+                        let trends = dailyTotals
+                            .sorted { $0.key < $1.key }
+                            .map { DailyTrend(date: $0.key, amount: $0.value) }
+
+                        // AI insight
+                        var insight: InsightDetail? = nil
+                        if aiServiceClient.isAvailable() {
+                            let spendingSummary = SpendingSummary(
+                                totalIncome: totalIncome,
+                                totalExpense: totalExpense,
+                                categoryBreakdown: categoryTotals,
+                                periodDescription: period.rawValue
+                            )
+                            if let text = try? await aiServiceClient.generateInsight(spendingSummary) {
+                                insight = InsightDetail(
+                                    title: "AI 洞察",
+                                    description: text
+                                )
+                            }
+                        }
+
+                        let data = AnalysisData(
+                            summary: summary,
+                            categoryProportions: proportions,
+                            dailyTrends: trends,
+                            budgetMetrics: [],
+                            insight: insight
+                        )
+                        await send(.loadedData(.success(data)))
+                    },
+                    .run { [budgetClient, transactionClient, categoryClient] send in
+                        let metrics = await Self.computeBudgetMetrics(
+                            budgetClient: budgetClient,
+                            transactionClient: transactionClient,
+                            categoryClient: categoryClient
+                        )
+                        await send(.budgetMetricsLoaded(metrics))
+                    }
+                    .cancellable(id: CancelID.budgets, cancelInFlight: true)
+                )
 
             case let .budgetMetricsLoaded(metrics):
                 state.budgetMetrics = metrics
                 return .none
 
             case let .loadedData(.success(data)):
+                state.isLoading = false
+                guard let data else {
+                    state.summary = nil
+                    state.categoryProportions = []
+                    state.dailyTrends = []
+                    state.insight = nil
+                    return .none
+                }
                 state.summary = data.summary
                 state.categoryProportions = data.categoryProportions
                 state.dailyTrends = data.dailyTrends
-                // budgetMetrics is managed by .budgetMetricsLoaded (real data), not mock
                 state.insight = data.insight
                 return .none
 
             case .loadedData(.failure):
+                state.isLoading = false
                 return .none
             }
         }
@@ -178,29 +251,19 @@ public struct AnalysisFeature: Sendable {
         }
     }
 
-    // Generate mock data according to design files
-    static func generateMockData(for period: State.Period) -> AnalysisData {
-        let today = Date()
+    static func dateRange(for period: State.Period) -> ClosedRange<Date> {
         let cal = Calendar.current
-        var daily: [DailyTrend] = []
-        for i in 0..<7 {
-            let d = cal.date(byAdding: .day, value: -i, to: today)!
-            daily.append(DailyTrend(date: d, amount: Decimal(Int.random(in: 100...2000))))
+        let now = Date()
+        switch period {
+        case .week:
+            let start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+            return start...now
+        case .month:
+            let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+            return start...now
+        case .year:
+            let start = cal.date(from: cal.dateComponents([.year], from: now)) ?? now
+            return start...now
         }
-
-        return AnalysisData(
-            summary: FinancialSummary(totalIncome: 12000, totalExpense: 8000),
-            categoryProportions: [
-                CategoryProportion(name: "飲食", amount: 4500),
-                CategoryProportion(name: "交通", amount: 1500),
-                CategoryProportion(name: "娛樂", amount: 2000)
-            ],
-            dailyTrends: daily.reversed(),
-            budgetMetrics: [],
-            insight: InsightDetail(
-                title: "💡 AI 週報洞察",
-                description: "本週五的支出最高，達 $5,200。主要集中在飲食與交通。建議週末準備便當可節省約 $800。"
-            )
-        )
     }
 }

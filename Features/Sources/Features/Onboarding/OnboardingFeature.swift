@@ -27,6 +27,7 @@ struct OnboardingFeature {
         var currentStep: Step = .welcome
         var accountName: String = String(localized: "onboarding_setup_name_placeholder")
         var accountType: AccountType = .cash
+        var isCreatingAccount: Bool = false
     }
 
     // MARK: - Action
@@ -36,6 +37,8 @@ struct OnboardingFeature {
         case startButtonTapped
         case nextButtonTapped
         case finishButtonTapped
+        case skipButtonTapped
+        case accountCreated
         case delegate(Delegate)
 
         @CasePathable
@@ -47,6 +50,7 @@ struct OnboardingFeature {
     // MARK: - Dependencies
 
     @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.accountClient) var accountClient
 
     // MARK: - Body
 
@@ -66,12 +70,63 @@ struct OnboardingFeature {
                 return .none
 
             case .finishButtonTapped:
-                userSettingsClient.setBool(true, .hasCompletedOnboarding)
+                let name = state.accountName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let accountName = name.isEmpty ? String(localized: "onboarding_setup_name_placeholder") : name
+                let accountType = state.accountType
+                return .run { [userSettingsClient, accountClient] send in
+                    let account = Account(
+                        name: accountName,
+                        type: accountType,
+                        icon: accountType.defaultIcon,
+                        color: accountType.defaultColor
+                    )
+                    try await accountClient.add(account)
+                    userSettingsClient.setBool(true, .hasCompletedOnboarding)
+                    await send(.accountCreated)
+                }
+
+            case .skipButtonTapped:
+                return .run { [userSettingsClient, accountClient] send in
+                    let defaultAccount = Account(
+                        name: String(localized: "onboarding_setup_name_placeholder"),
+                        type: .cash,
+                        icon: "banknote",
+                        color: "#2ECC71"
+                    )
+                    try await accountClient.add(defaultAccount)
+                    userSettingsClient.setBool(true, .hasCompletedOnboarding)
+                    await send(.accountCreated)
+                }
+
+            case .accountCreated:
+                state.isCreatingAccount = true
                 return .send(.delegate(.onboardingCompleted))
 
             case .delegate:
                 return .none
             }
+        }
+    }
+}
+
+// MARK: - AccountType Defaults
+
+private extension AccountType {
+    var defaultIcon: String {
+        switch self {
+        case .cash: "banknote"
+        case .bank: "building.columns"
+        case .creditCard: "creditcard"
+        case .eWallet: "wallet.bifold"
+        }
+    }
+
+    var defaultColor: String {
+        switch self {
+        case .cash: "#2ECC71"
+        case .bank: "#3498DB"
+        case .creditCard: "#E74C3C"
+        case .eWallet: "#9B59B6"
         }
     }
 }

@@ -54,15 +54,77 @@ struct OnboardingFeatureTests {
                     $0.keyRawValue = key.rawValue
                 }
             }
+            $0.accountClient.add = { _ in }
         }
 
         await store.send(.finishButtonTapped)
+        await store.receive(\.accountCreated) {
+            $0.isCreatingAccount = true
+        }
         await store.receive(\.delegate.onboardingCompleted)
 
         let recorded = capturedSetBool.value
         #expect(recorded.called == true)
         #expect(recorded.value == true)
         #expect(recorded.keyRawValue == SettingsKey.hasCompletedOnboarding.rawValue)
+    }
+
+    @Test("finishButtonTapped creates account with user input")
+    func testFinishCreatesAccount() async throws {
+        let addedAccount = LockIsolated<Account?>(nil)
+
+        let store = await TestStore(
+            initialState: OnboardingFeature.State(
+                currentStep: .ready,
+                accountName: "我的銀行",
+                accountType: .bank
+            )
+        ) {
+            OnboardingFeature()
+        } withDependencies: {
+            $0.userSettingsClient.setBool = { _, _ in }
+            $0.accountClient.add = { account in
+                addedAccount.setValue(account)
+            }
+        }
+
+        await store.send(.finishButtonTapped)
+        await store.receive(\.accountCreated) {
+            $0.isCreatingAccount = true
+        }
+        await store.receive(\.delegate.onboardingCompleted)
+
+        let account = addedAccount.value
+        #expect(account?.name == "我的銀行")
+        #expect(account?.type == .bank)
+        #expect(account?.icon == "building.columns")
+        #expect(account?.isArchived == false)
+    }
+
+    @Test("skipButtonTapped creates default cash account and completes")
+    func testSkipCreatesDefaultAccount() async throws {
+        let addedAccount = LockIsolated<Account?>(nil)
+
+        let store = await TestStore(
+            initialState: OnboardingFeature.State(currentStep: .welcome)
+        ) {
+            OnboardingFeature()
+        } withDependencies: {
+            $0.userSettingsClient.setBool = { _, _ in }
+            $0.accountClient.add = { account in
+                addedAccount.setValue(account)
+            }
+        }
+
+        await store.send(.skipButtonTapped)
+        await store.receive(\.accountCreated) {
+            $0.isCreatingAccount = true
+        }
+        await store.receive(\.delegate.onboardingCompleted)
+
+        let account = addedAccount.value
+        #expect(account?.type == .cash)
+        #expect(account?.icon == "banknote")
     }
 
     // MARK: - Binding

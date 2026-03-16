@@ -17,10 +17,24 @@ public struct BudgetGauge: View {
         self.label = label
     }
     
-    private var progress: Double {
+    private var percentage: Double {
         guard total > 0 else { return 0 }
-        let value = (used as NSDecimalNumber).doubleValue / (total as NSDecimalNumber).doubleValue
-        return min(max(value, 0), 1)
+        return (used as NSDecimalNumber).doubleValue / (total as NSDecimalNumber).doubleValue
+    }
+
+    private var progress: Double {
+        min(max(percentage, 0), 1)
+    }
+
+    private var barColor: Color {
+        switch percentage {
+        case ..<0.8:
+            return Color.Design.incomeGreen
+        case 0.8..<1.0:
+            return Color.Design.warningAmber
+        default:
+            return Color.Design.expenseRed
+        }
     }
     
     public var body: some View {
@@ -31,7 +45,7 @@ public struct BudgetGauge: View {
                     .font(Font.Design.caption)
                     .foregroundStyle(Color.Design.textSecondary)
                 Spacer()
-                Text("\(Int(progress * 100))%")
+                Text("\(Int(percentage * 100))%")
                     .font(Font.Design.caption)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.Design.textPrimary)
@@ -47,13 +61,7 @@ public struct BudgetGauge: View {
                     
                     // Fill
                     Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue, .purple], // Brand Gradient
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .fill(barColor)
                         .frame(width: proxy.size.width * CGFloat(progress), height: 8)
                 }
             }
@@ -89,7 +97,11 @@ private extension Decimal {
 #Preview {
     ZStack {
         Color.gray.opacity(0.1).ignoresSafeArea()
-        BudgetGauge(total: 5000, used: 3250, label: "Dining")
-            .padding()
+        VStack(spacing: 16) {
+            BudgetGauge(total: 5000, used: 2000, label: "飲食")
+            BudgetGauge(total: 5000, used: 4200, label: "交通")
+            BudgetGauge(total: 5000, used: 6000, label: "娛樂")
+        }
+        .padding()
     }
 }

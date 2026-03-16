@@ -32,6 +32,9 @@ public struct AccountManagementView: View {
         .navigationTitle(String(localized: "account_management_title"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                EditButton()
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     store.send(.addButtonTapped)
@@ -67,6 +70,9 @@ public struct AccountManagementView: View {
                         let account = store.activeAccounts[index]
                         store.send(.deleteRequested(account.id))
                     }
+                }
+                .onMove { from, to in
+                    store.send(.accountMoved(from, to))
                 }
             }
 

@@ -37,6 +37,7 @@ public struct AccountManagementFeature: Sendable {
         case accountTapped(Account)
         case deleteRequested(Account.ID)
         case unarchiveTapped(Account.ID)
+        case accountMoved(IndexSet, Int)
         case showArchiveConfirmation(Account.ID)
         case showDeleteConfirmation(Account.ID)
         case addEdit(PresentationAction<AddEditAccountFeature.Action>)
@@ -55,7 +56,7 @@ public struct AccountManagementFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
 
-    private enum CancelID { case task }
+    private enum CancelID { case task, reorder }
 
     // MARK: - Body
 
@@ -200,6 +201,36 @@ public struct AccountManagementFeature: Sendable {
                     let accounts = try await accountClient.fetchAll()
                     await send(.accountsLoaded(accounts))
                 }
+
+            case let .accountMoved(source, destination):
+                var active = state.activeAccounts
+                active.move(fromOffsets: source, toOffset: destination)
+
+                let reordered = active.enumerated().map { index, account in
+                    Account(
+                        id: account.id,
+                        name: account.name,
+                        type: account.type,
+                        icon: account.icon,
+                        color: account.color,
+                        sortOrder: index,
+                        isArchived: account.isArchived,
+                        createdAt: account.createdAt
+                    )
+                }
+
+                for updated in reordered {
+                    if let idx = state.accounts.firstIndex(where: { $0.id == updated.id }) {
+                        state.accounts[idx] = updated
+                    }
+                }
+
+                return .run { _ in
+                    for account in reordered {
+                        try await accountClient.update(account)
+                    }
+                }
+                .cancellable(id: CancelID.reorder, cancelInFlight: true)
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil

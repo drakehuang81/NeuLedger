@@ -1021,6 +1021,23 @@
         }
       }
     },
+    "add_transaction_error_same_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source and destination accounts cannot be the same"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "來源與目標帳戶不能相同"
+          }
+        }
+      }
+    },
     "transactions_title": {
       "extractionState": "manual",
       "localizations": {

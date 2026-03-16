@@ -32,6 +32,7 @@ public struct AddTransactionFeature: Sendable {
         public var amountError: String?
         public var accountError: String?
         public var categoryError: String?
+        public var transferError: String?
 
         // Loaded options
         public var accounts: [Account]
@@ -143,10 +144,12 @@ public struct AddTransactionFeature: Sendable {
             case let .accountSelected(id):
                 state.accountId = id
                 state.accountError = nil
+                state.transferError = nil
                 return .none
 
             case let .toAccountSelected(id):
                 state.toAccountId = id
+                state.transferError = nil
                 return .none
 
             case let .categorySelected(id):
@@ -178,6 +181,11 @@ public struct AddTransactionFeature: Sendable {
 
                 if state.type != .transfer && state.categoryId == nil {
                     state.categoryError = String(localized: "add_transaction_error_category")
+                    hasError = true
+                }
+
+                if state.type == .transfer && state.accountId != nil && state.accountId == state.toAccountId {
+                    state.transferError = String(localized: "add_transaction_error_same_account")
                     hasError = true
                 }
 

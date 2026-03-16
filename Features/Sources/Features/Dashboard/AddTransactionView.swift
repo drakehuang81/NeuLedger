@@ -78,6 +78,11 @@ public struct AddTransactionView: View {
                                 Text(account.name).tag(Optional(account.id))
                             }
                         }
+                        if let error = store.transferError {
+                            Text(error)
+                                .font(Font.Design.caption)
+                                .foregroundStyle(Color.Design.expenseRed)
+                        }
                     } else {
                         Picker(String(localized: "add_transaction_account"), selection: Binding(
                             get: { store.accountId },

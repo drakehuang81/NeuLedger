@@ -8,8 +8,8 @@ import FoundationModels
 @Generable
 public struct ExtractedTransaction: Equatable, Sendable {
     /// The parsed monetary value of the transaction, if successfully determined.
-    @Guide(description: "Transaction amount in TWD, always positive. Nil if unclear.")
-    public var amount: Double?
+    @Guide(description: "Transaction amount in TWD as a whole number (no decimals), always positive. Nil if unclear.")
+    public var amount: Int?
 
     /// A potential category name interpreted from the context of the user's description.
     @Guide(description: "Best-guess category name from user's input. Nil if not determinable.")
@@ -26,7 +26,7 @@ public struct ExtractedTransaction: Equatable, Sendable {
     // Keep the custom init for callers (testValue, test fixtures, etc.).
     // If @Generable synthesizes a conflicting init, remove this block.
     public init(
-        amount: Double? = nil,
+        amount: Int? = nil,
         suggestedCategory: String? = nil,
         description: String? = nil,
         type: String? = nil

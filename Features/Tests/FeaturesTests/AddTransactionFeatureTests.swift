@@ -88,4 +88,102 @@ struct AddTransactionFeatureTests {
         #expect(state.note == "")
         #expect(state.type == .expense)
     }
+
+    // MARK: - Task 13: AI mode, prefilled routing, and category suggest tests
+
+    // Helper to create a store with AI disabled (prevents unimplemented stub calls)
+    private func makeStore(
+        mode: AddTransactionFeature.Mode = .add(.expense),
+        aiAvailable: Bool = false
+    ) async -> TestStoreOf<AddTransactionFeature> {
+        await TestStore(
+            initialState: AddTransactionFeature.State(mode: mode)
+        ) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.aiServiceClient.isAvailable = { aiAvailable }
+            if aiAvailable {
+                $0.aiServiceClient.extractTransaction = { _ in ExtractedTransaction() }
+                $0.aiServiceClient.suggestCategories = { _, _ in
+                    CategorySuggestions(suggestions: [], confidence: "low")
+                }
+            }
+        }
+    }
+
+    @Test("saveTapped in .addPrefilled mode creates new transaction")
+    func saveTappedPrefilledCreatesTransaction() async {
+        let saved = LockIsolated<Transaction?>(nil)
+        let account = Account(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
+            name: "現金", type: .cash, icon: "banknote", color: "#00FF00"
+        )
+        // Use .transfer type to skip category validation; manually set both accountId and toAccountId
+        var initialState = AddTransactionFeature.State(mode: .addPrefilled(ExtractedTransaction()))
+        initialState.amountText = "200"
+        initialState.type = .transfer
+        initialState.accountId = account.id
+        initialState.toAccountId = Self.account2.id
+
+        let store = await TestStore(initialState: initialState) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [account] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.aiServiceClient.isAvailable = { false }
+            $0.transactionClient.add = { saved.setValue($0) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+        #expect(saved.value != nil)
+        #expect(saved.value?.amount == 200)
+    }
+
+    @Test("suggestCategoryTapped is no-op when AI unavailable")
+    func suggestCategoryTappedUnavailable() async {
+        let store = await makeStore(aiAvailable: false)
+        await store.send(.suggestCategoryTapped) {
+            $0.categorySuggestionError = "此裝置不支援 AI 功能"
+        }
+    }
+
+    @Test("backgroundExtractionCompleted fills only empty fields")
+    func backgroundExtractionFillsOnlyEmptyFields() async {
+        let store = await makeStore(aiAvailable: false)
+        // Pre-set amountText so it should NOT be overwritten
+        await store.send(.amountTextChanged("999")) { $0.amountText = "999" }
+        let extracted = ExtractedTransaction(amount: 150, suggestedCategory: nil, description: "午餐", type: "income")
+        await store.send(.backgroundExtractionCompleted(extracted)) {
+            $0.isBackgroundParsingNote = false
+            // amount NOT overwritten (was "999")
+            // type updated (.add(.expense) initial → income)
+            $0.type = .income
+            // amountText remains "999" — not overwritten by AI
+            #expect($0.amountText == "999")
+        }
+    }
+
+    @Test("backgroundExtractionCompleted nil clears loading flag only")
+    func backgroundExtractionNilClearsLoading() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.isBackgroundParsingNote = true
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+        await store.send(.backgroundExtractionCompleted(nil)) {
+            $0.isBackgroundParsingNote = false
+        }
+    }
 }

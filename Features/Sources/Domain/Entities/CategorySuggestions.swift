@@ -1,19 +1,22 @@
 import Foundation
+import FoundationModels
 
 /// A structured response containing category recommendations provided by an AI service.
 ///
-/// This structure holds a list of probable categories for a given transaction description and
-/// indicates the AI's confidence level in its suggestions.
+/// `@Generable` lets Foundation Models produce this struct from a prompt.
+@Generable
 public struct CategorySuggestions: Equatable, Sendable {
-    /// An array of recommended category names.
+    /// Up to 3 category names from the provided list, ranked by relevance. Must be exact matches.
+    @Guide(description: "Up to 3 category names from the provided list, ranked by relevance. Must be exact matches from the list.")
     public var suggestions: [String]
-    
-    /// The AI's reported confidence level concerning these suggestions (e.g., "High", "Low", or a specific score).
+
+    /// The AI's reported confidence level (e.g., "high", "medium", "low").
+    @Guide(description: "Confidence level: 'high', 'medium', or 'low'.")
     public var confidence: String
-    
+
     public init(
         suggestions: [String] = [],
-        confidence: String
+        confidence: String = "low"
     ) {
         self.suggestions = suggestions
         self.confidence = confidence

@@ -11,6 +11,7 @@ public struct AddTransactionFeature: Sendable {
     public enum Mode: Equatable, Sendable {
         case add(TransactionType)
         case edit(Transaction)
+        case addPrefilled(ExtractedTransaction)   // opened from TabBar AI input with pre-parsed data
     }
 
     // MARK: - State
@@ -39,6 +40,12 @@ public struct AddTransactionFeature: Sendable {
         public var categories: [Domain.Category]
         public var isLoading: Bool
 
+        // AI assistance state
+        public var isBackgroundParsingNote: Bool = false
+        public var isSuggestingCategory: Bool = false
+        public var suggestedCategoryNames: [String] = []
+        public var categorySuggestionError: String? = nil
+
         public init(mode: Mode = .add(.expense), date: Date = Date()) {
             self.mode = mode
             self.accounts = []
@@ -63,6 +70,16 @@ public struct AddTransactionFeature: Sendable {
                 self.categoryId = transaction.categoryId
                 self.note = transaction.note ?? ""
                 self.date = transaction.date
+
+            case let .addPrefilled(extracted):
+                // Map optional AI-parsed fields to form state; use sensible defaults for nil values.
+                self.type = TransactionType(rawValue: extracted.type ?? "") ?? .expense
+                self.amountText = extracted.amount.map { String($0) } ?? ""
+                self.note = extracted.description ?? ""
+                self.accountId = nil     // user must always select their own account
+                self.toAccountId = nil
+                self.categoryId = nil    // category matching handled separately via suggestCategoryTapped
+                self.date = date
             }
         }
 
@@ -96,6 +113,11 @@ public struct AddTransactionFeature: Sendable {
             case saved
             case dismissed
         }
+
+        // AI assistance actions
+        case backgroundExtractionCompleted(ExtractedTransaction?)
+        case suggestCategoryTapped
+        case categorySuggestionsReceived(TaskResult<CategorySuggestions>)
     }
 
     // MARK: - Dependencies
@@ -105,8 +127,9 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.dismiss) var dismiss
+    @Dependency(\.aiServiceClient) var aiServiceClient
 
-    private enum CancelID { case task }
+    private enum CancelID { case task; case noteDebounce; case categorySuggest }
 
     // MARK: - Body
 
@@ -236,6 +259,19 @@ public struct AddTransactionFeature: Sendable {
                             updatedAt: Date()
                         )
                         try await transactionClient.update(transaction)
+
+                    case .addPrefilled:
+                        // Pre-filled values were used for initial state only — saving works exactly like .add.
+                        let transaction = Transaction(
+                            amount: amountValue,
+                            date: date,
+                            note: note,
+                            categoryId: categoryId,
+                            accountId: accountId,
+                            toAccountId: toAccountId,
+                            type: type_
+                        )
+                        try await transactionClient.add(transaction)
                     }
                     await send(.savedSuccessfully)
                 }
@@ -254,6 +290,15 @@ public struct AddTransactionFeature: Sendable {
 
             case .delegate:
                 return .none
+
+            case .backgroundExtractionCompleted:
+                return .none   // implemented in Task 7
+
+            case .suggestCategoryTapped:
+                return .none   // implemented in Task 8
+
+            case .categorySuggestionsReceived:
+                return .none   // implemented in Task 8
             }
         }
     }

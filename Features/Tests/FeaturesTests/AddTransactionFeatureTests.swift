@@ -64,4 +64,28 @@ struct AddTransactionFeatureTests {
             $0.transferError = nil
         }
     }
+
+    @Test(".addPrefilled mode pre-fills form fields from ExtractedTransaction")
+    func addPrefilledModePreFillsFields() async {
+        let extracted = ExtractedTransaction(
+            amount: 150,
+            suggestedCategory: "食物",
+            description: "午餐便當",
+            type: "expense"
+        )
+        let state = AddTransactionFeature.State(mode: .addPrefilled(extracted))
+        #expect(state.amountText == "150")
+        #expect(state.note == "午餐便當")
+        #expect(state.type == .expense)
+        #expect(state.categoryId == nil)
+    }
+
+    @Test(".addPrefilled with all-nil fields uses sensible defaults")
+    func addPrefilledNilFieldsDefaults() async {
+        let extracted = ExtractedTransaction()
+        let state = AddTransactionFeature.State(mode: .addPrefilled(extracted))
+        #expect(state.amountText == "")
+        #expect(state.note == "")
+        #expect(state.type == .expense)
+    }
 }

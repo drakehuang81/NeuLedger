@@ -189,7 +189,23 @@ public struct AddTransactionFeature: Sendable {
 
             case let .noteChanged(note):
                 state.note = note
-                return .none
+                state.isBackgroundParsingNote = !note.isEmpty
+                guard !note.isEmpty else {
+                    // Cancel any pending debounce when field is cleared
+                    return .cancel(id: CancelID.noteDebounce)
+                }
+                // Debounce 500ms — consistent with RunLoop.main pattern used in TransactionsFeature.
+                // isAvailable() is checked inline (not via stored flag) because AddTransactionFeature
+                // has no .task lifecycle, and adding one just for this check would be over-engineering.
+                return .run { [note] send in
+                    guard aiServiceClient.isAvailable() else {
+                        await send(.backgroundExtractionCompleted(nil))
+                        return
+                    }
+                    let result = try? await aiServiceClient.extractTransaction(note)
+                    await send(.backgroundExtractionCompleted(result))
+                }
+                .debounce(id: CancelID.noteDebounce, for: .milliseconds(500), scheduler: RunLoop.main)
 
             case let .dateChanged(date):
                 state.date = date
@@ -291,8 +307,34 @@ public struct AddTransactionFeature: Sendable {
             case .delegate:
                 return .none
 
-            case .backgroundExtractionCompleted:
-                return .none   // implemented in Task 7
+            case let .backgroundExtractionCompleted(extracted):
+                // Always clear the loading indicator first.
+                state.isBackgroundParsingNote = false
+                guard let extracted else { return .none }
+
+                // Apply AI-parsed values only to EMPTY form fields — never overwrite user input.
+                // Note: state.note is intentionally NOT filled here. The debounce was triggered by
+                // the user typing in the note field, so state.note is already set by noteChanged.
+                // Filling it again from AI would produce a loop or conflict.
+                if state.amountText.isEmpty, let amount = extracted.amount {
+                    state.amountText = String(amount)
+                }
+                if state.categoryId == nil, let suggestedName = extracted.suggestedCategory {
+                    // Match against the currently filtered categories list
+                    state.categoryId = state.filteredCategories.first { $0.name == suggestedName }?.id
+                }
+                // Only update type for .add mode and only if the user hasn't manually changed it.
+                // Skip for .addPrefilled (type was already set from AI in State.init).
+                // Skip for .edit (preserve original transaction type).
+                if case let .add(initialType) = state.mode,
+                   state.type == initialType,
+                   let typeString = extracted.type,
+                   let parsedType = TransactionType(rawValue: typeString) {
+                    state.type = parsedType
+                    // Clear category if type changed (category list is filtered by type)
+                    if parsedType != initialType { state.categoryId = nil }
+                }
+                return .none
 
             case .suggestCategoryTapped:
                 return .none   // implemented in Task 8

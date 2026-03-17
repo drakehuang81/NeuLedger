@@ -52,6 +52,8 @@ public struct TransactionsFeature: Sendable {
 
         case filterButtonTapped
         case contextActionTapped
+        // Received from MainTabFeature when the TabBar AI input successfully extracts a transaction.
+        case addTransactionWithPrefilledData(ExtractedTransaction)
 
         case transactionTapped(Transaction)
         case deleteTransaction(Transaction.ID)
@@ -136,6 +138,10 @@ public struct TransactionsFeature: Sendable {
             // MARK: Context action (add transaction from tab bar)
             case .contextActionTapped:
                 state.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
+                return .none
+
+            case let .addTransactionWithPrefilledData(extracted):
+                state.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted))
                 return .none
 
             // MARK: Transaction interactions

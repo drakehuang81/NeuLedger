@@ -275,6 +275,30 @@ struct DashboardFeatureTests {
         }
     }
 
+    // MARK: - Task 6: addTransactionWithPrefilledData
+
+    @Test("addTransactionWithPrefilledData presents AddTransaction in .addPrefilled mode")
+    func addTransactionWithPrefilledDataPresents() async {
+        let extracted = ExtractedTransaction(
+            amount: 200, suggestedCategory: "交通",
+            description: "搭捷運", type: "expense"
+        )
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(initialState: DashboardFeature.State()) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.accountClient.fetchAll = { [] }
+            $0.transactionClient.fetchRecent = { [] }
+            $0.aiServiceClient.isAvailable = { false }
+            $0.aiServiceClient.generateInsight = { _ in "" }
+            $0.date = .constant(fixedDate)
+        }
+        await store.send(.addTransactionWithPrefilledData(extracted)) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted), date: fixedDate)
+        }
+    }
+
     // MARK: - AI Failure Fallback
 
     @Test("AI insight failure falls back gracefully")

@@ -116,12 +116,46 @@ public struct AddTransactionView: View {
                             )) {
                                 Text("common_please_select").tag(Optional<Domain.Category.ID>.none)
                                 ForEach(store.filteredCategories) { category in
-                                Label(category.name, systemImage: category.icon)
+                                    HStack {
+                                        Label(category.name, systemImage: category.icon)
+                                        Spacer()
+                                        // Highlight AI-suggested categories with a sparkle badge
+                                        if store.suggestedCategoryNames.contains(category.name) {
+                                            Image(systemName: "sparkles")
+                                                .foregroundStyle(Color.accentColor)
+                                                .font(.caption)
+                                        }
+                                    }
                                     .tag(Optional<Domain.Category.ID>(category.id))
-                            }
+                                }
                             }
                         }
+
+                        // AI suggest button row
+                        HStack {
+                            if store.isSuggestingCategory {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text(String(localized: "add_transaction_ai_suggesting"))
+                                    .font(Font.Design.caption)
+                                    .foregroundStyle(Color.Design.textSecondary)
+                            } else {
+                                Button {
+                                    store.send(.suggestCategoryTapped)
+                                } label: {
+                                    Label(String(localized: "add_transaction_ai_suggest_category"), systemImage: "wand.and.sparkles")
+                                        .font(Font.Design.caption)
+                                }
+                                .disabled(store.note.isEmpty)
+                            }
+                        }
+
                         if let error = store.categoryError {
+                            Text(error)
+                                .font(Font.Design.caption)
+                                .foregroundStyle(Color.Design.expenseRed)
+                        }
+                        if let error = store.categorySuggestionError {
                             Text(error)
                                 .font(Font.Design.caption)
                                 .foregroundStyle(Color.Design.expenseRed)
@@ -133,10 +167,16 @@ public struct AddTransactionView: View {
 
                 // MARK: 備註
                 Section {
-                    TextField(String(localized: "add_transaction_note_placeholder"), text: Binding(
-                        get: { store.note },
-                        set: { store.send(.noteChanged($0)) }
-                    ))
+                    HStack {
+                        TextField(String(localized: "add_transaction_note_placeholder"), text: Binding(
+                            get: { store.note },
+                            set: { store.send(.noteChanged($0)) }
+                        ))
+                        if store.isBackgroundParsingNote {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
                 } header: {
                     Text("add_transaction_note")
                 }

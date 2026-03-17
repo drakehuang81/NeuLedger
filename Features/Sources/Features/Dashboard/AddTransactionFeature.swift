@@ -337,10 +337,35 @@ public struct AddTransactionFeature: Sendable {
                 return .none
 
             case .suggestCategoryTapped:
-                return .none   // implemented in Task 8
+                // Guard in reducer — the View disables the button, but this prevents subtle bugs
+                // if isAvailable state drifts between the .task check and the tap.
+                guard aiServiceClient.isAvailable() else {
+                    state.categorySuggestionError = "此裝置不支援 AI 功能"
+                    return .none
+                }
+                state.isSuggestingCategory = true
+                state.categorySuggestionError = nil
+                let description = state.note
+                let categoryNames = state.filteredCategories.map(\.name)
+                return .run { send in
+                    await send(.categorySuggestionsReceived(
+                        TaskResult { try await aiServiceClient.suggestCategories(description, categoryNames) }
+                    ))
+                }
+                .cancellable(id: CancelID.categorySuggest, cancelInFlight: true)
 
-            case .categorySuggestionsReceived:
-                return .none   // implemented in Task 8
+            case let .categorySuggestionsReceived(.success(suggestions)):
+                state.isSuggestingCategory = false
+                // Filter to only names that exist in the current filtered category list
+                state.suggestedCategoryNames = suggestions.suggestions.filter { name in
+                    state.filteredCategories.contains { $0.name == name }
+                }
+                return .none
+
+            case .categorySuggestionsReceived(.failure):
+                state.isSuggestingCategory = false
+                state.categorySuggestionError = "無法取得建議，請手動選擇"
+                return .none
             }
         }
     }

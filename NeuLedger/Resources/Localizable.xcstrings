@@ -919,6 +919,40 @@
         }
       }
     },
+    "add_transaction_ai_suggest_category": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Suggest Category"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 建議分類"
+          }
+        }
+      }
+    },
+    "add_transaction_ai_suggesting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI analyzing…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 分析中…"
+          }
+        }
+      }
+    },
     "add_transaction_note": {
       "extractionState": "manual",
       "localizations": {

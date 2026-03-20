@@ -237,6 +237,13 @@ public struct DashboardFeature: Sendable {
                 return .send(.delegate(.transactionTapped(id)))
 
             // MARK: Child features
+            case .addTransaction(.presented(.delegate(.saved))),
+                 .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
+                return .run { send in
+                    let transactions = try await transactionClient.fetchRecent()
+                    await send(.transactionsUpdated(transactions))
+                }
+
             case .addTransaction:
                 return .none
 

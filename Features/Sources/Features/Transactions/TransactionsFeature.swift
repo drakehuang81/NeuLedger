@@ -175,12 +175,12 @@ public struct TransactionsFeature: Sendable {
                 state.detail = nil
                 return .none
 
-            case .detail(.presented(.delegate(.updated))):
-                state.detail = nil
-                return .run { send in
-                    let transactions = try await transactionClient.fetchAll()
-                    await send(.transactionsLoaded(transactions))
+            case let .detail(.presented(.delegate(.updated(t)))):
+                if let idx = state.transactions.firstIndex(where: { $0.id == t.id }) {
+                    state.transactions[idx] = t
                 }
+                state.detail = nil
+                return .none
 
             case .detail(.dismiss):
                 state.detail = nil

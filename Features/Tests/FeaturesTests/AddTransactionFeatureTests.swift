@@ -186,4 +186,40 @@ struct AddTransactionFeatureTests {
             $0.isBackgroundParsingNote = false
         }
     }
+
+    @Test("saveTapped in .edit mode sends savedWithTransaction carrying updated values")
+    func testEditModeSavedDelegateCarriesTransaction() async {
+        let existing = Transaction(
+            id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!,
+            amount: 100,
+            date: Date(timeIntervalSince1970: 0),
+            note: "old note",
+            categoryId: nil,
+            accountId: Self.account1.id,
+            toAccountId: nil,
+            type: .expense
+        )
+        var state = AddTransactionFeature.State(mode: .edit(existing))
+        state.amountText = "250"
+        state.accountId = Self.account1.id
+
+        let updatedCapture: LockIsolated<Transaction?> = LockIsolated(nil)
+
+        let store = await TestStore(initialState: state) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [Self.account1] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.aiServiceClient.isAvailable = { false }
+            $0.transactionClient.update = { updatedCapture.setValue($0) }
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfullyWithTransaction)
+        await store.receive(\.delegate.savedWithTransaction)
+
+        #expect(updatedCapture.value?.amount == 250)
+        #expect(updatedCapture.value?.id == existing.id)
+    }
 }

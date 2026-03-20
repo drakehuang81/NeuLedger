@@ -105,12 +105,14 @@ public struct AddTransactionFeature: Sendable {
         case saveTapped
         case dismiss
         case savedSuccessfully
+        case savedSuccessfullyWithTransaction(Transaction)
 
         case delegate(Delegate)
 
         @CasePathable
         public enum Delegate: Sendable, Equatable {
-            case saved
+            case saved                              // add / addPrefilled mode
+            case savedWithTransaction(Transaction)  // edit mode
             case dismissed
         }
 
@@ -226,8 +228,12 @@ public struct AddTransactionFeature: Sendable {
                 }
 
                 if state.type != .transfer && state.categoryId == nil {
-                    state.categoryError = String(localized: "add_transaction_error_category")
-                    hasError = true
+                    if case .edit = state.mode {
+                        // In edit mode, allow saving with no category (preserving existing nil)
+                    } else {
+                        state.categoryError = String(localized: "add_transaction_error_category")
+                        hasError = true
+                    }
                 }
 
                 if state.type == .transfer && state.accountId != nil && state.accountId == state.toAccountId {
@@ -275,6 +281,8 @@ public struct AddTransactionFeature: Sendable {
                             updatedAt: Date()
                         )
                         try await transactionClient.update(transaction)
+                        await send(.savedSuccessfullyWithTransaction(transaction))
+                        return
 
                     case .addPrefilled:
                         // Pre-filled values were used for initial state only — saving works exactly like .add.
@@ -295,6 +303,12 @@ public struct AddTransactionFeature: Sendable {
             case .savedSuccessfully:
                 return .run { send in
                     await send(.delegate(.saved))
+                    await dismiss()
+                }
+
+            case let .savedSuccessfullyWithTransaction(transaction):
+                return .run { send in
+                    await send(.delegate(.savedWithTransaction(transaction)))
                     await dismiss()
                 }
 

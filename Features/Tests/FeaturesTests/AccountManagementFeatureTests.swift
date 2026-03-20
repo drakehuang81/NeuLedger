@@ -91,7 +91,7 @@ struct AccountManagementFeatureTests {
         }
 
         await store.send(.saveTapped) {
-            $0.nameError = "請輸入帳戶名稱"
+            $0.nameError = String(localized: "error_account_name_empty")
         }
     }
 
@@ -110,7 +110,7 @@ struct AccountManagementFeatureTests {
 
         await store.send(.nameChanged("現金")) { $0.name = "現金" }
         await store.send(.saveTapped) {
-            $0.nameError = "此名稱已被使用"
+            $0.nameError = String(localized: "error_account_name_taken")
         }
     }
 
@@ -133,16 +133,16 @@ struct AccountManagementFeatureTests {
         await store.send(.deleteRequested(id))
         await store.receive(\.showArchiveConfirmation) {
             $0.alert = AlertState {
-                TextState("無法刪除")
+                TextState(String(localized: "alert_cannot_delete"))
             } actions: {
                 ButtonState(action: AccountManagementFeature.Action.Alert.archiveConfirmed(id)) {
-                    TextState("改為封存")
+                    TextState(String(localized: "alert_archive_instead"))
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState(String(localized: "common_cancel"))
                 }
             } message: {
-                TextState("此帳戶有關聯交易，無法刪除。是否改為封存？")
+                TextState(String(localized: "alert_archive_account_message"))
             }
         }
     }
@@ -164,16 +164,16 @@ struct AccountManagementFeatureTests {
         await store.send(.deleteRequested(id))
         await store.receive(\.showDeleteConfirmation) {
             $0.alert = AlertState {
-                TextState("確定要刪除？")
+                TextState(String(localized: "alert_confirm_delete"))
             } actions: {
                 ButtonState(role: .destructive, action: AccountManagementFeature.Action.Alert.deleteConfirmed(id)) {
-                    TextState("刪除")
+                    TextState(String(localized: "common_delete"))
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState(String(localized: "common_cancel"))
                 }
             } message: {
-                TextState("此操作無法還原。")
+                TextState(String(localized: "alert_delete_account_message"))
             }
         }
     }

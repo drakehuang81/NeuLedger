@@ -64,7 +64,7 @@ struct TagManagementFeatureTests {
         }
 
         await store.send(.saveTapped) {
-            $0.nameError = "標籤名稱不能為空"
+            $0.nameError = String(localized: "error_tag_name_empty")
         }
     }
 
@@ -112,16 +112,16 @@ struct TagManagementFeatureTests {
 
         await store.send(.deleteRequested(id)) {
             $0.alert = AlertState {
-                TextState("刪除標籤")
+                TextState(String(localized: "alert_delete_tag"))
             } actions: {
                 ButtonState(role: .destructive, action: TagManagementFeature.Action.Alert.deleteConfirmed(id)) {
-                    TextState("刪除")
+                    TextState(String(localized: "common_delete"))
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState(String(localized: "common_cancel"))
                 }
             } message: {
-                TextState("此標籤將從所有關聯交易中移除。確定要刪除嗎？")
+                TextState(String(localized: "alert_delete_tag_message"))
             }
         }
     }
@@ -142,16 +142,16 @@ struct TagManagementFeatureTests {
 
         await store.send(.deleteRequested(id)) {
             $0.alert = AlertState {
-                TextState("刪除標籤")
+                TextState(String(localized: "alert_delete_tag"))
             } actions: {
                 ButtonState(role: .destructive, action: TagManagementFeature.Action.Alert.deleteConfirmed(id)) {
-                    TextState("刪除")
+                    TextState(String(localized: "common_delete"))
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState(String(localized: "common_cancel"))
                 }
             } message: {
-                TextState("此標籤將從所有關聯交易中移除。確定要刪除嗎？")
+                TextState(String(localized: "alert_delete_tag_message"))
             }
         }
 

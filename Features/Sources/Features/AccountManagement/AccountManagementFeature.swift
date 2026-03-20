@@ -156,7 +156,7 @@ public struct AccountManagementFeature: Sendable {
 
             case let .showDeleteConfirmation(id):
                 state.alert = AlertState {
-                    TextState(String(localized: "alert_cannot_delete"))
+                    TextState(String(localized: "alert_confirm_delete"))
                 } actions: {
                     ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
                         TextState(String(localized: "common_delete"))

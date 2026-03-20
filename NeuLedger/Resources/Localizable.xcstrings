@@ -3061,6 +3061,20 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "此操作無法還原。" } }
       }
     },
+    "alert_confirm_delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Confirm Delete?" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除？" } }
+      }
+    },
+    "alert_delete_category_message_name %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Are you sure you want to delete \"%@\"? This action cannot be undone." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除「%@」嗎？此操作無法復原。" } }
+      }
+    },
     "analysis_period_week": {
       "extractionState": "manual",
       "localizations": {

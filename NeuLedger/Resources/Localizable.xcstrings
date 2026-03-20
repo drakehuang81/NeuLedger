@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "ai_extraction_error": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not parse, please try again or enter manually"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法解析，請再試一次或手動輸入"
+          }
+        }
+      }
+    },
     "ai_ask_error": {
       "extractionState": "manual",
       "localizations": {
@@ -14,6 +31,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "無法取得回答，請再試一次"
+          }
+        }
+      }
+    },
+    "ai_record_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe this transaction…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "描述這筆交易…"
+          }
+        }
+      }
+    },
+    "ai_ask_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask about your finances…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "問關於你的財務…"
+          }
+        }
+      }
+    },
+    "ai_mode_ask": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask AI"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "問 AI"
+          }
+        }
+      }
+    },
+    "ai_mode_record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記帳"
           }
         }
       }

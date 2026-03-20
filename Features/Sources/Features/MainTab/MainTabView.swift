@@ -40,14 +40,91 @@ struct MainTabView: View {
             if store.isAIInputExpanded {
                 // Expanded: natural language input bar
                 VStack(spacing: 4) {
+                    // AI answer card — shown when aiAnswer is available
+                    if let answer = store.aiAnswer {
+                        ScrollView {
+                            Text(answer)
+                                .font(Font.Design.body)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                        }
+                        .frame(maxHeight: 160)
+                        .glassEffect(in: RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 12)
+                    }
+
                     HStack(spacing: 8) {
-                        TextField("描述這筆交易…", text: Binding(
-                            get: { store.aiInputText },
-                            set: { store.send(.aiInputTextChanged($0)) }
-                        ))
+                        // Mode toggle — record vs ask
+                        HStack(spacing: 2) {
+                            Button {
+                                store.send(.inputPurposeSwitched(.record))
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "pencil")
+                                        .font(.caption)
+                                    Text(String(localized: "ai_mode_record"))
+                                        .font(Font.Design.caption)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    store.inputPurpose == .record
+                                        ? Color.accentColor.opacity(0.2)
+                                        : Color.clear,
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(
+                                    store.inputPurpose == .record
+                                        ? Color.accentColor
+                                        : Color.Design.textTertiary
+                                )
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                store.send(.inputPurposeSwitched(.ask))
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "bubble.left")
+                                        .font(.caption)
+                                    Text(String(localized: "ai_mode_ask"))
+                                        .font(Font.Design.caption)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    store.inputPurpose == .ask
+                                        ? Color.accentColor.opacity(0.2)
+                                        : Color.clear,
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(
+                                    store.inputPurpose == .ask
+                                        ? Color.accentColor
+                                        : Color.Design.textTertiary
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        TextField(
+                            store.inputPurpose == .record
+                                ? String(localized: "ai_record_placeholder")
+                                : String(localized: "ai_ask_placeholder"),
+                            text: Binding(
+                                get: { store.aiInputText },
+                                set: { store.send(.aiInputTextChanged($0)) }
+                            )
+                        )
                         .textFieldStyle(.plain)
                         .submitLabel(.send)
-                        .onSubmit { store.send(.aiInputSubmitted) }
+                        .onSubmit {
+                            if store.inputPurpose == .record {
+                                store.send(.aiInputSubmitted)
+                            } else {
+                                store.send(.askSubmitted)
+                            }
+                        }
 
                         if store.isAIInputLoading {
                             ProgressView()
@@ -55,7 +132,11 @@ struct MainTabView: View {
                                 .padding(.trailing, 4)
                         } else {
                             Button {
-                                store.send(.aiInputSubmitted)
+                                if store.inputPurpose == .record {
+                                    store.send(.aiInputSubmitted)
+                                } else {
+                                    store.send(.askSubmitted)
+                                }
                             } label: {
                                 Image(systemName: "arrow.up.circle.fill")
                                     .font(.title2)

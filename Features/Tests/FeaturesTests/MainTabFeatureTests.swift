@@ -50,6 +50,7 @@ struct MainTabFeatureTests {
         initial.isAIInputExpanded = true
         initial.aiInputText = "午餐150"
         initial.aiInputError = "some error"
+        initial.aiAnswer = "previous answer"
 
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
@@ -61,6 +62,7 @@ struct MainTabFeatureTests {
             $0.aiInputText = ""
             $0.isAIInputLoading = false
             $0.aiInputError = nil
+            $0.aiAnswer = nil
         }
     }
 
@@ -109,7 +111,7 @@ struct MainTabFeatureTests {
         }
         await store.send(.aiExtractionCompleted(.failure(FakeError()))) {
             $0.isAIInputLoading = false
-            $0.aiInputError = "無法解析，請再試一次或手動輸入"
+            $0.aiInputError = String(localized: "ai_extraction_error")
         }
     }
 }
@@ -125,6 +127,8 @@ struct MainTabAskModeTests {
 
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
+        } withDependencies: {
+            $0.aiServiceClient.answerFinancialQuestion = { _ in "" }
         }
 
         await store.send(.inputPurposeSwitched(.ask)) {

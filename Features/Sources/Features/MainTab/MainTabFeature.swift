@@ -137,7 +137,7 @@ struct MainTabFeature {
 
             case .aiExtractionCompleted(.failure):
                 state.isAIInputLoading = false
-                state.aiInputError = "無法解析，請再試一次或手動輸入"
+                state.aiInputError = String(localized: "ai_extraction_error")
                 return .none
 
             case let .inputPurposeSwitched(purpose):

@@ -102,7 +102,12 @@ public struct TransactionDetailFeature: Sendable {
             case .dismiss:
                 return .run { _ in await dismiss() }
 
-            case let .editTransaction(.presented(.delegate(.saved))):
+            case let .editTransaction(.presented(.delegate(.savedWithTransaction(t)))):
+                state.transaction = t
+                state.editTransaction = nil
+                return .send(.delegate(.updated(t)))
+
+            case .editTransaction(.presented(.delegate(.saved))):
                 state.editTransaction = nil
                 return .none
 

@@ -3,6 +3,66 @@ import FoundationModels
 import Domain
 import Dependencies
 
+// MARK: - QueryTransactionsTool
+
+private struct QueryTransactionsTool: Tool {
+    let description = "Query the user's transaction history by category name and/or date range"
+
+    @Generable
+    struct Arguments {
+        @Guide(description: "Category name to filter by. Omit to include all categories.")
+        var category: String?
+        @Guide(description: "Start date in ISO 8601 format (YYYY-MM-DD). Omit for no lower bound.")
+        var startDate: String?
+        @Guide(description: "End date in ISO 8601 format (YYYY-MM-DD). Omit for no upper bound.")
+        var endDate: String?
+    }
+
+    let transactionClient: TransactionClient
+    let categoryClient: CategoryClient
+
+    func call(arguments: Arguments) async throws -> String {
+        let allCategories = try await categoryClient.fetchAll()
+
+        // Resolve category name to ID (case-insensitive match)
+        var categoryIds: [Domain.Category.ID]? = nil
+        if let name = arguments.category {
+            let matched = allCategories.filter {
+                $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+            }
+            if !matched.isEmpty {
+                categoryIds = matched.map(\.id)
+            }
+        }
+
+        // Parse date range
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withFullDate]
+        let start = arguments.startDate.flatMap { iso.date(from: $0) }
+        let end = arguments.endDate.flatMap { iso.date(from: $0) }
+        let dateRange: ClosedRange<Date>? = (start != nil || end != nil)
+            ? (start ?? .distantPast)...(end ?? .distantFuture)
+            : nil
+
+        let filter = TransactionFilter(
+            categoryIds: categoryIds.map(Set.init),
+            dateRange: dateRange
+        )
+        let transactions = try await transactionClient.fetch(filter)
+
+        if transactions.isEmpty {
+            return "查無交易紀錄。"
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let lines = transactions.map { t in
+            "\(formatter.string(from: t.date)) \(t.note ?? "（無備註）") NT$\(t.amount)"
+        }
+        return lines.joined(separator: "\n")
+    }
+}
+
 extension AIServiceClient: DependencyKey {
     // InsightCache is a static let so it is created once for the app session and shared
     // by all generateInsight calls — not reset each time liveValue is accessed.
@@ -56,6 +116,20 @@ extension AIServiceClient: DependencyKey {
             let result = try await session.respond(to: prompt).content
             await AIServiceClient.insightCache.set(result, for: summary)
             return result
+        },
+
+        // MARK: - answerFinancialQuestion
+        // Uses Foundation Models Tool Calling: the model decides when to invoke QueryTransactionsTool
+        // to fetch real transaction data, then synthesises a natural language answer in Traditional Chinese.
+        answerFinancialQuestion: { question in
+            @Dependency(\.transactionClient) var transactionClient
+            @Dependency(\.categoryClient) var categoryClient
+            let tool = QueryTransactionsTool(
+                transactionClient: transactionClient,
+                categoryClient: categoryClient
+            )
+            let session = LanguageModelSession(tools: [tool])
+            return try await session.respond(to: question).content
         },
 
         // MARK: - isAvailable

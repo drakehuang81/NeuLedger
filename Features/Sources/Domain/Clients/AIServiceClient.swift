@@ -27,7 +27,13 @@ public struct AIServiceClient: Sendable {
     /// - Parameter summary: The `SpendingSummary` containing aggregated financial data.
     /// - Returns: A localized string containing the generated insights.
     public var generateInsight: @Sendable (SpendingSummary) async throws -> String
-    
+
+    /// Answers a natural language financial question by querying transaction history via Tool Calling.
+    ///
+    /// - Parameter question: The user's question in natural language (e.g., "上個月餐費花了多少？").
+    /// - Returns: A natural language answer generated on-device.
+    public var answerFinancialQuestion: @Sendable (String) async throws -> String
+
     /// Checks the availability of the underlying AI service.
     ///
     /// - Returns: `true` if the AI service is properly configured and reachable; otherwise, `false`.

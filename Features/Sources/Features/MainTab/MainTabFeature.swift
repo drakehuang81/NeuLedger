@@ -2,6 +2,11 @@ import Foundation
 import ComposableArchitecture
 import Domain
 
+public enum InputPurpose: Equatable, Sendable {
+    case record
+    case ask
+}
+
 @Reducer
 struct MainTabFeature {
     // MARK: - State
@@ -26,6 +31,8 @@ struct MainTabFeature {
         var isAIInputLoading: Bool = false
         var aiInputError: String? = nil      // shown inline below the text field
         var aiUnavailable: Bool = false      // set once on .task; drives all AI UI
+        var inputPurpose: InputPurpose = .record
+        var aiAnswer: String? = nil
     }
 
     // MARK: - Action
@@ -43,6 +50,10 @@ struct MainTabFeature {
         case aiInputSubmitted
         case aiInputDismissed
         case aiExtractionCompleted(TaskResult<ExtractedTransaction>)
+        case inputPurposeSwitched(InputPurpose)
+        case askSubmitted
+        case answerReceived(String)
+        case answerFailed
 
         case dashboard(DashboardFeature.Action)
         case transactions(TransactionsFeature.Action)
@@ -52,7 +63,7 @@ struct MainTabFeature {
 
     // MARK: - Dependencies
     @Dependency(\.aiServiceClient) var aiServiceClient
-    private enum CancelID { case aiExtraction }
+    private enum CancelID { case aiExtraction; case aiAnswer }
 
     // MARK: - Body
     var body: some ReducerOf<Self> {
@@ -96,6 +107,7 @@ struct MainTabFeature {
                 state.aiInputText = ""
                 state.isAIInputLoading = false
                 state.aiInputError = nil
+                state.aiAnswer = nil
                 return .none
 
             case .aiInputSubmitted:
@@ -126,6 +138,41 @@ struct MainTabFeature {
             case .aiExtractionCompleted(.failure):
                 state.isAIInputLoading = false
                 state.aiInputError = "無法解析，請再試一次或手動輸入"
+                return .none
+
+            case let .inputPurposeSwitched(purpose):
+                state.inputPurpose = purpose
+                state.aiInputText = ""
+                state.aiAnswer = nil
+                state.aiInputError = nil
+                return .cancel(id: CancelID.aiAnswer)
+
+            case .askSubmitted:
+                guard !state.aiInputText.isEmpty else { return .none }
+                state.isAIInputLoading = true
+                state.aiInputError = nil
+                state.aiAnswer = nil
+                let question = state.aiInputText
+                return .run { send in
+                    do {
+                        let answer = try await aiServiceClient.answerFinancialQuestion(question)
+                        await send(.answerReceived(answer))
+                    } catch {
+                        await send(.answerFailed)
+                    }
+                }
+                .cancellable(id: CancelID.aiAnswer, cancelInFlight: true)
+
+            case let .answerReceived(text):
+                guard state.inputPurpose == .ask else { return .none }
+                state.aiAnswer = text
+                state.isAIInputLoading = false
+                state.aiInputText = ""
+                return .none
+
+            case .answerFailed:
+                state.isAIInputLoading = false
+                state.aiInputError = String(localized: "ai_ask_error")
                 return .none
 
             case let .tabSelected(tab):

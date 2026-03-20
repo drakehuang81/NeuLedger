@@ -113,3 +113,79 @@ struct MainTabFeatureTests {
         }
     }
 }
+
+@Suite("MainTabFeature — ask mode")
+struct MainTabAskModeTests {
+
+    @Test("inputPurposeSwitched clears text and answer")
+    func testInputPurposeSwitchedToAsk() async {
+        var initial = MainTabFeature.State()
+        initial.aiInputText = "some text"
+        initial.aiAnswer = "some answer"
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.inputPurposeSwitched(.ask)) {
+            $0.inputPurpose = .ask
+            $0.aiInputText = ""
+            $0.aiAnswer = nil
+            $0.aiInputError = nil
+        }
+    }
+
+    @Test("askSubmitted receives answer and resets loading")
+    func testAskSubmittedReceivesAnswer() async {
+        var initial = MainTabFeature.State()
+        initial.isAIInputExpanded = true
+        initial.inputPurpose = .ask
+        initial.aiInputText = "上個月餐費多少？"
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
+            $0.aiServiceClient.answerFinancialQuestion = { _ in "上個月餐費 NT$8,500" }
+        }
+
+        await store.send(.askSubmitted) {
+            $0.isAIInputLoading = true
+            $0.aiInputError = nil
+            $0.aiAnswer = nil
+        }
+        await store.receive(\.answerReceived) {
+            $0.aiAnswer = "上個月餐費 NT$8,500"
+            $0.isAIInputLoading = false
+            $0.aiInputText = ""
+        }
+    }
+
+    @Test("askSubmitted on failure sets aiInputError")
+    func testAskSubmittedHandlesFailure() async {
+        var initial = MainTabFeature.State()
+        initial.isAIInputExpanded = true
+        initial.inputPurpose = .ask
+        initial.aiInputText = "上個月餐費多少？"
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
+            $0.aiServiceClient.answerFinancialQuestion = { _ in
+                struct FakeError: Error {}
+                throw FakeError()
+            }
+        }
+
+        await store.send(.askSubmitted) {
+            $0.isAIInputLoading = true
+            $0.aiInputError = nil
+            $0.aiAnswer = nil
+        }
+        await store.receive(\.answerFailed) {
+            $0.isAIInputLoading = false
+            $0.aiInputError = String(localized: "ai_ask_error")
+        }
+    }
+}

@@ -9,6 +9,27 @@ struct DashboardFeatureTests {
 
     // MARK: - Helpers
 
+    private static let sampleCategories: [Domain.Category] = [
+        Domain.Category(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            name: "Food",
+            icon: "fork.knife",
+            color: "#FF6B6B",
+            type: .expense,
+            sortOrder: 0,
+            isDefault: true
+        ),
+        Domain.Category(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            name: "Salary",
+            icon: "banknote",
+            color: "#34C759",
+            type: .income,
+            sortOrder: 0,
+            isDefault: true
+        ),
+    ]
+
     private static let sampleAccounts: [Account] = [
         Account(
             name: "Bank Account",
@@ -73,8 +94,10 @@ struct DashboardFeatureTests {
                 return 0
             }
             $0.transactionClient.fetchRecent = { Self.sampleTransactions }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.generateInsight = { _ in "Test insight" }
         }
+        store.exhaustivity = .off
 
         await store.send(.task) {
             $0.isLoading = true
@@ -153,6 +176,49 @@ struct DashboardFeatureTests {
         }
     }
 
+    // MARK: - Step 3C: categoriesLoaded Builds categoryMap
+
+    @Test("categoriesLoaded builds categoryMap keyed by category ID")
+    func testCategoriesLoadedBuildsCategoryMap() async throws {
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        }
+
+        await store.send(.categoriesLoaded(Self.sampleCategories)) { state in
+            state.categoryMap = Dictionary(
+                uniqueKeysWithValues: Self.sampleCategories.map { ($0.id, $0) }
+            )
+        }
+    }
+
+    @Test("task fetches categories in parallel and populates categoryMap")
+    func testTaskFetchesCategoriesAndPopulatesCategoryMap() async throws {
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.accountClient.computeBalance = { _ in 0 }
+            $0.transactionClient.fetchRecent = { [] }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.aiServiceClient.generateInsight = { _ in "" }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.task) {
+            $0.isLoading = true
+        }
+
+        await store.receive(\.categoriesLoaded) {
+            $0.categoryMap = Dictionary(
+                uniqueKeysWithValues: Self.sampleCategories.map { ($0.id, $0) }
+            )
+        }
+    }
+
     // MARK: - Task 5.3: Pull-to-Refresh Forces AI Insight Update
 
     @Test("pulledToRefresh forces AI insight update")
@@ -170,8 +236,10 @@ struct DashboardFeatureTests {
             $0.accountClient.fetchActive = { Self.sampleAccounts }
             $0.accountClient.computeBalance = { _ in 1000 }
             $0.transactionClient.fetchRecent = { Array(Self.sampleTransactions.prefix(3)) }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.generateInsight = { _ in "Fresh insight" }
         }
+        store.exhaustivity = .off
 
         await store.send(.pulledToRefresh) {
             $0.isLoading = true

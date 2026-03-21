@@ -54,7 +54,7 @@ public struct DashboardScreen: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Text(store.totalBalance.formatted(.currency(code: "TWD")))
+            Text(store.totalBalance.twdFormatted)
                 .font(.system(size: 36, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.primary)
@@ -174,19 +174,7 @@ public struct DashboardScreen: View {
             if store.hasTransactions {
                 VStack(spacing: 8) {
                     ForEach(store.recentTransactions) { transaction in
-                        Button {
-                            store.send(.transactionTapped(transaction.id))
-                        } label: {
-                            TransactionRow(
-                                title: transaction.note ?? String(localized: "dashboard_transaction_default"),
-                                subtitle: transaction.type.rawValue,
-                                amount: transaction.type == .expense ? -transaction.amount : transaction.amount,
-                                date: transaction.date.formatted(date: .abbreviated, time: .shortened),
-                                icon: iconForTransactionType(transaction.type),
-                                iconColor: colorForTransactionType(transaction.type)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        transactionButton(for: transaction)
                     }
                 }
             } else if store.hasAccounts {
@@ -205,22 +193,49 @@ public struct DashboardScreen: View {
 
     // MARK: - Helpers
 
-    private func iconForTransactionType(_ type: TransactionType) -> String {
-        switch type {
-        case .expense: return "arrow.up.right"
-        case .income: return "arrow.down.left"
-        case .transfer: return "arrow.left.arrow.right"
+    @ViewBuilder
+    private func transactionButton(for transaction: Domain.Transaction) -> some View {
+        let category = transaction.categoryId.flatMap { store.categoryMap[$0] }
+        let (icon, iconColor) = resolvedIconAndColor(for: transaction, category: category)
+        Button {
+            store.send(.transactionTapped(transaction.id))
+        } label: {
+            TransactionRow(
+                title: transaction.note ?? String(localized: "dashboard_transaction_default"),
+                subtitle: transaction.type.rawValue,
+                amount: transaction.type == .expense ? -transaction.amount : transaction.amount,
+                date: transaction.date.formatted(date: .abbreviated, time: .shortened),
+                icon: icon,
+                iconColor: iconColor
+            )
         }
+        .buttonStyle(.plain)
     }
 
-    private func colorForTransactionType(_ type: TransactionType) -> Color {
-        switch type {
-        case .expense: return Color.Design.expenseRed
-        case .income: return Color.Design.incomeGreen
-        case .transfer: return Color.Design.accentBlue
+    /// Resolves the SF Symbol name and tint color for a transaction row.
+    ///
+    /// Priority: transfer type → category icon/color → type-based fallback.
+    private func resolvedIconAndColor(
+        for transaction: Domain.Transaction,
+        category: Domain.Category?
+    ) -> (icon: String, color: Color) {
+        if transaction.type == .transfer {
+            return ("arrow.left.arrow.right", Color.Design.textSecondary)
+        }
+        if let cat = category {
+            return (cat.icon, Color(hex: cat.color))
+        }
+        switch transaction.type {
+        case .expense:
+            return ("minus.circle.fill", Color.Design.expenseRed)
+        case .income:
+            return ("plus.circle.fill", Color.Design.incomeGreen)
+        case .transfer:
+            return ("arrow.left.arrow.right", Color.Design.textSecondary)
         }
     }
 }
+
 
 #Preview("Dashboard with data") {
     DashboardScreen(

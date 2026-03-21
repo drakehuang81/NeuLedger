@@ -23,6 +23,7 @@ public struct DashboardFeature: Sendable {
         public var accountBalances: [Account.ID: Decimal] = [:]
         public var topAccounts: [Account] = []
         public var recentTransactions: [Transaction] = []
+        public var categoryMap: [Domain.Category.ID: Domain.Category] = [:]
 
         // AI Insight
         public var aiInsight: String?
@@ -52,6 +53,7 @@ public struct DashboardFeature: Sendable {
         case accountsUpdated([Account])
         case accountBalancesComputed([Account.ID: Decimal], total: Decimal)
         case transactionsUpdated([Transaction])
+        case categoriesLoaded([Domain.Category])
 
         // AI Insight
         case fetchAIInsight
@@ -83,6 +85,7 @@ public struct DashboardFeature: Sendable {
 
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.aiServiceClient) var aiServiceClient
     @Dependency(\.date.now) var now
 
@@ -109,7 +112,12 @@ public struct DashboardFeature: Sendable {
                         let transactions = try await transactionClient.fetchRecent()
                         await send(.transactionsUpdated(transactions))
                     }
-                    .cancellable(id: CancelID.transactionObservation)
+                    .cancellable(id: CancelID.transactionObservation),
+
+                    .run { send in
+                        let categories = try await categoryClient.fetchAll()
+                        await send(.categoriesLoaded(categories))
+                    }
                 )
 
             // Task 2.5: Pull-to-refresh — reload data and force AI insight fetch
@@ -130,6 +138,11 @@ public struct DashboardFeature: Sendable {
                     }
                     .cancellable(id: CancelID.transactionObservation, cancelInFlight: true),
 
+                    .run { send in
+                        let categories = try await categoryClient.fetchAll()
+                        await send(.categoriesLoaded(categories))
+                    },
+
                     // Force a new AI insight fetch
                     .send(.fetchAIInsight)
                 )
@@ -147,15 +160,21 @@ public struct DashboardFeature: Sendable {
                 state.topAccounts = accounts
                     .sorted { $0.sortOrder < $1.sortOrder }
 
-                // Compute per-account balances and total
+                // Compute per-account balances and total concurrently
                 return .run { [accounts] send in
                     var balances: [Account.ID: Decimal] = [:]
-                    var total: Decimal = 0
-                    for account in accounts {
-                        let balance = try await accountClient.computeBalance(account.id)
-                        balances[account.id] = balance
-                        total += balance
+                    await withTaskGroup(of: (Account.ID, Decimal).self) { group in
+                        for account in accounts {
+                            group.addTask {
+                                let balance = (try? await accountClient.computeBalance(account.id)) ?? 0
+                                return (account.id, balance)
+                            }
+                        }
+                        for await (id, balance) in group {
+                            balances[id] = balance
+                        }
                     }
+                    let total = balances.values.reduce(0, +)
                     await send(.accountBalancesComputed(balances, total: total))
                 }
 
@@ -180,6 +199,10 @@ public struct DashboardFeature: Sendable {
                     // New transaction data detected — invalidate and re-fetch
                     return .send(.fetchAIInsight)
                 }
+                return .none
+
+            case let .categoriesLoaded(categories):
+                state.categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
                 return .none
 
             // MARK: AI Insight

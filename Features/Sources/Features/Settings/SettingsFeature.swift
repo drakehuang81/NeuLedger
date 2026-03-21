@@ -109,7 +109,7 @@ public struct SettingsFeature: Sendable {
 
             case .languageTapped:
                 return .run { _ in
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                    if let url = URL(string: "app-settings:") {
                         await openURL(url)
                     }
                 }

@@ -65,11 +65,27 @@ public struct CategoryChip: View {
 #Preview {
     ZStack {
         Color.gray.ignoresSafeArea()
-        
-        CategoryChip(
-            title: String(localized: "component_food_and_dining"),
-            systemImage: "fork.knife",
-            color: .orange
-        )
+
+        VStack(spacing: 16) {
+            CategoryChip(
+                title: String(localized: "component_food_and_dining"),
+                systemImage: "fork.knife",
+                color: .orange
+            )
+
+            CategoryChip(
+                title: "餐飲",
+                systemImage: "fork.knife",
+                color: .orange,
+                isSelected: true
+            )
+
+            CategoryChip(
+                title: "購物",
+                systemImage: "cart",
+                color: .blue,
+                isSuggested: true
+            )
+        }
     }
 }

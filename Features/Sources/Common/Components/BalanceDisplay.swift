@@ -24,7 +24,7 @@ public struct BalanceDisplay: View {
                 .font(Font.Design.subheadline)
                 .foregroundStyle(Color.Design.textSecondary)
             
-            Text(totalBalance.currencyFormat)
+            Text(totalBalance.twdFormatted)
                 .font(Font.Design.largeTitle.weight(.bold).monospacedDigit()) // Bricolage equivalent
                 .foregroundStyle(Color.Design.textPrimary)
             
@@ -34,7 +34,7 @@ public struct BalanceDisplay: View {
                     Image(systemName: "arrow.down") // Incoming
                         .foregroundStyle(Color.Design.incomeGreen)
                         .font(.caption)
-                    Text(income.currencyFormat)
+                    Text(income.twdFormatted)
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -48,7 +48,7 @@ public struct BalanceDisplay: View {
                     Image(systemName: "arrow.up") // Outgoing
                         .foregroundStyle(Color.Design.expenseRed)
                         .font(.caption)
-                    Text(expense.currencyFormat)
+                    Text(expense.twdFormatted)
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -70,15 +70,6 @@ public struct BalanceDisplay: View {
     }
 }
 
-private extension Decimal {
-    var currencyFormat: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "NT$"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "NT$0"
-    }
-}
 
 #Preview {
     ZStack {

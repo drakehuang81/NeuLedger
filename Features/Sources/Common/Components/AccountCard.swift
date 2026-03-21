@@ -42,7 +42,7 @@ public struct AccountCard: View {
             }
             
             // Amount
-            Text(balance.currencyFormat)
+            Text(balance.twdFormatted)
                 .font(Font.Design.title2.weight(.bold).monospacedDigit())
                 .foregroundStyle(Color.Design.textPrimary)
             
@@ -67,16 +67,6 @@ public struct AccountCard: View {
     }
 }
 
-// Helper for formatting
-private extension Decimal {
-    var currencyFormat: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "NT$"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "NT$0"
-    }
-}
 
 #Preview {
     ZStack {

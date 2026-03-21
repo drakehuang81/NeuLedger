@@ -252,10 +252,17 @@ public struct DashboardFeature: Sendable {
                 return .none
 
             // MARK: User interactions
+
+            // Triggered by the EmptyStateView CTA when the user has no transactions yet.
+            // Intentionally kept separate from quickActionExpenseTapped — the two entry
+            // points have different UX origins even though both open an expense form.
             case .addTransactionButtonTapped:
                 state.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: now)
                 return .none
 
+            // Triggered by the Quick Actions bar in the Dashboard header.
+            // Same resulting state as addTransactionButtonTapped but originates from a
+            // different UI affordance and may diverge in behaviour in a future iteration.
             case .quickActionExpenseTapped:
                 state.addTransaction = AddTransactionFeature.State(
                     mode: .add(.expense), date: now

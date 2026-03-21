@@ -59,9 +59,9 @@ public struct AddTransactionView: View {
             get: { store.type },
             set: { store.send(.typeChanged($0)) }
         )) {
-            Text("common_expense").tag(TransactionType.expense)
-            Text("common_income").tag(TransactionType.income)
-            Text("common_transfer").tag(TransactionType.transfer)
+            Text(String(localized: "common_expense")).tag(TransactionType.expense)
+            Text(String(localized: "common_income")).tag(TransactionType.income)
+            Text(String(localized: "common_transfer")).tag(TransactionType.transfer)
         }
         .pickerStyle(.segmented)
     }
@@ -99,7 +99,7 @@ public struct AddTransactionView: View {
         if store.type != .transfer {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("add_transaction_category")
+                    Text(String(localized: "add_transaction_category"))
                         .font(.headline)
 
                     Spacer()
@@ -125,22 +125,24 @@ public struct AddTransactionView: View {
                 }
 
                 if store.filteredCategories.isEmpty {
-                    Text("add_transaction_no_categories")
+                    Text(String(localized: "add_transaction_no_categories"))
                         .foregroundStyle(Color.Design.textTertiary)
                         .font(Font.Design.caption)
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 70))], spacing: 12) {
                         ForEach(store.filteredCategories) { category in
-                            CategoryChip(
-                                title: category.name,
-                                systemImage: category.icon,
-                                color: Color(hex: category.color),
-                                isSelected: store.categoryId == category.id,
-                                isSuggested: store.suggestedCategoryNames.contains(category.name)
-                            )
-                            .onTapGesture {
+                            Button {
                                 store.send(.categorySelected(category.id))
+                            } label: {
+                                CategoryChip(
+                                    title: category.name,
+                                    systemImage: category.icon,
+                                    color: Color(hex: category.color),
+                                    isSelected: store.categoryId == category.id,
+                                    isSuggested: store.suggestedCategoryNames.contains(category.name)
+                                )
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -169,7 +171,7 @@ public struct AddTransactionView: View {
                     get: { store.accountId },
                     set: { store.send(.accountSelected($0)) }
                 )) {
-                    Text("common_please_select").tag(Optional<Account.ID>.none)
+                    Text(String(localized: "common_please_select")).tag(Optional<Account.ID>.none)
                     ForEach(store.accounts) { account in
                         Text(account.name).tag(Optional(account.id))
                     }
@@ -184,7 +186,7 @@ public struct AddTransactionView: View {
                     get: { store.toAccountId },
                     set: { store.send(.toAccountSelected($0)) }
                 )) {
-                    Text("common_please_select").tag(Optional<Account.ID>.none)
+                    Text(String(localized: "common_please_select")).tag(Optional<Account.ID>.none)
                     ForEach(store.accounts.filter { $0.id != store.accountId }) { account in
                         Text(account.name).tag(Optional(account.id))
                     }
@@ -205,7 +207,7 @@ public struct AddTransactionView: View {
                     get: { store.accountId },
                     set: { store.send(.accountSelected($0)) }
                 )) {
-                    Text("common_please_select").tag(Optional<Account.ID>.none)
+                    Text(String(localized: "common_please_select")).tag(Optional<Account.ID>.none)
                     ForEach(store.accounts) { account in
                         Text(account.name).tag(Optional(account.id))
                     }

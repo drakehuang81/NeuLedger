@@ -64,7 +64,7 @@ public struct TransactionRow: View {
             
             // Right Content
             VStack(alignment: .trailing, spacing: 2) {
-                Text(amount.formattedCurrency)
+                Text(amount.twdFormatted)
                     .font(Font.Design.amount.weight(.semibold)) // 16pt Mono Semibold
                     .foregroundStyle(isExpense ? Color.Design.expenseRed : Color.Design.incomeGreen)
                 
@@ -80,15 +80,6 @@ public struct TransactionRow: View {
     }
 }
 
-private extension Decimal {
-    var formattedCurrency: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "NT$"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "NT$0"
-    }
-}
 
 #Preview {
     ZStack {

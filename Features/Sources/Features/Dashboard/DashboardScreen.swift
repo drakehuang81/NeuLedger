@@ -21,6 +21,8 @@ public struct DashboardScreen: View {
             VStack(spacing: 24) {
                 balanceSection
 
+                quickActionsSection
+
                 insightSection
 
                 accountsSection
@@ -70,6 +72,57 @@ public struct DashboardScreen: View {
         )
     }
 
+
+    // MARK: - Quick Actions Section (Step 4A)
+
+    private var quickActionsSection: some View {
+        GlassEffectContainer {
+            HStack(spacing: 12) {
+                quickActionButton(
+                    title: String(localized: "common_expense"),
+                    icon: "minus.circle.fill",
+                    color: Color.Design.expenseRed
+                ) { store.send(.quickActionExpenseTapped) }
+
+                quickActionButton(
+                    title: String(localized: "common_income"),
+                    icon: "plus.circle.fill",
+                    color: Color.Design.incomeGreen
+                ) { store.send(.quickActionIncomeTapped) }
+
+                quickActionButton(
+                    title: String(localized: "common_transfer"),
+                    icon: "arrow.left.arrow.right",
+                    color: Color.Design.textSecondary
+                ) { store.send(.quickActionTransferTapped) }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .padding(.horizontal)
+    }
+
+    private func quickActionButton(
+        title: String,
+        icon: String,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(color)
+                Text(title)
+                    .font(Font.Design.caption)
+                    .foregroundStyle(Color.Design.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+        }
+        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+        .buttonStyle(.plain)
+    }
 
     // MARK: - Insight Section (Task 3.4)
 

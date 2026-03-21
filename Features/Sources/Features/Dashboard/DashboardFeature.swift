@@ -62,6 +62,9 @@ public struct DashboardFeature: Sendable {
 
         // User interactions
         case addTransactionButtonTapped
+        case quickActionExpenseTapped
+        case quickActionIncomeTapped
+        case quickActionTransferTapped
         // Received from MainTabFeature when the TabBar AI input successfully extracts a transaction.
         case addTransactionWithPrefilledData(ExtractedTransaction)
         case seeAllTransactionsTapped
@@ -251,6 +254,24 @@ public struct DashboardFeature: Sendable {
             // MARK: User interactions
             case .addTransactionButtonTapped:
                 state.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: now)
+                return .none
+
+            case .quickActionExpenseTapped:
+                state.addTransaction = AddTransactionFeature.State(
+                    mode: .add(.expense), date: now
+                )
+                return .none
+
+            case .quickActionIncomeTapped:
+                state.addTransaction = AddTransactionFeature.State(
+                    mode: .add(.income), date: now
+                )
+                return .none
+
+            case .quickActionTransferTapped:
+                state.addTransaction = AddTransactionFeature.State(
+                    mode: .add(.transfer), date: now
+                )
                 return .none
 
             case let .addTransactionWithPrefilledData(extracted):

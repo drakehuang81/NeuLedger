@@ -375,6 +375,56 @@ struct DashboardFeatureTests {
         }
     }
 
+    // MARK: - Step 4A: Quick Action Tapped Presents AddTransaction With Correct Type
+
+    @Test("quickActionExpenseTapped presents AddTransaction in .add(.expense) mode")
+    func testQuickActionExpenseTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
+        }
+
+        await store.send(.quickActionExpenseTapped) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: fixedDate)
+        }
+    }
+
+    @Test("quickActionIncomeTapped presents AddTransaction in .add(.income) mode")
+    func testQuickActionIncomeTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
+        }
+
+        await store.send(.quickActionIncomeTapped) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.income), date: fixedDate)
+        }
+    }
+
+    @Test("quickActionTransferTapped presents AddTransaction in .add(.transfer) mode")
+    func testQuickActionTransferTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
+        }
+
+        await store.send(.quickActionTransferTapped) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.transfer), date: fixedDate)
+        }
+    }
+
     // MARK: - AI Failure Fallback
 
     @Test("AI insight failure falls back gracefully")

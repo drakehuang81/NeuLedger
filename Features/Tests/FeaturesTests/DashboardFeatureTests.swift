@@ -102,8 +102,12 @@ struct DashboardFeatureTests {
             $0.isLoadingInsight = true
         }
 
-        // Total balance computed (balance effect from accountsUpdated)
-        await store.receive(\.totalBalanceComputed) {
+        // Per-account balances and total computed (balance effect from accountsUpdated)
+        await store.receive(\.accountBalancesComputed) {
+            $0.accountBalances = [
+                Self.sampleAccounts[0].id: 45000,
+                Self.sampleAccounts[1].id: 1200,
+            ]
             $0.totalBalance = 46200 // 45000 + 1200
         }
 
@@ -207,8 +211,12 @@ struct DashboardFeatureTests {
             $0.isLoadingInsight = true
         }
 
-        // Total balance computed (balance effect from accountsUpdated)
-        await store.receive(\.totalBalanceComputed) {
+        // Per-account balances and total computed (balance effect from accountsUpdated)
+        await store.receive(\.accountBalancesComputed) {
+            $0.accountBalances = [
+                Self.sampleAccounts[0].id: 1000,
+                Self.sampleAccounts[1].id: 1000,
+            ]
             $0.totalBalance = 2000 // 1000 * 2 accounts
         }
 

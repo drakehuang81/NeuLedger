@@ -20,6 +20,7 @@ public struct DashboardFeature: Sendable {
     public struct State: Equatable {
         // Aggregated data
         public var totalBalance: Decimal = 0
+        public var accountBalances: [Account.ID: Decimal] = [:]
         public var topAccounts: [Account] = []
         public var recentTransactions: [Transaction] = []
 
@@ -49,7 +50,7 @@ public struct DashboardFeature: Sendable {
 
         // Data responses
         case accountsUpdated([Account])
-        case totalBalanceComputed(Decimal)
+        case accountBalancesComputed([Account.ID: Decimal], total: Decimal)
         case transactionsUpdated([Transaction])
 
         // AI Insight
@@ -146,18 +147,21 @@ public struct DashboardFeature: Sendable {
                 state.topAccounts = accounts
                     .sorted { $0.sortOrder < $1.sortOrder }
 
-                // Compute total balance by summing per-account balances
+                // Compute per-account balances and total
                 return .run { [accounts] send in
+                    var balances: [Account.ID: Decimal] = [:]
                     var total: Decimal = 0
                     for account in accounts {
                         let balance = try await accountClient.computeBalance(account.id)
+                        balances[account.id] = balance
                         total += balance
                     }
-                    await send(.totalBalanceComputed(total))
+                    await send(.accountBalancesComputed(balances, total: total))
                 }
 
-            case let .totalBalanceComputed(balance):
-                state.totalBalance = balance
+            case let .accountBalancesComputed(accounts, total: total):
+                state.accountBalances = accounts
+                state.totalBalance = total
                 return .none
 
             case let .transactionsUpdated(transactions):

@@ -130,7 +130,7 @@ public struct DashboardScreen: View {
                             } label: {
                                 AccountCard(
                                     name: account.name,
-                                    balance: 0, // Balance is aggregated at dashboard level
+                                    balance: store.accountBalances[account.id] ?? 0,
                                     type: account.type.displayLabel,
                                     icon: account.icon
                                 )

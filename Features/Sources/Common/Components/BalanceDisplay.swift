@@ -74,8 +74,9 @@ private extension Decimal {
     var currencyFormat: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
+        formatter.currencySymbol = "NT$"
         formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "$0"
+        return formatter.string(from: self as NSDecimalNumber) ?? "NT$0"
     }
 }
 

@@ -9,15 +9,15 @@ All code lives in the local SPM package at `Features/`. The app target (`NeuLedg
 ```bash
 # Build app
 xcodebuild build -project NeuLedger.xcodeproj -scheme NeuLedger \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
 # Run tests for a specific module (schemes: Domain, Core, Common, Features, NeuLedger)
 xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
 # Run a single test suite
 xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -only-testing:FeaturesTests/DashboardFeatureTests
 ```
 
@@ -153,3 +153,4 @@ Agent workflows use the `opsx` skill prefix (e.g., `/opsx:new`, `/opsx:apply`, `
 - Validation errors use **inline** messages — never `Alert` for form validation failures
 - Do not hardcode `#000000` / `#FFFFFF` in views — use semantic colors or Asset Catalog color sets with Dark Mode variants
 - Floating Split TabBar requires bottom padding in all scrollable content so no content hides behind it
+- All user-facing strings must use `String(localized:)` or `LocalizedStringKey` — never hardcode raw strings in views or reducers

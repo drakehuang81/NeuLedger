@@ -6,6 +6,17 @@ import Foundation
 public struct AnalysisFeature: Sendable {
     public init() {}
 
+    public struct CategoryDrilldownState: Equatable, Sendable, Identifiable {
+        public var id: String { categoryName }
+        public let categoryName: String
+        public let transactions: [Transaction]
+
+        public init(categoryName: String, transactions: [Transaction]) {
+            self.categoryName = categoryName
+            self.transactions = transactions
+        }
+    }
+
     @ObservableState
     public struct State: Equatable {
         public enum Period: String, Equatable, CaseIterable, Identifiable, Sendable {
@@ -32,6 +43,7 @@ public struct AnalysisFeature: Sendable {
         public var dailyTrends: [DailyTrend] = []
         public var budgetMetrics: [BudgetGaugeMetrics] = []
         public var insight: InsightDetail?
+        public var categoryDrilldown: CategoryDrilldownState?
 
         public var hasData: Bool {
             summary != nil
@@ -48,6 +60,10 @@ public struct AnalysisFeature: Sendable {
         case loadData
         case loadedData(TaskResult<AnalysisData?>)
         case budgetMetricsLoaded([BudgetGaugeMetrics])
+        case dismissInsight
+        case categoryTapped(CategoryProportion)
+        case categoryTransactionsLoaded(categoryName: String, [Transaction])
+        case categoryDrilldownDismissed
     }
 
     public struct AnalysisData: Equatable, Sendable {
@@ -83,6 +99,7 @@ public struct AnalysisFeature: Sendable {
                 let period = state.selectedPeriod
                 return .merge(
                     .run { [transactionClient, categoryClient, aiServiceClient] send in
+                        do {
                         let dateRange = Self.dateRange(for: period)
                         let filter = TransactionFilter(dateRange: dateRange)
                         let transactions = try await transactionClient.fetch(filter)
@@ -109,19 +126,24 @@ public struct AnalysisFeature: Sendable {
                         let categoryMap = Dictionary(
                             uniqueKeysWithValues: categories.map { ($0.id, $0.name) }
                         )
-                        var categoryTotals: [String: Decimal] = [:]
+                        // Key: categoryId string (or "uncategorized"), Value: (name, amount)
+                        var categoryTotals: [String: (name: String, amount: Decimal)] = [:]
                         for txn in transactions where txn.type == .expense {
+                            let key: String
                             let name: String
                             if let catId = txn.categoryId {
+                                key = catId.uuidString
                                 name = categoryMap[catId] ?? String(localized: "analysis_other_category")
                             } else {
+                                key = "uncategorized"
                                 name = String(localized: "analysis_other_category")
                             }
-                            categoryTotals[name, default: .zero] += txn.amount
+                            let existing = categoryTotals[key] ?? (name: name, amount: .zero)
+                            categoryTotals[key] = (name: existing.name, amount: existing.amount + txn.amount)
                         }
                         let proportions = categoryTotals
-                            .sorted { $0.value > $1.value }
-                            .map { CategoryProportion(name: $0.key, amount: $0.value) }
+                            .sorted { $0.value.amount > $1.value.amount }
+                            .map { CategoryProportion(id: $0.key, name: $0.value.name, amount: $0.value.amount) }
 
                         // Daily trends (expenses only)
                         let cal = Calendar.current
@@ -137,10 +159,13 @@ public struct AnalysisFeature: Sendable {
                         // AI insight
                         var insight: InsightDetail? = nil
                         if aiServiceClient.isAvailable() {
+                            let breakdownByName = Dictionary(
+                                uniqueKeysWithValues: categoryTotals.values.map { ($0.name, $0.amount) }
+                            )
                             let spendingSummary = SpendingSummary(
                                 totalIncome: totalIncome,
                                 totalExpense: totalExpense,
-                                categoryBreakdown: categoryTotals,
+                                categoryBreakdown: breakdownByName,
                                 periodDescription: period.displayName
                             )
                             if let text = try? await aiServiceClient.generateInsight(spendingSummary) {
@@ -159,6 +184,9 @@ public struct AnalysisFeature: Sendable {
                             insight: insight
                         )
                         await send(.loadedData(.success(data)))
+                        } catch {
+                            await send(.loadedData(.failure(error)))
+                        }
                     },
                     .run { [budgetClient, transactionClient, categoryClient] send in
                         let metrics = await Self.computeBudgetMetrics(
@@ -170,6 +198,34 @@ public struct AnalysisFeature: Sendable {
                     }
                     .cancellable(id: CancelID.budgets, cancelInFlight: true)
                 )
+
+            case .dismissInsight:
+                state.insight = nil
+                return .none
+
+            case let .categoryTapped(proportion):
+                let categoryId = UUID(uuidString: proportion.id)
+                let filter = TransactionFilter(
+                    categoryIds: categoryId.map { Set([$0]) },
+                    types: [.expense],
+                    dateRange: Self.dateRange(for: state.selectedPeriod)
+                )
+                let name = proportion.name
+                return .run { [transactionClient] send in
+                    let transactions = (try? await transactionClient.fetch(filter)) ?? []
+                    await send(.categoryTransactionsLoaded(categoryName: name, transactions))
+                }
+
+            case let .categoryTransactionsLoaded(categoryName, transactions):
+                state.categoryDrilldown = CategoryDrilldownState(
+                    categoryName: categoryName,
+                    transactions: transactions
+                )
+                return .none
+
+            case .categoryDrilldownDismissed:
+                state.categoryDrilldown = nil
+                return .none
 
             case let .budgetMetricsLoaded(metrics):
                 state.budgetMetrics = metrics

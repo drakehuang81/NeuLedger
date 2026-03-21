@@ -6,13 +6,13 @@ import Testing
 struct ExtractedTransactionTests {
     @Test("ExtractedTransaction Full Initialization and Equatable")
     func testFullInitializationAndEquatable() {
-        let ext1 = ExtractedTransaction(amount: 150.5, suggestedCategory: "Food", description: "Lunch", type: "expense")
-        let ext2 = ExtractedTransaction(amount: 150.5, suggestedCategory: "Food", description: "Lunch", type: "expense")
+        let ext1 = ExtractedTransaction(amount: 150, suggestedCategory: "Food", description: "Lunch", type: "expense")
+        let ext2 = ExtractedTransaction(amount: 150, suggestedCategory: "Food", description: "Lunch", type: "expense")
         let ext3 = ExtractedTransaction(amount: 200, suggestedCategory: "Transport", description: "Taxi", type: "expense")
         
         #expect(ext1 == ext2)
         #expect(ext1 != ext3)
-        #expect(ext1.amount == 150.5)
+        #expect(ext1.amount == 150)
         #expect(ext1.suggestedCategory == "Food")
     }
 

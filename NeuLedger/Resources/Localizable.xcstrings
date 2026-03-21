@@ -188,6 +188,23 @@
         }
       }
     },
+    "analysis_no_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No note"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無備註"
+          }
+        }
+      }
+    },
     "analysis_budget_progress": {
       "extractionState": "manual",
       "localizations": {

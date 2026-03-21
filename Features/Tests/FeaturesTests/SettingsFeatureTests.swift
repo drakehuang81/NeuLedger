@@ -2,7 +2,6 @@ import Testing
 import Foundation
 import ComposableArchitecture
 import Domain
-import UIKit
 @testable import Features
 
 @Suite("SettingsFeature Tests")
@@ -196,7 +195,7 @@ struct SettingsFeatureTests {
 
     // MARK: - Export CSV
 
-    @Test("exportCSVTapped sets isExporting then completes with a URL")
+    @Test("exportCSVTapped sets exportingFormat to .csv then completes with a URL")
     func testExportCSVSuccess() async throws {
         let account = Self.sampleAccounts[0]
         let category = Self.sampleCategories[0]
@@ -213,11 +212,11 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.exportCSVTapped) {
-            $0.isExporting = true
+            $0.exportingFormat = .csv
         }
 
         await store.receive(\.exportCompleted) {
-            $0.isExporting = false
+            $0.exportingFormat = nil
             $0.exportedFileURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("NeuLedger_export.csv")
         }
@@ -241,7 +240,7 @@ struct SettingsFeatureTests {
         }
         // Seed state with a URL manually
         await store.send(.exportCompleted(url)) {
-            $0.isExporting = false
+            $0.exportingFormat = nil
             $0.exportedFileURL = url
         }
         await store.send(.exportSheetDismissed) {
@@ -251,7 +250,7 @@ struct SettingsFeatureTests {
 
     // MARK: - Export JSON
 
-    @Test("exportJSONTapped sets isExporting then completes with a URL")
+    @Test("exportJSONTapped sets exportingFormat to .json then completes with a URL")
     func testExportJSONSuccess() async throws {
         let account = Self.sampleAccounts[0]
         let category = Self.sampleCategories[0]
@@ -266,11 +265,11 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.exportJSONTapped) {
-            $0.isExporting = true
+            $0.exportingFormat = .json
         }
 
         await store.receive(\.exportCompleted) {
-            $0.isExporting = false
+            $0.exportingFormat = nil
             $0.exportedFileURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("NeuLedger_export.json")
         }
@@ -301,11 +300,11 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.exportCSVTapped) {
-            $0.isExporting = true
+            $0.exportingFormat = .csv
         }
 
         await store.receive(\.exportFailed) {
-            $0.isExporting = false
+            $0.exportingFormat = nil
             $0.exportError = TestError(message: "fetch failed").localizedDescription
         }
     }
@@ -343,6 +342,6 @@ struct SettingsFeatureTests {
         await store.send(.languageTapped)
 
         #expect(openedURLs.value.count == 1)
-        #expect(openedURLs.value.first?.absoluteString == UIApplication.openSettingsURLString)
+        #expect(openedURLs.value.first?.absoluteString == "app-settings:")
     }
 }

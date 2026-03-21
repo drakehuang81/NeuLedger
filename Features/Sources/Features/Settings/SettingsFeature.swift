@@ -2,6 +2,13 @@ import ComposableArchitecture
 import Domain
 import Foundation
 
+// MARK: - ExportFormat
+
+public enum ExportFormat: Equatable, Sendable {
+    case csv
+    case json
+}
+
 @Reducer
 public struct SettingsFeature: Sendable {
     public init() {}
@@ -15,7 +22,7 @@ public struct SettingsFeature: Sendable {
         public var selectedDefaultAccountId: String = ""
         public var defaultAccountName: String = ""
         public var currentLanguage: String = ""
-        public var isExporting: Bool = false
+        public var exportingFormat: ExportFormat? = nil
         public var exportedFileURL: URL? = nil
         public var exportError: String? = nil
 
@@ -115,7 +122,8 @@ public struct SettingsFeature: Sendable {
                 }
 
             case .exportCSVTapped:
-                state.isExporting = true
+                state.exportingFormat = .csv
+                state.exportError = nil
                 return .run { [transactionClient, categoryClient, accountClient] send in
                     do {
                         let transactions = try await transactionClient.fetchAll()
@@ -132,14 +140,14 @@ public struct SettingsFeature: Sendable {
                         for t in transactions {
                             let date = formatter.string(from: t.date)
                             let type = t.type.rawValue
-                            let category = t.categoryId.flatMap { categoryMap[$0] }?.name ?? ""
-                            let note = t.note?.replacingOccurrences(of: ",", with: "\u{FF0C}") ?? ""
+                            let category = csvField(t.categoryId.flatMap { categoryMap[$0] }?.name ?? "")
+                            let note = csvField(t.note ?? "")
                             let amount: String
                             switch t.type {
                             case .expense: amount = "-\(t.amount)"
                             case .income, .transfer: amount = "\(t.amount)"
                             }
-                            let account = accountMap[t.accountId]?.name ?? ""
+                            let account = csvField(accountMap[t.accountId]?.name ?? "")
                             lines.append("\(date),\(type),\(category),\(note),\(amount),\(account)")
                         }
 
@@ -154,7 +162,8 @@ public struct SettingsFeature: Sendable {
                 }
 
             case .exportJSONTapped:
-                state.isExporting = true
+                state.exportingFormat = .json
+                state.exportError = nil
                 return .run { [transactionClient] send in
                     do {
                         let transactions = try await transactionClient.fetchAll()
@@ -172,12 +181,12 @@ public struct SettingsFeature: Sendable {
                 }
 
             case let .exportCompleted(url):
-                state.isExporting = false
+                state.exportingFormat = nil
                 state.exportedFileURL = url
                 return .none
 
             case let .exportFailed(error):
-                state.isExporting = false
+                state.exportingFormat = nil
                 state.exportError = error
                 return .none
 
@@ -190,5 +199,15 @@ public struct SettingsFeature: Sendable {
                 return .none
             }
         }
+    }
+
+    // MARK: - CSV Helpers
+
+    private func csvField(_ value: String) -> String {
+        if value.contains(",") || value.contains("\"") || value.contains("\n") {
+            let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+            return "\"\(escaped)\""
+        }
+        return value
     }
 }

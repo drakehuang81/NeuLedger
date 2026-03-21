@@ -20,7 +20,7 @@ private struct IdentifiableURL: Identifiable {
 
 // MARK: - ShareSheet
 
-struct ShareSheet: UIViewControllerRepresentable {
+private struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
@@ -203,20 +203,20 @@ public struct SettingsView: View {
                             icon: "square.and.arrow.down",
                             iconColor: Color.Design.textSecondary,
                             label: String(localized: "settings_export_csv"),
-                            trailing: store.isExporting ? AnyView(ProgressView()) : AnyView(chevron)
+                            trailing: store.exportingFormat == .csv ? AnyView(ProgressView()) : AnyView(chevron)
                         )
                     }
-                    .disabled(store.isExporting)
+                    .disabled(store.exportingFormat != nil)
 
                     Button { store.send(.exportJSONTapped) } label: {
                         settingsRow(
                             icon: "tablecells",
                             iconColor: Color.Design.textSecondary,
                             label: String(localized: "settings_export_json"),
-                            trailing: store.isExporting ? AnyView(ProgressView()) : AnyView(chevron)
+                            trailing: store.exportingFormat == .json ? AnyView(ProgressView()) : AnyView(chevron)
                         )
                     }
-                    .disabled(store.isExporting)
+                    .disabled(store.exportingFormat != nil)
 
                     if let errorMessage = store.exportError {
                         Text(errorMessage)

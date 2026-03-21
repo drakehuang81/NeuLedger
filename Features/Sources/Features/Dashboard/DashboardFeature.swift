@@ -11,6 +11,7 @@ public struct DashboardFeature: Sendable {
     private enum CancelID {
         case accountObservation
         case transactionObservation
+        case categoryFetch
         case aiInsightFetch
     }
 
@@ -118,6 +119,7 @@ public struct DashboardFeature: Sendable {
                         let categories = try await categoryClient.fetchAll()
                         await send(.categoriesLoaded(categories))
                     }
+                    .cancellable(id: CancelID.categoryFetch, cancelInFlight: true)
                 )
 
             // Task 2.5: Pull-to-refresh — reload data and force AI insight fetch
@@ -141,7 +143,8 @@ public struct DashboardFeature: Sendable {
                     .run { send in
                         let categories = try await categoryClient.fetchAll()
                         await send(.categoriesLoaded(categories))
-                    },
+                    }
+                    .cancellable(id: CancelID.categoryFetch, cancelInFlight: true),
 
                     // Force a new AI insight fetch
                     .send(.fetchAIInsight)

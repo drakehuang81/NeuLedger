@@ -193,16 +193,22 @@ public struct DashboardScreen: View {
 
     // MARK: - Helpers
 
-    @ViewBuilder
     private func transactionButton(for transaction: Domain.Transaction) -> some View {
         let category = transaction.categoryId.flatMap { store.categoryMap[$0] }
         let (icon, iconColor) = resolvedIconAndColor(for: transaction, category: category)
-        Button {
+        let subtitle: String = {
+            switch transaction.type {
+            case .expense: return String(localized: "common_expense")
+            case .income: return String(localized: "common_income")
+            case .transfer: return String(localized: "common_transfer")
+            }
+        }()
+        return Button {
             store.send(.transactionTapped(transaction.id))
         } label: {
             TransactionRow(
                 title: transaction.note ?? String(localized: "dashboard_transaction_default"),
-                subtitle: transaction.type.rawValue,
+                subtitle: subtitle,
                 amount: transaction.type == .expense ? -transaction.amount : transaction.amount,
                 date: transaction.date.formatted(date: .abbreviated, time: .shortened),
                 icon: icon,
@@ -219,19 +225,16 @@ public struct DashboardScreen: View {
         for transaction: Domain.Transaction,
         category: Domain.Category?
     ) -> (icon: String, color: Color) {
-        if transaction.type == .transfer {
-            return ("arrow.left.arrow.right", Color.Design.textSecondary)
-        }
-        if let cat = category {
-            return (cat.icon, Color(hex: cat.color))
-        }
         switch transaction.type {
-        case .expense:
-            return ("minus.circle.fill", Color.Design.expenseRed)
-        case .income:
-            return ("plus.circle.fill", Color.Design.incomeGreen)
         case .transfer:
             return ("arrow.left.arrow.right", Color.Design.textSecondary)
+        case .expense, .income:
+            if let cat = category {
+                return (cat.icon, Color(hex: cat.color))
+            }
+            return transaction.type == .expense
+                ? ("minus.circle.fill", Color.Design.expenseRed)
+                : ("plus.circle.fill", Color.Design.incomeGreen)
         }
     }
 }

@@ -16,6 +16,9 @@ public struct SettingsFeature: Sendable {
         public var selectedDefaultAccountId: String = ""
         public var defaultAccountName: String = ""
         public var currentLanguage: String = ""
+        public var isExporting: Bool = false
+        public var exportedFileURL: URL? = nil
+        public var exportError: String? = nil
 
         public init(
             isAIEnabled: Bool = true,
@@ -43,6 +46,9 @@ public struct SettingsFeature: Sendable {
         case languageLoaded(String)
         case exportCSVTapped
         case exportJSONTapped
+        case exportCompleted(URL)
+        case exportFailed(String)
+        case exportSheetDismissed
         case privacyPolicyTapped
     }
 
@@ -50,6 +56,8 @@ public struct SettingsFeature: Sendable {
 
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.accountClient) var accountClient
+    @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task }
@@ -108,11 +116,74 @@ public struct SettingsFeature: Sendable {
                 }
 
             case .exportCSVTapped:
-                print("[Settings] Export CSV tapped — not yet implemented")
-                return .none
+                state.isExporting = true
+                return .run { [transactionClient, categoryClient, accountClient] send in
+                    do {
+                        let transactions = try await transactionClient.fetchAll()
+                        let categories = try await categoryClient.fetchAll()
+                        let accounts = try await accountClient.fetchAll()
+
+                        let categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
+                        let accountMap = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0) })
+
+                        var lines = ["日期,類型,分類,備註,金額,帳戶"]
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy/MM/dd"
+
+                        for t in transactions {
+                            let date = formatter.string(from: t.date)
+                            let type = t.type.rawValue
+                            let category = t.categoryId.flatMap { categoryMap[$0] }?.name ?? ""
+                            let note = t.note?.replacingOccurrences(of: ",", with: "\u{FF0C}") ?? ""
+                            let amount: String
+                            switch t.type {
+                            case .expense: amount = "-\(t.amount)"
+                            case .income, .transfer: amount = "\(t.amount)"
+                            }
+                            let account = accountMap[t.accountId]?.name ?? ""
+                            lines.append("\(date),\(type),\(category),\(note),\(amount),\(account)")
+                        }
+
+                        let csv = lines.joined(separator: "\n")
+                        let url = FileManager.default.temporaryDirectory
+                            .appendingPathComponent("NeuLedger_export.csv")
+                        try csv.write(to: url, atomically: true, encoding: .utf8)
+                        await send(.exportCompleted(url))
+                    } catch {
+                        await send(.exportFailed(error.localizedDescription))
+                    }
+                }
 
             case .exportJSONTapped:
-                print("[Settings] Export JSON tapped — not yet implemented")
+                state.isExporting = true
+                return .run { [transactionClient] send in
+                    do {
+                        let transactions = try await transactionClient.fetchAll()
+                        let encoder = JSONEncoder()
+                        encoder.outputFormatting = .prettyPrinted
+                        encoder.dateEncodingStrategy = .iso8601
+                        let data = try encoder.encode(transactions)
+                        let url = FileManager.default.temporaryDirectory
+                            .appendingPathComponent("NeuLedger_export.json")
+                        try data.write(to: url, options: .atomic)
+                        await send(.exportCompleted(url))
+                    } catch {
+                        await send(.exportFailed(error.localizedDescription))
+                    }
+                }
+
+            case let .exportCompleted(url):
+                state.isExporting = false
+                state.exportedFileURL = url
+                return .none
+
+            case let .exportFailed(error):
+                state.isExporting = false
+                state.exportError = error
+                return .none
+
+            case .exportSheetDismissed:
+                state.exportedFileURL = nil
                 return .none
 
             case .privacyPolicyTapped:

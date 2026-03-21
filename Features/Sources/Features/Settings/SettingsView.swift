@@ -11,6 +11,25 @@ enum SettingsRoute: Hashable {
     case tagManagement
 }
 
+// MARK: - IdentifiableURL
+
+private struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+// MARK: - ShareSheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
 // MARK: - SettingsView
 
 public struct SettingsView: View {
@@ -74,6 +93,14 @@ public struct SettingsView: View {
                         }
                     )
                 }
+            }
+            .sheet(
+                item: Binding(
+                    get: { store.exportedFileURL.map { IdentifiableURL(url: $0) } },
+                    set: { if $0 == nil { store.send(.exportSheetDismissed) } }
+                )
+            ) { identifiable in
+                ShareSheet(items: [identifiable.url])
             }
         }
     }
@@ -170,21 +197,35 @@ public struct SettingsView: View {
         VStack(spacing: 6) {
             sectionHeader(String(localized: "settings_data"))
             glassCard {
-                Button { store.send(.exportCSVTapped) } label: {
-                    settingsRow(
-                        icon: "square.and.arrow.down",
-                        iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_export_csv"),
-                        trailing: chevron
-                    )
-                }
-                Button { store.send(.exportJSONTapped) } label: {
-                    settingsRow(
-                        icon: "tablecells",
-                        iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_export_json"),
-                        trailing: chevron
-                    )
+                VStack(spacing: 0) {
+                    Button { store.send(.exportCSVTapped) } label: {
+                        settingsRow(
+                            icon: "square.and.arrow.down",
+                            iconColor: Color.Design.textSecondary,
+                            label: String(localized: "settings_export_csv"),
+                            trailing: store.isExporting ? AnyView(ProgressView()) : AnyView(chevron)
+                        )
+                    }
+                    .disabled(store.isExporting)
+
+                    Button { store.send(.exportJSONTapped) } label: {
+                        settingsRow(
+                            icon: "tablecells",
+                            iconColor: Color.Design.textSecondary,
+                            label: String(localized: "settings_export_json"),
+                            trailing: store.isExporting ? AnyView(ProgressView()) : AnyView(chevron)
+                        )
+                    }
+                    .disabled(store.isExporting)
+
+                    if let errorMessage = store.exportError {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(Color.Design.expenseRed)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 10)
+                    }
                 }
             }
         }

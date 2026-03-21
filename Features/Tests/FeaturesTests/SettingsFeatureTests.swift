@@ -15,6 +15,32 @@ struct SettingsFeatureTests {
         Account(name: "銀行帳戶", type: .bank, icon: "building.columns", color: "blue", sortOrder: 1),
     ]
 
+    private static let sampleCategories: [Domain.Category] = [
+        Domain.Category(name: "餐飲", icon: "fork.knife", color: "orange", type: .expense, sortOrder: 0),
+        Domain.Category(name: "薪資", icon: "dollarsign", color: "green", type: .income, sortOrder: 0),
+    ]
+
+    private static func sampleTransactions(accountId: Account.ID, categoryId: Domain.Category.ID) -> [Transaction] {
+        [
+            Transaction(
+                amount: 150,
+                date: Date(timeIntervalSince1970: 1_700_000_000),
+                note: "午餐",
+                categoryId: categoryId,
+                accountId: accountId,
+                type: .expense
+            ),
+            Transaction(
+                amount: 50000,
+                date: Date(timeIntervalSince1970: 1_700_086_400),
+                note: nil,
+                categoryId: nil,
+                accountId: accountId,
+                type: .income
+            ),
+        ]
+    }
+
     // MARK: - task Effect
 
     @Test(".task loads AI state and account name concurrently")
@@ -168,29 +194,123 @@ struct SettingsFeatureTests {
         #expect(savedValues.value == [targetId])
     }
 
+    // MARK: - Export CSV
+
+    @Test("exportCSVTapped sets isExporting then completes with a URL")
+    func testExportCSVSuccess() async throws {
+        let account = Self.sampleAccounts[0]
+        let category = Self.sampleCategories[0]
+        let transactions = Self.sampleTransactions(accountId: account.id, categoryId: category.id)
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.transactionClient.fetchAll = { transactions }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.accountClient.fetchAll = { Self.sampleAccounts }
+        }
+
+        await store.send(.exportCSVTapped) {
+            $0.isExporting = true
+        }
+
+        await store.receive(\.exportCompleted) {
+            $0.isExporting = false
+            $0.exportedFileURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("NeuLedger_export.csv")
+        }
+
+        let savedURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NeuLedger_export.csv")
+        let content = try String(contentsOf: savedURL, encoding: .utf8)
+        #expect(content.contains("午餐"))
+        #expect(content.contains("餐飲"))
+        #expect(content.contains("-150"))
+        #expect(content.contains("50000"))
+    }
+
+    @Test("exportSheetDismissed clears exportedFileURL")
+    func testExportSheetDismissed() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("test.csv")
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        }
+        // Seed state with a URL manually
+        await store.send(.exportCompleted(url)) {
+            $0.isExporting = false
+            $0.exportedFileURL = url
+        }
+        await store.send(.exportSheetDismissed) {
+            $0.exportedFileURL = nil
+        }
+    }
+
+    // MARK: - Export JSON
+
+    @Test("exportJSONTapped sets isExporting then completes with a URL")
+    func testExportJSONSuccess() async throws {
+        let account = Self.sampleAccounts[0]
+        let category = Self.sampleCategories[0]
+        let transactions = Self.sampleTransactions(accountId: account.id, categoryId: category.id)
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.transactionClient.fetchAll = { transactions }
+        }
+
+        await store.send(.exportJSONTapped) {
+            $0.isExporting = true
+        }
+
+        await store.receive(\.exportCompleted) {
+            $0.isExporting = false
+            $0.exportedFileURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("NeuLedger_export.json")
+        }
+
+        let savedURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NeuLedger_export.json")
+        let data = try Data(contentsOf: savedURL)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode([Transaction].self, from: data)
+        #expect(decoded.count == 2)
+    }
+
+    // MARK: - Export Failure
+
+    @Test("exportCSVTapped propagates error to exportError state")
+    func testExportFailed() async throws {
+        struct TestError: Error { let message: String }
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.transactionClient.fetchAll = { throw TestError(message: "fetch failed") }
+            $0.categoryClient.fetchAll = { [] }
+            $0.accountClient.fetchAll = { [] }
+        }
+
+        await store.send(.exportCSVTapped) {
+            $0.isExporting = true
+        }
+
+        await store.receive(\.exportFailed) {
+            $0.isExporting = false
+            $0.exportError = TestError(message: "fetch failed").localizedDescription
+        }
+    }
+
     // MARK: - Placeholder Actions
-
-    @Test("exportCSVTapped does not mutate state")
-    func testExportCSVTapped() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State()
-        ) {
-            SettingsFeature()
-        }
-
-        await store.send(.exportCSVTapped)
-    }
-
-    @Test("exportJSONTapped does not mutate state")
-    func testExportJSONTapped() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State()
-        ) {
-            SettingsFeature()
-        }
-
-        await store.send(.exportJSONTapped)
-    }
 
     @Test("privacyPolicyTapped does not mutate state")
     func testPrivacyPolicyTapped() async throws {

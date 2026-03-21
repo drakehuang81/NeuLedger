@@ -118,3 +118,9 @@ firebase-debug.*.log
 *.zip
 *.tar.gz
 *.rar
+
+# Git Worktrees
+.worktrees/
+
+# Superpowers
+.superpowers/

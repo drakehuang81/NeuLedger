@@ -15,35 +15,31 @@ public struct QuickActionBar: View {
     }
     
     public var body: some View {
-        HStack {
-            Spacer()
-            
-            // Action Capsule
-            Button(action: onAddTransaction) {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 18))
+        GlassEffectContainer {
+            HStack {
+                Spacer()
 
-                    Text("action_record")
-                        .font(.system(size: 13, weight: .medium))
+                // Action Capsule
+                Button(action: onAddTransaction) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 18))
+
+                        Text("action_record")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
                 .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.primary)
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.primary)
 
-            Spacer()
+                Spacer()
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 16)
-        .glassEffect(
-            Glass.clear
-                .interactive()
-                .tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
     }
 }
 

@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// Design Spec:
 /// - Corner Radius: 20 (xl)
-/// - Background: Glass Surface (Blur + Tint)
+/// - Background: iOS 26 Liquid Glass (.glassEffect)
 /// - Padding: 16 (default)
 public struct GlassContainer<Content: View>: View {
     private let content: Content

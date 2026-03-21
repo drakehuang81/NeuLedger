@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// Design Spec:
 /// - Corner Radius: Pill (Capsule)
-/// - Background: Glass Prominent (Regular Material)
+/// - Style: .buttonStyle(.glass)
 /// - Padding: Horizontal 20, Vertical 10
 /// - Gap: 8
 /// - Icon: Optional (Symbol)

@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// Design Spec:
 /// - Corner Radius: 24 (XL)
-/// - Background: Glass Prominent (Regular Material)
+/// - Background: iOS 26 Liquid Glass (.glassEffect)
 /// - Padding: 20
 /// - Gap: 8 (Main Stack), 12 (Income/Expense Row)
 public struct BalanceDisplay: View {

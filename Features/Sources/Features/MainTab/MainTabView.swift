@@ -50,7 +50,7 @@ struct MainTabView: View {
                                 .padding(12)
                         }
                         .frame(maxHeight: 160)
-                        .glassEffect(in: RoundedRectangle(cornerRadius: 16))
+                        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .padding(.horizontal, 12)
                     }
 

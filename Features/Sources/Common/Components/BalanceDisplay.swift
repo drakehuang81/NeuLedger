@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// Design Spec:
 /// - Corner Radius: 24 (XL)
-/// - Background: Glass Prominent (Regular Material)
+/// - Background: iOS 26 Liquid Glass (.glassEffect)
 /// - Padding: 20
 /// - Gap: 8 (Main Stack), 12 (Income/Expense Row)
 public struct BalanceDisplay: View {
@@ -24,7 +24,7 @@ public struct BalanceDisplay: View {
                 .font(Font.Design.subheadline)
                 .foregroundStyle(Color.Design.textSecondary)
             
-            Text(totalBalance.currencyFormat)
+            Text(totalBalance.twdFormatted)
                 .font(Font.Design.largeTitle.weight(.bold).monospacedDigit()) // Bricolage equivalent
                 .foregroundStyle(Color.Design.textPrimary)
             
@@ -34,7 +34,7 @@ public struct BalanceDisplay: View {
                     Image(systemName: "arrow.down") // Incoming
                         .foregroundStyle(Color.Design.incomeGreen)
                         .font(.caption)
-                    Text(income.currencyFormat)
+                    Text(income.twdFormatted)
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -48,7 +48,7 @@ public struct BalanceDisplay: View {
                     Image(systemName: "arrow.up") // Outgoing
                         .foregroundStyle(Color.Design.expenseRed)
                         .font(.caption)
-                    Text(expense.currencyFormat)
+                    Text(expense.twdFormatted)
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -61,19 +61,15 @@ public struct BalanceDisplay: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial) // Glass Prominent
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
     }
 }
 
-private extension Decimal {
-    var currencyFormat: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "$0"
-    }
-}
 
 #Preview {
     ZStack {

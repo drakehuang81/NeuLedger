@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// Design Spec:
 /// - Corner Radius: Pill (Capsule)
-/// - Background: Glass Prominent (Regular Material)
+/// - Style: .buttonStyle(.glass)
 /// - Padding: Horizontal 20, Vertical 10
 /// - Gap: 8
 /// - Icon: Optional (Symbol)
@@ -41,26 +41,14 @@ public struct GlassButton: View {
                     Image(systemName: icon)
                         .font(.system(size: 20, weight: .medium)) // Icon size 20
                 }
-                
+
                 Text(title)
-                    .font(Font.Design.headline) // 15pt Semibold? Or .headline equivalent
-                    // Design spec: 15pt Semibold (DMSans-SemiBold)
-                    // If .Design.headline is 17pt, maybe use .subheadline (15pt).
-                    // FontTokens.swift might have it. I'll use .body for safety or specific if I knew.
-                    // Assuming .headline is close enough or use system font.
+                    .font(Font.Design.headline)
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 20)
-            .background(.regularMaterial) // Glass Prominent
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-            )
         }
-        .buttonStyle(.plain) // Remove default button modification
-        // Tint is handled by foreground style typically.
-        // Design usually has brand color text.
+        .buttonStyle(.glass)
         .foregroundStyle(Color.Design.brandPrimary)
     }
 }

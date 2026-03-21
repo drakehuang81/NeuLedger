@@ -15,36 +15,31 @@ public struct QuickActionBar: View {
     }
     
     public var body: some View {
-        HStack {
-            Spacer()
-            
-            // Action Capsule
-            Button(action: onAddTransaction) {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 18))
-                    
-                    Text("action_record")
-                        .font(.system(size: 13, weight: .medium))
+        GlassEffectContainer {
+            HStack {
+                Spacer()
+
+                // Action Capsule
+                Button(action: onAddTransaction) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 18))
+
+                        Text("action_record")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(.regularMaterial) // Glass Prominent? Or colored?
-                // Design says "fill: glass-prominent".
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                )
+                .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.primary)
+
+                Spacer()
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.primary)
-            
-            Spacer()
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 16)
-        .background(.ultraThinMaterial) // Glass Container
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 

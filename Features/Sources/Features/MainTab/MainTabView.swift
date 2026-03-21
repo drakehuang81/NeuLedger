@@ -1,5 +1,6 @@
-import SwiftUI
+import Common
 import ComposableArchitecture
+import SwiftUI
 
 struct MainTabView: View {
     @Bindable var store: StoreOf<MainTabFeature>
@@ -49,7 +50,7 @@ struct MainTabView: View {
                                 .padding(12)
                         }
                         .frame(maxHeight: 160)
-                        .glassEffect(in: RoundedRectangle(cornerRadius: 16))
+                        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .padding(.horizontal, 12)
                     }
 
@@ -156,7 +157,7 @@ struct MainTabView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(.regularMaterial, in: Capsule())
+                    .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
 
                     if let error = store.aiInputError {
                         Text(error)

@@ -11,6 +11,7 @@ public struct DashboardFeature: Sendable {
     private enum CancelID {
         case accountObservation
         case transactionObservation
+        case categoryFetch
         case aiInsightFetch
     }
 
@@ -20,8 +21,10 @@ public struct DashboardFeature: Sendable {
     public struct State: Equatable {
         // Aggregated data
         public var totalBalance: Decimal = 0
+        public var accountBalances: [Account.ID: Decimal] = [:]
         public var topAccounts: [Account] = []
         public var recentTransactions: [Transaction] = []
+        public var categoryMap: [Domain.Category.ID: Domain.Category] = [:]
 
         // AI Insight
         public var aiInsight: String?
@@ -49,8 +52,9 @@ public struct DashboardFeature: Sendable {
 
         // Data responses
         case accountsUpdated([Account])
-        case totalBalanceComputed(Decimal)
+        case accountBalancesComputed([Account.ID: Decimal], total: Decimal)
         case transactionsUpdated([Transaction])
+        case categoriesLoaded([Domain.Category])
 
         // AI Insight
         case fetchAIInsight
@@ -58,6 +62,9 @@ public struct DashboardFeature: Sendable {
 
         // User interactions
         case addTransactionButtonTapped
+        case quickActionExpenseTapped
+        case quickActionIncomeTapped
+        case quickActionTransferTapped
         // Received from MainTabFeature when the TabBar AI input successfully extracts a transaction.
         case addTransactionWithPrefilledData(ExtractedTransaction)
         case seeAllTransactionsTapped
@@ -82,6 +89,7 @@ public struct DashboardFeature: Sendable {
 
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.aiServiceClient) var aiServiceClient
     @Dependency(\.date.now) var now
 
@@ -108,7 +116,13 @@ public struct DashboardFeature: Sendable {
                         let transactions = try await transactionClient.fetchRecent()
                         await send(.transactionsUpdated(transactions))
                     }
-                    .cancellable(id: CancelID.transactionObservation)
+                    .cancellable(id: CancelID.transactionObservation),
+
+                    .run { send in
+                        let categories = try await categoryClient.fetchAll()
+                        await send(.categoriesLoaded(categories))
+                    }
+                    .cancellable(id: CancelID.categoryFetch, cancelInFlight: true)
                 )
 
             // Task 2.5: Pull-to-refresh — reload data and force AI insight fetch
@@ -129,6 +143,12 @@ public struct DashboardFeature: Sendable {
                     }
                     .cancellable(id: CancelID.transactionObservation, cancelInFlight: true),
 
+                    .run { send in
+                        let categories = try await categoryClient.fetchAll()
+                        await send(.categoriesLoaded(categories))
+                    }
+                    .cancellable(id: CancelID.categoryFetch, cancelInFlight: true),
+
                     // Force a new AI insight fetch
                     .send(.fetchAIInsight)
                 )
@@ -146,18 +166,27 @@ public struct DashboardFeature: Sendable {
                 state.topAccounts = accounts
                     .sorted { $0.sortOrder < $1.sortOrder }
 
-                // Compute total balance by summing per-account balances
+                // Compute per-account balances and total concurrently
                 return .run { [accounts] send in
-                    var total: Decimal = 0
-                    for account in accounts {
-                        let balance = try await accountClient.computeBalance(account.id)
-                        total += balance
+                    var balances: [Account.ID: Decimal] = [:]
+                    await withTaskGroup(of: (Account.ID, Decimal).self) { group in
+                        for account in accounts {
+                            group.addTask {
+                                let balance = (try? await accountClient.computeBalance(account.id)) ?? 0
+                                return (account.id, balance)
+                            }
+                        }
+                        for await (id, balance) in group {
+                            balances[id] = balance
+                        }
                     }
-                    await send(.totalBalanceComputed(total))
+                    let total = balances.values.reduce(0, +)
+                    await send(.accountBalancesComputed(balances, total: total))
                 }
 
-            case let .totalBalanceComputed(balance):
-                state.totalBalance = balance
+            case let .accountBalancesComputed(accounts, total: total):
+                state.accountBalances = accounts
+                state.totalBalance = total
                 return .none
 
             case let .transactionsUpdated(transactions):
@@ -176,6 +205,10 @@ public struct DashboardFeature: Sendable {
                     // New transaction data detected — invalidate and re-fetch
                     return .send(.fetchAIInsight)
                 }
+                return .none
+
+            case let .categoriesLoaded(categories):
+                state.categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
                 return .none
 
             // MARK: AI Insight
@@ -219,8 +252,33 @@ public struct DashboardFeature: Sendable {
                 return .none
 
             // MARK: User interactions
+
+            // Triggered by the EmptyStateView CTA when the user has no transactions yet.
+            // Intentionally kept separate from quickActionExpenseTapped — the two entry
+            // points have different UX origins even though both open an expense form.
             case .addTransactionButtonTapped:
                 state.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: now)
+                return .none
+
+            // Triggered by the Quick Actions bar in the Dashboard header.
+            // Same resulting state as addTransactionButtonTapped but originates from a
+            // different UI affordance and may diverge in behaviour in a future iteration.
+            case .quickActionExpenseTapped:
+                state.addTransaction = AddTransactionFeature.State(
+                    mode: .add(.expense), date: now
+                )
+                return .none
+
+            case .quickActionIncomeTapped:
+                state.addTransaction = AddTransactionFeature.State(
+                    mode: .add(.income), date: now
+                )
+                return .none
+
+            case .quickActionTransferTapped:
+                state.addTransaction = AddTransactionFeature.State(
+                    mode: .add(.transfer), date: now
+                )
                 return .none
 
             case let .addTransactionWithPrefilledData(extracted):

@@ -42,7 +42,7 @@ public struct AccountCard: View {
             }
             
             // Amount
-            Text(balance.currencyFormat)
+            Text(balance.twdFormatted)
                 .font(Font.Design.title2.weight(.bold).monospacedDigit())
                 .foregroundStyle(Color.Design.textPrimary)
             
@@ -58,20 +58,15 @@ public struct AccountCard: View {
         // To be safe, I'll remove fixed width and let container decide, or use idealWidth.
         // Actually, cards in horizontal scroll usually fixed width. I'll stick to flexible relative to parent or fixed frame modifier outside.
         // But for this component, let's keep it flexible but min width.
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
     }
 }
 
-// Helper for formatting
-private extension Decimal {
-    var currencyFormat: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$" // Default
-        return formatter.string(from: self as NSDecimalNumber) ?? "$0.00"
-    }
-}
 
 #Preview {
     ZStack {

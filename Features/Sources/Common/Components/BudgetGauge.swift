@@ -69,11 +69,11 @@ public struct BudgetGauge: View {
             
             // Footer
             HStack {
-                Text("gauge_used") + Text(" \(used.formattedCurrency)")
+                Text("gauge_used") + Text(" \(used.twdFormatted)")
                     .font(Font.Design.amount)
                     .foregroundStyle(Color.Design.textSecondary)
                 Spacer()
-                Text("gauge_remaining") + Text(" \((total - used).formattedCurrency)")
+                Text("gauge_remaining") + Text(" \((total - used).twdFormatted)")
                     .font(Font.Design.amount)
                     .foregroundStyle(Color.Design.textSecondary)
             }
@@ -85,14 +85,6 @@ public struct BudgetGauge: View {
     }
 }
 
-private extension Decimal {
-    var formattedCurrency: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "$0"
-    }
-}
 
 #Preview {
     ZStack {

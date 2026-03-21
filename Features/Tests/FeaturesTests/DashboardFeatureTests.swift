@@ -9,6 +9,27 @@ struct DashboardFeatureTests {
 
     // MARK: - Helpers
 
+    private static let sampleCategories: [Domain.Category] = [
+        Domain.Category(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            name: "Food",
+            icon: "fork.knife",
+            color: "#FF6B6B",
+            type: .expense,
+            sortOrder: 0,
+            isDefault: true
+        ),
+        Domain.Category(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            name: "Salary",
+            icon: "banknote",
+            color: "#34C759",
+            type: .income,
+            sortOrder: 0,
+            isDefault: true
+        ),
+    ]
+
     private static let sampleAccounts: [Account] = [
         Account(
             name: "Bank Account",
@@ -73,8 +94,10 @@ struct DashboardFeatureTests {
                 return 0
             }
             $0.transactionClient.fetchRecent = { Self.sampleTransactions }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.generateInsight = { _ in "Test insight" }
         }
+        store.exhaustivity = .off
 
         await store.send(.task) {
             $0.isLoading = true
@@ -102,8 +125,12 @@ struct DashboardFeatureTests {
             $0.isLoadingInsight = true
         }
 
-        // Total balance computed (balance effect from accountsUpdated)
-        await store.receive(\.totalBalanceComputed) {
+        // Per-account balances and total computed (balance effect from accountsUpdated)
+        await store.receive(\.accountBalancesComputed) {
+            $0.accountBalances = [
+                Self.sampleAccounts[0].id: 45000,
+                Self.sampleAccounts[1].id: 1200,
+            ]
             $0.totalBalance = 46200 // 45000 + 1200
         }
 
@@ -149,6 +176,49 @@ struct DashboardFeatureTests {
         }
     }
 
+    // MARK: - Step 3C: categoriesLoaded Builds categoryMap
+
+    @Test("categoriesLoaded builds categoryMap keyed by category ID")
+    func testCategoriesLoadedBuildsCategoryMap() async throws {
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        }
+
+        await store.send(.categoriesLoaded(Self.sampleCategories)) { state in
+            state.categoryMap = Dictionary(
+                uniqueKeysWithValues: Self.sampleCategories.map { ($0.id, $0) }
+            )
+        }
+    }
+
+    @Test("task fetches categories in parallel and populates categoryMap")
+    func testTaskFetchesCategoriesAndPopulatesCategoryMap() async throws {
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.accountClient.computeBalance = { _ in 0 }
+            $0.transactionClient.fetchRecent = { [] }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.aiServiceClient.generateInsight = { _ in "" }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.task) {
+            $0.isLoading = true
+        }
+
+        await store.receive(\.categoriesLoaded) {
+            $0.categoryMap = Dictionary(
+                uniqueKeysWithValues: Self.sampleCategories.map { ($0.id, $0) }
+            )
+        }
+    }
+
     // MARK: - Task 5.3: Pull-to-Refresh Forces AI Insight Update
 
     @Test("pulledToRefresh forces AI insight update")
@@ -166,8 +236,10 @@ struct DashboardFeatureTests {
             $0.accountClient.fetchActive = { Self.sampleAccounts }
             $0.accountClient.computeBalance = { _ in 1000 }
             $0.transactionClient.fetchRecent = { Array(Self.sampleTransactions.prefix(3)) }
+            $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.generateInsight = { _ in "Fresh insight" }
         }
+        store.exhaustivity = .off
 
         await store.send(.pulledToRefresh) {
             $0.isLoading = true
@@ -207,8 +279,12 @@ struct DashboardFeatureTests {
             $0.isLoadingInsight = true
         }
 
-        // Total balance computed (balance effect from accountsUpdated)
-        await store.receive(\.totalBalanceComputed) {
+        // Per-account balances and total computed (balance effect from accountsUpdated)
+        await store.receive(\.accountBalancesComputed) {
+            $0.accountBalances = [
+                Self.sampleAccounts[0].id: 1000,
+                Self.sampleAccounts[1].id: 1000,
+            ]
             $0.totalBalance = 2000 // 1000 * 2 accounts
         }
 
@@ -296,6 +372,56 @@ struct DashboardFeatureTests {
         }
         await store.send(.addTransactionWithPrefilledData(extracted)) {
             $0.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted), date: fixedDate)
+        }
+    }
+
+    // MARK: - Step 4A: Quick Action Tapped Presents AddTransaction With Correct Type
+
+    @Test("quickActionExpenseTapped presents AddTransaction in .add(.expense) mode")
+    func testQuickActionExpenseTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
+        }
+
+        await store.send(.quickActionExpenseTapped) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: fixedDate)
+        }
+    }
+
+    @Test("quickActionIncomeTapped presents AddTransaction in .add(.income) mode")
+    func testQuickActionIncomeTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
+        }
+
+        await store.send(.quickActionIncomeTapped) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.income), date: fixedDate)
+        }
+    }
+
+    @Test("quickActionTransferTapped presents AddTransaction in .add(.transfer) mode")
+    func testQuickActionTransferTapped() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        let store = await TestStore(
+            initialState: DashboardFeature.State()
+        ) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedDate)
+        }
+
+        await store.send(.quickActionTransferTapped) {
+            $0.addTransaction = AddTransactionFeature.State(mode: .add(.transfer), date: fixedDate)
         }
     }
 

@@ -35,12 +35,7 @@ public struct CategoryChip: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 14)
-        .background(.ultraThinMaterial) // Glass Surface
-        .clipShape(Capsule())
-        // Optional border
-        .overlay(
-            Capsule().stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-        )
+        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
     }
 }
 

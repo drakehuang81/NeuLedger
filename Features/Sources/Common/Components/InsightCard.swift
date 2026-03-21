@@ -55,8 +55,12 @@ public struct InsightCard: View {
             }
         }
         .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
     }
 }
 

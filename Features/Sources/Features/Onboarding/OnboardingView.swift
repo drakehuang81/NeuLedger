@@ -203,8 +203,12 @@ struct OnboardingView: View {
                 }
                 .padding(20)
                 .frame(width: 200)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .glassEffect(
+                    Glass.clear
+                        .interactive()
+                        .tint(Color.Design.background),
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                )
             }
 
             Spacer()

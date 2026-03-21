@@ -23,28 +23,27 @@ public struct QuickActionBar: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 18))
-                    
+
                     Text("action_record")
                         .font(.system(size: 13, weight: .medium))
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
-                .background(.regularMaterial) // Glass Prominent? Or colored?
-                // Design says "fill: glass-prominent".
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                )
+                .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.primary)
-            
+
             Spacer()
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        .background(.ultraThinMaterial) // Glass Container
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
     }
 }
 

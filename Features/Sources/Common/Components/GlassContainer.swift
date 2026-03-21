@@ -46,17 +46,12 @@ public struct GlassContainer<Content: View>: View {
     public var body: some View {
         content
             .padding(padding)
-            .background(.ultraThinMaterial)
-            .environment(\.colorScheme, .dark) // Optional: Force dark mode for glass effect pop? Or should it adapt?
-            // Design implies "glass-surface" fill. Usually implies light tint in light mode and dark tint in dark mode.
-            // But strict glassmorphism often looks best with forced blur style.
-            // I'll stick to adaptive material for now.
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            // Optional: Border or Shadow
-             .overlay(
-                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                     .stroke(Color.white.opacity(0.1), lineWidth: 1)
-             )
+            .glassEffect(
+                Glass.clear
+                    .interactive()
+                    .tint(Color.Design.background),
+                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            )
     }
 }
 

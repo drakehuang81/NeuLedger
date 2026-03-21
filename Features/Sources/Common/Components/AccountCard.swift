@@ -58,8 +58,12 @@ public struct AccountCard: View {
         // To be safe, I'll remove fixed width and let container decide, or use idealWidth.
         // Actually, cards in horizontal scroll usually fixed width. I'll stick to flexible relative to parent or fixed frame modifier outside.
         // But for this component, let's keep it flexible but min width.
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
     }
 }
 

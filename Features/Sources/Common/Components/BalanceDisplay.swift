@@ -61,8 +61,12 @@ public struct BalanceDisplay: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial) // Glass Prominent
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
     }
 }
 

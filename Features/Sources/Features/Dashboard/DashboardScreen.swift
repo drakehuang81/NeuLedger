@@ -62,8 +62,12 @@ public struct DashboardScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
     }
 
 
@@ -102,8 +106,12 @@ public struct DashboardScreen: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(
+            Glass.clear
+                .interactive()
+                .tint(Color.Design.background),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
     }
 
     // MARK: - Accounts Section (Task 3.5)

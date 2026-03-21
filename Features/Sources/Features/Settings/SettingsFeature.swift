@@ -1,7 +1,6 @@
 import ComposableArchitecture
 import Domain
 import Foundation
-import UIKit
 
 @Reducer
 public struct SettingsFeature: Sendable {

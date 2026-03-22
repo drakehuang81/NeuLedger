@@ -12,9 +12,9 @@ struct MainTabFeature {
     // MARK: - State
     enum Tab: String, CaseIterable, Equatable {
         case dashboard
-        case transactions
         case analysis
         case settings
+        case transactions
     }
 
     @ObservableState

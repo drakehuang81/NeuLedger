@@ -16,38 +16,42 @@ public struct DashboardScreen: View {
     }
 
     public var body: some View {
-        ZStack {
-            Color.Design.background
-                .ignoresSafeArea()
-            ScrollView {
-                VStack(spacing: 24) {
-                    balanceSection
-                    
-                    quickActionsSection
-                    
-                    accountsSection
-                    
-                    transactionsSection
+        NavigationStack {
+            ZStack {
+                Color.Design.background
+                    .ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 24) {
+                        balanceSection
 
-                    insightSection
+                        quickActionsSection
+
+                        accountsSection
+
+                        transactionsSection
+
+                        insightSection
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 100) // Bottom padding for tab bar
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 100) // Bottom padding for tab bar
+                // Task 3.7: Pull-to-refresh
+                .refreshable {
+                    await store.send(.pulledToRefresh).finish()
+                }
             }
-            // Task 3.7: Pull-to-refresh
-            .refreshable {
-                await store.send(.pulledToRefresh).finish()
+            .navigationTitle(String(localized: "dashboard_title"))
+            .navigationBarTitleDisplayMode(.large)
+            .task {
+                await store.send(.task).finish()
             }
-        }
-        .task {
-            await store.send(.task).finish()
-        }
-        // Task 3.8: Sheet for AddTransaction
-        .sheet(
-            item: $store.scope(state: \.addTransaction, action: \.addTransaction)
-        ) { addTransactionStore in
-            AddTransactionView(store: addTransactionStore)
+            // Task 3.8: Sheet for AddTransaction
+            .sheet(
+                item: $store.scope(state: \.addTransaction, action: \.addTransaction)
+            ) { addTransactionStore in
+                AddTransactionView(store: addTransactionStore)
+            }
         }
     }
 

@@ -48,10 +48,6 @@ public struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         // MARK: Title
-                        Text("settings_title")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .frame(maxWidth: .infinity, alignment: .leading)
 
                         // MARK: 管理
                         sectionManage
@@ -65,11 +61,13 @@ public struct SettingsView: View {
                         // MARK: 關於
                         sectionAbout
                     }
-                    .padding(.top, 60)
+                    .padding(.top, 10)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 100)
                 }
             }
+            .navigationTitle(String(localized: "settings_title"))
+            .navigationBarTitleDisplayMode(.large)
             .task { await store.send(.task).finish() }
             .navigationDestination(for: SettingsRoute.self) { route in
                 switch route {

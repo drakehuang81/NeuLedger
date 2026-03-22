@@ -192,23 +192,18 @@ struct OnboardingView: View {
                 }
 
                 // Preview Card
-                VStack(spacing: 12) {
-                    Text("onboarding_ready_balance_label")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.Design.textSecondary)
+                GlassContainer(cornerRadius: 20, padding: 20) {
+                    VStack(spacing: 12) {
+                        Text("onboarding_ready_balance_label")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.Design.textSecondary)
 
-                    Text("$0")
-                        .font(.system(size: 24, weight: .bold).monospacedDigit())
-                        .foregroundStyle(Color.Design.textPrimary)
+                        Text("$0")
+                            .font(.system(size: 24, weight: .bold).monospacedDigit())
+                            .foregroundStyle(Color.Design.textPrimary)
+                    }
                 }
-                .padding(20)
                 .frame(width: 200)
-                .glassEffect(
-                    Glass.clear
-                        .interactive()
-                        .tint(Color.Design.background),
-                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-                )
             }
 
             Spacer()

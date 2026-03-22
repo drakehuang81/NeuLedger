@@ -69,27 +69,27 @@ public struct AddTransactionView: View {
     // MARK: - Amount Section
 
     private var amountSection: some View {
-        VStack(spacing: 8) {
-            TextField(String(localized: "add_transaction_amount"), text: Binding(
-                get: { store.amountText },
-                set: { store.send(.amountTextChanged($0)) }
-            ))
-            .font(.system(size: 48, weight: .bold).monospacedDigit())
-            .multilineTextAlignment(.center)
-            .keyboardType(.numberPad)
+        GlassContainer(
+            cornerRadius: 16,
+            padding: EdgeInsets(top: 16, leading: 0, bottom: 16, trailing: 0)
+        ) {
+            VStack(spacing: 8) {
+                TextField(String(localized: "add_transaction_amount"), text: Binding(
+                    get: { store.amountText },
+                    set: { store.send(.amountTextChanged($0)) }
+                ))
+                .font(.system(size: 48, weight: .bold).monospacedDigit())
+                .multilineTextAlignment(.center)
+                .keyboardType(.numberPad)
 
-            if let error = store.amountError {
-                Text(error)
-                    .font(Font.Design.caption)
-                    .foregroundStyle(Color.Design.expenseRed)
+                if let error = store.amountError {
+                    Text(error)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.expenseRed)
+                }
             }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .glassEffect(
-            Glass.clear.interactive().tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
     }
 
     // MARK: - Category Section
@@ -164,6 +164,7 @@ public struct AddTransactionView: View {
     // MARK: - Details Section (Account + Note + Date)
 
     private var detailsSection: some View {
+        GlassContainer(cornerRadius: 16, padding: 0) {
         VStack(spacing: 0) {
             // Account picker(s)
             if store.type == .transfer {
@@ -256,9 +257,6 @@ public struct AddTransactionView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
         }
-        .glassEffect(
-            Glass.clear.interactive().tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
+        }
     }
 }

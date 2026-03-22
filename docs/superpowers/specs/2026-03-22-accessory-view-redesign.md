@@ -64,7 +64,8 @@
 ```
 
 - `aiAnswer` 文字以 `.lineLimit(1)` + `.truncationMode(.tail)` 截斷
-- 整個 pill 可點擊 → 觸發 `store.send(.aiInputButtonTapped)` 重新展開
+- 整個 pill 可點擊 → 觸發新 action `store.send(.resultPillTapped)`
+  - `resultPillTapped` 在 reducer 中：**清除 `aiAnswer`**，再設定 `isAIInputExpanded = true`，讓使用者以乾淨狀態重新輸入
 - 「新增」按鈕不渲染
 
 **觸發條件：** `store.aiAnswer != nil && !store.isAIInputExpanded && !store.isAIInputLoading`
@@ -97,7 +98,9 @@ AI 記帳與快速新增按鈕
 ```
 
 - 新增 `UserSettings` key：`showAccessoryBar`，型別 `Bool`，預設 `true`
-- `MainTabView` 讀取此設定：若為 `false` → 不加 `.tabViewBottomAccessory { … }` modifier
+  - 路徑：`Features/Sources/Domain/Clients/UserSettingsClient.swift`
+- `MainTabFeature` 在 `.task` 中讀取此設定，存入 `State.showAccessoryBar: Bool`（預設 `true`）
+- `MainTabView` 依 `store.showAccessoryBar` 條件渲染 `.tabViewBottomAccessory { … }`
 - 關閉時：底部無任何 accessory；各 tab 內的功能入口不受影響
 
 ---
@@ -115,14 +118,30 @@ aiAnswer != nil    →  顯示結果摘要（狀態③）
 
 ---
 
+## 新增 Localization Keys
+
+以下 key 需加入 Localizable.xcstrings（繁中）：
+
+| Key | 中文值 |
+|-----|--------|
+| `accessory_ai_record` | AI 記帳 |
+| `accessory_add` | 新增 |
+| `accessory_ai_processing` | AI 正在分析你的交易… |
+| `accessory_mode_record_short` | 記 |
+| `accessory_mode_ask_short` | 問 |
+| `settings_show_accessory_bar` | 顯示底部快捷列 |
+| `settings_show_accessory_bar_description` | AI 記帳與快速新增按鈕 |
+
+---
+
 ## 影響範圍
 
 | 檔案 | 變動類型 |
 |------|---------|
 | `Features/Sources/Features/MainTab/MainTabView.swift` | 修改 `CustomAccessoryView` 所有 case |
+| `Features/Sources/Features/MainTab/MainTabFeature.swift` | 新增 `showAccessoryBar` state、`resultPillTapped` action、讀取設定 |
 | `Features/Sources/Features/Settings/SettingsView.swift` | 新增 toggle |
-| `Domain/UserSettings.swift`（或同等路徑） | 新增 `showAccessoryBar` key |
-| `Features/Sources/Features/MainTab/MainTabFeature.swift` | 讀取 `showAccessoryBar` 設定（若需要） |
+| `Features/Sources/Domain/Clients/UserSettingsClient.swift` | 新增 `showAccessoryBar` key |
 
 ---
 

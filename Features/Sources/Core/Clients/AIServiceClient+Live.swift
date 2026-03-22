@@ -51,13 +51,14 @@ private struct QueryTransactionsTool: Tool {
         let transactions = try await transactionClient.fetch(filter)
 
         if transactions.isEmpty {
-            return "查無交易紀錄。"
+            return String(localized: "ai_tool_no_transactions", bundle: .main)
         }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        let noNote = String(localized: "ai_tool_no_note", bundle: .main)
         let lines = transactions.map { t in
-            "\(formatter.string(from: t.date)) \(t.note ?? "（無備註）") NT$\(t.amount)"
+            "\(formatter.string(from: t.date)) \(t.note ?? noNote) NT$\(t.amount)"
         }
         return lines.joined(separator: "\n")
     }
@@ -68,6 +69,10 @@ extension AIServiceClient: DependencyKey {
     // by all generateInsight calls — not reset each time liveValue is accessed.
     private static let insightCache = InsightCache()
 
+    private static func listSeparator() -> String {
+        Locale.current.language.languageCode?.identifier.hasPrefix("zh") == true ? "、" : ", "
+    }
+
     public static let liveValue = AIServiceClient(
 
         // MARK: - extractTransaction
@@ -75,11 +80,8 @@ extension AIServiceClient: DependencyKey {
         // Throws on failure so the caller (Feature layer) decides: show error or silently ignore.
         extractTransaction: { input in
             let session = LanguageModelSession()
-            let prompt = """
-            從以下輸入解析出一筆交易紀錄，金額單位為新台幣（TWD）。
-            所有文字欄位請使用繁體中文。
-            輸入：\(input)
-            """
+            let template = String(localized: "ai_prompt_extract_transaction", bundle: .main)
+            let prompt = String(format: template, input)
             // respond(to:generating:) returns LanguageModelSession.Response<ExtractedTransaction>.
             // Access .content to unwrap the actual ExtractedTransaction value.
             return try await session.respond(to: prompt, generating: ExtractedTransaction.self).content
@@ -90,13 +92,9 @@ extension AIServiceClient: DependencyKey {
         // preventing hallucinated categories that don't exist in the user's data.
         suggestCategories: { description, existingCategories in
             let session = LanguageModelSession()
-            let categoryList = existingCategories.joined(separator: "、")
-            let prompt = """
-            根據以下交易描述，從分類清單中選出最合適的分類（最多3個，依相關性排序）。
-            請只從清單中選擇，不要建議清單以外的分類。
-            交易描述：\(description)
-            可用分類：\(categoryList)
-            """
+            let categoryList = existingCategories.joined(separator: AIServiceClient.listSeparator())
+            let template = String(localized: "ai_prompt_suggest_categories", bundle: .main)
+            let prompt = String(format: template, description, categoryList)
             return try await session.respond(to: prompt, generating: CategorySuggestions.self).content
         },
 
@@ -106,13 +104,20 @@ extension AIServiceClient: DependencyKey {
         generateInsight: { summary in
             if let cached = await AIServiceClient.insightCache.get(for: summary) { return cached }
             let session = LanguageModelSession()
-            let prompt = """
-            請用繁體中文撰寫一段簡短的消費分析洞察（2-3句話）。
-            時間範圍：\(summary.periodDescription)
-            總收入：NT$\(summary.totalIncome)
-            總支出：NT$\(summary.totalExpense)
-            各分類支出：\(summary.categoryBreakdown.map { "\($0.key): NT$\($0.value)" }.joined(separator: "、"))
-            """
+            let template = String(localized: "ai_prompt_generate_insight", bundle: .main)
+            var prompt = String(format: template,
+                summary.periodDescription,
+                "\(summary.totalIncome)",
+                "\(summary.totalExpense)")
+            if !summary.categoryBreakdown.isEmpty {
+                let categoryText = summary.categoryBreakdown
+                    .map { "\($0.key): NT$\($0.value)" }
+                    .joined(separator: AIServiceClient.listSeparator())
+                let categoryLine = String(
+                    format: String(localized: "ai_prompt_category_breakdown", bundle: .main),
+                    categoryText)
+                prompt += "\n" + categoryLine
+            }
             let result = try await session.respond(to: prompt).content
             await AIServiceClient.insightCache.set(result, for: summary)
             return result

@@ -187,6 +187,14 @@ public struct SettingsView: View {
                             .labelsHidden()
                             .tint(Color.Design.incomeGreen)
                     )
+                    settingsRow(
+                        icon: "dock.rectangle",
+                        iconColor: Color.Design.textSecondary,
+                        label: String(localized: "settings_show_accessory_bar"),
+                        trailing: Toggle("", isOn: $store.showAccessoryBar.sending(\.accessoryBarToggleChanged))
+                            .labelsHidden()
+                            .tint(Color.Design.incomeGreen)
+                    )
                 }
                 .frame(maxWidth: .infinity)
             }

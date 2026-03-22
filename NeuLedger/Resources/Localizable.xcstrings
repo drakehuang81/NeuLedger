@@ -1684,6 +1684,40 @@
         }
       }
     },
+    "settings_show_accessory_bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Quick Bar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示底部快捷列"
+          }
+        }
+      }
+    },
+    "settings_show_accessory_bar_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI record and quick add buttons"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 記帳與快速新增按鈕"
+          }
+        }
+      }
+    },
     "settings_data": {
       "extractionState": "manual",
       "localizations": {

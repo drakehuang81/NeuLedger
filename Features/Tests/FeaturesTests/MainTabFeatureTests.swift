@@ -17,6 +17,7 @@ struct MainTabFeatureTests {
         }
         await store.send(.task)
         await store.receive(.aiAvailabilityLoaded(isAvailable: true))
+        await store.receive(.accessoryBarVisibilityLoaded(true))
     }
 
     @Test("task marks AI unavailable when not available")
@@ -30,6 +31,7 @@ struct MainTabFeatureTests {
         await store.receive(.aiAvailabilityLoaded(isAvailable: false)) {
             $0.aiUnavailable = true
         }
+        await store.receive(.accessoryBarVisibilityLoaded(true))
     }
 
     @Test("AI input button expands the input bar")
@@ -162,6 +164,7 @@ struct MainTabAskModeTests {
             $0.aiAnswer = "上個月餐費 NT$8,500"
             $0.isAIInputLoading = false
             $0.aiInputText = ""
+            $0.isAIInputExpanded = false
         }
     }
 
@@ -190,6 +193,66 @@ struct MainTabAskModeTests {
         await store.receive(\.answerFailed) {
             $0.isAIInputLoading = false
             $0.aiInputError = String(localized: "ai_ask_error")
+        }
+    }
+}
+
+@Suite("MainTabFeature — accessory bar & result pill")
+struct MainTabAccessoryBarTests {
+
+    @Test("task reads showAccessoryBar=false and stores it")
+    func taskReadsAccessoryBarFalse() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
+            $0.userSettingsClient.bool = { key in
+                key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
+            }
+        }
+        await store.send(.task)
+        await store.receive(.aiAvailabilityLoaded(isAvailable: true))
+        await store.receive(.accessoryBarVisibilityLoaded(false)) {
+            $0.showAccessoryBar = false
+        }
+    }
+
+    @Test("resultPillTapped clears aiAnswer and expands input")
+    func resultPillTappedClearsAndExpands() async {
+        var initial = MainTabFeature.State()
+        initial.aiAnswer = "上個月餐費 NT$8,500"
+        initial.isAIInputExpanded = false
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
+        }
+        await store.send(.resultPillTapped) {
+            $0.aiAnswer = nil
+            $0.isAIInputExpanded = true
+            $0.aiInputError = nil
+        }
+    }
+
+    @Test("answerReceived collapses input bar so compact pill appears")
+    func answerReceivedCollapsesInputBar() async {
+        var initial = MainTabFeature.State()
+        initial.isAIInputExpanded = true
+        initial.inputPurpose = .ask
+        initial.isAIInputLoading = true
+        initial.aiInputText = "上個月餐費多少？"
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
+        }
+        await store.send(.answerReceived("上個月餐費 NT$8,500")) {
+            $0.aiAnswer = "上個月餐費 NT$8,500"
+            $0.isAIInputLoading = false
+            $0.aiInputText = ""
+            $0.isAIInputExpanded = false
         }
     }
 }

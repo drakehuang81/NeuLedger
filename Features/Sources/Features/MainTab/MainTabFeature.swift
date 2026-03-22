@@ -33,6 +33,7 @@ struct MainTabFeature {
         var aiUnavailable: Bool = false      // set once on .task; drives all AI UI
         var inputPurpose: InputPurpose = .record
         var aiAnswer: String? = nil
+        var showAccessoryBar: Bool = true
     }
 
     // MARK: - Action
@@ -54,6 +55,8 @@ struct MainTabFeature {
         case askSubmitted
         case answerReceived(String)
         case answerFailed
+        case resultPillTapped
+        case accessoryBarVisibilityLoaded(Bool)
 
         case dashboard(DashboardFeature.Action)
         case transactions(TransactionsFeature.Action)
@@ -63,6 +66,7 @@ struct MainTabFeature {
 
     // MARK: - Dependencies
     @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.userSettingsClient) var userSettingsClient
     private enum CancelID { case aiExtraction; case aiAnswer }
 
     // MARK: - Body
@@ -85,6 +89,8 @@ struct MainTabFeature {
                 return .run { send in
                     // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
                     await send(.aiAvailabilityLoaded(isAvailable: aiServiceClient.isAvailable()))
+                    let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
+                    await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
                 }
 
             case let .aiAvailabilityLoaded(isAvailable):
@@ -168,11 +174,22 @@ struct MainTabFeature {
                 state.aiAnswer = text
                 state.isAIInputLoading = false
                 state.aiInputText = ""
+                state.isAIInputExpanded = false
                 return .none
 
             case .answerFailed:
                 state.isAIInputLoading = false
                 state.aiInputError = String(localized: "ai_ask_error")
+                return .none
+
+            case .resultPillTapped:
+                state.aiAnswer = nil
+                state.isAIInputExpanded = true
+                state.aiInputError = nil
+                return .none
+
+            case let .accessoryBarVisibilityLoaded(visible):
+                state.showAccessoryBar = visible
                 return .none
 
             case let .tabSelected(tab):

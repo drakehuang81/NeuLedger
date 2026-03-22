@@ -103,6 +103,108 @@
         }
       }
     },
+    "ai_prompt_category_breakdown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category breakdown: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "各分類支出：%@"
+          }
+        }
+      }
+    },
+    "ai_prompt_extract_transaction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parse a transaction from the input below. Amount is in TWD. Use the same language as the input for all text fields.\nInput: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從以下輸入解析出一筆交易紀錄，金額單位為新台幣（TWD）。所有文字欄位請使用繁體中文。\n輸入：%@"
+          }
+        }
+      }
+    },
+    "ai_prompt_generate_insight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a brief spending insight in 2-3 sentences.\nPeriod: %@\nTotal income: NT$%@\nTotal expense: NT$%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請用繁體中文撰寫一段簡短的消費分析洞察（2-3句話）。\n時間範圍：%@\n總收入：NT$%@\n總支出：NT$%@"
+          }
+        }
+      }
+    },
+    "ai_prompt_suggest_categories": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Based on the transaction description below, select the most appropriate categories from the list (up to 3, ordered by relevance). Only choose from the list provided.\nTransaction: %@\nAvailable categories: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "根據以下交易描述，從分類清單中選出最合適的分類（最多3個，依相關性排序）。請只從清單中選擇，不要建議清單以外的分類。\n交易描述：%@\n可用分類：%@"
+          }
+        }
+      }
+    },
+    "ai_tool_no_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(no note)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "（無備註）"
+          }
+        }
+      }
+    },
+    "ai_tool_no_transactions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions found."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查無交易紀錄。"
+          }
+        }
+      }
+    },
     "accessory_ai_record": {
       "extractionState": "manual",
       "localizations": {
@@ -702,6 +804,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "交易紀錄區塊"
+          }
+        }
+      }
+    },
+    "dashboard_period_recent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近期"
           }
         }
       }

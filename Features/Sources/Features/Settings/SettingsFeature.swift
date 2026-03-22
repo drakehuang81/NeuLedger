@@ -25,19 +25,22 @@ public struct SettingsFeature: Sendable {
         public var exportingFormat: ExportFormat? = nil
         public var exportedFileURL: URL? = nil
         public var exportError: String? = nil
+        public var showAccessoryBar: Bool = true
 
         public init(
             isAIEnabled: Bool = true,
             accounts: [Account] = [],
             selectedDefaultAccountId: String = "",
             defaultAccountName: String = "",
-            currentLanguage: String = ""
+            currentLanguage: String = "",
+            showAccessoryBar: Bool = true
         ) {
             self.isAIEnabled = isAIEnabled
             self.accounts = accounts
             self.selectedDefaultAccountId = selectedDefaultAccountId
             self.defaultAccountName = defaultAccountName
             self.currentLanguage = currentLanguage
+            self.showAccessoryBar = showAccessoryBar
         }
     }
 
@@ -55,6 +58,7 @@ public struct SettingsFeature: Sendable {
         case exportCompleted(URL)
         case exportFailed(String)
         case exportSheetDismissed
+        case accessoryBarToggleChanged(Bool)
         case privacyPolicyTapped
     }
 
@@ -78,6 +82,7 @@ public struct SettingsFeature: Sendable {
                     async let accounts = accountClient.fetchActive()
                     let isAIEnabled = userSettingsClient.bool(.aiEnabled)
                     let defaultId = userSettingsClient.string(.defaultAccountId)
+                    let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
                     let fetched = try await accounts
                     await send(.accountsLoaded(fetched))
                     await send(.aiToggleChanged(isAIEnabled))
@@ -85,6 +90,7 @@ public struct SettingsFeature: Sendable {
                     let langCode = Locale.current.language.languageCode?.identifier ?? "zh"
                     let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
                     await send(.languageLoaded(displayName))
+                    await send(.accessoryBarToggleChanged(showAccessoryBar))
                 }
                 .cancellable(id: CancelID.task)
 
@@ -192,6 +198,11 @@ public struct SettingsFeature: Sendable {
 
             case .exportSheetDismissed:
                 state.exportedFileURL = nil
+                return .none
+
+            case let .accessoryBarToggleChanged(value):
+                state.showAccessoryBar = value
+                userSettingsClient.setBool(value, .showAccessoryBar)
                 return .none
 
             case .privacyPolicyTapped:

@@ -73,6 +73,10 @@ struct SettingsFeatureTests {
                 forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
             )?.localizedCapitalized ?? "zh"
         }
+
+        await store.receive(\.accessoryBarToggleChanged) {
+            $0.showAccessoryBar = false
+        }
     }
 
     @Test(".task shows '無' when no active accounts")
@@ -104,6 +108,9 @@ struct SettingsFeatureTests {
                 forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
             )?.localizedCapitalized ?? "zh"
         }
+
+        // showAccessoryBar is already true (default), so no state mutation expected
+        await store.receive(\.accessoryBarToggleChanged)
     }
 
     // MARK: - AI Toggle
@@ -343,5 +350,56 @@ struct SettingsFeatureTests {
 
         #expect(openedURLs.value.count == 1)
         #expect(openedURLs.value.first?.absoluteString == "app-settings:")
+    }
+}
+
+@Suite("SettingsFeature — accessory bar toggle")
+struct SettingsAccessoryBarTests {
+
+    @Test("task loads showAccessoryBar=false from UserSettings")
+    func taskLoadsAccessoryBarFalse() async {
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.userSettingsClient.bool = { key in
+                key.rawValue == "showAccessoryBar" ? false : key.defaultValue
+            }
+            $0.userSettingsClient.string = { $0.defaultValue }
+            $0.accountClient.fetchActive = { [] }
+        }
+        await store.send(.task)
+        await store.receive(.accountsLoaded([])) {
+            $0.defaultAccountName = String(localized: "settings_none")
+        }
+        await store.receive(.aiToggleChanged(true))
+        await store.receive(.defaultAccountSelected(""))
+        await store.receive(\.languageLoaded) {
+            $0.currentLanguage = Locale.current.localizedString(
+                forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
+            )?.localizedCapitalized ?? "zh"
+        }
+        await store.receive(.accessoryBarToggleChanged(false)) {
+            $0.showAccessoryBar = false
+        }
+    }
+
+    @Test("accessoryBarToggleChanged persists and updates state")
+    func toggleChangedPersists() async {
+        let persisted: LockIsolated<Bool> = LockIsolated(true)
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.userSettingsClient.setBool = { value, key in
+                if key.rawValue == "showAccessoryBar" { persisted.setValue(value) }
+            }
+        }
+        await store.send(.accessoryBarToggleChanged(false)) {
+            $0.showAccessoryBar = false
+        }
+        #expect(persisted.value == false)
     }
 }

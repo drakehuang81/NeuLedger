@@ -27,24 +27,54 @@ struct MainTabView: View {
                 TransactionsView(store: store.scope(state: \.transactions, action: \.transactions))
             }
         }
-        .tabViewStyle(.sidebarAdaptable)
 #if os(iOS)
         .task {
             await store.send(.task).finish()
         }
-        .animation(.spring(), value: store.isAIInputExpanded)
+        .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
             CustomAccessoryView(store: store)
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
 #endif
     }
 }
 
 private struct CustomAccessoryView: View {
     let store: StoreOf<MainTabFeature>
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
     var body: some View {
+        switch placement {
+        case .inline:
+            // Tab bar 收起時嵌入 tab bar 中間：只顯示 icon
+            HStack(spacing: 20) {
+                Button {
+                    withAnimation(.spring()) {
+                        _ = store.send(.aiInputButtonTapped)
+                    }
+                } label: {
+                    Image(systemName: "wand.and.sparkles")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(store.aiUnavailable ? Color.Design.textTertiary : Color.primary)
+                }
+                .disabled(store.aiUnavailable)
+
+                Button {
+                    store.send(.contextActionTapped)
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                }
+            }
+        case .expanded:
+            expandedPlacementContent
+        default:
+            expandedPlacementContent
+        }
+    }
+
+    @ViewBuilder
+    private var expandedPlacementContent: some View {
         if store.isAIInputExpanded {
             // Expanded: natural language input bar
             VStack(spacing: 4) {

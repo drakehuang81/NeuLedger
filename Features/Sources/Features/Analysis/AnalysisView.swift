@@ -75,8 +75,7 @@ public struct AnalysisView: View {
                         )
                     }
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 80)
+                .padding(.all, 16)
             }
         }
     }
@@ -101,11 +100,8 @@ public struct AnalysisView: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                Color.Design.background
-                    .ignoresSafeArea()
-                scrollView
-            }
+            scrollView
+                .background(Color.Design.background.ignoresSafeArea())
             .navigationTitle(String(localized: "analysis_title"))
             .navigationBarTitleDisplayMode(.large)
             .task {

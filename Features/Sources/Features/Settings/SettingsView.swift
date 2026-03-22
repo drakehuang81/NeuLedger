@@ -42,30 +42,23 @@ public struct SettingsView: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                Color.Design.background
-                    .ignoresSafeArea()
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // MARK: Title
+            ScrollView {
+                VStack(spacing: 24) {
+                    // MARK: 管理
+                    sectionManage
 
-                        // MARK: 管理
-                        sectionManage
+                    // MARK: 偏好設定
+                    sectionPreferences
 
-                        // MARK: 偏好設定
-                        sectionPreferences
+                    // MARK: 資料
+                    sectionData
 
-                        // MARK: 資料
-                        sectionData
-
-                        // MARK: 關於
-                        sectionAbout
-                    }
-                    .padding(.top, 10)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
+                    // MARK: 關於
+                    sectionAbout
                 }
+                .padding(.all, 16)
             }
+            .background(Color.Design.background.ignoresSafeArea())
             .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.large)
             .task { await store.send(.task).finish() }

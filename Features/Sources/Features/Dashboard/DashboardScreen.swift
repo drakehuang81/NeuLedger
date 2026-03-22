@@ -17,36 +17,32 @@ public struct DashboardScreen: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                Color.Design.background
-                    .ignoresSafeArea()
-                ScrollView {
-                    VStack(spacing: 24) {
-                        balanceSection
+            ScrollView {
+                VStack(spacing: 24) {
 
-                        quickActionsSection
+                    balanceSection
 
-                        accountsSection
+                    quickActionsSection
 
-                        transactionsSection
+                    accountsSection
 
-                        insightSection
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 100) // Bottom padding for tab bar
+                    transactionsSection
+
+                    insightSection
+
+                    Color.clear.frame(height: 1000)
                 }
-                // Task 3.7: Pull-to-refresh
-                .refreshable {
-                    await store.send(.pulledToRefresh).finish()
-                }
+                .padding(.horizontal, 16)
+            }
+            .background(Color.Design.background.ignoresSafeArea())
+            .refreshable {
+                await store.send(.pulledToRefresh).finish()
             }
             .navigationTitle(String(localized: "dashboard_title"))
             .navigationBarTitleDisplayMode(.large)
             .task {
                 await store.send(.task).finish()
             }
-            // Task 3.8: Sheet for AddTransaction
             .sheet(
                 item: $store.scope(state: \.addTransaction, action: \.addTransaction)
             ) { addTransactionStore in
@@ -56,7 +52,7 @@ public struct DashboardScreen: View {
     }
 
     // MARK: - Balance Section (Task 3.2)
-
+    @ViewBuilder
     private var balanceSection: some View {
         GlassContainer(
             cornerRadius: 20,
@@ -80,6 +76,7 @@ public struct DashboardScreen: View {
 
     // MARK: - Quick Actions Section (Step 4A)
 
+    @ViewBuilder
     private var quickActionsSection: some View {
         GlassContainer(
             cornerRadius: 20,
@@ -134,31 +131,31 @@ public struct DashboardScreen: View {
 
     // MARK: - Insight Section (Task 3.4)
 
+    @ViewBuilder
     private var insightSection: some View {
-        Group {
-            if store.isLoadingInsight {
-                InsightCard(
-                    title: String(localized: "dashboard_ai_insight"),
-                    body: String(localized: "dashboard_ai_loading")
-                )
-                .redacted(reason: .placeholder)
-            } else if let insight = store.aiInsight {
-                InsightCard(
-                    title: String(localized: "dashboard_ai_insight"),
-                    body: insight
-                )
-            } else if store.hasTransactions {
-                InsightCard(
-                    title: String(localized: "dashboard_ai_insight"),
-                    body: String(localized: "dashboard_ai_unavailable")
-                )
-                .opacity(0.6)
-            }
+        if store.isLoadingInsight {
+            InsightCard(
+                title: String(localized: "dashboard_ai_insight"),
+                body: String(localized: "dashboard_ai_loading")
+            )
+            .redacted(reason: .placeholder)
+        } else if let insight = store.aiInsight {
+            InsightCard(
+                title: String(localized: "dashboard_ai_insight"),
+                body: insight
+            )
+        } else if store.hasTransactions {
+            InsightCard(
+                title: String(localized: "dashboard_ai_insight"),
+                body: String(localized: "dashboard_ai_unavailable")
+            )
+            .opacity(0.6)
         }
     }
 
     // MARK: - Accounts Section (Task 3.5)
 
+    @ViewBuilder
     private var accountsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("dashboard_my_wallets")
@@ -198,6 +195,7 @@ public struct DashboardScreen: View {
 
     // MARK: - Transactions Section (Task 3.6)
 
+    @ViewBuilder
     private var transactionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {

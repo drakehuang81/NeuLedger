@@ -42,6 +42,12 @@ public extension SettingsKey where Value == Bool {
         rawValue: "aiEnabled",
         defaultValue: true
     )
+
+    /// Whether the bottom accessory bar (AI record + quick add) is visible.
+    static let showAccessoryBar = SettingsKey(
+        rawValue: "showAccessoryBar",
+        defaultValue: true
+    )
 }
 
 // MARK: - String Keys

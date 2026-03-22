@@ -16,7 +16,7 @@ public struct ExtractedTransaction: Equatable, Sendable {
     public var suggestedCategory: String?
 
     /// A cleaned and formatted version of the transaction's description or note.
-    @Guide(description: "Short note in Traditional Chinese if possible. Nil if not provided.")
+    @Guide(description: "Short note summarising the transaction. Use the same language as the prompt. Nil if not provided.")
     public var description: String?
 
     /// The interpreted textual nature of the transaction.

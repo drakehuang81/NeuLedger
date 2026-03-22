@@ -103,6 +103,48 @@
         }
       }
     },
+    "accessory_ai_record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "AI Record" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "AI 記帳" } }
+      }
+    },
+    "accessory_add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增" } }
+      }
+    },
+    "accessory_ai_processing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "AI is analyzing…" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "AI 正在分析你的交易…" } }
+      }
+    },
+    "accessory_mode_record_short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Rec" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記" } }
+      }
+    },
+    "accessory_mode_ask_short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ask" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "問" } }
+      }
+    },
+    "accessory_expand": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Expand" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "展開" } }
+      }
+    },
     "analysis_empty_desc": {
       "extractionState": "manual",
       "localizations": {

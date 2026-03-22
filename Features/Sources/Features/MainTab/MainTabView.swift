@@ -10,6 +10,17 @@ struct MainTabView: View {
     }
 
     var body: some View {
+        if store.showAccessoryBar {
+            tabViewBase
+                .tabViewBottomAccessory {
+                    CustomAccessoryView(store: store)
+                }
+        } else {
+            tabViewBase
+        }
+    }
+
+    private var tabViewBase: some View {
         TabView(selection: Binding(
             get: { store.selectedTab },
             set: { store.send(.tabSelected($0)) }
@@ -27,15 +38,10 @@ struct MainTabView: View {
                 TransactionsView(store: store.scope(state: \.transactions, action: \.transactions))
             }
         }
-#if os(iOS)
         .task {
             await store.send(.task).finish()
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory {
-            CustomAccessoryView(store: store)
-        }
-#endif
     }
 }
 
@@ -46,7 +52,6 @@ private struct CustomAccessoryView: View {
     var body: some View {
         switch placement {
         case .inline:
-            // Tab bar 收起時嵌入 tab bar 中間：只顯示 icon
             HStack(spacing: 20) {
                 Button {
                     withAnimation(.spring()) {
@@ -66,184 +71,241 @@ private struct CustomAccessoryView: View {
                         .symbolRenderingMode(.hierarchical)
                 }
             }
-        case .expanded:
-            expandedPlacementContent
-        default:
-            expandedPlacementContent
+        case .expanded, _:
+            if store.isAIInputExpanded {
+                expandedAIInputContent
+            } else if store.isAIInputLoading {
+                processingPillContent
+            } else if let answer = store.aiAnswer {
+                resultPillContent(answer)
+            } else {
+                compactPillContent
+            }
         }
     }
 
+    // MARK: - ① Compact normal
+
+    private var compactPillContent: some View {
+        HStack(spacing: 0) {
+            Button {
+                withAnimation(.spring()) {
+                    _ = store.send(.aiInputButtonTapped)
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "wand.and.sparkles")
+                        .symbolRenderingMode(.hierarchical)
+                    Text(String(localized: "accessory_ai_record"))
+                        .font(Font.Design.callout)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .disabled(store.aiUnavailable)
+            .foregroundStyle(store.aiUnavailable ? Color.Design.textTertiary : Color.primary)
+
+            Divider().frame(height: 20)
+
+            Button {
+                store.send(.contextActionTapped)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                    Text(String(localized: "accessory_add"))
+                        .font(Font.Design.callout)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .foregroundStyle(Color.accentColor)
+        }
+        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - ② Processing
+
+    private var processingPillContent: some View {
+        AccessoryShimmerPill(text: String(localized: "accessory_ai_processing"))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+    }
+
+    // MARK: - ③ Result
+
+    private func resultPillContent(_ answer: String) -> some View {
+        Button {
+            store.send(.resultPillTapped)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "wand.and.sparkles")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.accentColor)
+                Text(answer)
+                    .font(Font.Design.callout)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 3) {
+                    Text(String(localized: "accessory_expand"))
+                        .font(Font.Design.caption)
+                    Image(systemName: "chevron.up")
+                        .font(Font.Design.caption)
+                }
+                .foregroundStyle(Color.Design.textTertiary)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+        }
+        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - ④ Expanded AI input
+
     @ViewBuilder
-    private var expandedPlacementContent: some View {
-        if store.isAIInputExpanded {
-            // Expanded: natural language input bar
-            VStack(spacing: 4) {
-                // AI answer card — shown when aiAnswer is available
-                if let answer = store.aiAnswer {
-                    GlassContainer(cornerRadius: 16, padding: 0) {
-                        ScrollView {
-                            Text(answer)
-                                .font(Font.Design.body)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(12)
-                        }
-                        .frame(maxHeight: 160)
+    private var expandedAIInputContent: some View {
+        VStack(spacing: 4) {
+            // AI answer card — shown when aiAnswer is available
+            if let answer = store.aiAnswer {
+                GlassContainer(cornerRadius: 16, padding: 0) {
+                    ScrollView {
+                        Text(answer)
+                            .font(Font.Design.body)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
                     }
-                    .padding(.horizontal, 12)
+                    .frame(maxHeight: 160)
+                }
+                .padding(.horizontal, 12)
+            }
+
+            HStack(spacing: 8) {
+                // Mode badge — tap to toggle between record / ask
+                Button {
+                    store.send(.inputPurposeSwitched(
+                        store.inputPurpose == .record ? .ask : .record
+                    ))
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: store.inputPurpose == .record ? "pencil" : "bubble.left")
+                            .font(.caption)
+                        Text(store.inputPurpose == .record
+                            ? String(localized: "accessory_mode_record_short")
+                            : String(localized: "accessory_mode_ask_short"))
+                            .font(Font.Design.caption)
+                            .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.2), in: Capsule())
+                    .foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.plain)
+                .fixedSize()
+
+                TextField(
+                    store.inputPurpose == .record
+                        ? String(localized: "ai_record_placeholder")
+                        : String(localized: "ai_ask_placeholder"),
+                    text: Binding(
+                        get: { store.aiInputText },
+                        set: { store.send(.aiInputTextChanged($0)) }
+                    )
+                )
+                .textFieldStyle(.plain)
+                .submitLabel(.send)
+                .onSubmit {
+                    if store.inputPurpose == .record {
+                        store.send(.aiInputSubmitted)
+                    } else {
+                        store.send(.askSubmitted)
+                    }
                 }
 
-                HStack(spacing: 8) {
-                    // Mode toggle — record vs ask
-                    HStack(spacing: 2) {
-                        Button {
-                            store.send(.inputPurposeSwitched(.record))
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "pencil")
-                                    .font(.caption)
-                                Text(String(localized: "ai_mode_record"))
-                                    .font(Font.Design.caption)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                store.inputPurpose == .record
-                                    ? Color.accentColor.opacity(0.2)
-                                    : Color.clear,
-                                in: Capsule()
-                            )
-                            .foregroundStyle(
-                                store.inputPurpose == .record
-                                    ? Color.accentColor
-                                    : Color.Design.textTertiary
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            store.send(.inputPurposeSwitched(.ask))
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "bubble.left")
-                                    .font(.caption)
-                                Text(String(localized: "ai_mode_ask"))
-                                    .font(Font.Design.caption)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                store.inputPurpose == .ask
-                                    ? Color.accentColor.opacity(0.2)
-                                    : Color.clear,
-                                in: Capsule()
-                            )
-                            .foregroundStyle(
-                                store.inputPurpose == .ask
-                                    ? Color.accentColor
-                                    : Color.Design.textTertiary
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    TextField(
-                        store.inputPurpose == .record
-                            ? String(localized: "ai_record_placeholder")
-                            : String(localized: "ai_ask_placeholder"),
-                        text: Binding(
-                            get: { store.aiInputText },
-                            set: { store.send(.aiInputTextChanged($0)) }
-                        )
-                    )
-                    .textFieldStyle(.plain)
-                    .submitLabel(.send)
-                    .onSubmit {
+                if store.isAIInputLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(.trailing, 4)
+                } else {
+                    Button {
                         if store.inputPurpose == .record {
                             store.send(.aiInputSubmitted)
                         } else {
                             store.send(.askSubmitted)
                         }
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.title2)
+                            .symbolRenderingMode(.hierarchical)
                     }
+                    .disabled(store.aiInputText.isEmpty)
 
-                    if store.isAIInputLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                            .padding(.trailing, 4)
-                    } else {
-                        Button {
-                            if store.inputPurpose == .record {
-                                store.send(.aiInputSubmitted)
-                            } else {
-                                store.send(.askSubmitted)
-                            }
-                        } label: {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.title2)
-                                .symbolRenderingMode(.hierarchical)
-                        }
-                        .disabled(store.aiInputText.isEmpty)
-
-                        Button {
-                            store.send(.aiInputDismissed)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(Color.Design.textTertiary)
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
-
-                if let error = store.aiInputError {
-                    Text(error)
-                        .font(Font.Design.caption)
-                        .foregroundStyle(Color.Design.expenseRed)
-                        .padding(.horizontal, 16)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        } else {
-            // Compact: AI wand + original + button
-            HStack {
-                Spacer()
-                // AI wand button — disabled when Foundation Models is unavailable
-                if store.aiUnavailable {
-                    Button {} label: {
-                        Image(systemName: "wand.and.sparkles")
+                    Button {
+                        store.send(.aiInputDismissed)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
                             .font(.title2)
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(Color.Design.textTertiary)
                     }
-                    .disabled(true)
-                } else {
-                    Button {
-                        withAnimation(.spring()) {
-                            _ = store.send(.aiInputButtonTapped)
-                        }
-                    } label: {
-                        Image(systemName: "wand.and.sparkles")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
-                    }
                 }
-
-                // Original + button — behaviour unchanged
-                Button {
-                    store.send(.contextActionTapped)
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 8)
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+
+            if let error = store.aiInputError {
+                Text(error)
+                    .font(Font.Design.caption)
+                    .foregroundStyle(Color.Design.expenseRed)
+                    .padding(.horizontal, 16)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+}
+
+// MARK: - AccessoryShimmerPill
+
+private struct AccessoryShimmerPill: View {
+    let text: String
+    @State private var shimmerPhase: CGFloat = -1.0
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wand.and.sparkles")
+                .symbolRenderingMode(.hierarchical)
+            Text(text)
+                .font(Font.Design.callout)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .overlay(
+            GeometryReader { geo in
+                LinearGradient(
+                    colors: [.clear, Color.accentColor.opacity(0.3), .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: geo.size.width * 0.4)
+                .offset(x: shimmerPhase * geo.size.width)
+            }
+            .clipped()
+        )
+        .glassEffect(Glass.clear.tint(Color.Design.background), in: Capsule())
+        .disabled(true)
+        .onAppear {
+            withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+                shimmerPhase = 1.4
+            }
         }
     }
 }

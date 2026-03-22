@@ -364,17 +364,17 @@ struct SettingsAccessoryBarTests {
             SettingsFeature()
         } withDependencies: {
             $0.userSettingsClient.bool = { key in
-                key.rawValue == "showAccessoryBar" ? false : key.defaultValue
+                key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
             $0.userSettingsClient.string = { $0.defaultValue }
             $0.accountClient.fetchActive = { [] }
         }
         await store.send(.task)
-        await store.receive(.accountsLoaded([])) {
+        await store.receive(\.accountsLoaded) {
             $0.defaultAccountName = String(localized: "settings_none")
         }
-        await store.receive(.aiToggleChanged(true))
-        await store.receive(.defaultAccountSelected(""))
+        await store.receive(\.aiToggleChanged)
+        await store.receive(\.defaultAccountSelected)
         await store.receive(\.languageLoaded) {
             $0.currentLanguage = Locale.current.localizedString(
                 forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
@@ -394,7 +394,7 @@ struct SettingsAccessoryBarTests {
             SettingsFeature()
         } withDependencies: {
             $0.userSettingsClient.setBool = { value, key in
-                if key.rawValue == "showAccessoryBar" { persisted.setValue(value) }
+                if key.rawValue == SettingsKey.showAccessoryBar.rawValue { persisted.setValue(value) }
             }
         }
         await store.send(.accessoryBarToggleChanged(false)) {

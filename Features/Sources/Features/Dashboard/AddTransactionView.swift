@@ -129,7 +129,7 @@ public struct AddTransactionView: View {
                         .foregroundStyle(Color.Design.textTertiary)
                         .font(Font.Design.caption)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 70))], spacing: 12) {
+                    FlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                         ForEach(store.filteredCategories) { category in
                             Button {
                                 store.send(.categorySelected(category.id))

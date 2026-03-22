@@ -298,8 +298,11 @@ public struct DashboardFeature: Sendable {
             case .addTransaction(.presented(.delegate(.saved))),
                  .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
                 return .run { send in
-                    let transactions = try await transactionClient.fetchRecent()
-                    await send(.transactionsUpdated(transactions))
+                    async let transactions = transactionClient.fetchRecent()
+                    async let accounts = accountClient.fetchActive()
+                    let (t, a) = try await (transactions, accounts)
+                    await send(.transactionsUpdated(t))
+                    await send(.accountsUpdated(a))
                 }
 
             case .addTransaction:

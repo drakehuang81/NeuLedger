@@ -34,7 +34,12 @@ public struct AnalysisView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 16)
                     
-                    if !store.hasData {
+                    if store.isLoading {
+                        Spacer()
+                        ProgressView()
+                            .controlSize(.large)
+                        Spacer()
+                    } else if !store.hasData {
                         Spacer()
                         EmptyStateView(
                             icon: "chart.pie.fill",
@@ -57,9 +62,10 @@ public struct AnalysisView: View {
                                     }
                                 }
                                 
-                                if !store.dailyTrends.isEmpty {
-                                    TrendBarChartView(trends: store.dailyTrends)
-                                }
+                                TrendBarChartView(
+                                    trends: store.dailyTrends,
+                                    dateRange: AnalysisFeature.dateRange(for: store.selectedPeriod)
+                                )
                                 
                                 // 4.3 Stacking BudgetProgressView and AIInsightCardView
                                 if !store.budgetMetrics.isEmpty {

@@ -27,43 +27,33 @@ public struct AccountCard: View {
     }
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Header
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.Design.brandPrimary)
-                    .frame(width: 20, height: 20)
-                
-                Text(name)
-                    .font(Font.Design.caption) // 14pt approx
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+        GlassContainer(cornerRadius: 16, padding: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                // Header
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.Design.brandPrimary)
+                        .frame(width: 20, height: 20)
+
+                    Text(name)
+                        .font(Font.Design.caption)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                }
+
+                // Amount
+                Text(balance.twdFormatted)
+                    .font(Font.Design.title2.weight(.bold).monospacedDigit())
+                    .foregroundStyle(Color.Design.textPrimary)
+
+                // Type
+                Text(type)
+                    .font(Font.Design.caption)
+                    .foregroundStyle(Color.Design.textSecondary)
             }
-            
-            // Amount
-            Text(balance.twdFormatted)
-                .font(Font.Design.title2.weight(.bold).monospacedDigit())
-                .foregroundStyle(Color.Design.textPrimary)
-            
-            // Type
-            Text(type)
-                .font(Font.Design.caption)
-                .foregroundStyle(Color.Design.textSecondary)
+            .frame(width: 128, alignment: .leading) // 160 - 16*2 padding
         }
-        .padding(16)
-        .frame(width: 160, alignment: .leading) // Fixed width per design spec? Or flexible?
-        // Design says width: 160. But usually flexible is better.
-        // I'll keep frame(width: 160) for now as default, or remove it for flexibility.
-        // To be safe, I'll remove fixed width and let container decide, or use idealWidth.
-        // Actually, cards in horizontal scroll usually fixed width. I'll stick to flexible relative to parent or fixed frame modifier outside.
-        // But for this component, let's keep it flexible but min width.
-        .glassEffect(
-            Glass.clear
-                .interactive()
-                .tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
     }
 }
 

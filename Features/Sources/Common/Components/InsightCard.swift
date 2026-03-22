@@ -23,44 +23,39 @@ public struct InsightCard: View {
     }
     
     public var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 24))
-                .foregroundStyle(Color.yellow) // Sparkle color
-                .frame(width: 24, height: 24)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(Font.Design.headline)
-                    .foregroundStyle(Color.Design.textPrimary)
-                
-                Text(bodyText)
-                    .font(Font.Design.subheadline)
-                    .foregroundStyle(Color.Design.textSecondary)
-                    .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true) // Allow multiline growth
-            }
-            
-            Spacer()
-            
-            if let onClose {
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(Font.Design.caption)
+        GlassContainer(cornerRadius: 16, padding: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Color.yellow)
+                    .frame(width: 24, height: 24)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(Font.Design.headline)
+                        .foregroundStyle(Color.Design.textPrimary)
+
+                    Text(bodyText)
+                        .font(Font.Design.subheadline)
                         .foregroundStyle(Color.Design.textSecondary)
-                        .padding(8)
-                        .background(Color.Design.separator)
-                        .clipShape(Circle())
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                if let onClose {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(Font.Design.caption)
+                            .foregroundStyle(Color.Design.textSecondary)
+                            .padding(8)
+                            .background(Color.Design.separator)
+                            .clipShape(Circle())
+                    }
                 }
             }
         }
-        .padding(16)
-        .glassEffect(
-            Glass.clear
-                .interactive()
-                .tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
     }
 }
 

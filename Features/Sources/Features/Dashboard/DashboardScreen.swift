@@ -16,26 +16,29 @@ public struct DashboardScreen: View {
     }
 
     public var body: some View {
-        // Task 3.7: Wrap in ScrollView with .refreshable
-        ScrollView {
-            VStack(spacing: 24) {
-                balanceSection
+        ZStack {
+            Color.Design.background
+                .ignoresSafeArea()
+            ScrollView {
+                VStack(spacing: 24) {
+                    balanceSection
+                    
+                    quickActionsSection
+                    
+                    accountsSection
+                    
+                    transactionsSection
 
-                quickActionsSection
-
-                insightSection
-
-                accountsSection
-
-                transactionsSection
+                    insightSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 100) // Bottom padding for tab bar
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 100) // Bottom padding for tab bar
-        }
-        // Task 3.7: Pull-to-refresh
-        .refreshable {
-            await store.send(.pulledToRefresh).finish()
+            // Task 3.7: Pull-to-refresh
+            .refreshable {
+                await store.send(.pulledToRefresh).finish()
+            }
         }
         .task {
             await store.send(.task).finish()
@@ -51,38 +54,41 @@ public struct DashboardScreen: View {
     // MARK: - Balance Section (Task 3.2)
 
     private var balanceSection: some View {
-        VStack(spacing: 8) {
-            Text("dashboard_total_balance")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        GlassContainer(
+            cornerRadius: 20,
+            padding: EdgeInsets(top: 24, leading: 0, bottom: 24, trailing: 0)
+        ) {
+            VStack(spacing: 8) {
+                Text("dashboard_total_balance")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
-            Text(store.totalBalance.twdFormatted)
-                .font(.system(size: 36, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.primary)
-                .contentTransition(.numericText())
+                Text(store.totalBalance.twdFormatted)
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
+            }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .glassEffect(
-            Glass.clear
-                .interactive()
-                .tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
     }
 
 
     // MARK: - Quick Actions Section (Step 4A)
 
     private var quickActionsSection: some View {
-        GlassEffectContainer {
-            HStack(spacing: 12) {
+        GlassContainer(
+            cornerRadius: 20,
+            padding: EdgeInsets(top: 16, leading: 0, bottom: 16, trailing: 0)
+        ) {
+            HStack(spacing: 0) {
                 quickActionButton(
                     title: String(localized: "common_expense"),
                     icon: "minus.circle.fill",
                     color: Color.Design.expenseRed
                 ) { store.send(.quickActionExpenseTapped) }
+
+                Divider().frame(height: 40)
 
                 quickActionButton(
                     title: String(localized: "common_income"),
@@ -90,16 +96,16 @@ public struct DashboardScreen: View {
                     color: Color.Design.incomeGreen
                 ) { store.send(.quickActionIncomeTapped) }
 
+                Divider().frame(height: 40)
+
                 quickActionButton(
                     title: String(localized: "common_transfer"),
                     icon: "arrow.left.arrow.right",
-                    color: Color.Design.textSecondary
+                    color: Color.Design.brandSecondary
                 ) { store.send(.quickActionTransferTapped) }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal)
     }
 
     private func quickActionButton(
@@ -111,16 +117,14 @@ public struct DashboardScreen: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.system(size: 24))
                     .foregroundStyle(color)
                 Text(title)
-                    .font(Font.Design.caption)
+                    .font(Font.Design.caption.weight(.medium))
                     .foregroundStyle(Color.Design.textSecondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
         }
-        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
         .buttonStyle(.plain)
     }
 
@@ -129,42 +133,24 @@ public struct DashboardScreen: View {
     private var insightSection: some View {
         Group {
             if store.isLoadingInsight {
-                // Skeleton loader using redacted
-                insightCard(text: String(localized: "dashboard_ai_loading"))
-                    .redacted(reason: .placeholder)
+                InsightCard(
+                    title: String(localized: "dashboard_ai_insight"),
+                    body: String(localized: "dashboard_ai_loading")
+                )
+                .redacted(reason: .placeholder)
             } else if let insight = store.aiInsight {
-                insightCard(text: insight)
+                InsightCard(
+                    title: String(localized: "dashboard_ai_insight"),
+                    body: insight
+                )
             } else if store.hasTransactions {
-                // Fallback: no insight available but has data
-                insightCard(text: String(localized: "dashboard_ai_unavailable"))
-                    .opacity(0.6)
+                InsightCard(
+                    title: String(localized: "dashboard_ai_insight"),
+                    body: String(localized: "dashboard_ai_unavailable")
+                )
+                .opacity(0.6)
             }
-            // If no transactions at all, don't show the insight card
         }
-    }
-
-    private func insightCard(text: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(Color.Design.brandSecondary)
-                Text("dashboard_ai_insight")
-                    .font(.headline)
-            }
-
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(4)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .glassEffect(
-            Glass.clear
-                .interactive()
-                .tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
     }
 
     // MARK: - Accounts Section (Task 3.5)

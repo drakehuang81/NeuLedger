@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Navigation
+
+Swift LSP is installed and available via the `LSP` tool. **Always prefer LSP over Grep/Glob for Swift code navigation:**
+
+- Find definitions → `LSP` (hover, go-to-definition) instead of `Grep`
+- Find references → `LSP` (find references) instead of `Grep`
+- Check type info / signatures → `LSP` (hover) instead of reading whole files
+- Rename symbols → `LSP` (rename) instead of manual search-and-replace
+
+Only fall back to `Grep`/`Glob` when LSP cannot help (e.g., searching comments, file-level patterns, or non-Swift files).
+
 ## Build & Test
 
 All code lives in the local SPM package at `Features/`. The app target (`NeuLedger.xcodeproj`) simply imports it.

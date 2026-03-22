@@ -13,13 +13,17 @@ public struct TransactionsView: View {
     public var body: some View {
         NavigationStack {
             Group {
-                if store.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if store.transactions.isEmpty {
-                    emptyState
-                } else {
-                    transactionsList
+                ZStack {
+                    Color.Design.background
+                        .ignoresSafeArea()
+                    if store.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if store.transactions.isEmpty {
+                        emptyState
+                    } else {
+                        transactionsList
+                    }
                 }
             }
             .navigationTitle(String(localized: "transactions_title"))

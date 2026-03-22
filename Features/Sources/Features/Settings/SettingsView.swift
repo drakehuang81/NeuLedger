@@ -42,29 +42,33 @@ public struct SettingsView: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // MARK: Title
-                    Text("settings_title")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            ZStack {
+                Color.Design.background
+                    .ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // MARK: Title
+                        Text("settings_title")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // MARK: 管理
-                    sectionManage
+                        // MARK: 管理
+                        sectionManage
 
-                    // MARK: 偏好設定
-                    sectionPreferences
+                        // MARK: 偏好設定
+                        sectionPreferences
 
-                    // MARK: 資料
-                    sectionData
+                        // MARK: 資料
+                        sectionData
 
-                    // MARK: 關於
-                    sectionAbout
+                        // MARK: 關於
+                        sectionAbout
+                    }
+                    .padding(.top, 60)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
                 }
-                .padding(.top, 60)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 100)
             }
             .task { await store.send(.task).finish() }
             .navigationDestination(for: SettingsRoute.self) { route in
@@ -111,39 +115,42 @@ public struct SettingsView: View {
     private var sectionManage: some View {
         VStack(spacing: 6) {
             sectionHeader(String(localized: "settings_manage"))
-            glassCard {
-                NavigationLink(value: SettingsRoute.accountManagement) {
-                    settingsRow(
-                        icon: "wallet.bifold",
-                        iconColor: Color.Design.brandPrimary,
-                        label: String(localized: "settings_account_management"),
-                        trailing: chevron
-                    )
+            GlassContainer(cornerRadius: 16, padding: 0) {
+                VStack(spacing: 0) {
+                    NavigationLink(value: SettingsRoute.accountManagement) {
+                        settingsRow(
+                            icon: "wallet.bifold",
+                            iconColor: Color.Design.brandPrimary,
+                            label: String(localized: "settings_account_management"),
+                            trailing: chevron
+                        )
+                    }
+                    NavigationLink(value: SettingsRoute.categoryManagement) {
+                        settingsRow(
+                            icon: "square.grid.2x2",
+                            iconColor: Color.Design.brandSecondary,
+                            label: String(localized: "settings_category_management"),
+                            trailing: chevron
+                        )
+                    }
+                    NavigationLink(value: SettingsRoute.budgetManagement) {
+                        settingsRow(
+                            icon: "banknote",
+                            iconColor: Color.Design.incomeGreen,
+                            label: String(localized: "settings_budget_management"),
+                            trailing: chevron
+                        )
+                    }
+                    NavigationLink(value: SettingsRoute.tagManagement) {
+                        settingsRow(
+                            icon: "tag",
+                            iconColor: Color.Design.brandAccent,
+                            label: String(localized: "settings_tag_management"),
+                            trailing: chevron
+                        )
+                    }
                 }
-                NavigationLink(value: SettingsRoute.categoryManagement) {
-                    settingsRow(
-                        icon: "square.grid.2x2",
-                        iconColor: Color.Design.brandSecondary,
-                        label: String(localized: "settings_category_management"),
-                        trailing: chevron
-                    )
-                }
-                NavigationLink(value: SettingsRoute.budgetManagement) {
-                    settingsRow(
-                        icon: "banknote",
-                        iconColor: Color.Design.incomeGreen,
-                        label: String(localized: "settings_budget_management"),
-                        trailing: chevron
-                    )
-                }
-                NavigationLink(value: SettingsRoute.tagManagement) {
-                    settingsRow(
-                        icon: "tag",
-                        iconColor: Color.Design.brandAccent,
-                        label: String(localized: "settings_tag_management"),
-                        trailing: chevron
-                    )
-                }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -153,41 +160,44 @@ public struct SettingsView: View {
     private var sectionPreferences: some View {
         VStack(spacing: 6) {
             sectionHeader(String(localized: "settings_preferences"))
-            glassCard {
-                Picker(selection: Binding(
-                    get: { store.selectedDefaultAccountId },
-                    set: { store.send(.defaultAccountSelected($0)) }
-                ), label: settingsRow(
-                    icon: "creditcard",
-                    iconColor: Color.Design.textSecondary,
-                    label: String(localized: "settings_default_account"),
-                    trailing: EmptyView()
-                )) {
-                    ForEach(store.accounts) { account in
-                        Text(account.name).tag(account.id.uuidString)
-                    }
-                }
-                Button { store.send(.languageTapped) } label: {
-                    settingsRow(
-                        icon: "globe",
+            GlassContainer(cornerRadius: 16, padding: 0) {
+                VStack(spacing: 0) {
+                    Picker(selection: Binding(
+                        get: { store.selectedDefaultAccountId },
+                        set: { store.send(.defaultAccountSelected($0)) }
+                    ), label: settingsRow(
+                        icon: "creditcard",
                         iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_language"),
-                        trailing: HStack(spacing: 4) {
-                            Text(store.currentLanguage)
-                                .font(.body)
-                                .foregroundStyle(Color.Design.textSecondary)
-                            chevron
+                        label: String(localized: "settings_default_account"),
+                        trailing: EmptyView()
+                    )) {
+                        ForEach(store.accounts) { account in
+                            Text(account.name).tag(account.id.uuidString)
                         }
+                    }
+                    Button { store.send(.languageTapped) } label: {
+                        settingsRow(
+                            icon: "globe",
+                            iconColor: Color.Design.textSecondary,
+                            label: String(localized: "settings_language"),
+                            trailing: HStack(spacing: 4) {
+                                Text(store.currentLanguage)
+                                    .font(.body)
+                                    .foregroundStyle(Color.Design.textSecondary)
+                                chevron
+                            }
+                        )
+                    }
+                    settingsRow(
+                        icon: "sparkles",
+                        iconColor: Color.Design.brandPrimary,
+                        label: String(localized: "settings_ai_features"),
+                        trailing: Toggle("", isOn: $store.isAIEnabled.sending(\.aiToggleChanged))
+                            .labelsHidden()
+                            .tint(Color.Design.incomeGreen)
                     )
                 }
-                settingsRow(
-                    icon: "sparkles",
-                    iconColor: Color.Design.brandPrimary,
-                    label: String(localized: "settings_ai_features"),
-                    trailing: Toggle("", isOn: $store.isAIEnabled.sending(\.aiToggleChanged))
-                        .labelsHidden()
-                        .tint(Color.Design.incomeGreen)
-                )
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -197,7 +207,7 @@ public struct SettingsView: View {
     private var sectionData: some View {
         VStack(spacing: 6) {
             sectionHeader(String(localized: "settings_data"))
-            glassCard {
+            GlassContainer(cornerRadius: 16, padding: 0) {
                 VStack(spacing: 0) {
                     Button { store.send(.exportCSVTapped) } label: {
                         settingsRow(
@@ -228,6 +238,7 @@ public struct SettingsView: View {
                             .padding(.bottom, 10)
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -237,23 +248,26 @@ public struct SettingsView: View {
     private var sectionAbout: some View {
         VStack(spacing: 6) {
             sectionHeader(String(localized: "settings_about"))
-            glassCard {
-                settingsRow(
-                    icon: "info.circle",
-                    iconColor: Color.Design.textSecondary,
-                    label: String(localized: "settings_version"),
-                    trailing: Text(appVersion)
-                        .font(.body)
-                        .foregroundStyle(Color.Design.textTertiary)
-                )
-                Button { store.send(.privacyPolicyTapped) } label: {
+            GlassContainer(cornerRadius: 16, padding: 0) {
+                VStack(spacing: 0) {
                     settingsRow(
-                        icon: "doc.text",
+                        icon: "info.circle",
                         iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_privacy"),
-                        trailing: chevron
+                        label: String(localized: "settings_version"),
+                        trailing: Text(appVersion)
+                            .font(.body)
+                            .foregroundStyle(Color.Design.textTertiary)
                     )
+                    Button { store.send(.privacyPolicyTapped) } label: {
+                        settingsRow(
+                            icon: "doc.text",
+                            iconColor: Color.Design.textSecondary,
+                            label: String(localized: "settings_privacy"),
+                            trailing: chevron
+                        )
+                    }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -266,20 +280,6 @@ public struct SettingsView: View {
             .fontWeight(.semibold)
             .foregroundStyle(Color.Design.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private func glassCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: 0) {
-            content()
-        }
-        .frame(maxWidth: .infinity)
-        .glassEffect(
-            Glass.clear
-                .interactive()
-                .tint(Color.Design.background),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
     }
 
     private func settingsRow<Trailing: View>(

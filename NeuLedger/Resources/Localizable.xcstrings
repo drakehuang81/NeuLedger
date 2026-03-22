@@ -290,6 +290,23 @@
         }
       }
     },
+    "analysis_ai_insight_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Insight"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 洞察"
+          }
+        }
+      }
+    },
     "analysis_trend_bar_chart_title": {
       "extractionState": "manual",
       "localizations": {

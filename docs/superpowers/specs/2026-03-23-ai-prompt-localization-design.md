@@ -44,17 +44,21 @@ Use the project's existing `Localizable.xcstrings` (located at `NeuLedger/Resour
 - `Locale.current` reflects the iOS language setting automatically; no additional logic required
 - Language switching requires an app restart (iOS system behavior), so `InsightCache` cache invalidation is handled naturally
 
-### Critical constraint: string literals only
+### Localization pattern across all SPM targets
 
-`String(localized:bundle:)` requires the key to be a **string literal** at the call site. If the key is stored in a variable, the `bundle:` parameter is silently ignored and the lookup falls back to `Bundle.module` (the Core SPM bundle, which has no strings), causing the key itself to be returned at runtime with no error. Always write the key inline:
+All strings in this project (including those called from `Core`, `Features`, or any other SPM target) live in `NeuLedger/Resources/Localizable.xcstrings` — the app bundle. At runtime, `String(localized:)` defaults to `Bundle.main`, which is always the app bundle regardless of which SPM target makes the call. This is confirmed by the existing `Features` target code, which calls `String(localized: "common_cancel")` etc. without specifying `bundle:` and resolves correctly.
+
+The new prompt keys follow the same pattern. Specifying `bundle: .main` explicitly is optional but makes the intent clear in `AIServiceClient+Live.swift` where the bundle dependency is less obvious.
+
+**Critical constraint: string literal keys only.** The `bundle:` parameter on `String(localized:bundle:)` only takes effect when the key is a string literal. If the key is a variable, the compiler resolves the bundle differently and may silently fall back to `Bundle.module` (the SPM target's own bundle, which has no strings). Always inline the key:
 
 ```swift
 // CORRECT
 String(localized: "ai_prompt_extract_transaction", bundle: .main)
 
-// WRONG — bundle parameter silently ignored
+// WRONG — bundle parameter may be silently ignored when key is a variable
 let key = "ai_prompt_extract_transaction"
-String(localized: key, bundle: .main)  // falls back to Bundle.module
+String(localized: key, bundle: .main)
 ```
 
 ---
@@ -63,7 +67,7 @@ String(localized: key, bundle: .main)  // falls back to Bundle.module
 
 | File | Change |
 |------|--------|
-| `NeuLedger/Resources/Localizable.xcstrings` | Add 6 new keys with `en` + `zh-Hant` variants |
+| `NeuLedger/Resources/Localizable.xcstrings` | Add 7 new keys with `en` + `zh-Hant` variants |
 | `Features/Sources/Core/Clients/AIServiceClient+Live.swift` | Replace hardcoded prompts with `String(localized:bundle:)` + `String(format:)` |
 | `Features/Sources/Domain/Entities/ExtractedTransaction.swift` | Update `@Guide` on `description` field to language-neutral instruction |
 
@@ -71,7 +75,7 @@ String(localized: key, bundle: .main)  // falls back to Bundle.module
 
 ## xcstrings Changes
 
-Six new keys to add to `Localizable.xcstrings`:
+Seven new keys to add to `Localizable.xcstrings`:
 
 ### `ai_prompt_extract_transaction`
 
@@ -89,10 +93,10 @@ Template receives two `%@` arguments: transaction description, category list.
 
 ### `ai_prompt_generate_insight`
 
-Template receives four `%@` arguments: period description, total income, total expense, category breakdown.
+Template receives three `%@` arguments: period description, total income, total expense. Category breakdown is appended conditionally (see `generateInsight` code change below) — omitted entirely when empty rather than leaving a dangling label.
 
-- **en:** `"Write a brief spending insight in 2-3 sentences.\nPeriod: %@\nTotal income: NT$%@\nTotal expense: NT$%@\nCategory breakdown: %@"`
-- **zh-Hant:** `"請用繁體中文撰寫一段簡短的消費分析洞察（2-3句話）。\n時間範圍：%@\n總收入：NT$%@\n總支出：NT$%@\n各分類支出：%@"`
+- **en:** `"Write a brief spending insight in 2-3 sentences.\nPeriod: %@\nTotal income: NT$%@\nTotal expense: NT$%@"`
+- **zh-Hant:** `"請用繁體中文撰寫一段簡短的消費分析洞察（2-3句話）。\n時間範圍：%@\n總收入：NT$%@\n總支出：NT$%@"`
 
 ### `ai_tool_no_transactions`
 
@@ -107,6 +111,13 @@ Placeholder shown in transaction list when `note` is `nil`.
 
 - **en:** `"(no note)"`
 - **zh-Hant:** `"（無備註）"`
+
+### `ai_prompt_category_breakdown`
+
+Optional category line appended to `ai_prompt_generate_insight` when `categoryBreakdown` is non-empty. Template receives one `%@` argument: the formatted category list. Kept as a separate key so the base template stays at three `%@` arguments (avoiding a dangling label when breakdown is empty).
+
+- **en:** `"Category breakdown: %@"`
+- **zh-Hant:** `"各分類支出：%@"`
 
 ### `dashboard_period_recent`
 
@@ -128,15 +139,15 @@ let prompt = String(format: template, arg1, arg2)
 
 ### Locale-aware list separator helper
 
-Two prompts need locale-sensitive list separators. Use a helper to avoid duplication:
+Two prompts need locale-sensitive list separators. Declare as a `private static func` on the `extension AIServiceClient` block (it is called from `static let liveValue` closures, so an instance method would not compile):
 
 ```swift
-private func listSeparator() -> String {
+private static func listSeparator() -> String {
     Locale.current.language.languageCode?.identifier.hasPrefix("zh") == true ? "、" : ", "
 }
 ```
 
-The `hasPrefix("zh")` check covers `zh` (generic Chinese), `zh-Hant`, and `zh-Hans`. This is intentionally broad — if Simplified Chinese is added in future, separator behaviour is already correct.
+The `hasPrefix("zh")` check covers `zh` (generic Chinese), `zh-Hant`, and `zh-Hans`. This is intentionally broad — if Simplified Chinese is added in future, separator behaviour is already correct. The optional chain `?.identifier` defaults to `", "` (English form) if `languageCode` is `nil`, which is the safe fallback.
 
 ### `extractTransaction`
 
@@ -154,7 +165,7 @@ extractTransaction: { input in
 ```swift
 suggestCategories: { description, existingCategories in
     let session = LanguageModelSession()
-    let categoryList = existingCategories.joined(separator: listSeparator())
+    let categoryList = existingCategories.joined(separator: AIServiceClient.listSeparator())
     let template = String(localized: "ai_prompt_suggest_categories", bundle: .main)
     let prompt = String(format: template, description, categoryList)
     return try await session.respond(to: prompt, generating: CategorySuggestions.self).content
@@ -163,19 +174,26 @@ suggestCategories: { description, existingCategories in
 
 ### `generateInsight`
 
+Category breakdown is appended as a separate line only when non-empty. `DashboardFeature` passes an empty `categoryBreakdown` (it builds a lightweight summary from recent totals only); `AnalysisFeature` passes the full breakdown. Both call sites are handled correctly by the conditional append.
+
 ```swift
 generateInsight: { summary in
     if let cached = await AIServiceClient.insightCache.get(for: summary) { return cached }
     let session = LanguageModelSession()
-    let categoryText = summary.categoryBreakdown
-        .map { "\($0.key): NT$\($0.value)" }
-        .joined(separator: listSeparator())
     let template = String(localized: "ai_prompt_generate_insight", bundle: .main)
-    let prompt = String(format: template,
+    var prompt = String(format: template,
         summary.periodDescription,
         "\(summary.totalIncome)",
-        "\(summary.totalExpense)",
-        categoryText)
+        "\(summary.totalExpense)")
+    if !summary.categoryBreakdown.isEmpty {
+        let categoryText = summary.categoryBreakdown
+            .map { "\($0.key): NT$\($0.value)" }
+            .joined(separator: AIServiceClient.listSeparator())
+        let categoryLine = String(
+            format: String(localized: "ai_prompt_category_breakdown", bundle: .main),
+            categoryText)
+        prompt += "\n" + categoryLine
+    }
     let result = try await session.respond(to: prompt).content
     await AIServiceClient.insightCache.set(result, for: summary)
     return result

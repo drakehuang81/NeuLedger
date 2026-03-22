@@ -9,14 +9,22 @@ struct MainTabView: View {
         self.store = store
     }
 
+    @ViewBuilder
     var body: some View {
-        if store.showAccessoryBar {
+        if #available(iOS 26.1, *) {
             tabViewBase
-                .tabViewBottomAccessory {
+                .tabViewBottomAccessory(isEnabled: store.showAccessoryBar) {
                     CustomAccessoryView(store: store)
                 }
         } else {
-            tabViewBase
+            if store.showAccessoryBar {
+                tabViewBase
+                    .tabViewBottomAccessory {
+                        CustomAccessoryView(store: store)
+                    }
+            } else {
+                tabViewBase
+            }
         }
     }
 
@@ -99,7 +107,7 @@ private struct CustomAccessoryView: View {
                     Text(String(localized: "accessory_ai_record"))
                         .font(Font.Design.callout)
                 }
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
             .disabled(store.aiUnavailable)
@@ -116,13 +124,13 @@ private struct CustomAccessoryView: View {
                     Text(String(localized: "accessory_add"))
                         .font(Font.Design.callout)
                 }
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
             .foregroundStyle(Color.accentColor)
         }
-        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
-        .padding(.horizontal, 16)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
         .padding(.vertical, 8)
     }
 
@@ -160,7 +168,8 @@ private struct CustomAccessoryView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
         }
-        .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }
@@ -257,7 +266,7 @@ private struct CustomAccessoryView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .glassEffect(Glass.clear.interactive().tint(Color.Design.background), in: Capsule())
+            .glassEffect(Glass.clear.interactive().tint(Color.Design.surface), in: Capsule())
 
             if let error = store.aiInputError {
                 Text(error)
@@ -300,7 +309,7 @@ private struct AccessoryShimmerPill: View {
             }
             .clipped()
         )
-        .glassEffect(Glass.clear.tint(Color.Design.background), in: Capsule())
+        .glassEffect(Glass.clear.tint(Color.Design.surface), in: Capsule())
         .disabled(true)
         .onAppear {
             withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {

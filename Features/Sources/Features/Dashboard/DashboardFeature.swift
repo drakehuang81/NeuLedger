@@ -215,6 +215,7 @@ public struct DashboardFeature: Sendable {
 
             // Task 2.3: Fetch AI insight with caching and graceful fallback
             case .fetchAIInsight:
+                guard aiServiceClient.isAvailable() else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
                     // Build a spending summary from recent transactions

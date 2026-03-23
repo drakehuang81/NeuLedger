@@ -228,7 +228,7 @@ public struct DashboardFeature: Sendable {
                     let summary = SpendingSummary(
                         totalIncome: totalIncome,
                         totalExpense: totalExpense,
-                        periodDescription: "Recent"
+                        periodDescription: String(localized: "dashboard_period_recent", bundle: .main)
                     )
 
                     let insight = try await aiServiceClient.generateInsight(summary)

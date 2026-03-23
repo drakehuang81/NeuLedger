@@ -116,7 +116,7 @@ public struct TransactionsView: View {
     private var transactionsList: some View {
         ScrollView {
             if store.searchText.isEmpty {
-                LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                LazyVStack  {
                     ForEach(groupedTransactions, id: \.date) { group in
                         Section {
                             ForEach(group.transactions) { transaction in
@@ -174,6 +174,7 @@ public struct TransactionsView: View {
                 .foregroundStyle(Color.Design.textSecondary)
             Spacer()
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
         .padding(.vertical, 6)
         .background(Color.Design.background)
@@ -188,7 +189,7 @@ public struct TransactionsView: View {
         }
         return grouped
             .sorted { $0.key > $1.key }
-            .map { (date: $0.key, transactions: $0.value) }
+            .map { (date: $0.key, transactions: $0.value.sorted { $0.date > $1.date }) }
     }
 
     private func sectionTitle(for date: Date) -> String {

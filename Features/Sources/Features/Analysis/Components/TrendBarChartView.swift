@@ -24,19 +24,27 @@ struct TrendBarChartView: View {
                     Chart(trends) { item in
                         BarMark(
                             x: .value(String(localized: "add_transaction_date"), item.date, unit: .day),
-                            y: .value(String(localized: "budget_form_amount"), (item.amount as NSDecimalNumber).doubleValue)
+                            y: .value(String(localized: "budget_form_amount"), (item.amount as NSDecimalNumber).doubleValue),
+                            width: .ratio(0.6)
                         )
                         .foregroundStyle(Color.Design.brandPrimary.gradient)
                         .cornerRadius(4)
                     }
                     .frame(height: 180)
                     .chartXScale(domain: dateRange.lowerBound...dateRange.upperBound)
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { _ in
+                            AxisGridLine()
+                            AxisValueLabel()
+                        }
+                    }
                     .chartXAxis {
                         AxisMarks(values: .stride(by: .day, count: xAxisStride)) { value in
                             AxisGridLine()
                             if let date = value.as(Date.self) {
                                 AxisValueLabel {
-                                    Text(date, format: .dateTime.day())
+                                    Text("\(Calendar.current.component(.day, from: date))")
+                                        .font(.caption2)
                                 }
                             }
                         }

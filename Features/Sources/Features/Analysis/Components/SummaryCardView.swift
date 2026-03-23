@@ -13,9 +13,9 @@ struct SummaryCardView: View {
                     Text("analysis_summary_income")
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
-                    Text(summary.totalIncome.formattedCurrency)
+                    Text(summary.totalIncome.twdFormatted)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.6)
                         .font(Font.Design.amount)
                         .foregroundStyle(Color.Design.incomeGreen)
                 }
@@ -29,9 +29,9 @@ struct SummaryCardView: View {
                     Text("analysis_summary_expense")
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
-                    Text(summary.totalExpense.formattedCurrency)
+                    Text(summary.totalExpense.twdFormatted)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.6)
                         .font(Font.Design.amount)
                         .foregroundStyle(Color.Design.textPrimary)
                 }
@@ -45,23 +45,14 @@ struct SummaryCardView: View {
                     Text("analysis_summary_net_balance")
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.textSecondary)
-                    Text(summary.netBalance.formattedCurrency)
+                    Text(summary.netBalance.twdFormatted)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.6)
                         .font(Font.Design.amount)
                         .foregroundStyle(summary.netBalance >= 0 ? Color.Design.incomeGreen : Color.Design.expenseRed)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
-    }
-}
-
-private extension Decimal {
-    var formattedCurrency: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: self as NSDecimalNumber) ?? "$0"
     }
 }

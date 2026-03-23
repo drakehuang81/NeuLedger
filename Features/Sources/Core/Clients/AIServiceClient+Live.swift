@@ -125,7 +125,7 @@ extension AIServiceClient: DependencyKey {
 
         // MARK: - answerFinancialQuestion
         // Uses Foundation Models Tool Calling: the model decides when to invoke QueryTransactionsTool
-        // to fetch real transaction data, then synthesises a natural language answer in Traditional Chinese.
+        // to fetch real transaction data, then synthesises a natural language answer in the language of the question.
         answerFinancialQuestion: { question in
             @Dependency(\.transactionClient) var transactionClient
             @Dependency(\.categoryClient) var categoryClient

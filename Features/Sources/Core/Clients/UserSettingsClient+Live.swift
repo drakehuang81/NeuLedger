@@ -20,6 +20,15 @@ extension UserSettingsClient: DependencyKey {
             },
             setString: { value, key in
                 UserDefaults.standard.set(value, forKey: key.rawValue)
+            },
+            int: { key in
+                if UserDefaults.standard.object(forKey: key.rawValue) != nil {
+                    return UserDefaults.standard.integer(forKey: key.rawValue)
+                }
+                return key.defaultValue
+            },
+            setInt: { value, key in
+                UserDefaults.standard.set(value, forKey: key.rawValue)
             }
         )
     }

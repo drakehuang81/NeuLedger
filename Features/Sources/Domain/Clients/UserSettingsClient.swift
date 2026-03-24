@@ -48,6 +48,11 @@ public extension SettingsKey where Value == Bool {
         rawValue: "showAccessoryBar",
         defaultValue: true
     )
+
+    /// Whether the daily recording reminder notification is enabled.
+    static let dailyReminderEnabled = SettingsKey(rawValue: "dailyReminderEnabled", defaultValue: false)
+    /// Whether budget overspend warning notifications are enabled.
+    static let budgetWarningEnabled = SettingsKey(rawValue: "budgetWarningEnabled", defaultValue: false)
 }
 
 // MARK: - String Keys
@@ -58,6 +63,17 @@ public extension SettingsKey where Value == String {
         rawValue: "defaultAccountId",
         defaultValue: ""
     )
+}
+
+// MARK: - Int Keys
+
+public extension SettingsKey where Value == Int {
+    /// Hour (0–23) for the daily recording reminder. Default: 21 (9 PM).
+    static let dailyReminderHour = SettingsKey(rawValue: "dailyReminderHour", defaultValue: 21)
+    /// Minute (0–59) for the daily recording reminder. Default: 0.
+    static let dailyReminderMinute = SettingsKey(rawValue: "dailyReminderMinute", defaultValue: 0)
+    /// Budget warning threshold as an integer percentage (50–90). Default: 80.
+    static let budgetWarningThreshold = SettingsKey(rawValue: "budgetWarningThreshold", defaultValue: 80)
 }
 
 // MARK: - UserSettingsClient
@@ -85,6 +101,12 @@ public struct UserSettingsClient: Sendable {
 
     /// Writes a String value for the given key.
     public var setString: @Sendable (_ value: String, _ key: SettingsKey<String>) -> Void
+
+    /// Reads an Int value for the given key, returning `defaultValue` if unset.
+    public var int: @Sendable (_ key: SettingsKey<Int>) -> Int = { $0.defaultValue }
+
+    /// Writes an Int value for the given key.
+    public var setInt: @Sendable (_ value: Int, _ key: SettingsKey<Int>) -> Void
 }
 
 // MARK: - TestDependencyKey
@@ -94,7 +116,9 @@ extension UserSettingsClient: TestDependencyKey {
         bool: { $0.defaultValue },
         setBool: { _, _ in },
         string: { $0.defaultValue },
-        setString: { _, _ in }
+        setString: { _, _ in },
+        int: { $0.defaultValue },
+        setInt: { _, _ in }
     )
 }
 

@@ -49,10 +49,18 @@ public extension SettingsKey where Value == Bool {
         defaultValue: true
     )
 
+
     /// Whether the daily recording reminder notification is enabled.
-    static let dailyReminderEnabled = SettingsKey(rawValue: "dailyReminderEnabled", defaultValue: false)
+    static let dailyReminderEnabled = SettingsKey(
+        rawValue: "dailyReminderEnabled",
+        defaultValue: false
+    )
+
     /// Whether budget overspend warning notifications are enabled.
-    static let budgetWarningEnabled = SettingsKey(rawValue: "budgetWarningEnabled", defaultValue: false)
+    static let budgetWarningEnabled = SettingsKey(
+        rawValue: "budgetWarningEnabled",
+        defaultValue: false
+    )
 }
 
 // MARK: - String Keys

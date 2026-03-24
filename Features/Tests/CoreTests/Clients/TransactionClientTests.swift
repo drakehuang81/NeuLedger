@@ -186,11 +186,138 @@ struct TransactionClientTests {
             id: UUID(), amount: 100, date: Date(), note: "Delete me", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
         )
         try await sut.add(transaction)
-        
+
         #expect(try await sut.fetchAll().count == 1)
-        
+
         try await sut.delete(transaction.id)
-        
+
         #expect(try await sut.fetchAll().isEmpty)
+    }
+
+    // MARK: - Budget Warning Tests
+
+    // MARK: - Helpers
+
+    /// Creates a fresh in-memory DatabaseClient so each budget-warning test starts with a clean slate.
+    private func makeFreshDatabaseClient() throws -> DatabaseClient {
+        let schema = Schema([
+            SDTransaction.self,
+            SDAccount.self,
+            SDCategory.self,
+            SDBudget.self,
+            SDTag.self,
+        ])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+        return DatabaseClient(modelContainer: { container })
+    }
+
+    @Test("checkBudgetWarnings fires notification on first threshold crossing")
+    func testBudgetWarningFiresOnFirstCrossing() async throws {
+        let db = try makeFreshDatabaseClient()
+        nonisolated(unsafe) var warningFired = false
+        nonisolated(unsafe) var storedPercent: Int? = nil
+
+        let client = withDependencies {
+            $0.databaseClient = db
+            $0.userSettingsClient.bool = { key in
+                key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
+            }
+            $0.userSettingsClient.int = { key in
+                key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue ? 80 : key.defaultValue
+            }
+            $0.budgetClient.fetchActive = {
+                [Budget(
+                    name: "餐飲預算",
+                    amount: 1000,
+                    categoryId: nil,
+                    period: .monthly,
+                    startDate: Calendar.current.startOfDay(for: Date()),
+                    isActive: true
+                )]
+            }
+            $0.notificationClient.lastWarnedPercent = { _, _ in nil }
+            $0.notificationClient.setLastWarnedPercent = { percent, _, _ in storedPercent = percent }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired = true }
+        } operation: {
+            TransactionClient.liveValue
+        }
+        // Add a transaction that brings spending to 85% of budget
+        try await client.add(Transaction(
+            amount: 850,
+            date: Date(),
+            note: "Test",
+            categoryId: nil,
+            accountId: UUID(),
+            type: .expense
+        ))
+        #expect(warningFired == true)
+        #expect(storedPercent == 85)
+    }
+
+    @Test("checkBudgetWarnings does not re-fire when already warned at same threshold")
+    func testBudgetWarningDoesNotRefire() async throws {
+        let db = try makeFreshDatabaseClient()
+        nonisolated(unsafe) var warnCount = 0
+
+        let client = withDependencies {
+            $0.databaseClient = db
+            $0.userSettingsClient.bool = { key in
+                key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
+            }
+            $0.userSettingsClient.int = { key in
+                key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue ? 80 : key.defaultValue
+            }
+            $0.budgetClient.fetchActive = {
+                [Budget(
+                    name: "Test",
+                    amount: 1000,
+                    categoryId: nil,
+                    period: .monthly,
+                    startDate: Calendar.current.startOfDay(for: Date()),
+                    isActive: true
+                )]
+            }
+            // Simulate already warned at 85%
+            $0.notificationClient.lastWarnedPercent = { _, _ in 85 }
+            $0.notificationClient.setLastWarnedPercent = { _, _, _ in }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warnCount += 1 }
+        } operation: {
+            TransactionClient.liveValue
+        }
+        try await client.add(Transaction(
+            amount: 900,
+            date: Date(),
+            note: "Test",
+            categoryId: nil,
+            accountId: UUID(),
+            type: .expense
+        ))
+        #expect(warnCount == 0)
+    }
+
+    @Test("checkBudgetWarnings skips when budgetWarningEnabled is false")
+    func testBudgetWarningSkipsWhenDisabled() async throws {
+        let db = try makeFreshDatabaseClient()
+        nonisolated(unsafe) var warningFired = false
+
+        let client = withDependencies {
+            $0.databaseClient = db
+            $0.userSettingsClient.bool = { _ in false }   // all disabled
+            $0.userSettingsClient.int = { $0.defaultValue }
+            $0.budgetClient.fetchActive = { [] }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired = true }
+        } operation: {
+            TransactionClient.liveValue
+        }
+        try await client.add(Transaction(
+            amount: 999,
+            date: Date(),
+            note: "Test",
+            categoryId: nil,
+            accountId: UUID(),
+            type: .expense
+        ))
+        #expect(warningFired == false)
     }
 }

@@ -159,7 +159,9 @@ public struct NotificationSettingsFeature: Sendable {
 
             case .openSystemSettingsTapped:
                 return .run { _ in
-                    await openURL(URL(string: UIApplication.openSettingsURLString)!)
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        await openURL(url)
+                    }
                 }
             }
         }

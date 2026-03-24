@@ -10,6 +10,7 @@ enum SettingsRoute: Hashable {
     case categoryManagement
     case budgetManagement
     case tagManagement
+    case notificationSettings
 }
 
 // MARK: - IdentifiableURL
@@ -88,6 +89,12 @@ public struct SettingsView: View {
                             TagManagementFeature()
                         }
                     )
+                case .notificationSettings:
+                    NotificationSettingsView(
+                        store: Store(initialState: NotificationSettingsFeature.State()) {
+                            NotificationSettingsFeature()
+                        }
+                    )
                 }
             }
             .sheet(
@@ -137,6 +144,14 @@ public struct SettingsView: View {
                             icon: "tag",
                             iconColor: Color.Design.brandAccent,
                             label: String(localized: "settings_tag_management"),
+                            trailing: chevron
+                        )
+                    }
+                    NavigationLink(value: SettingsRoute.notificationSettings) {
+                        settingsRow(
+                            icon: "bell.badge",
+                            iconColor: .orange,
+                            label: String(localized: "settings_notification_settings"),
                             trailing: chevron
                         )
                     }

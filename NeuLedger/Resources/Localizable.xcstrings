@@ -3437,18 +3437,99 @@
     "common_tags": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tags"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "標籤"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Tags" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "標籤" } }
+      }
+    },
+    "settings_notification_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Notification Settings" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "通知設定" } }
+      }
+    },
+    "notification_daily_reminder_section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Daily Reminder" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "每日記帳提醒" } }
+      }
+    },
+    "notification_daily_reminder_toggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Enable Daily Reminder" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟每日提醒" } }
+      }
+    },
+    "notification_reminder_time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reminder Time" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "提醒時間" } }
+      }
+    },
+    "notification_budget_warning_section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Budget Warnings" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算警告" } }
+      }
+    },
+    "notification_budget_warning_toggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Enable Budget Warnings" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟預算警告" } }
+      }
+    },
+    "notification_warning_threshold": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Warning Threshold" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "警告門檻" } }
+      }
+    },
+    "notification_permission_denied_banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Please enable notifications in system Settings" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請前往系統「設定」開啟通知權限" } }
+      }
+    },
+    "notification_open_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Settings" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前往設定" } }
+      }
+    },
+    "notification_daily_reminder_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "NeuLedger Reminder" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NeuLedger 記帳提醒" } }
+      }
+    },
+    "notification_daily_reminder_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Time to log your transactions!" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記得記帳！點此快速新增一筆。" } }
+      }
+    },
+    "notification_budget_warning_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Budget Warning" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算使用警告" } }
+      }
+    },
+    "notification_budget_warning_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Budget \"%@\" is %d%% used. Watch your spending." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算「%@」已使用 %d%%，請注意支出。" } }
       }
     }
   },

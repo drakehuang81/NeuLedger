@@ -200,7 +200,7 @@ public struct AddTransactionFeature: Sendable {
                 // isAvailable() is checked inline (not via stored flag) because AddTransactionFeature
                 // has no .task lifecycle, and adding one just for this check would be over-engineering.
                 return .run { [note] send in
-                    guard aiServiceClient.isAvailable() else {
+                    guard aiServiceClient.isAvailable(), userSettingsClient.bool(.aiEnabled) else {
                         await send(.backgroundExtractionCompleted(nil))
                         return
                     }
@@ -353,7 +353,7 @@ public struct AddTransactionFeature: Sendable {
             case .suggestCategoryTapped:
                 // Guard in reducer — the View disables the button, but this prevents subtle bugs
                 // if isAvailable state drifts between the .task check and the tap.
-                guard aiServiceClient.isAvailable() else {
+                guard aiServiceClient.isAvailable(), userSettingsClient.bool(.aiEnabled) else {
                     state.categorySuggestionError = "此裝置不支援 AI 功能"
                     return .none
                 }

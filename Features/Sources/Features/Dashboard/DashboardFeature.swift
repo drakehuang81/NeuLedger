@@ -91,6 +91,7 @@ public struct DashboardFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.date.now) var now
 
     // MARK: - Body
@@ -215,7 +216,7 @@ public struct DashboardFeature: Sendable {
 
             // Task 2.3: Fetch AI insight with caching and graceful fallback
             case .fetchAIInsight:
-                guard aiServiceClient.isAvailable() else { return .none }
+                guard aiServiceClient.isAvailable(), userSettingsClient.bool(.aiEnabled) else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
                     // Build a spending summary from recent transactions

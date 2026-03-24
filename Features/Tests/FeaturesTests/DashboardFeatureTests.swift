@@ -95,6 +95,7 @@ struct DashboardFeatureTests {
             }
             $0.transactionClient.fetchRecent = { Self.sampleTransactions }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Test insight" }
         }
         store.exhaustivity = .off
@@ -157,6 +158,7 @@ struct DashboardFeatureTests {
         ) {
             DashboardFeature()
         } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Updated insight" }
         }
 
@@ -204,6 +206,7 @@ struct DashboardFeatureTests {
             $0.accountClient.computeBalance = { _ in 0 }
             $0.transactionClient.fetchRecent = { [] }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "" }
         }
         store.exhaustivity = .off
@@ -237,6 +240,7 @@ struct DashboardFeatureTests {
             $0.accountClient.computeBalance = { _ in 1000 }
             $0.transactionClient.fetchRecent = { Array(Self.sampleTransactions.prefix(3)) }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Fresh insight" }
         }
         store.exhaustivity = .off
@@ -434,6 +438,7 @@ struct DashboardFeatureTests {
         ) {
             DashboardFeature()
         } withDependencies: {
+            $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in
                 throw NSError(domain: "AI", code: -1)
             }

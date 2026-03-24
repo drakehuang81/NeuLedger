@@ -20,7 +20,7 @@ Both types are fully opt-in, controlled from a dedicated **Notification Settings
 - Daily reminder: single configurable time (hour + minute), repeating daily
 - Budget warning: configurable threshold (50% / 60% / 70% / 80% / 90%), fires once per threshold crossing per budget period
 - Notification settings live in a new sub-page (`NotificationSettingsView`) navigated to from Settings
-- Permission request triggered on first toggle-on; if denied, inline message guides user to system settings
+- Permission request triggered on first toggle-on; if denied, inline banner guides user to system settings (never use `Alert` for this)
 
 ---
 
@@ -30,7 +30,7 @@ Follows the project's Clean Architecture + TCA pattern:
 
 ```
 Domain/Clients/NotificationClient.swift        ← interface (@DependencyClient)
-Core/Clients/NotificationClient+Live.swift     ← UNUserNotificationCenter implementation
+Core/Clients/NotificationClient+Live.swift     ← UNUserNotificationCenter implementation + DependencyKey
 Features/NotificationSettings/
     NotificationSettingsFeature.swift          ← TCA Reducer
     NotificationSettingsView.swift             ← SwiftUI View
@@ -51,15 +51,26 @@ public struct NotificationClient: Sendable {
     public var requestAuthorization: @Sendable () async -> Bool = { false }
 
     /// Schedule (or reschedule) the daily reminder at the given hour/minute.
+    /// Replaces any existing scheduled reminder.
     public var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int) async -> Void = { _, _ in }
 
     /// Cancel the daily reminder.
     public var cancelDailyReminder: @Sendable () async -> Void = {}
 
     /// Fire a one-shot budget warning notification immediately.
-    public var sendBudgetWarning: @Sendable (_ budgetName: String, _ usedPercent: Int) async -> Void = { _, _ in }
+    /// budgetId is used as the unique notification identifier.
+    /// title and body are pre-formatted, localized strings provided by the caller
+    /// (keeping localization in the Features/Domain layer, not in Core).
+    public var sendBudgetWarning: @Sendable (_ budgetId: String, _ title: String, _ body: String) async -> Void = { _, _, _ in }
 
-    /// Check current authorization status (true = authorized).
+    /// Read the last warned percent for a given budget+period key.
+    /// Returns nil if no warning has been sent yet for this period.
+    public var lastWarnedPercent: @Sendable (_ budgetId: String, _ periodKey: String) -> Int? = { _, _ in nil }
+
+    /// Persist the warned percent for a given budget+period key.
+    public var setLastWarnedPercent: @Sendable (_ percent: Int, _ budgetId: String, _ periodKey: String) -> Void = { _, _, _ in }
+
+    /// Check current authorization status synchronously (true = authorized).
     public var isAuthorized: @Sendable () async -> Bool = { false }
 }
 
@@ -75,17 +86,67 @@ extension DependencyValues {
 }
 ```
 
-### UserSettings Keys (additions to existing SettingsKey)
+**Note:** `lastWarnedPercent` and `setLastWarnedPercent` keep all notification state inside `NotificationClient`, avoiding raw `UserDefaults` calls in other clients and keeping the feature fully testable via dependency injection.
 
-| Key | Type | Default | Purpose |
-|-----|------|---------|---------|
-| `dailyReminderEnabled` | Bool | false | Toggle daily reminder on/off |
-| `dailyReminderHour` | Int | 21 | Reminder hour (0–23) |
-| `dailyReminderMinute` | Int | 0 | Reminder minute (0–59) |
-| `budgetWarningEnabled` | Bool | false | Toggle budget warning on/off |
-| `budgetWarningThreshold` | Int | 80 | Warning threshold (50–90, step 10) |
+### UserSettingsClient Int Extension
 
-`UserSettingsClient` must be extended to support `Int` reads/writes (currently only `Bool` is supported).
+`UserSettingsClient` must be extended to support `Int` reads/writes. This requires changes in three places:
+
+**1. `UserSettingsClient` struct** — add two new closure properties (following the existing `bool`/`setBool`, `string`/`setString` pattern):
+
+```swift
+/// Reads an Int value for the given key, returning `defaultValue` if unset.
+public var int: @Sendable (_ key: SettingsKey<Int>) -> Int = { $0.defaultValue }
+
+/// Writes an Int value for the given key.
+public var setInt: @Sendable (_ value: Int, _ key: SettingsKey<Int>) -> Void
+```
+
+**2. `UserSettingsClient.testValue`** — add stubs:
+
+```swift
+public static let testValue = Self(
+    bool: { $0.defaultValue },
+    setBool: { _, _ in },
+    string: { $0.defaultValue },
+    setString: { _, _ in },
+    int: { $0.defaultValue },
+    setInt: { _, _ in }
+)
+```
+
+**3. `UserSettingsClient+Live.swift`** — add live implementations, following the same guard-object idiom used by the existing `bool` implementation:
+
+```swift
+int: { key in
+    if UserDefaults.standard.object(forKey: key.rawValue) != nil {
+        return UserDefaults.standard.integer(forKey: key.rawValue)
+    }
+    return key.defaultValue
+},
+setInt: { value, key in
+    UserDefaults.standard.set(value, forKey: key.rawValue)
+}
+```
+
+**4. `SettingsKey<Int>` extension** — add all notification preference keys:
+
+```swift
+public extension SettingsKey where Value == Int {
+    static let dailyReminderHour   = SettingsKey(rawValue: "dailyReminderHour",   defaultValue: 21)
+    static let dailyReminderMinute = SettingsKey(rawValue: "dailyReminderMinute", defaultValue: 0)
+    static let budgetWarningThreshold = SettingsKey(rawValue: "budgetWarningThreshold", defaultValue: 80)
+}
+```
+
+### UserSettings Bool Keys (additions)
+
+Add to `SettingsKey where Value == Bool` extension:
+
+```swift
+static let dailyReminderEnabled   = SettingsKey(rawValue: "dailyReminderEnabled",   defaultValue: false)
+static let budgetWarningEnabled   = SettingsKey(rawValue: "budgetWarningEnabled",   defaultValue: false)
+```
 
 ---
 
@@ -95,30 +156,119 @@ extension DependencyValues {
 
 File: `Features/Sources/Core/Clients/NotificationClient+Live.swift`
 
+Conforms to `DependencyKey` and declares `liveValue`:
+
+```swift
+extension NotificationClient: DependencyKey {
+    public static let liveValue = NotificationClient(
+        requestAuthorization: { ... },
+        scheduleDailyReminder: { hour, minute in ... },
+        cancelDailyReminder: { ... },
+        sendBudgetWarning: { budgetId, budgetName, usedPercent in ... },
+        lastWarnedPercent: { budgetId, periodKey in
+            UserDefaults.standard.object(
+                forKey: "neuledger.budget_warned.\(budgetId).\(periodKey)"
+            ) as? Int
+        },
+        setLastWarnedPercent: { percent, budgetId, periodKey in
+            UserDefaults.standard.set(
+                percent,
+                forKey: "neuledger.budget_warned.\(budgetId).\(periodKey)"
+            )
+        },
+        isAuthorized: { ... }
+    )
+}
+```
+
 Key implementation details:
 
-- **Authorization**: `UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])`
-- **Daily reminder**: `UNCalendarNotificationTrigger` with `DateComponents(hour:minute:)` and `repeats: true`. Identifier: `"neuledger.daily_reminder"`. Re-scheduling cancels the previous request by using the same identifier.
-- **Budget warning**: `UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)`. Identifier: `"neuledger.budget_warning.\(budgetName)"`.
-- **isAuthorized**: queries `UNUserNotificationCenter.current().notificationSettings()` and checks `.authorizationStatus == .authorized`.
+- **Authorization**: `UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])` — `.badge` is omitted since we do not manage badge counts in this feature.
+- **Daily reminder**: `UNCalendarNotificationTrigger` with `DateComponents(hour:minute:)` and `repeats: true`. Fixed identifier: `"neuledger.daily_reminder"`. Re-scheduling with the same identifier replaces the previous request automatically via `add(_:)` — no explicit cancel needed before reschedule.
+- **Budget warning**: `UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)`. Identifier: `"neuledger.budget_warning.\(budgetId)"` — uses budget's UUID, not name, to guarantee uniqueness.
+- **isAuthorized**: `await UNUserNotificationCenter.current().notificationSettings()` → `.authorizationStatus == .authorized`.
 
 ### Budget Warning Trigger Logic
 
-Added to `TransactionClient+Live` as a private helper called after `add` and `update`:
+Added to `TransactionClient+Live` as a private helper, called after `add` and `update` complete.
 
+**Not called after `delete`** — this is an intentional simplification. A deletion reduces spending totals, which could clear an over-threshold state, but `lastWarnedPercent` is keyed on `periodKey` and naturally resets at the next period boundary. The edge case (a user deletes a large expense that drops them below the threshold) means the warning will not re-fire until the next period, which is acceptable. This avoids the complexity of downward threshold tracking.
+
+**Dependency capture in `TransactionClient.liveValue`:**
+
+All cross-client dependencies must be captured at the top level of the `liveValue` computed property, not inside individual closures:
+
+```swift
+extension TransactionClient: DependencyKey {
+    public static var liveValue: TransactionClient {
+        @Dependency(\.databaseClient) var databaseClient
+        @Dependency(\.budgetClient) var budgetClient            // for budget warning checks
+        @Dependency(\.notificationClient) var notificationClient // for budget warning checks
+        @Dependency(\.userSettingsClient) var userSettingsClient // for budget warning checks
+
+        // ... return TransactionClient(...) with closures capturing the above
+    }
+}
 ```
-func checkBudgetWarnings(for affectedAccountId: Account.ID) async
+
+**No circular dependency risk:** `BudgetClient.liveValue` only depends on `databaseClient`. It does not call `transactionClient`, so adding `budgetClient` as a dependency of `TransactionClient.liveValue` is safe.
+
+**Helper signature:**
+
+```swift
+private func checkBudgetWarnings(
+    budgetClient: BudgetClient,
+    notificationClient: NotificationClient,
+    userSettingsClient: UserSettingsClient,
+    transactionClient: TransactionClient
+) async
 ```
+
+(No `affectedAccountId` parameter — budgets are not account-scoped.)
 
 Steps:
-1. Fetch all active budgets via `budgetClient.fetchActive()`
-2. For each budget, compute `usedPercent = totalSpent / budget.amount * 100`
-3. Read `budgetWarningEnabled` and `budgetWarningThreshold` from `UserSettingsClient`
-4. Read previously notified percent from `UserDefaults` key `"neuledger.budget_warned.\(budget.id)"`
-5. If `usedPercent >= threshold` AND `lastWarnedPercent < threshold`, call `notificationClient.sendBudgetWarning` and update the stored value
-6. If `usedPercent < threshold`, reset the stored value (allows re-notification next period)
+1. Read `budgetWarningEnabled` from `userSettingsClient`. If `false`, return early.
+2. Read `budgetWarningThreshold` from `userSettingsClient`.
+3. Fetch all active budgets via `budgetClient.fetchActive()`.
+4. For each budget:
+   a. Determine the current period window: compute `periodStart` from `budget.startDate` and `budget.period` (weekly: start of current ISO week relative to today; monthly: start of current calendar month; yearly: start of current year). Compute `periodEnd` as one period later.
+   b. Build a `TransactionFilter` scoped to `[.expense]` types, the period's date range (`periodStart...periodEnd`), and the budget's `categoryId` (if non-nil, use `Set([budget.categoryId])`; if nil, no category filter — budget applies globally).
+   c. Fetch matching transactions via `transactionClient.fetch(filter)`.
+   d. Compute `totalSpent = transactions.reduce(into: Decimal(0)) { $0 += $1.amount }`.
+   e. Guard `budget.amount > 0` — if zero, skip (avoid division by zero).
+   f. Compute `usedPercent` using `NSDecimalNumber` to avoid `Decimal` rounding ambiguity.
+      **Rounding behavior: truncation toward zero is intentional** (conservative — the user must definitively exceed the threshold before a warning fires; 79.9% does not trigger an 80% warning):
+      ```swift
+      let ratio = (totalSpent / budget.amount * 100) as NSDecimalNumber
+      let usedPercent = ratio.intValue  // truncates toward zero
+      ```
+   g. Compute `periodKey` as a stable string representing the current cycle (ISO date string of `periodStart`, e.g., `"2026-03-01"`).
+   h. Read `lastWarnedPercent(budgetId: budget.id, periodKey:)` from `notificationClient`.
+   i. If `usedPercent >= threshold` AND `(lastWarnedPercent == nil || lastWarnedPercent! < threshold)`:
+      - Format localized title and body strings (caller is responsible for localization — Core never formats localized strings directly):
+        ```swift
+        let title = String(localized: "notification_budget_warning_title")
+        let body = String(format: String(localized: "notification_budget_warning_body"), budget.name, usedPercent)
+        ```
+      - Call `notificationClient.sendBudgetWarning(budgetId: budget.id, title:, body:)`.
+      - Call `notificationClient.setLastWarnedPercent(usedPercent, budgetId: budget.id, periodKey:)`.
+   j. (No explicit reset needed: the `periodKey` changes automatically when a new period begins, so `lastWarnedPercent` returns `nil` for the new period, allowing the warning to fire again from scratch.)
 
-This ensures the warning fires exactly once per threshold crossing per budget cycle.
+**Period key derivation:**
+```swift
+func periodKey(for budget: Budget, relativeTo date: Date) -> String {
+    let cal = Calendar.current
+    let interval: DateInterval
+    switch budget.period {
+    case .weekly:  interval = cal.dateInterval(of: .weekOfYear, for: date)!
+    case .monthly: interval = cal.dateInterval(of: .month, for: date)!
+    case .yearly:  interval = cal.dateInterval(of: .year, for: date)!
+    }
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withFullDate]
+    return formatter.string(from: interval.start)
+}
+```
 
 ---
 
@@ -133,8 +283,13 @@ File: `Features/Sources/Features/NotificationSettings/NotificationSettingsFeatur
 @ObservableState
 public struct State: Equatable {
     public var dailyReminderEnabled: Bool = false
-    public var reminderHour: Int = 21
-    public var reminderMinute: Int = 0
+    /// Stored as a Date for easy DatePicker binding; only the hour and minute components
+    /// are meaningful — the date portion is irrelevant and is not persisted.
+    /// On load, reconstruct from stored hour/minute via Calendar.current.date(from:).
+    /// On save, extract via Calendar.current.component(.hour/.minute, from:).
+    public var reminderDate: Date = Calendar.current.date(
+        from: DateComponents(hour: 21, minute: 0)
+    ) ?? Date()
     public var budgetWarningEnabled: Bool = false
     public var warningThreshold: Int = 80
     public var isAuthorized: Bool = false
@@ -142,14 +297,29 @@ public struct State: Equatable {
 }
 ```
 
+`reminderDate` stores a `Date` for clean `DatePicker` binding. On persist/load, decompose to/from `reminderHour`/`reminderMinute` via `Calendar.current.component(.hour, from:)` / `.minute`.
+
 **Actions:**
-- `task` — load all settings from UserSettingsClient, check isAuthorized
-- `dailyReminderToggled(Bool)` — if enabling and not authorized, request permission; on success schedule reminder; persist
-- `reminderTimeChanged(hour: Int, minute: Int)` — reschedule reminder; persist
-- `budgetWarningToggled(Bool)` — same permission flow; persist
-- `warningThresholdChanged(Int)` — persist
-- `authorizationStatusLoaded(Bool)` — update `isAuthorized`
-- `permissionDenied` — set `showPermissionDeniedBanner = true`
+```swift
+public enum Action: Sendable, Equatable {
+    case task
+    case authorizationStatusLoaded(Bool)
+    case dailyReminderToggled(Bool)
+    case reminderDateChanged(Date)
+    case budgetWarningToggled(Bool)
+    case warningThresholdChanged(Int)
+    case permissionDenied
+    case openSystemSettingsTapped
+}
+```
+
+**Reducer logic highlights:**
+- `.task`: load all settings from `userSettingsClient` (`int`/`bool`), reconstruct `reminderDate` from stored hour/minute, check `notificationClient.isAuthorized()`, dispatch `authorizationStatusLoaded`. Re-checks auth status on every appearance so the banner self-heals if the user grants permission in system Settings and returns.
+- `dailyReminderToggled(true)` / `budgetWarningToggled(true)`: if `!isAuthorized`, call `notificationClient.requestAuthorization()`; if it returns `false`, dispatch `.permissionDenied` and keep the toggle `false`; if `true`, update `isAuthorized`, persist, and schedule/arm.
+- `reminderDateChanged`: extract hour/minute from the new `Date`, persist to `userSettingsClient`, reschedule via `notificationClient.scheduleDailyReminder`.
+- `permissionDenied`: set `showPermissionDeniedBanner = true`.
+- `openSystemSettingsTapped`: open `URL(string: UIApplication.openSettingsURLString)!` via `@Dependency(\.openURL)` — consistent with the existing project pattern (e.g. `SettingsFeature`), and testable via dependency injection.
+- `authorizationStatusLoaded(true)`: set `isAuthorized = true`, `showPermissionDeniedBanner = false` — banner self-heals.
 
 **Dependencies:** `notificationClient`, `userSettingsClient`
 
@@ -161,28 +331,32 @@ Layout:
 ```
 NavigationStack
 └── ScrollView
-    ├── [Banner] Permission denied warning (if showPermissionDeniedBanner)
+    ├── [Banner] showPermissionDeniedBanner
+    │   "請前往系統「設定」開啟通知權限" + "前往設定" button
+    │   (orange inline GlassContainer, not an Alert)
     │
-    ├── Section: 每日記帳提醒
-    │   ├── Toggle "開啟每日提醒"
+    ├── GlassContainer — 每日記帳提醒
+    │   ├── Toggle "開啟每日提醒"  ← bound to store.dailyReminderEnabled
     │   └── (visible when enabled)
-    │       DatePicker — 提醒時間 (displayedComponents: .hourAndMinute)
+    │       DatePicker "提醒時間"
+    │         displayedComponents: .hourAndMinute
+    │         Binding<Date> → store.reminderDate / reminderDateChanged(_:)
     │
-    └── Section: 預算警告
-        ├── Toggle "開啟預算警告"
+    └── GlassContainer — 預算警告
+        ├── Toggle "開啟預算警告"  ← bound to store.budgetWarningEnabled
         └── (visible when enabled)
-            Picker "警告門檻" — 50% / 60% / 70% / 80% / 90%
+            Picker "警告門檻"
+              [50%, 60%, 70%, 80%, 90%] → store.warningThreshold / warningThresholdChanged(_:)
 ```
 
-- Uses `GlassContainer` for section cards (consistent with Settings style)
-- Permission denied banner: orange inline card with "前往設定" button opening `UIApplication.openSettingsURLString`
-- All toggles/pickers use `.task` to load initial values and bind via store actions
+- `GlassContainer` is used for section cards, consistent with `SettingsView`.
+- The permission denied banner uses `GlassContainer` with `.overlay` accent color orange, not `Alert`.
 
 ### Settings Integration
 
-**SettingsRoute** — add `.notificationSettings` case
+**SettingsRoute** — add `.notificationSettings` case.
 
-**SettingsView** — add NavigationLink in the "管理" section:
+**SettingsView** — add `NavigationLink` in the "管理" section (after tagManagement row):
 ```swift
 NavigationLink(value: SettingsRoute.notificationSettings) {
     settingsRow(
@@ -194,7 +368,7 @@ NavigationLink(value: SettingsRoute.notificationSettings) {
 }
 ```
 
-**navigationDestination** — handle `.notificationSettings` → `NotificationSettingsView`
+**`navigationDestination`** — handle `.notificationSettings` → `NotificationSettingsView`.
 
 ---
 
@@ -213,28 +387,44 @@ New keys needed in `Localizable.xcstrings`:
 | `notification_warning_threshold` | 警告門檻 | Warning Threshold |
 | `notification_permission_denied_banner` | 請前往系統「設定」開啟通知權限 | Please enable notifications in system Settings |
 | `notification_open_settings` | 前往設定 | Open Settings |
+| `notification_daily_reminder_title` | NeuLedger 記帳提醒 | NeuLedger Reminder |
 | `notification_daily_reminder_body` | 記得記帳！點此快速新增一筆。 | Time to log your transactions! |
+| `notification_budget_warning_title` | 預算使用警告 | Budget Warning |
 | `notification_budget_warning_body` | 預算「%@」已使用 %d%%，請注意支出。 | Budget "%@" is %d%% used. Watch your spending. |
 
 ---
 
 ## Error Handling
 
-- If `requestAuthorization` returns false (user denied): set `showPermissionDeniedBanner = true`; do not schedule notifications; keep toggle in off state
-- If UNUserNotificationCenter throws: silently ignore (best-effort delivery)
-- Validation errors: none needed (all inputs are bounded pickers/steppers)
+- If `requestAuthorization` returns `false` (user denied): set `showPermissionDeniedBanner = true`; keep toggle in `false` state; do not schedule notifications. Banner self-heals on next `.task` if user later grants permission in system Settings.
+- If UNUserNotificationCenter throws on `add`: silently ignore (best-effort delivery — not a hard error).
+- Validation: all inputs are bounded pickers/steppers; no free-form validation needed.
 
 ---
 
 ## Testing
 
-Feature tests (`NotificationSettingsFeatureTests`):
-- Toggle on when unauthorized → permission request fired, if denied banner shown, toggle stays off
-- Toggle on when authorized → schedule called, settings persisted
-- Time change → reschedule called with new values
-- Threshold change → persisted, no notification client call needed
+### NotificationSettingsFeatureTests
 
-Core tests:
-- `checkBudgetWarnings`: verify notification fires on first threshold crossing, does not fire again until reset
+- **Toggle on, unauthorized**: permission request fired; if denied → `permissionDenied` dispatched, `showPermissionDeniedBanner = true`, toggle remains `false`
+- **Toggle on, authorized**: schedule/arm called, settings persisted, toggle `true`
+- **Time changed**: `reminderDateChanged` → reschedule called with correct hour/minute extracted from new `Date`
+- **Threshold changed**: `warningThresholdChanged` → persisted; no notification client call needed
+- **`.task` with previously denied permission now granted**: `authorizationStatusLoaded(true)` → `isAuthorized = true`, `showPermissionDeniedBanner = false` (banner self-heals)
+- **`openSystemSettingsTapped`**: settings URL opened
 
-Use `NotificationClient.testValue` (unimplemented stubs) for feature tests; provide explicit overrides per test.
+### Budget Warning Core Tests (in `TransactionClientTests`)
+
+- First threshold crossing: notification fires; `setLastWarnedPercent` called
+- Spending stays above threshold: second `add` does not re-fire notification (guard `lastWarnedPercent >= threshold`)
+- New period (new `periodKey`): `lastWarnedPercent` returns `nil` → warning re-fires on next crossing
+
+Use `NotificationClient.testValue` with explicit closure overrides per test case.
+
+**Note:** The default `testValue` stubs for `lastWarnedPercent` (always returns `nil`) and `setLastWarnedPercent` (no-op) cannot exercise the "does not re-fire" scenario. That test must override both closures with a shared in-memory store:
+```swift
+var store: [String: Int] = [:]
+var client = NotificationClient.testValue
+client.lastWarnedPercent = { budgetId, periodKey in store["\(budgetId).\(periodKey)"] }
+client.setLastWarnedPercent = { percent, budgetId, periodKey in store["\(budgetId).\(periodKey)"] = percent }
+```

@@ -215,8 +215,8 @@ struct TransactionClientTests {
     @Test("checkBudgetWarnings fires notification on first threshold crossing")
     func testBudgetWarningFiresOnFirstCrossing() async throws {
         let db = try makeFreshDatabaseClient()
-        nonisolated(unsafe) var warningFired = false
-        nonisolated(unsafe) var storedPercent: Int? = nil
+        let warningFired = LockIsolated(false)
+        let storedPercent = LockIsolated<Int?>(nil)
 
         let client = withDependencies {
             $0.databaseClient = db
@@ -237,8 +237,8 @@ struct TransactionClientTests {
                 )]
             }
             $0.notificationClient.lastWarnedPercent = { _, _ in nil }
-            $0.notificationClient.setLastWarnedPercent = { percent, _, _ in storedPercent = percent }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired = true }
+            $0.notificationClient.setLastWarnedPercent = { percent, _, _ in storedPercent.setValue(percent) }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
             TransactionClient.liveValue
         }
@@ -251,14 +251,14 @@ struct TransactionClientTests {
             accountId: UUID(),
             type: .expense
         ))
-        #expect(warningFired == true)
-        #expect(storedPercent == 85)
+        #expect(warningFired.value == true)
+        #expect(storedPercent.value == 85)
     }
 
     @Test("checkBudgetWarnings does not re-fire when already warned at same threshold")
     func testBudgetWarningDoesNotRefire() async throws {
         let db = try makeFreshDatabaseClient()
-        nonisolated(unsafe) var warnCount = 0
+        let warnCount = LockIsolated(0)
 
         let client = withDependencies {
             $0.databaseClient = db
@@ -281,7 +281,7 @@ struct TransactionClientTests {
             // Simulate already warned at 85%
             $0.notificationClient.lastWarnedPercent = { _, _ in 85 }
             $0.notificationClient.setLastWarnedPercent = { _, _, _ in }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warnCount += 1 }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warnCount.withValue { $0 += 1 } }
         } operation: {
             TransactionClient.liveValue
         }
@@ -293,20 +293,20 @@ struct TransactionClientTests {
             accountId: UUID(),
             type: .expense
         ))
-        #expect(warnCount == 0)
+        #expect(warnCount.value == 0)
     }
 
     @Test("checkBudgetWarnings skips when budgetWarningEnabled is false")
     func testBudgetWarningSkipsWhenDisabled() async throws {
         let db = try makeFreshDatabaseClient()
-        nonisolated(unsafe) var warningFired = false
+        let warningFired = LockIsolated(false)
 
         let client = withDependencies {
             $0.databaseClient = db
             $0.userSettingsClient.bool = { _ in false }   // all disabled
             $0.userSettingsClient.int = { $0.defaultValue }
             $0.budgetClient.fetchActive = { [] }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired = true }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
             TransactionClient.liveValue
         }
@@ -318,13 +318,13 @@ struct TransactionClientTests {
             accountId: UUID(),
             type: .expense
         ))
-        #expect(warningFired == false)
+        #expect(warningFired.value == false)
     }
 
     @Test("checkBudgetWarnings does not fire when spending is below threshold")
     func testBudgetWarningDoesNotFireBelowThreshold() async throws {
         let db = try makeFreshDatabaseClient()
-        nonisolated(unsafe) var warningFired = false
+        let warningFired = LockIsolated(false)
 
         let client = withDependencies {
             $0.databaseClient = db
@@ -346,7 +346,7 @@ struct TransactionClientTests {
             }
             $0.notificationClient.lastWarnedPercent = { _, _ in nil }
             $0.notificationClient.setLastWarnedPercent = { _, _, _ in }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired = true }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
             TransactionClient.liveValue
         }
@@ -359,6 +359,6 @@ struct TransactionClientTests {
             accountId: UUID(),
             type: .expense
         ))
-        #expect(warningFired == false)
+        #expect(warningFired.value == false)
     }
 }

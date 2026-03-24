@@ -1,7 +1,6 @@
 import ComposableArchitecture
 import Domain
 import Foundation
-import UIKit
 
 @Reducer
 public struct NotificationSettingsFeature: Sendable {
@@ -159,7 +158,7 @@ public struct NotificationSettingsFeature: Sendable {
 
             case .openSystemSettingsTapped:
                 return .run { _ in
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                    if let url = URL(string: "app-settings:") {
                         await openURL(url)
                     }
                 }

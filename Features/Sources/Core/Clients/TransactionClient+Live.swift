@@ -157,7 +157,8 @@ private func checkBudgetWarnings(
         let filter = TransactionFilter(
             categoryIds: categoryIds,
             types: Set([.expense]),
-            dateRange: interval.start...interval.end
+            // DateInterval.end is exclusive — subtract 1ms so ClosedRange excludes the next period's start.
+            dateRange: interval.start...interval.end.addingTimeInterval(-0.001)
         )
 
         // Fetch transactions directly through databaseClient to avoid recursive dependency

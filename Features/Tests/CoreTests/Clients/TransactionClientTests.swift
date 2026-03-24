@@ -320,4 +320,45 @@ struct TransactionClientTests {
         ))
         #expect(warningFired == false)
     }
+
+    @Test("checkBudgetWarnings does not fire when spending is below threshold")
+    func testBudgetWarningDoesNotFireBelowThreshold() async throws {
+        let db = try makeFreshDatabaseClient()
+        nonisolated(unsafe) var warningFired = false
+
+        let client = withDependencies {
+            $0.databaseClient = db
+            $0.userSettingsClient.bool = { key in
+                key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
+            }
+            $0.userSettingsClient.int = { key in
+                key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue ? 80 : key.defaultValue
+            }
+            $0.budgetClient.fetchActive = {
+                [Budget(
+                    name: "Test",
+                    amount: 1000,
+                    categoryId: nil,
+                    period: .monthly,
+                    startDate: Calendar.current.startOfDay(for: Date()),
+                    isActive: true
+                )]
+            }
+            $0.notificationClient.lastWarnedPercent = { _, _ in nil }
+            $0.notificationClient.setLastWarnedPercent = { _, _, _ in }
+            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired = true }
+        } operation: {
+            TransactionClient.liveValue
+        }
+        // 70% of 1000 — below the 80% threshold
+        try await client.add(Transaction(
+            amount: 700,
+            date: Date(),
+            note: "Test",
+            categoryId: nil,
+            accountId: UUID(),
+            type: .expense
+        ))
+        #expect(warningFired == false)
+    }
 }

@@ -144,12 +144,13 @@ private func checkBudgetWarnings(
         guard budget.amount > 0 else { continue }
 
         let cal = Calendar.current
-        let interval: DateInterval
+        let component: Calendar.Component
         switch budget.period {
-        case .weekly:  interval = cal.dateInterval(of: .weekOfYear, for: today)!
-        case .monthly: interval = cal.dateInterval(of: .month, for: today)!
-        case .yearly:  interval = cal.dateInterval(of: .year, for: today)!
+        case .weekly:  component = .weekOfYear
+        case .monthly: component = .month
+        case .yearly:  component = .year
         }
+        guard let interval = cal.dateInterval(of: component, for: today) else { continue }
 
         // categoryId is UUID? — build Set<UUID>? accordingly
         let categoryIds: Set<UUID>? = budget.categoryId.map { Set([$0]) }

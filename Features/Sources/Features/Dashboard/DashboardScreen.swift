@@ -48,6 +48,11 @@ public struct DashboardScreen: View {
             ) { addTransactionStore in
                 AddTransactionView(store: addTransactionStore)
             }
+            .navigationDestination(
+                item: $store.scope(state: \.analysis, action: \.analysis)
+            ) { analysisStore in
+                AnalysisView(store: analysisStore)
+            }
         }
     }
 

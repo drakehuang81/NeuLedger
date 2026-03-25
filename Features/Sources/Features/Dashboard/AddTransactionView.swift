@@ -60,9 +60,9 @@ public struct AddTransactionView: View {
             get: { store.type },
             set: { store.send(.typeChanged($0)) }
         )) {
-            Text(String(localized: "common_expense")).tag(TransactionType.expense)
-            Text(String(localized: "common_income")).tag(TransactionType.income)
-            Text(String(localized: "common_transfer")).tag(TransactionType.transfer)
+            ForEach([TransactionType.expense, .income, .transfer], id: \.self) { type in
+                Text(type.displayName).tag(type)
+            }
         }
         .pickerStyle(.segmented)
     }

@@ -67,6 +67,8 @@ public struct RecurringTransactionFormFeature: Sendable {
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.dismiss) var dismiss
 
+    private enum CancelID { case task }
+
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -76,6 +78,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                     async let categories = (try? await categoryClient.fetchAll()) ?? []
                     await send(.optionsLoaded(accounts: accounts, categories: categories))
                 }
+                .cancellable(id: CancelID.task)
 
             case let .optionsLoaded(accounts, categories):
                 state.accounts = accounts
@@ -102,38 +105,54 @@ public struct RecurringTransactionFormFeature: Sendable {
                 state.amountError = nil
                 state.accountError = nil
 
-                let isEdit: Bool
-                let id: UUID
-                let createdAt: Date
-                if case let .edit(existing) = state.mode {
-                    isEdit = true; id = existing.id; createdAt = existing.createdAt
-                } else {
-                    isEdit = false; id = UUID(); createdAt = Date()
-                }
-
                 let frequency = state.frequency
-                let now = Date()
-                let nextDue: Date
-                switch frequency {
-                case .weekly:  nextDue = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: now) ?? now
-                case .monthly: nextDue = Calendar.current.date(byAdding: .month, value: 1, to: now) ?? now
-                case .yearly:  nextDue = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
-                }
+                let mode = state.mode
+                let note = state.note.isEmpty ? Optional<String>.none : state.note
+                let categoryId = state.categoryId
+                let toAccountId = state.toAccountId
+                let type_ = state.type
 
-                let template = RecurringTransaction(
-                    id: id,
-                    amount: amount,
-                    note: state.note.isEmpty ? nil : state.note,
-                    categoryId: state.categoryId,
-                    accountId: accountId,
-                    toAccountId: state.toAccountId,
-                    type: state.type,
-                    tags: [],
-                    frequency: frequency,
-                    nextDueDate: nextDue,
-                    isActive: true,
-                    createdAt: createdAt
-                )
+                let template: RecurringTransaction
+                let isEdit: Bool
+
+                switch mode {
+                case let .edit(existing):
+                    isEdit = true
+                    // Preserve existing.nextDueDate — it is only advanced after confirming a transaction,
+                    // not during a form edit (amount/note/frequency/account changes).
+                    var updated = existing
+                    updated.amount = amount
+                    updated.note = note
+                    updated.categoryId = categoryId
+                    updated.accountId = accountId
+                    updated.toAccountId = toAccountId
+                    updated.type = type_
+                    updated.frequency = frequency
+                    template = updated
+                case .add:
+                    isEdit = false
+                    let now = Date()
+                    let nextDue: Date
+                    switch frequency {
+                    case .weekly:  nextDue = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: now) ?? now
+                    case .monthly: nextDue = Calendar.current.date(byAdding: .month, value: 1, to: now) ?? now
+                    case .yearly:  nextDue = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
+                    }
+                    template = RecurringTransaction(
+                        id: UUID(),
+                        amount: amount,
+                        note: note,
+                        categoryId: categoryId,
+                        accountId: accountId,
+                        toAccountId: toAccountId,
+                        type: type_,
+                        tags: [],
+                        frequency: frequency,
+                        nextDueDate: nextDue,
+                        isActive: true,
+                        createdAt: now
+                    )
+                }
 
                 return .run { [template, isEdit] send in
                     if isEdit {

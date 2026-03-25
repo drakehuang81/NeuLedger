@@ -1,6 +1,40 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "add_transaction_ai_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI is not available on this device"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此裝置不支援 AI 功能"
+          }
+        }
+      }
+    },
+    "add_transaction_category_suggestion_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to get suggestions, please select manually"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法取得建議，請手動選擇"
+          }
+        }
+      }
+    },
     "ai_extraction_error": {
       "extractionState": "manual",
       "localizations": {

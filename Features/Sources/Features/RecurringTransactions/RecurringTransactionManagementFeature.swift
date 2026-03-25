@@ -61,6 +61,13 @@ public struct RecurringTransactionManagementFeature: Sendable {
                     try? await client.update(updated)
                     if !updated.isActive {
                         await notificationClient.cancelRecurringReminder(updated.id)
+                    } else {
+                        await notificationClient.scheduleRecurringReminder(
+                            updated.id,
+                            updated.nextDueDate,
+                            String(localized: "recurring_transaction_notification_title"),
+                            String(localized: "recurring_transaction_notification_body")
+                        )
                     }
                     let items = (try? await client.fetchAll()) ?? []
                     await send(.loaded(items))

@@ -425,7 +425,7 @@ public struct AddTransactionFeature: Sendable {
                 // Guard in reducer — the View disables the button, but this prevents subtle bugs
                 // if isAvailable state drifts between the .task check and the tap.
                 guard aiServiceClient.isAvailable(), userSettingsClient.bool(.aiEnabled) else {
-                    state.categorySuggestionError = "此裝置不支援 AI 功能"
+                    state.categorySuggestionError = String(localized: "add_transaction_ai_unavailable")
                     return .none
                 }
                 state.isSuggestingCategory = true
@@ -449,7 +449,7 @@ public struct AddTransactionFeature: Sendable {
 
             case .categorySuggestionsReceived(.failure):
                 state.isSuggestingCategory = false
-                state.categorySuggestionError = "無法取得建議，請手動選擇"
+                state.categorySuggestionError = String(localized: "add_transaction_category_suggestion_failed")
                 return .none
             }
         }

@@ -99,13 +99,12 @@ public struct AnalysisView: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            scrollView
-                .background(Color.Design.background.ignoresSafeArea())
+        scrollView
+            .background(Color.Design.background.ignoresSafeArea())
             .navigationTitle(String(localized: "analysis_title"))
             .navigationBarTitleDisplayMode(.large)
             .task {
-                await store.send(.loadData).finish()
+                await store.send(.task).finish()
             }
             .sheet(
                 item: Binding(
@@ -122,7 +121,30 @@ public struct AnalysisView: View {
                     transactions: drilldown.transactions
                 )
             }
-        }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !store.accounts.isEmpty {
+                        Menu {
+                            Button(String(localized: "analysis_all_accounts")) {
+                                store.send(.accountSelected(nil))
+                            }
+                            ForEach(store.accounts) { account in
+                                Button(account.name) {
+                                    store.send(.accountSelected(account.id))
+                                }
+                            }
+                        } label: {
+                            let selectedName = store.selectedAccountId
+                                .flatMap { id in store.accounts.first { $0.id == id }?.name }
+                            Label(
+                                selectedName ?? String(localized: "analysis_all_accounts"),
+                                systemImage: "chevron.up.chevron.down"
+                            )
+                            .font(Font.Design.callout)
+                        }
+                    }
+                }
+            }
     }
 }
 
@@ -172,17 +194,21 @@ private struct CategoryTransactionsView: View {
 }
 
 #Preview("Data") {
-    AnalysisView(
-        store: Store(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        }
-    )
+    NavigationStack {
+        AnalysisView(
+            store: Store(initialState: AnalysisFeature.State()) {
+                AnalysisFeature()
+            }
+        )
+    }
 }
 
 #Preview("Empty State") {
-    AnalysisView(
-        store: Store(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        }
-    )
+    NavigationStack {
+        AnalysisView(
+            store: Store(initialState: AnalysisFeature.State()) {
+                AnalysisFeature()
+            }
+        )
+    }
 }

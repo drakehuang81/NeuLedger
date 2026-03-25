@@ -3461,6 +3461,13 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "今年" } }
       }
     },
+    "analysis_all_accounts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "All Accounts" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "全部帳戶" } }
+      }
+    },
     "analysis_other_category": {
       "extractionState": "manual",
       "localizations": {

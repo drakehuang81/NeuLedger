@@ -39,6 +39,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
                     let items = (try? await client.fetchAll()) ?? []
                     await send(.loaded(items))
                 }
+                .cancellable(id: CancelID.task, cancelInFlight: true)
 
             case let .loaded(items):
                 state.isLoading = false

@@ -36,18 +36,22 @@ struct RecurringTransactionManagementFeatureTests {
     func testToggleActive() async {
         let updated = LockIsolated<RecurringTransaction?>(nil)
         let rt = Self.sample()
+        let deactivated = LockIsolated<RecurringTransaction>({ var r = rt; r.isActive = false; return r }())
         let store = await TestStore(
             initialState: RecurringTransactionManagementFeature.State(items: [rt])
         ) {
             RecurringTransactionManagementFeature()
         } withDependencies: {
             $0.recurringTransactionClient.update = { updated.setValue($0) }
-            $0.recurringTransactionClient.fetchAll = { [rt] }
+            $0.recurringTransactionClient.fetchAll = { [deactivated.value] }
             $0.notificationClient.cancelRecurringReminder = { _ in }
         }
-        store.exhaustivity = .off
 
         await store.send(.toggleActiveTapped(rt))
+        await store.receive(\.loaded) {
+            $0.isLoading = false
+            $0.items = [deactivated.value]
+        }
         #expect(updated.value?.isActive == false)
     }
 

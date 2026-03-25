@@ -3566,6 +3566,48 @@
         "en": { "stringUnit": { "state": "translated", "value": "A recurring transaction is due today." } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "您有一筆定期交易今日到期。" } }
       }
+    },
+    "recurring_transaction_empty_state": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No Recurring Transactions" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無定期交易" } }
+      }
+    },
+    "recurring_transaction_add_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "New Recurring" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增定期交易" } }
+      }
+    },
+    "recurring_transaction_edit_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Edit Recurring" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯定期交易" } }
+      }
+    },
+    "add_transaction_amount_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "0" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "0" } }
+      }
+    },
+    "add_transaction_account_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Account" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "帳戶" } }
+      }
+    },
+    "add_transaction_select_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Select Account" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "選擇帳戶" } }
+      }
     }
   },
   "version": "1.0"

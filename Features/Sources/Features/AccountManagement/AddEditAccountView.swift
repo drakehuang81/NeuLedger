@@ -6,16 +6,6 @@ import SwiftUI
 public struct AddEditAccountView: View {
     @Bindable var store: StoreOf<AddEditAccountFeature>
 
-    private static let predefinedIcons: [String] = [
-        "creditcard", "banknote", "wallet.bifold", "building.columns",
-        "dollarsign.circle", "star.circle", "cart.circle", "briefcase.circle"
-    ]
-
-    private static let predefinedColors: [String] = [
-        "#3478F6", "#34C759", "#FF9500", "#FF3B30", "#5856D6",
-        "#FF2D55", "#AF52DE", "#00C7BE", "#32ADE6", "#FF9F0A"
-    ]
-
     public init(store: StoreOf<AddEditAccountFeature>) {
         self.store = store
     }
@@ -60,73 +50,25 @@ public struct AddEditAccountView: View {
 
                 // MARK: 圖示
                 Section {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Self.predefinedIcons, id: \.self) { iconName in
-                                Button {
-                                    store.send(.iconChanged(iconName))
-                                } label: {
-                                    ZStack {
-                                        Circle()
-                                            .fill(store.icon == iconName
-                                                  ? Color(hex: store.colorHex).opacity(0.2)
-                                                  : Color.Design.surfaceSecondary)
-                                            .frame(width: 48, height: 48)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(
-                                                        store.icon == iconName
-                                                            ? Color(hex: store.colorHex)
-                                                            : Color.clear,
-                                                        lineWidth: 2
-                                                    )
-                                            )
-                                        Image(systemName: iconName)
-                                            .symbolRenderingMode(.hierarchical)
-                                            .foregroundStyle(
-                                                store.icon == iconName
-                                                    ? Color(hex: store.colorHex)
-                                                    : Color.Design.textSecondary
-                                            )
-                                            .font(.system(size: 20))
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    }
+                    IconPickerRow(
+                        icons: DesignConstants.accountIconOptions,
+                        selectedIcon: store.icon,
+                        accentColor: Color(hex: store.colorHex),
+                        onSelect: { store.send(.iconChanged($0)) }
+                    )
+                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
                 } header: {
                     Text("common_icon")
                 }
 
                 // MARK: 顏色
                 Section {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Self.predefinedColors, id: \.self) { hex in
-                                Button {
-                                    store.send(.colorHexChanged(hex))
-                                } label: {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color(hex: hex))
-                                            .frame(width: 36, height: 36)
-                                        if store.colorHex == hex {
-                                            Circle()
-                                                .stroke(Color.Design.textPrimary, lineWidth: 2)
-                                                .frame(width: 36, height: 36)
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 14, weight: .bold))
-                                                .foregroundStyle(Color.Design.textInverse)
-                                        }
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    }
+                    ColorSwatchPicker(
+                        colors: DesignConstants.accountColorOptions,
+                        selectedHex: store.colorHex,
+                        onSelect: { store.send(.colorHexChanged($0)) }
+                    )
+                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
                 } header: {
                     Text("common_color")
                 }

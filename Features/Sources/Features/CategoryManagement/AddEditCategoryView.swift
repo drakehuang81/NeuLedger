@@ -15,18 +15,6 @@ public struct AddEditCategoryView: View {
         return false
     }
 
-    private let availableIcons: [String] = [
-        "fork.knife", "car.fill", "gamecontroller.fill", "bag.fill", "house.fill",
-        "bolt.fill", "cross.case.fill", "book.fill", "person.2.fill", "briefcase.fill",
-        "star.fill", "laptopcomputer", "chart.line.uptrend.xyaxis", "gift.fill",
-        "ellipsis.circle.fill", "tag.fill", "cart.fill", "airplane", "heart.fill", "music.note"
-    ]
-
-    private let availableColors: [String] = [
-        "#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00C7BE",
-        "#32ADE6", "#007AFF", "#5856D6", "#AF52DE", "#FF2D55"
-    ]
-
     public var body: some View {
         NavigationStack {
             Form {
@@ -71,14 +59,12 @@ public struct AddEditCategoryView: View {
 
                 // MARK: 圖示
                 Section {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(availableIcons, id: \.self) { iconName in
-                                iconButton(iconName: iconName)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    }
+                    IconPickerRow(
+                        icons: DesignConstants.categoryIconOptions,
+                        selectedIcon: store.icon,
+                        accentColor: Color(hex: store.colorHex),
+                        onSelect: { store.send(.iconChanged($0)) }
+                    )
                     .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
                 } header: {
                     Text("common_icon")
@@ -86,14 +72,11 @@ public struct AddEditCategoryView: View {
 
                 // MARK: 顏色
                 Section {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(availableColors, id: \.self) { hex in
-                                colorButton(hex: hex)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    }
+                    ColorSwatchPicker(
+                        colors: DesignConstants.categoryColorOptions,
+                        selectedHex: store.colorHex,
+                        onSelect: { store.send(.colorHexChanged($0)) }
+                    )
                     .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
                 } header: {
                     Text("common_color")
@@ -102,15 +85,7 @@ public struct AddEditCategoryView: View {
                 // MARK: Preview
                 Section {
                     HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: store.colorHex))
-                                .frame(width: 44, height: 44)
-                            Image(systemName: store.icon)
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(Color.Design.textInverse)
-                                .font(.system(size: 20, weight: .medium))
-                        }
+                        IconBadge(systemImage: store.icon, color: Color(hex: store.colorHex))
                         Text(store.name.isEmpty ? String(localized: "category_form_name_placeholder") : store.name)
                             .font(Font.Design.body)
                             .fontWeight(.semibold)
@@ -143,60 +118,4 @@ public struct AddEditCategoryView: View {
         }
     }
 
-    // MARK: - Icon Button
-
-    private func iconButton(iconName: String) -> some View {
-        let isSelected = store.icon == iconName
-        return Button {
-            store.send(.iconChanged(iconName))
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(isSelected ? Color(hex: store.colorHex) : Color.Design.surfaceSecondary)
-                    .frame(width: 44, height: 44)
-                    .overlay {
-                        if isSelected {
-                            Circle()
-                                .strokeBorder(Color(hex: store.colorHex), lineWidth: 2)
-                        }
-                    }
-                Image(systemName: iconName)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(isSelected ? Color.Design.textInverse : Color.Design.textSecondary)
-                    .font(.system(size: 18, weight: .medium))
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Color Button
-
-    private func colorButton(hex: String) -> some View {
-        let isSelected = store.colorHex == hex
-        return Button {
-            store.send(.colorHexChanged(hex))
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: hex))
-                    .frame(width: 36, height: 36)
-                if isSelected {
-                    Circle()
-                        .strokeBorder(Color.Design.textInverse, lineWidth: 2.5)
-                        .frame(width: 36, height: 36)
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(Color.Design.textInverse)
-                        .font(.system(size: 12, weight: .bold))
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .overlay {
-            if isSelected {
-                Circle()
-                    .strokeBorder(Color(hex: hex), lineWidth: 2)
-                    .frame(width: 42, height: 42)
-            }
-        }
-    }
 }

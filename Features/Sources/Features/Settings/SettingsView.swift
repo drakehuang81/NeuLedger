@@ -11,6 +11,7 @@ enum SettingsRoute: Hashable {
     case budgetManagement
     case tagManagement
     case notificationSettings
+    case recurringTransactions
 }
 
 // MARK: - IdentifiableURL
@@ -95,6 +96,12 @@ public struct SettingsView: View {
                             NotificationSettingsFeature()
                         }
                     )
+                case .recurringTransactions:
+                    RecurringTransactionManagementView(
+                        store: Store(initialState: RecurringTransactionManagementFeature.State()) {
+                            RecurringTransactionManagementFeature()
+                        }
+                    )
                 }
             }
             .sheet(
@@ -152,6 +159,14 @@ public struct SettingsView: View {
                             icon: "bell.badge",
                             iconColor: .orange,
                             label: String(localized: "settings_notification_settings"),
+                            trailing: chevron
+                        )
+                    }
+                    NavigationLink(value: SettingsRoute.recurringTransactions) {
+                        settingsRow(
+                            icon: "arrow.clockwise.circle",
+                            iconColor: Color.Design.brandPrimary,
+                            label: String(localized: "settings_recurring_transactions"),
                             trailing: chevron
                         )
                     }

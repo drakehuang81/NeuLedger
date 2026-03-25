@@ -36,6 +36,8 @@ public struct AnalysisFeature: Sendable {
         }
 
         public var selectedPeriod: Period = .month
+        public var selectedAccountId: Account.ID? = nil
+        public var accounts: [Account] = []
         public var isLoading: Bool = false
 
         public var summary: FinancialSummary?
@@ -49,13 +51,17 @@ public struct AnalysisFeature: Sendable {
             summary != nil
         }
 
-        public init(selectedPeriod: Period = .month) {
+        public init(selectedPeriod: Period = .month, selectedAccountId: Account.ID? = nil) {
             self.selectedPeriod = selectedPeriod
+            self.selectedAccountId = selectedAccountId
         }
     }
 
     public enum Action: Sendable, BindableAction, Equatable {
         case binding(BindingAction<State>)
+        case task
+        case accountsLoaded([Account])
+        case accountSelected(Account.ID?)
         case periodChanged(State.Period)
         case loadData
         case loadedData(TaskResult<AnalysisData?>)
@@ -76,6 +82,7 @@ public struct AnalysisFeature: Sendable {
 
     // MARK: - Dependencies
 
+    @Dependency(\.accountClient) var accountClient
     @Dependency(\.budgetClient) var budgetClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
@@ -90,6 +97,23 @@ public struct AnalysisFeature: Sendable {
             case .binding:
                 return .none
 
+            case .task:
+                return .merge(
+                    .run { [accountClient] send in
+                        let accounts = (try? await accountClient.fetchActive()) ?? []
+                        await send(.accountsLoaded(accounts))
+                    },
+                    .send(.loadData)
+                )
+
+            case let .accountsLoaded(accounts):
+                state.accounts = accounts
+                return .none
+
+            case let .accountSelected(id):
+                state.selectedAccountId = id
+                return .send(.loadData)
+
             case let .periodChanged(period):
                 state.selectedPeriod = period
                 return .send(.loadData)
@@ -97,11 +121,15 @@ public struct AnalysisFeature: Sendable {
             case .loadData:
                 state.isLoading = true
                 let period = state.selectedPeriod
+                let selectedAccountId = state.selectedAccountId
                 return .merge(
                     .run { [transactionClient, categoryClient, aiServiceClient] send in
                         do {
                         let dateRange = Self.dateRange(for: period)
-                        let filter = TransactionFilter(dateRange: dateRange)
+                        let filter = TransactionFilter(
+                            accountIds: selectedAccountId.map { Set([$0]) },
+                            dateRange: dateRange
+                        )
                         let transactions = try await transactionClient.fetch(filter)
 
                         guard !transactions.isEmpty else {
@@ -192,7 +220,8 @@ public struct AnalysisFeature: Sendable {
                         let metrics = await Self.computeBudgetMetrics(
                             budgetClient: budgetClient,
                             transactionClient: transactionClient,
-                            categoryClient: categoryClient
+                            categoryClient: categoryClient,
+                            accountId: selectedAccountId
                         )
                         await send(.budgetMetricsLoaded(metrics))
                     }
@@ -258,18 +287,33 @@ public struct AnalysisFeature: Sendable {
     static func computeBudgetMetrics(
         budgetClient: BudgetClient,
         transactionClient: TransactionClient,
-        categoryClient: CategoryClient
+        categoryClient: CategoryClient,
+        accountId: Account.ID? = nil
     ) async -> [BudgetGaugeMetrics] {
         do {
             let activeBudgets = try await budgetClient.fetchActive()
             guard !activeBudgets.isEmpty else { return [] }
+
+            var filteredBudgets = activeBudgets
+            if let accountId {
+                let accountFilter = TransactionFilter(
+                    accountIds: Set([accountId]),
+                    types: [.expense]
+                )
+                let accountTransactions = (try? await transactionClient.fetch(accountFilter)) ?? []
+                let relevantCategoryIds = Set(accountTransactions.compactMap(\.categoryId))
+                filteredBudgets = activeBudgets.filter { budget in
+                    guard let catId = budget.categoryId else { return true }
+                    return relevantCategoryIds.contains(catId)
+                }
+            }
 
             let categories = try await categoryClient.fetchAll()
             let categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
 
             var metrics: [BudgetGaugeMetrics] = []
 
-            for budget in activeBudgets {
+            for budget in filteredBudgets {
                 let dateRange = currentPeriodRange(for: budget.period)
                 let filter = TransactionFilter(
                     categoryIds: budget.categoryId.map { Set([$0]) },

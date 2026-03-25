@@ -380,4 +380,111 @@ struct AnalysisFeatureTests {
             #expect($0.budgetMetrics.first?.categoryName == "總支出預算")
         }
     }
+
+    // MARK: - Account Filter
+
+    @Test("task loads active accounts into state")
+    func testTaskLoadsAccounts() async {
+        let accounts = [
+            Account(name: "現金", type: .cash, icon: "banknote", color: "#34C759", sortOrder: 0),
+            Account(name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6", sortOrder: 1),
+        ]
+        let store = await TestStore(initialState: AnalysisFeature.State()) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { accounts }
+            $0.transactionClient.fetch = { _ in [] }
+            $0.budgetClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.task)
+        await store.receive(\.accountsLoaded) { $0.accounts = accounts }
+    }
+
+    @Test("accountSelected updates selectedAccountId and triggers loadData")
+    func testAccountSelected() async {
+        let accountId = UUID()
+        let store = await TestStore(initialState: AnalysisFeature.State()) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.transactionClient.fetch = { _ in [] }
+            $0.budgetClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.accountSelected(accountId)) {
+            $0.selectedAccountId = accountId
+        }
+        // loadData is triggered — exhaustivity.off skips downstream
+    }
+
+    @Test("loadData passes accountIds filter when selectedAccountId is set")
+    func testLoadDataPassesAccountFilter() async {
+        let accountId = UUID()
+        var initial = AnalysisFeature.State()
+        initial.selectedAccountId = accountId
+
+        let capturedFilter = LockIsolated<TransactionFilter?>(nil)
+        let store = await TestStore(initialState: initial) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.transactionClient.fetch = { filter in
+                capturedFilter.setValue(filter)
+                return []
+            }
+            $0.budgetClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.loadData)
+        await store.receive(\.loadedData)
+
+        #expect(capturedFilter.value?.accountIds == Set([accountId]))
+    }
+
+    @Test("computeBudgetMetrics filters budgets to account-relevant categories")
+    func testBudgetMetricsAccountFilter() async {
+        let accountId = UUID()
+        let relevantCategoryId = UUID()
+        let irrelevantCategoryId = UUID()
+
+        let relevantBudget = Budget(
+            name: "飲食預算", amount: 1000,
+            categoryId: relevantCategoryId, period: .monthly, startDate: Date()
+        )
+        let irrelevantBudget = Budget(
+            name: "交通預算", amount: 500,
+            categoryId: irrelevantCategoryId, period: .monthly, startDate: Date()
+        )
+        let accountTxn = Transaction(
+            amount: 200, date: Date(),
+            categoryId: relevantCategoryId, accountId: accountId, type: .expense
+        )
+
+        var initial = AnalysisFeature.State()
+        initial.selectedAccountId = accountId
+
+        let store = await TestStore(initialState: initial) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.transactionClient.fetch = { _ in [accountTxn] }
+            $0.budgetClient.fetchActive = { [relevantBudget, irrelevantBudget] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.loadData)
+        await store.receive(\.budgetMetricsLoaded) {
+            #expect($0.budgetMetrics.count == 1)
+            #expect($0.budgetMetrics.first?.id == relevantBudget.id.uuidString)
+        }
+    }
 }

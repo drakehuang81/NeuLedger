@@ -300,12 +300,14 @@ public struct AnalysisFeature: Sendable {
                     accountIds: Set([accountId]),
                     types: [.expense]
                 )
-                let accountTransactions = (try? await transactionClient.fetch(accountFilter)) ?? []
-                let relevantCategoryIds = Set(accountTransactions.compactMap(\.categoryId))
-                filteredBudgets = activeBudgets.filter { budget in
-                    guard let catId = budget.categoryId else { return true }
-                    return relevantCategoryIds.contains(catId)
+                if let fetchedTransactions = try? await transactionClient.fetch(accountFilter) {
+                    let relevantCategoryIds = Set(fetchedTransactions.compactMap(\.categoryId))
+                    filteredBudgets = activeBudgets.filter { budget in
+                        guard let catId = budget.categoryId else { return true }
+                        return relevantCategoryIds.contains(catId)
+                    }
                 }
+                // If fetch fails, filteredBudgets stays as activeBudgets (no filtering)
             }
 
             let categories = try await categoryClient.fetchAll()

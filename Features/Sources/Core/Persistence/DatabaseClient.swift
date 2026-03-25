@@ -32,6 +32,7 @@ extension DatabaseClient: DependencyKey {
             SDCategory.self,
             SDBudget.self,
             SDTag.self,
+            SDRecurringTransaction.self,
         ])
         let configuration = ModelConfiguration(schema: schema)
         let container: ModelContainer
@@ -55,6 +56,7 @@ extension DatabaseClient: DependencyKey {
             SDCategory.self,
             SDBudget.self,
             SDTag.self,
+            SDRecurringTransaction.self,
         ])
         let configuration = ModelConfiguration(
             schema: schema,

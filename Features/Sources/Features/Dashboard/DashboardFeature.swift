@@ -82,6 +82,7 @@ public struct DashboardFeature: Sendable {
             case seeAllTransactionsTapped
             case accountTapped(Account.ID)
             case transactionTapped(Transaction.ID)
+            case savedRecurringConfirmation(RecurringTransaction.ID, Date)
         }
     }
 
@@ -306,6 +307,9 @@ public struct DashboardFeature: Sendable {
                     await send(.transactionsUpdated(t))
                     await send(.accountsUpdated(a))
                 }
+
+            case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
+                return .send(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))
 
             case .addTransaction:
                 return .none

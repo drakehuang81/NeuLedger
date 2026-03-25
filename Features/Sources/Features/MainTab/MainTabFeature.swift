@@ -34,6 +34,9 @@ struct MainTabFeature {
         var inputPurpose: InputPurpose = .record
         var aiAnswer: String? = nil
         var showAccessoryBar: Bool = true
+
+        // Recurring transaction confirmation routing
+        var pendingRecurringConfirmationId: RecurringTransaction.ID? = nil
     }
 
     // MARK: - Action
@@ -58,6 +61,9 @@ struct MainTabFeature {
         case resultPillTapped
         case accessoryBarVisibilityLoaded(Bool)
 
+        case pendingRecurringConfirmationReceived(RecurringTransaction.ID)
+        case recurringTemplateFetched(RecurringTransaction)
+
         case dashboard(DashboardFeature.Action)
         case transactions(TransactionsFeature.Action)
         case analysis(AnalysisFeature.Action)
@@ -67,7 +73,9 @@ struct MainTabFeature {
     // MARK: - Dependencies
     @Dependency(\.aiServiceClient) var aiServiceClient
     @Dependency(\.userSettingsClient) var userSettingsClient
-    private enum CancelID { case aiExtraction; case aiAnswer }
+    @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.recurringTransactionClient) var recurringTransactionClient
+    private enum CancelID { case aiExtraction; case aiAnswer; case task }
 
     // MARK: - Body
     var body: some ReducerOf<Self> {
@@ -87,11 +95,22 @@ struct MainTabFeature {
             switch action {
             case .task:
                 return .run { send in
-                    // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
-                    await send(.aiAvailabilityLoaded(isAvailable: aiServiceClient.isAvailable()))
-                    let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
-                    await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
+                    await withTaskGroup(of: Void.self) { group in
+                        // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
+                        group.addTask {
+                            await send(.aiAvailabilityLoaded(isAvailable: aiServiceClient.isAvailable()))
+                            let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
+                            await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
+                        }
+                        // Subscribe to recurring notification taps
+                        group.addTask {
+                            for await recurringId in notificationClient.pendingConfirmations() {
+                                await send(.pendingRecurringConfirmationReceived(recurringId))
+                            }
+                        }
+                    }
                 }
+                .cancellable(id: CancelID.task)
 
             case let .aiAvailabilityLoaded(isAvailable):
                 // isAvailable=true  → AI works → aiUnavailable=false
@@ -204,6 +223,25 @@ struct MainTabFeature {
                     return .send(.dashboard(.addTransactionButtonTapped))
                 }
 
+            case let .pendingRecurringConfirmationReceived(id):
+                return .run { send in
+                    do {
+                        let all = try await recurringTransactionClient.fetchAll()
+                        guard let template = all.first(where: { $0.id == id }) else { return }
+                        await send(.recurringTemplateFetched(template))
+                    } catch {
+                        // silently ignore — template may have been deleted
+                    }
+                }
+
+            case let .recurringTemplateFetched(template):
+                state.pendingRecurringConfirmationId = template.id
+                state.dashboard.addTransaction = AddTransactionFeature.State(
+                    mode: .addRecurringConfirmation(template)
+                )
+                state.selectedTab = .dashboard
+                return .none
+
             case .dashboard(.delegate(.seeAllTransactionsTapped)):
                 state.selectedTab = .transactions
                 return .none
@@ -214,6 +252,26 @@ struct MainTabFeature {
 
             case .dashboard(.delegate(.transactionTapped)):
                 return .none
+
+            case let .dashboard(.delegate(.savedRecurringConfirmation(id, newNextDueDate))):
+                state.pendingRecurringConfirmationId = nil
+                return .run { send in
+                    do {
+                        let all = try await recurringTransactionClient.fetchAll()
+                        if var template = all.first(where: { $0.id == id }) {
+                            template.nextDueDate = newNextDueDate
+                            try await recurringTransactionClient.update(template)
+                            await notificationClient.scheduleRecurringReminder(
+                                template.id,
+                                newNextDueDate,
+                                String(localized: "recurring_transaction_notification_title"),
+                                String(localized: "recurring_transaction_notification_body")
+                            )
+                        }
+                    } catch {
+                        // silently ignore
+                    }
+                }
 
             case .dashboard:
                 return .none

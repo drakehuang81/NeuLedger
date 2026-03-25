@@ -29,7 +29,7 @@ final class RecurringNotificationDelegate: NSObject, UNUserNotificationCenterDel
     /// the user taps a recurring-transaction notification.
     func confirmationStream() -> AsyncStream<RecurringTransaction.ID> {
         let streamId = UUID()
-        let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
+        let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream(bufferingPolicy: .bufferingNewest(1))
         continuation.onTermination = { [weak self] _ in
             self?.removeContinuation(id: streamId)
         }

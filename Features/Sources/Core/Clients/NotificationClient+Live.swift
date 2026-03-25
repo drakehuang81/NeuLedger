@@ -70,6 +70,37 @@ extension NotificationClient: DependencyKey {
         isAuthorized: {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             return settings.authorizationStatus == .authorized
+        },
+
+        scheduleRecurringReminder: { id, dueDate, title, body in
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            content.userInfo = ["recurringTransactionId": id.uuidString]
+
+            let triggerDate = Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute, .second],
+                from: dueDate
+            )
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: "neuledger.recurring.\(id.uuidString)",
+                content: content,
+                trigger: trigger
+            )
+            try? await UNUserNotificationCenter.current().add(request)
+        },
+
+        cancelRecurringReminder: { id in
+            UNUserNotificationCenter.current()
+                .removePendingNotificationRequests(
+                    withIdentifiers: ["neuledger.recurring.\(id.uuidString)"]
+                )
+        },
+
+        pendingConfirmations: {
+            RecurringNotificationDelegate.shared.confirmationStream()
         }
     )
 }

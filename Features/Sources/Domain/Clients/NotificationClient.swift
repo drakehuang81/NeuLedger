@@ -36,6 +36,28 @@ public struct NotificationClient: Sendable {
 
     /// Check current authorization status (true = .authorized).
     public var isAuthorized: @Sendable () async -> Bool = { false }
+
+    /// Schedule a due-date notification for a recurring transaction.
+    /// Using the recurring transaction's id as the notification identifier ensures
+    /// scheduling the same template again replaces the previous request.
+    public var scheduleRecurringReminder: @Sendable (
+        _ id: RecurringTransaction.ID,
+        _ dueDate: Date,
+        _ title: String,
+        _ body: String
+    ) async -> Void = { _, _, _, _ in }
+
+    /// Cancel the scheduled notification for a recurring transaction.
+    public var cancelRecurringReminder: @Sendable (_ id: RecurringTransaction.ID) async -> Void = { _ in }
+
+    /// Emits a `RecurringTransaction.ID` each time the user taps a recurring-transaction notification.
+    /// The live implementation owns the UNUserNotificationCenterDelegate internally — no AppDelegate needed.
+    /// testValue emits an immediately-finishing stream to prevent test hangs.
+    public var pendingConfirmations: @Sendable () -> AsyncStream<RecurringTransaction.ID> = {
+        let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
+        continuation.finish()
+        return stream
+    }
 }
 
 // MARK: - TestDependencyKey
@@ -48,7 +70,14 @@ extension NotificationClient: TestDependencyKey {
         sendBudgetWarning: { _, _, _ in },
         lastWarnedPercent: { _, _ in nil },
         setLastWarnedPercent: { _, _, _ in },
-        isAuthorized: { false }
+        isAuthorized: { false },
+        scheduleRecurringReminder: { _, _, _, _ in },
+        cancelRecurringReminder: { _ in },
+        pendingConfirmations: {
+            let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
+            continuation.finish()
+            return stream
+        }
     )
 }
 

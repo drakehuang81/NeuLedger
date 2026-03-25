@@ -12,7 +12,6 @@ struct MainTabFeature {
     // MARK: - State
     enum Tab: String, CaseIterable, Equatable {
         case dashboard
-        case analysis
         case settings
         case transactions
     }
@@ -22,7 +21,6 @@ struct MainTabFeature {
         var selectedTab: Tab = .dashboard
         var dashboard = DashboardFeature.State()
         var transactions = TransactionsFeature.State()
-        var analysis = AnalysisFeature.State()
         var settings = SettingsFeature.State()
 
         // AI input bar state
@@ -66,7 +64,6 @@ struct MainTabFeature {
 
         case dashboard(DashboardFeature.Action)
         case transactions(TransactionsFeature.Action)
-        case analysis(AnalysisFeature.Action)
         case settings(SettingsFeature.Action)
     }
 
@@ -84,9 +81,6 @@ struct MainTabFeature {
         }
         Scope(state: \.transactions, action: \.transactions) {
             TransactionsFeature()
-        }
-        Scope(state: \.analysis, action: \.analysis) {
-            AnalysisFeature()
         }
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
@@ -273,9 +267,6 @@ struct MainTabFeature {
                 return .none
 
             case .transactions:
-                return .none
-
-            case .analysis:
                 return .none
 
             case .settings:

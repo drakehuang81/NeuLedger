@@ -36,9 +36,6 @@ struct MainTabView: View {
             Tab("Ledger", systemImage: "chart.pie.fill", value: MainTabFeature.Tab.dashboard) {
                 DashboardScreen(store: store.scope(state: \.dashboard, action: \.dashboard))
             }
-            Tab("Analysis", systemImage: "chart.bar.fill", value: MainTabFeature.Tab.analysis) {
-                AnalysisView(store: store.scope(state: \.analysis, action: \.analysis))
-            }
             Tab("Settings", systemImage: "gearshape.fill", value: MainTabFeature.Tab.settings) {
                 SettingsView(store: store.scope(state: \.settings, action: \.settings))
             }

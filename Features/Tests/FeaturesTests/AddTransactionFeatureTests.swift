@@ -187,6 +187,73 @@ struct AddTransactionFeatureTests {
         }
     }
 
+    // MARK: - Recurring toggle tests
+
+    @Test("recurringToggled true sets recurringFrequency to .monthly")
+    func testRecurringToggledOn() async {
+        let store = await TestStore(
+            initialState: AddTransactionFeature.State(mode: .add(.expense))
+        ) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.recurringToggled(true)) {
+            $0.recurringFrequency = .monthly
+        }
+    }
+
+    @Test("recurringToggled false clears recurringFrequency")
+    func testRecurringToggledOff() async {
+        var initialState = AddTransactionFeature.State(mode: .add(.expense))
+        initialState.recurringFrequency = .monthly
+        let store = await TestStore(initialState: initialState) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.recurringToggled(false)) {
+            $0.recurringFrequency = nil
+        }
+    }
+
+    @Test("saveTapped in addRecurringConfirmation mode emits savedRecurringConfirmation delegate")
+    func testSaveTappedRecurringConfirmationEmitsDelegate() async {
+        let recurringId = UUID()
+        let accountId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let categoryId = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        let template = RecurringTransaction(
+            id: recurringId, amount: 500, note: "房租",
+            categoryId: categoryId,
+            accountId: accountId,
+            toAccountId: nil, type: .expense, tags: [],
+            frequency: .monthly, nextDueDate: Date(),
+            isActive: true, createdAt: Date()
+        )
+        let addedTransaction = LockIsolated<Transaction?>(nil)
+        let store = await TestStore(
+            initialState: AddTransactionFeature.State(mode: .addRecurringConfirmation(template))
+        ) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.transactionClient.add = { addedTransaction.setValue($0) }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.saveTapped)
+        await store.receive(\.delegate.savedRecurringConfirmation) { _ in }
+
+        #expect(addedTransaction.value?.amount == 500)
+    }
+
     @Test("saveTapped in .edit mode sends savedWithTransaction carrying updated values")
     func testEditModeSavedDelegateCarriesTransaction() async {
         let existing = Transaction(

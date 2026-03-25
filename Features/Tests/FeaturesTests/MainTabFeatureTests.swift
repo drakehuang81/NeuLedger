@@ -197,6 +197,41 @@ struct MainTabAskModeTests {
     }
 }
 
+@Suite("MainTabFeature — recurring confirmation")
+struct MainTabRecurringConfirmationTests {
+
+    @Test("pendingRecurringConfirmationReceived pre-fills dashboard and switches tab")
+    func testPendingRecurringConfirmationReceived() async {
+        let recurringId = UUID()
+        let template = RecurringTransaction(
+            id: recurringId, amount: 15000, note: "房租",
+            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: Date(), isActive: true, createdAt: Date()
+        )
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.recurringTransactionClient.fetchAll = { [template] }
+            $0.aiServiceClient.isAvailable = { false }
+            $0.userSettingsClient.bool = { _ in false }
+            $0.notificationClient.pendingConfirmations = {
+                AsyncStream { continuation in
+                    continuation.finish()
+                }
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.pendingRecurringConfirmationReceived(recurringId))
+        await store.receive(\.recurringTemplateFetched) { state in
+            #expect(state.dashboard.addTransaction != nil)
+            #expect(state.selectedTab == .dashboard)
+            #expect(state.pendingRecurringConfirmationId == recurringId)
+        }
+    }
+}
+
 @Suite("MainTabFeature — accessory bar & result pill")
 struct MainTabAccessoryBarTests {
 

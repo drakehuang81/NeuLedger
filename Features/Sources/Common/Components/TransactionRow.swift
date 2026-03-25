@@ -11,31 +11,30 @@ import SwiftUI
 public struct TransactionRow: View {
     let title: String
     let subtitle: String
-    let amount: Decimal
+    let amountText: String
+    let amountColor: Color
     let date: String
     let icon: String // System Name
     let iconColor: Color
-    
+
     public init(
         title: String,
         subtitle: String,
-        amount: Decimal,
+        amountText: String,
+        amountColor: Color,
         date: String,
         icon: String,
         iconColor: Color = .blue
     ) {
         self.title = title
         self.subtitle = subtitle
-        self.amount = amount
+        self.amountText = amountText
+        self.amountColor = amountColor
         self.date = date
         self.icon = icon
         self.iconColor = iconColor
     }
-    
-    private var isExpense: Bool {
-        amount < 0
-    }
-    
+
     public var body: some View {
         HStack(spacing: 12) {
             // Icon Container
@@ -43,31 +42,31 @@ public struct TransactionRow: View {
                 Circle()
                     .fill(Color.Design.surfaceSecondary) // Surface Secondary
                     .frame(width: 40, height: 40)
-                
+
                 Image(systemName: icon)
                     .font(.system(size: 20)) // 22x22 approx
                     .foregroundStyle(iconColor)
             }
-            
+
             // Content
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(Font.Design.headline) // 16pt Medium
                     .foregroundStyle(Color.Design.textPrimary)
-                
+
                 Text(subtitle)
                     .font(Font.Design.caption) // 13pt
                     .foregroundStyle(Color.Design.textSecondary)
             }
-            
+
             Spacer()
-            
+
             // Right Content
             VStack(alignment: .trailing, spacing: 2) {
-                Text(amount.twdFormatted)
+                Text(amountText)
                     .font(Font.Design.amount.weight(.semibold)) // 16pt Mono Semibold
-                    .foregroundStyle(isExpense ? Color.Design.expenseRed : Color.Design.incomeGreen)
-                
+                    .foregroundStyle(amountColor)
+
                 Text(date)
                     .font(Font.Design.caption) // 12pt
                     .foregroundStyle(Color.Design.textSecondary)
@@ -89,16 +88,18 @@ public struct TransactionRow: View {
             TransactionRow(
                 title: "Lunch",
                 subtitle: "Food · Cash",
-                amount: -120,
+                amountText: "-NT$120",
+                amountColor: .red,
                 date: "Today 12:30",
                 icon: "fork.knife",
                 iconColor: .orange
             )
-            
+
             TransactionRow(
                 title: "Salary",
                 subtitle: "Work · Bank",
-                amount: 50000,
+                amountText: "NT$50,000",
+                amountColor: .green,
                 date: "Yesterday",
                 icon: "briefcase.fill",
                 iconColor: .blue

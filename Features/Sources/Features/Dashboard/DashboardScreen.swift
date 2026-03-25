@@ -237,20 +237,16 @@ public struct DashboardScreen: View {
     private func transactionButton(for transaction: Domain.Transaction) -> some View {
         let category = transaction.categoryId.flatMap { store.categoryMap[$0] }
         let (icon, iconColor) = resolvedIconAndColor(for: transaction, category: category)
-        let subtitle: String = {
-            switch transaction.type {
-            case .expense: return String(localized: "common_expense")
-            case .income: return String(localized: "common_income")
-            case .transfer: return String(localized: "common_transfer")
-            }
-        }()
+        let isExpense = transaction.type == .expense
+        let signedAmount = isExpense ? -transaction.amount : transaction.amount
         return Button {
             store.send(.transactionTapped(transaction.id))
         } label: {
             TransactionRow(
                 title: transaction.note ?? String(localized: "dashboard_transaction_default"),
-                subtitle: subtitle,
-                amount: transaction.type == .expense ? -transaction.amount : transaction.amount,
+                subtitle: transaction.type.displayName,
+                amountText: signedAmount.twdFormatted,
+                amountColor: iconColor,
                 date: transaction.date.formatted(date: .abbreviated, time: .shortened),
                 icon: icon,
                 iconColor: iconColor

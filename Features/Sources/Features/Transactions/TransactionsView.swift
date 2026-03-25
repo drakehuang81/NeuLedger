@@ -144,16 +144,22 @@ public struct TransactionsView: View {
     }
 
     private func transactionRow(_ transaction: Domain.Transaction) -> some View {
-        Button {
+        let isExpense = transaction.type == .expense
+        let isTransfer = transaction.type == .transfer
+        let signedAmount = isExpense ? -transaction.amount : transaction.amount
+        let amountColor: Color = isTransfer ? Color.Design.textSecondary
+            : isExpense ? Color.Design.expenseRed : Color.Design.incomeGreen
+        return Button {
             store.send(.transactionTapped(transaction))
         } label: {
             TransactionRow(
                 title: transaction.note ?? transaction.type.displayName,
                 subtitle: transaction.type.displayName,
-                amount: amountValue(for: transaction),
+                amountText: signedAmount.twdFormatted,
+                amountColor: amountColor,
                 date: transaction.date.formatted(date: .omitted, time: .shortened),
-                icon: transaction.type.icon,
-                iconColor: transaction.type.color
+                icon: transaction.type.systemImageName,
+                iconColor: amountColor
             )
         }
         .buttonStyle(.plain)
@@ -199,37 +205,4 @@ public struct TransactionsView: View {
         return date.formatted(.dateTime.year().month().day())
     }
 
-    private func amountValue(for transaction: Domain.Transaction) -> Decimal {
-        switch transaction.type {
-        case .expense: return -transaction.amount
-        case .income: return transaction.amount
-        case .transfer: return transaction.amount
-        }
-    }
-}
-
-private extension TransactionType {
-    var displayName: String {
-        switch self {
-        case .expense: return String(localized: "common_expense")
-        case .income: return String(localized: "common_income")
-        case .transfer: return String(localized: "common_transfer")
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .expense: return "arrow.up.circle.fill"
-        case .income: return "arrow.down.circle.fill"
-        case .transfer: return "arrow.left.arrow.right.circle.fill"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .expense: return Color.Design.expenseRed
-        case .income: return Color.Design.incomeGreen
-        case .transfer: return Color.Design.textSecondary
-        }
-    }
 }

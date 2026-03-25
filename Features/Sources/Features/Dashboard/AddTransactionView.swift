@@ -23,6 +23,7 @@ public struct AddTransactionView: View {
                     amountSection
                     categorySection
                     detailsSection
+                    recurringSection
                 }
                 .padding()
                 .padding(.bottom, 80)
@@ -257,6 +258,46 @@ public struct AddTransactionView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
         }
+        }
+    }
+
+    // MARK: - Recurring Section
+
+    @ViewBuilder
+    private var recurringSection: some View {
+        if case .add = store.mode {
+            GlassContainer(cornerRadius: 16, padding: 0) {
+                VStack(spacing: 0) {
+                    Toggle(
+                        String(localized: "recurring_transaction_toggle_label"),
+                        isOn: Binding(
+                            get: { store.recurringFrequency != nil },
+                            set: { store.send(.recurringToggled($0)) }
+                        )
+                    )
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+
+                    if store.recurringFrequency != nil {
+                        Divider().padding(.horizontal, 16)
+
+                        Picker(
+                            String(localized: "recurring_transaction_frequency_label"),
+                            selection: Binding(
+                                get: { store.recurringFrequency ?? .monthly },
+                                set: { store.send(.recurringFrequencyChanged($0)) }
+                            )
+                        ) {
+                            ForEach(BudgetPeriod.allCases, id: \.self) { period in
+                                Text(period.localizedName).tag(period)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                    }
+                }
+            }
         }
     }
 }

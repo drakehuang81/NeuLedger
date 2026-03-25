@@ -3531,6 +3531,41 @@
         "en": { "stringUnit": { "state": "translated", "value": "Budget \"%@\" is %d%% used. Watch your spending." } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算「%@」已使用 %d%%，請注意支出。" } }
       }
+    },
+    "recurring_transaction_section_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recurring" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "定期交易" } }
+      }
+    },
+    "recurring_transaction_toggle_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Set as Recurring" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "設為定期交易" } }
+      }
+    },
+    "recurring_transaction_frequency_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Frequency" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "頻率" } }
+      }
+    },
+    "recurring_transaction_notification_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recurring Transaction Due" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "定期交易提醒" } }
+      }
+    },
+    "recurring_transaction_notification_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A recurring transaction is due today." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "您有一筆定期交易今日到期。" } }
+      }
     }
   },
   "version": "1.0"

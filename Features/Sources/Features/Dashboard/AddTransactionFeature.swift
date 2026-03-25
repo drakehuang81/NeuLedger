@@ -11,7 +11,8 @@ public struct AddTransactionFeature: Sendable {
     public enum Mode: Equatable, Sendable {
         case add(TransactionType)
         case edit(Transaction)
-        case addPrefilled(ExtractedTransaction)   // opened from TabBar AI input with pre-parsed data
+        case addPrefilled(ExtractedTransaction)          // opened from TabBar AI input with pre-parsed data
+        case addRecurringConfirmation(RecurringTransaction)  // confirm a due recurring template
     }
 
     // MARK: - State
@@ -28,6 +29,7 @@ public struct AddTransactionFeature: Sendable {
         public var categoryId: Domain.Category.ID?
         public var note: String
         public var date: Date
+        public var recurringFrequency: BudgetPeriod? = nil   // nil = not recurring
 
         // Validation errors
         public var amountError: String?
@@ -80,6 +82,15 @@ public struct AddTransactionFeature: Sendable {
                 self.toAccountId = nil
                 self.categoryId = nil    // category matching handled separately via suggestCategoryTapped
                 self.date = date
+
+            case let .addRecurringConfirmation(template):
+                self.type = template.type
+                self.amountText = template.amount.formatted(.number.precision(.fractionLength(0)))
+                self.accountId = template.accountId
+                self.toAccountId = template.toAccountId
+                self.categoryId = template.categoryId
+                self.note = template.note ?? ""
+                self.date = date
             }
         }
 
@@ -102,6 +113,9 @@ public struct AddTransactionFeature: Sendable {
         case noteChanged(String)
         case dateChanged(Date)
 
+        case recurringToggled(Bool)
+        case recurringFrequencyChanged(BudgetPeriod)
+
         case saveTapped
         case dismiss
         case savedSuccessfully
@@ -111,8 +125,9 @@ public struct AddTransactionFeature: Sendable {
 
         @CasePathable
         public enum Delegate: Sendable, Equatable {
-            case saved                              // add / addPrefilled mode
-            case savedWithTransaction(Transaction)  // edit mode
+            case saved                                                  // add / addPrefilled mode
+            case savedWithTransaction(Transaction)                      // edit mode
+            case savedRecurringConfirmation(RecurringTransaction.ID, Date) // addRecurringConfirmation mode
             case dismissed
         }
 
@@ -127,6 +142,8 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.recurringTransactionClient) var recurringTransactionClient
+    @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.aiServiceClient) var aiServiceClient
@@ -213,6 +230,14 @@ public struct AddTransactionFeature: Sendable {
                 state.date = date
                 return .none
 
+            case let .recurringToggled(isOn):
+                state.recurringFrequency = isOn ? .monthly : nil
+                return .none
+
+            case let .recurringFrequencyChanged(frequency):
+                state.recurringFrequency = frequency
+                return .none
+
             case .saveTapped:
                 var hasError = false
 
@@ -250,6 +275,7 @@ public struct AddTransactionFeature: Sendable {
                 let accountId = state.accountId!
                 let toAccountId = state.toAccountId
                 let type_ = state.type
+                let recurringFrequency_ = state.recurringFrequency
 
                 return .run { send in
                     switch mode {
@@ -264,6 +290,36 @@ public struct AddTransactionFeature: Sendable {
                             type: type_
                         )
                         try await transactionClient.add(transaction)
+                        if let frequency = recurringFrequency_ {
+                            let templateId = UUID()
+                            let nextDue: Date
+                            switch frequency {
+                            case .weekly:  nextDue = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: date)!
+                            case .monthly: nextDue = Calendar.current.date(byAdding: .month, value: 1, to: date)!
+                            case .yearly:  nextDue = Calendar.current.date(byAdding: .year, value: 1, to: date)!
+                            }
+                            let template = RecurringTransaction(
+                                id: templateId,
+                                amount: amountValue,
+                                note: note,
+                                categoryId: categoryId,
+                                accountId: accountId,
+                                toAccountId: toAccountId,
+                                type: type_,
+                                tags: [],
+                                frequency: frequency,
+                                nextDueDate: nextDue,
+                                isActive: true,
+                                createdAt: date
+                            )
+                            try await recurringTransactionClient.add(template)
+                            await notificationClient.scheduleRecurringReminder(
+                                template.id,
+                                template.nextDueDate,
+                                String(localized: "recurring_transaction_notification_title"),
+                                String(localized: "recurring_transaction_notification_body")
+                            )
+                        }
 
                     case let .edit(existing):
                         let transaction = Transaction(
@@ -296,6 +352,21 @@ public struct AddTransactionFeature: Sendable {
                             type: type_
                         )
                         try await transactionClient.add(transaction)
+
+                    case let .addRecurringConfirmation(template):
+                        let transaction = Transaction(
+                            amount: amountValue,
+                            date: date,
+                            note: note,
+                            categoryId: categoryId,
+                            accountId: accountId,
+                            toAccountId: toAccountId,
+                            type: type_
+                        )
+                        try await transactionClient.add(transaction)
+                        let newNextDue = template.nextDate(after: template.nextDueDate)
+                        await send(.delegate(.savedRecurringConfirmation(template.id, newNextDue)))
+                        return
                     }
                     await send(.savedSuccessfully)
                 }

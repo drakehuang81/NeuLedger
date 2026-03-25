@@ -309,7 +309,17 @@ public struct DashboardFeature: Sendable {
                 }
 
             case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
-                return .send(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))
+                // Refresh dashboard data (new transaction was created) and propagate delegate
+                return .merge(
+                    .run { send in
+                        async let transactions = transactionClient.fetchRecent()
+                        async let accounts = accountClient.fetchActive()
+                        let (t, a) = try await (transactions, accounts)
+                        await send(.transactionsUpdated(t))
+                        await send(.accountsUpdated(a))
+                    },
+                    .send(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))
+                )
 
             case .addTransaction:
                 return .none

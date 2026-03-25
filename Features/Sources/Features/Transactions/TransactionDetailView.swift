@@ -79,14 +79,14 @@ public struct TransactionDetailView: View {
                 .fontWeight(.semibold)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
-                .background(transaction.type.badgeColor.opacity(0.15))
-                .foregroundStyle(transaction.type.badgeColor)
+                .background(transaction.type.uiColor.opacity(0.15))
+                .foregroundStyle(transaction.type.uiColor)
                 .clipShape(Capsule())
 
             // Amount
-            Text(transaction.amount.formattedTWD)
+            Text(transaction.amount.twdFormatted)
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
-                .foregroundStyle(transaction.type.amountColor)
+                .foregroundStyle(transaction.type.amountDisplayColor)
                 .monospacedDigit()
         }
     }
@@ -132,7 +132,7 @@ public struct TransactionDetailView: View {
                     Text("transaction_detail_tags")
                         .foregroundStyle(Color.Design.textSecondary)
                     Spacer()
-                    FlowLayout(spacing: 4) {
+                    FlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
                         ForEach(transaction.tags) { tag in
                             TagPill(text: tag.name)
                         }
@@ -179,81 +179,3 @@ public struct TransactionDetailView: View {
     }
 }
 
-// MARK: - Helpers
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 4
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth && x > 0 {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-        return CGSize(width: maxWidth, height: y + rowHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX && x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
-private extension TransactionType {
-    var displayName: String {
-        switch self {
-        case .expense: return String(localized: "common_expense")
-        case .income: return String(localized: "common_income")
-        case .transfer: return String(localized: "common_transfer")
-        }
-    }
-
-    var badgeColor: Color {
-        switch self {
-        case .expense: return Color.Design.expenseRed
-        case .income: return Color.Design.incomeGreen
-        case .transfer: return Color.Design.brandPrimary
-        }
-    }
-
-    var amountColor: Color {
-        switch self {
-        case .expense: return Color.Design.expenseRed
-        case .income: return Color.Design.incomeGreen
-        case .transfer: return Color.Design.textPrimary
-        }
-    }
-}
-
-private extension Decimal {
-    var formattedTWD: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        let number = formatter.string(from: self as NSDecimalNumber) ?? "0"
-        return "NT$ \(number)"
-    }
-}

@@ -145,12 +145,3 @@ public struct FilterView: View {
     }
 }
 
-private extension TransactionType {
-    var displayName: String {
-        switch self {
-        case .expense: return String(localized: "common_expense")
-        case .income: return String(localized: "common_income")
-        case .transfer: return String(localized: "common_transfer")
-        }
-    }
-}

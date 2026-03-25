@@ -246,10 +246,6 @@ struct MainTabFeature {
                 state.selectedTab = .transactions
                 return .none
 
-            case .dashboard(.delegate(.accountTapped)):
-                state.selectedTab = .analysis
-                return .none
-
             case .dashboard(.delegate(.transactionTapped)):
                 return .none
 

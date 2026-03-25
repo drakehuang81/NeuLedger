@@ -313,8 +313,8 @@ struct DashboardFeatureTests {
         await store.receive(\.delegate.seeAllTransactionsTapped)
     }
 
-    @Test("accountTapped publishes delegate action with account ID")
-    func testAccountTappedDelegate() async throws {
+    @Test("accountTapped opens analysis with selectedAccountId set")
+    func testAccountTappedOpensAnalysis() async throws {
         let accountId = UUID()
         let store = await TestStore(
             initialState: DashboardFeature.State()
@@ -322,8 +322,9 @@ struct DashboardFeatureTests {
             DashboardFeature()
         }
 
-        await store.send(.accountTapped(accountId))
-        await store.receive(\.delegate.accountTapped)
+        await store.send(.accountTapped(accountId)) {
+            $0.analysis = AnalysisFeature.State(selectedAccountId: accountId)
+        }
     }
 
     @Test("transactionTapped publishes delegate action with transaction ID")

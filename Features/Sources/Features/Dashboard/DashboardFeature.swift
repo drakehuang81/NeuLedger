@@ -38,6 +38,7 @@ public struct DashboardFeature: Sendable {
 
         // Presentation
         @Presents var addTransaction: AddTransactionFeature.State?
+        @Presents var analysis: AnalysisFeature.State?
 
         public init() {}
     }
@@ -73,6 +74,7 @@ public struct DashboardFeature: Sendable {
 
         // Child features
         case addTransaction(PresentationAction<AddTransactionFeature.Action>)
+        case analysis(PresentationAction<AnalysisFeature.Action>)
 
         // Delegation to parent
         case delegate(Delegate)
@@ -80,7 +82,6 @@ public struct DashboardFeature: Sendable {
         @CasePathable
         public enum Delegate: Sendable, Equatable {
             case seeAllTransactionsTapped
-            case accountTapped(Account.ID)
             case transactionTapped(Transaction.ID)
             case savedRecurringConfirmation(RecurringTransaction.ID, Date)
         }
@@ -292,7 +293,8 @@ public struct DashboardFeature: Sendable {
                 return .send(.delegate(.seeAllTransactionsTapped))
 
             case let .accountTapped(id):
-                return .send(.delegate(.accountTapped(id)))
+                state.analysis = AnalysisFeature.State(selectedAccountId: id)
+                return .none
 
             case let .transactionTapped(id):
                 return .send(.delegate(.transactionTapped(id)))
@@ -324,6 +326,9 @@ public struct DashboardFeature: Sendable {
             case .addTransaction:
                 return .none
 
+            case .analysis:
+                return .none
+
             // MARK: Delegation
             case .delegate:
                 return .none
@@ -331,6 +336,9 @@ public struct DashboardFeature: Sendable {
         }
         .ifLet(\.$addTransaction, action: \.addTransaction) {
             AddTransactionFeature()
+        }
+        .ifLet(\.$analysis, action: \.analysis) {
+            AnalysisFeature()
         }
     }
 }

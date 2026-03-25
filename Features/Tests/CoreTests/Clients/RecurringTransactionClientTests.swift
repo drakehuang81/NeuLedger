@@ -74,6 +74,18 @@ struct RecurringTransactionClientIntegrationTests {
         #expect(due[0].nextDueDate == past)
     }
 
+    @Test("fetchDue excludes inactive recurring transactions")
+    func testFetchDueExcludesInactive() async throws {
+        let past = Date(timeIntervalSinceNow: -86400)
+        var rtActive = makeSample(); rtActive.nextDueDate = past; rtActive.isActive = true
+        var rtInactive = makeSample(); rtInactive.nextDueDate = past; rtInactive.isActive = false
+        try await sut.add(rtActive)
+        try await sut.add(rtInactive)
+        let due = try await sut.fetchDue(on: Date())
+        #expect(due.count == 1)
+        #expect(due[0].isActive == true)
+    }
+
     @Test("update modifies the recurring transaction")
     func testUpdate() async throws {
         var rt = makeSample()

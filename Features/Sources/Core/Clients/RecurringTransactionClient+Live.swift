@@ -15,7 +15,7 @@ extension RecurringTransactionClient: DependencyKey {
             fetchDue: { on in
                 try databaseClient.fetch(
                     FetchDescriptor<SDRecurringTransaction>(
-                        predicate: #Predicate { $0.nextDueDate <= on }
+                        predicate: #Predicate { $0.nextDueDate <= on && $0.isActive }
                     )
                 )
             },

@@ -12,10 +12,18 @@ struct RecurringTransactionClientTests {
         #expect(true, "RecurringTransactionClient injected successfully")
     }
 
-    @Test("testValue fetchAll returns unimplemented stub (does not throw)")
-    func testFetchAllUnimplemented() async {
-        let client = RecurringTransactionClient.testValue
-        #expect(true)
+    @Test("RecurringTransaction Codable round-trip preserves all fields")
+    func testCodableRoundTrip() throws {
+        let base = Date(timeIntervalSince1970: 0)
+        let original = RecurringTransaction(
+            id: UUID(), amount: 5000, note: "月租",
+            categoryId: UUID(), accountId: UUID(), toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: base, isActive: true, createdAt: base
+        )
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(RecurringTransaction.self, from: data)
+        #expect(decoded == original)
     }
 
     @Test("nextDate weekly advances by 7 days")

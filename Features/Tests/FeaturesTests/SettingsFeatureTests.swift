@@ -403,3 +403,67 @@ struct SettingsAccessoryBarTests {
         #expect(persisted.value == false)
     }
 }
+
+@Suite("SettingsFeature — navigation")
+struct SettingsNavigationTests {
+
+    @Test("accountManagementTapped appends accountManagement to path")
+    func accountManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.accountManagementTapped) {
+            $0.path.append(.accountManagement(AccountManagementFeature.State()))
+        }
+    }
+
+    @Test("categoryManagementTapped appends categoryManagement to path")
+    func categoryManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.categoryManagementTapped) {
+            $0.path.append(.categoryManagement(CategoryManagementFeature.State()))
+        }
+    }
+
+    @Test("budgetManagementTapped appends budgetManagement to path")
+    func budgetManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.budgetManagementTapped) {
+            $0.path.append(.budgetManagement(BudgetManagementFeature.State()))
+        }
+    }
+
+    @Test("tagManagementTapped appends tagManagement to path")
+    func tagManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.tagManagementTapped) {
+            $0.path.append(.tagManagement(TagManagementFeature.State()))
+        }
+    }
+
+    @Test("notificationSettingsTapped appends notificationSettings to path")
+    func notificationSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.notificationSettingsTapped) {
+            $0.path.append(.notificationSettings(NotificationSettingsFeature.State()))
+        }
+    }
+
+    @Test("recurringTransactionsTapped appends recurringTransactions to path")
+    func recurringTransactionsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.recurringTransactionsTapped) {
+            $0.path.append(.recurringTransactions(RecurringTransactionManagementFeature.State()))
+        }
+    }
+}

@@ -13,10 +13,23 @@ public enum ExportFormat: Equatable, Sendable {
 public struct SettingsFeature: Sendable {
     public init() {}
 
+    // MARK: - Destination
+
+    @Reducer(state: .equatable, action: .equatable)
+    public enum Destination {
+        case accountManagement(AccountManagementFeature)
+        case categoryManagement(CategoryManagementFeature)
+        case budgetManagement(BudgetManagementFeature)
+        case tagManagement(TagManagementFeature)
+        case notificationSettings(NotificationSettingsFeature)
+        case recurringTransactions(RecurringTransactionManagementFeature)
+    }
+
     // MARK: - State
 
     @ObservableState
     public struct State: Equatable {
+        public var path: StackState<Destination.State> = StackState()
         public var isAIEnabled: Bool = true
         public var accounts: [Account] = []
         public var selectedDefaultAccountId: String = ""
@@ -46,7 +59,15 @@ public struct SettingsFeature: Sendable {
 
     // MARK: - Action
 
-    public enum Action: Sendable, Equatable {
+    public enum Action: Equatable {
+        // Navigation
+        case accountManagementTapped
+        case categoryManagementTapped
+        case budgetManagementTapped
+        case tagManagementTapped
+        case notificationSettingsTapped
+        case recurringTransactionsTapped
+        case path(StackActionOf<Destination>)
         case task
         case aiToggleChanged(Bool)
         case accountsLoaded([Account])
@@ -77,6 +98,34 @@ public struct SettingsFeature: Sendable {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            // MARK: Navigation
+            case .accountManagementTapped:
+                state.path.append(.accountManagement(AccountManagementFeature.State()))
+                return .none
+
+            case .categoryManagementTapped:
+                state.path.append(.categoryManagement(CategoryManagementFeature.State()))
+                return .none
+
+            case .budgetManagementTapped:
+                state.path.append(.budgetManagement(BudgetManagementFeature.State()))
+                return .none
+
+            case .tagManagementTapped:
+                state.path.append(.tagManagement(TagManagementFeature.State()))
+                return .none
+
+            case .notificationSettingsTapped:
+                state.path.append(.notificationSettings(NotificationSettingsFeature.State()))
+                return .none
+
+            case .recurringTransactionsTapped:
+                state.path.append(.recurringTransactions(RecurringTransactionManagementFeature.State()))
+                return .none
+
+            case .path:
+                return .none
+
             case .task:
                 return .run { send in
                     async let accounts = accountClient.fetchActive()
@@ -210,6 +259,7 @@ public struct SettingsFeature: Sendable {
                 return .none
             }
         }
+        .forEach(\.path, action: \.path)
     }
 
     // MARK: - CSV Helpers

@@ -15,7 +15,7 @@ public struct NotificationClient: Sendable {
 
     /// Schedule (or reschedule) the daily reminder at the given hour/minute.
     /// Using the same fixed identifier replaces any previous request automatically.
-    public var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int) async -> Void
+    public var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int) async throws -> Void
 
     /// Cancel the daily reminder.
     public var cancelDailyReminder: @Sendable () async -> Void
@@ -25,7 +25,7 @@ public struct NotificationClient: Sendable {
     ///   - budgetId: Used as the unique notification identifier (UUID string).
     ///   - title: Pre-formatted, localized notification title.
     ///   - body: Pre-formatted, localized notification body.
-    public var sendBudgetWarning: @Sendable (_ budgetId: String, _ title: String, _ body: String) async -> Void
+    public var sendBudgetWarning: @Sendable (_ budgetId: String, _ title: String, _ body: String) async throws -> Void
 
     /// Read the last warned percent for a given budget + period key.
     /// Returns nil if no warning has been sent yet for this period.
@@ -45,7 +45,7 @@ public struct NotificationClient: Sendable {
         _ dueDate: Date,
         _ title: String,
         _ body: String
-    ) async -> Void
+    ) async throws -> Void
 
     /// Cancel the scheduled notification for a recurring transaction.
     public var cancelRecurringReminder: @Sendable (_ id: RecurringTransaction.ID) async -> Void

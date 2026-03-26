@@ -7,10 +7,12 @@ extension NotificationClient: DependencyKey {
     public static let liveValue = NotificationClient(
 
         requestAuthorization: {
-            try? await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .sound])
-            // requestAuthorization throws if called in extension context;
-            // check resulting status rather than relying on the throw.
+            do {
+                try await UNUserNotificationCenter.current()
+                    .requestAuthorization(options: [.alert, .sound])
+            } catch {
+                return false
+            }
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             return settings.authorizationStatus == .authorized
         },
@@ -31,7 +33,7 @@ extension NotificationClient: DependencyKey {
                 content: content,
                 trigger: trigger
             )
-            try? await UNUserNotificationCenter.current().add(request)
+            try await UNUserNotificationCenter.current().add(request)
         },
 
         cancelDailyReminder: {
@@ -51,7 +53,7 @@ extension NotificationClient: DependencyKey {
                 content: content,
                 trigger: trigger
             )
-            try? await UNUserNotificationCenter.current().add(request)
+            try await UNUserNotificationCenter.current().add(request)
         },
 
         lastWarnedPercent: { budgetId, periodKey in
@@ -89,7 +91,7 @@ extension NotificationClient: DependencyKey {
                 content: content,
                 trigger: trigger
             )
-            try? await UNUserNotificationCenter.current().add(request)
+            try await UNUserNotificationCenter.current().add(request)
         },
 
         cancelRecurringReminder: { id in

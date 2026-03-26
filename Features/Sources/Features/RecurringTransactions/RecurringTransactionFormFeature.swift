@@ -160,7 +160,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                     } else {
                         try? await client.add(template)
                     }
-                    await notificationClient.scheduleRecurringReminder(
+                    try await notificationClient.scheduleRecurringReminder(
                         template.id,
                         template.nextDueDate,
                         String(localized: "recurring_transaction_notification_title"),

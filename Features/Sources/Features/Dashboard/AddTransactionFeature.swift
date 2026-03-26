@@ -313,7 +313,7 @@ public struct AddTransactionFeature: Sendable {
                                 createdAt: date
                             )
                             try await recurringTransactionClient.add(template)
-                            await notificationClient.scheduleRecurringReminder(
+                            try await notificationClient.scheduleRecurringReminder(
                                 template.id,
                                 template.nextDueDate,
                                 String(localized: "recurring_transaction_notification_title"),

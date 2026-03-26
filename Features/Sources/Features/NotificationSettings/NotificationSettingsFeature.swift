@@ -103,7 +103,7 @@ public struct NotificationSettingsFeature: Sendable {
                     userSettingsClient.setBool(true, .dailyReminderEnabled)
                     let hour = Calendar.current.component(.hour, from: state.reminderDate)
                     let minute = Calendar.current.component(.minute, from: state.reminderDate)
-                    return .run { _ in await notificationClient.scheduleDailyReminder(hour, minute) }
+                    return .run { _ in try await notificationClient.scheduleDailyReminder(hour, minute) }
                 } else {
                     return .run { send in
                         let granted = await notificationClient.requestAuthorization()
@@ -123,7 +123,7 @@ public struct NotificationSettingsFeature: Sendable {
                 userSettingsClient.setInt(hour, .dailyReminderHour)
                 userSettingsClient.setInt(minute, .dailyReminderMinute)
                 guard state.dailyReminderEnabled else { return .none }
-                return .run { _ in await notificationClient.scheduleDailyReminder(hour, minute) }
+                return .run { _ in try await notificationClient.scheduleDailyReminder(hour, minute) }
 
             case let .budgetWarningToggled(enabled):
                 if !enabled {

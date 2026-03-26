@@ -62,7 +62,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
                     if !updated.isActive {
                         await notificationClient.cancelRecurringReminder(updated.id)
                     } else {
-                        await notificationClient.scheduleRecurringReminder(
+                        try await notificationClient.scheduleRecurringReminder(
                             updated.id,
                             updated.nextDueDate,
                             String(localized: "recurring_transaction_notification_title"),

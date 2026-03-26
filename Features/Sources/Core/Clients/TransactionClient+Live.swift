@@ -207,7 +207,7 @@ private func checkBudgetWarnings(
             budget.name,
             usedPercent
         )
-        await notificationClient.sendBudgetWarning(bidStr, title, body)
+        try? await notificationClient.sendBudgetWarning(bidStr, title, body)
         notificationClient.setLastWarnedPercent(usedPercent, bidStr, pKey)
     }
 }

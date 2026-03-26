@@ -248,7 +248,7 @@ struct MainTabFeature {
                         if var template = all.first(where: { $0.id == id }) {
                             template.nextDueDate = newNextDueDate
                             try await recurringTransactionClient.update(template)
-                            await notificationClient.scheduleRecurringReminder(
+                            try await notificationClient.scheduleRecurringReminder(
                                 template.id,
                                 newNextDueDate,
                                 String(localized: "recurring_transaction_notification_title"),

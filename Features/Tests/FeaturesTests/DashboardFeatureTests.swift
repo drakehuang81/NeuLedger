@@ -327,17 +327,33 @@ struct DashboardFeatureTests {
         }
     }
 
-    @Test("transactionTapped publishes delegate action with transaction ID")
-    func testTransactionTappedDelegate() async throws {
-        let transactionId = UUID()
-        let store = await TestStore(
-            initialState: DashboardFeature.State()
-        ) {
+    @Test("transactionTapped with matching transaction presents detail")
+    func testTransactionTappedPresentsDetail() async throws {
+        let transaction = Transaction(
+            amount: 100,
+            date: Date(timeIntervalSince1970: 0),
+            note: "Test",
+            accountId: UUID(),
+            type: .expense
+        )
+        var initial = DashboardFeature.State()
+        initial.recentTransactions = [transaction]
+
+        let store = await TestStore(initialState: initial) {
             DashboardFeature()
         }
 
-        await store.send(.transactionTapped(transactionId))
-        await store.receive(\.delegate.transactionTapped)
+        await store.send(.transactionTapped(transaction.id)) {
+            $0.detail = TransactionDetailFeature.State(transaction: transaction)
+        }
+    }
+
+    @Test("transactionTapped with unknown ID does nothing")
+    func testTransactionTappedUnknownId() async throws {
+        let store = await TestStore(initialState: DashboardFeature.State()) {
+            DashboardFeature()
+        }
+        await store.send(.transactionTapped(UUID()))
     }
 
     @Test("addTransactionButtonTapped presents AddTransaction sheet")

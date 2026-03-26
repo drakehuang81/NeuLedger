@@ -240,9 +240,6 @@ struct MainTabFeature {
                 state.selectedTab = .transactions
                 return .none
 
-            case .dashboard(.delegate(.transactionTapped)):
-                return .none
-
             case let .dashboard(.delegate(.savedRecurringConfirmation(id, newNextDueDate))):
                 state.pendingRecurringConfirmationId = nil
                 return .run { send in

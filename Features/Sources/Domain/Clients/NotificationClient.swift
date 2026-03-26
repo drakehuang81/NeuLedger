@@ -15,24 +15,24 @@ public struct NotificationClient: Sendable {
 
     /// Schedule (or reschedule) the daily reminder at the given hour/minute.
     /// Using the same fixed identifier replaces any previous request automatically.
-    public var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int) async -> Void = { _, _ in }
+    public var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int) async -> Void
 
     /// Cancel the daily reminder.
-    public var cancelDailyReminder: @Sendable () async -> Void = {}
+    public var cancelDailyReminder: @Sendable () async -> Void
 
     /// Fire a one-shot budget warning notification immediately.
     /// - Parameters:
     ///   - budgetId: Used as the unique notification identifier (UUID string).
     ///   - title: Pre-formatted, localized notification title.
     ///   - body: Pre-formatted, localized notification body.
-    public var sendBudgetWarning: @Sendable (_ budgetId: String, _ title: String, _ body: String) async -> Void = { _, _, _ in }
+    public var sendBudgetWarning: @Sendable (_ budgetId: String, _ title: String, _ body: String) async -> Void
 
     /// Read the last warned percent for a given budget + period key.
     /// Returns nil if no warning has been sent yet for this period.
-    public var lastWarnedPercent: @Sendable (_ budgetId: String, _ periodKey: String) -> Int? = { _, _ in nil }
+    public var lastWarnedPercent: @Sendable (_ budgetId: String, _ periodKey: String) -> Int?
 
     /// Persist the warned percent for a given budget + period key.
-    public var setLastWarnedPercent: @Sendable (_ percent: Int, _ budgetId: String, _ periodKey: String) -> Void = { _, _, _ in }
+    public var setLastWarnedPercent: @Sendable (_ percent: Int, _ budgetId: String, _ periodKey: String) -> Void
 
     /// Check current authorization status (true = .authorized).
     public var isAuthorized: @Sendable () async -> Bool = { false }
@@ -45,10 +45,10 @@ public struct NotificationClient: Sendable {
         _ dueDate: Date,
         _ title: String,
         _ body: String
-    ) async -> Void = { _, _, _, _ in }
+    ) async -> Void
 
     /// Cancel the scheduled notification for a recurring transaction.
-    public var cancelRecurringReminder: @Sendable (_ id: RecurringTransaction.ID) async -> Void = { _ in }
+    public var cancelRecurringReminder: @Sendable (_ id: RecurringTransaction.ID) async -> Void
 
     /// Emits a `RecurringTransaction.ID` each time the user taps a recurring-transaction notification.
     /// The live implementation owns the UNUserNotificationCenterDelegate internally — no AppDelegate needed.
@@ -63,22 +63,7 @@ public struct NotificationClient: Sendable {
 // MARK: - TestDependencyKey
 
 extension NotificationClient: TestDependencyKey {
-    public static let testValue = NotificationClient(
-        requestAuthorization: { false },
-        scheduleDailyReminder: { _, _ in },
-        cancelDailyReminder: {},
-        sendBudgetWarning: { _, _, _ in },
-        lastWarnedPercent: { _, _ in nil },
-        setLastWarnedPercent: { _, _, _ in },
-        isAuthorized: { false },
-        scheduleRecurringReminder: { _, _, _, _ in },
-        cancelRecurringReminder: { _ in },
-        pendingConfirmations: {
-            let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
-            continuation.finish()
-            return stream
-        }
-    )
+    public static let testValue = Self()
 }
 
 // MARK: - DependencyValues

@@ -17,24 +17,27 @@ public struct DashboardScreen: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
+            ZStack {
+                Color.Design.background.ignoresSafeArea()
 
-                    balanceSection
+                ScrollView {
+                    VStack(spacing: 24) {
 
-                    quickActionsSection
+                        balanceSection
 
-                    accountsSection
+                        quickActionsSection
 
-                    transactionsSection
+                        accountsSection
 
-                    insightSection
+                        transactionsSection
 
-                    Color.clear.frame(height: 1000)
+                        insightSection
+
+                        Color.clear.frame(height: 1000)
+                    }
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
             }
-            .background(Color.Design.background.ignoresSafeArea())
             .refreshable {
                 await store.send(.pulledToRefresh).finish()
             }
@@ -47,6 +50,11 @@ public struct DashboardScreen: View {
                 item: $store.scope(state: \.addTransaction, action: \.addTransaction)
             ) { addTransactionStore in
                 AddTransactionView(store: addTransactionStore)
+            }
+            .sheet(
+                item: $store.scope(state: \.detail, action: \.detail)
+            ) { detailStore in
+                TransactionDetailView(store: detailStore)
             }
             .navigationDestination(
                 item: $store.scope(state: \.analysis, action: \.analysis)

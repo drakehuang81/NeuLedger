@@ -39,6 +39,7 @@ public struct DashboardFeature: Sendable {
         // Presentation
         @Presents var addTransaction: AddTransactionFeature.State?
         @Presents var analysis: AnalysisFeature.State?
+        @Presents var detail: TransactionDetailFeature.State?
 
         public init() {}
     }
@@ -75,6 +76,7 @@ public struct DashboardFeature: Sendable {
         // Child features
         case addTransaction(PresentationAction<AddTransactionFeature.Action>)
         case analysis(PresentationAction<AnalysisFeature.Action>)
+        case detail(PresentationAction<TransactionDetailFeature.Action>)
 
         // Delegation to parent
         case delegate(Delegate)
@@ -82,7 +84,6 @@ public struct DashboardFeature: Sendable {
         @CasePathable
         public enum Delegate: Sendable, Equatable {
             case seeAllTransactionsTapped
-            case transactionTapped(Transaction.ID)
             case savedRecurringConfirmation(RecurringTransaction.ID, Date)
         }
     }
@@ -297,7 +298,10 @@ public struct DashboardFeature: Sendable {
                 return .none
 
             case let .transactionTapped(id):
-                return .send(.delegate(.transactionTapped(id)))
+                if let transaction = state.recentTransactions.first(where: { $0.id == id }) {
+                    state.detail = TransactionDetailFeature.State(transaction: transaction)
+                }
+                return .none
 
             // MARK: Child features
             case .addTransaction(.presented(.delegate(.saved))),
@@ -329,6 +333,19 @@ public struct DashboardFeature: Sendable {
             case .analysis:
                 return .none
 
+            case .detail(.presented(.delegate(.deleted))),
+                 .detail(.presented(.delegate(.updated))):
+                return .run { send in
+                    async let transactions = transactionClient.fetchRecent()
+                    async let accounts = accountClient.fetchActive()
+                    let (t, a) = try await (transactions, accounts)
+                    await send(.transactionsUpdated(t))
+                    await send(.accountsUpdated(a))
+                }
+
+            case .detail:
+                return .none
+
             // MARK: Delegation
             case .delegate:
                 return .none
@@ -339,6 +356,9 @@ public struct DashboardFeature: Sendable {
         }
         .ifLet(\.$analysis, action: \.analysis) {
             AnalysisFeature()
+        }
+        .ifLet(\.$detail, action: \.detail) {
+            TransactionDetailFeature()
         }
     }
 }

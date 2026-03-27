@@ -14,6 +14,7 @@ public struct SpeechClient: Sendable {
 
     /// Starts recording and returns a stream of partial transcription strings.
     /// Each yielded String is the latest best-transcription result.
+    /// Default returns an immediately-finished stream so that tests do not hang.
     public var startRecording: @Sendable () -> AsyncThrowingStream<String, Error> = { .finished() }
 
     /// Stops recording and releases the audio session so other apps can resume audio.

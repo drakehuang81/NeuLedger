@@ -6,10 +6,15 @@ import Testing
 @Suite("SpeechClient Tests")
 struct SpeechClientTests {
 
-    @Test("SpeechClient is injectable via DependencyValues")
-    func testDependencyKey() {
-        @Dependency(\.speechClient) var client
-        #expect(true, "SpeechClient injected successfully")
+    @Test("SpeechClient testValue defaults: requestPermission returns false")
+    func testDependencyKey() async {
+        let client = SpeechClient(
+            requestPermission: { false },
+            startRecording: { .finished() },
+            stopRecording: { }
+        )
+        let granted = await client.requestPermission()
+        #expect(granted == false)
     }
 
     @Test("SpeechClient requestPermission mock override")

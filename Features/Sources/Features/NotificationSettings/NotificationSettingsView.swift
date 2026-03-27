@@ -187,7 +187,7 @@ private struct RecurringSectionView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        ForEach(store.items) { item in
+                        ForEach(Array(store.items.enumerated()), id: \.element.id) { index, item in
                             VStack(spacing: 0) {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
@@ -212,7 +212,7 @@ private struct RecurringSectionView: View {
                                 .onTapGesture {
                                     store.send(.itemTapped(item))
                                 }
-                                .swipeActions(edge: .trailing) {
+                                .contextMenu {
                                     Button(role: .destructive) {
                                         store.send(.deleteTapped(item.id))
                                     } label: {
@@ -220,7 +220,7 @@ private struct RecurringSectionView: View {
                                     }
                                 }
                             }
-                            if item.id != store.items.last?.id {
+                            if index < store.items.count - 1 {
                                 Divider().padding(.horizontal, 16)
                             }
                         }

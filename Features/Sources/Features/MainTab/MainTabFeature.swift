@@ -7,6 +7,11 @@ public enum InputPurpose: Equatable, Sendable {
     case ask
 }
 
+enum AccessoryMode: String, Equatable, Sendable {
+    case add
+    case ai
+}
+
 @Reducer
 struct MainTabFeature {
     // MARK: - State

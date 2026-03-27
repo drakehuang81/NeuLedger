@@ -65,6 +65,12 @@ public extension SettingsKey where Value == String {
         rawValue: "defaultAccountId",
         defaultValue: ""
     )
+
+    /// The user's preferred accessory bar mode ("add" or "ai"). Default: "add".
+    static let accessoryMode = SettingsKey(
+        rawValue: "accessoryMode",
+        defaultValue: "add"
+    )
 }
 
 // MARK: - Int Keys

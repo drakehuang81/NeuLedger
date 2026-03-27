@@ -3,17 +3,6 @@ import Common
 import SwiftUI
 import UIKit
 
-// MARK: - Navigation Destination
-
-enum SettingsRoute: Hashable {
-    case accountManagement
-    case categoryManagement
-    case budgetManagement
-    case tagManagement
-    case notificationSettings
-    case recurringTransactions
-}
-
 // MARK: - IdentifiableURL
 
 private struct IdentifiableURL: Identifiable {
@@ -43,7 +32,7 @@ public struct SettingsView: View {
     }
 
     public var body: some View {
-        NavigationStack {
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             ScrollView {
                 VStack(spacing: 24) {
                     // MARK: 管理
@@ -64,46 +53,6 @@ public struct SettingsView: View {
             .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.large)
             .task { await store.send(.task).finish() }
-            .navigationDestination(for: SettingsRoute.self) { route in
-                switch route {
-                case .accountManagement:
-                    AccountManagementView(
-                        store: Store(initialState: AccountManagementFeature.State()) {
-                            AccountManagementFeature()
-                        }
-                    )
-                case .categoryManagement:
-                    CategoryManagementView(
-                        store: Store(initialState: CategoryManagementFeature.State()) {
-                            CategoryManagementFeature()
-                        }
-                    )
-                case .budgetManagement:
-                    BudgetManagementView(
-                        store: Store(initialState: BudgetManagementFeature.State()) {
-                            BudgetManagementFeature()
-                        }
-                    )
-                case .tagManagement:
-                    TagManagementView(
-                        store: Store(initialState: TagManagementFeature.State()) {
-                            TagManagementFeature()
-                        }
-                    )
-                case .notificationSettings:
-                    NotificationSettingsView(
-                        store: Store(initialState: NotificationSettingsFeature.State()) {
-                            NotificationSettingsFeature()
-                        }
-                    )
-                case .recurringTransactions:
-                    RecurringTransactionManagementView(
-                        store: Store(initialState: RecurringTransactionManagementFeature.State()) {
-                            RecurringTransactionManagementFeature()
-                        }
-                    )
-                }
-            }
             .sheet(
                 item: Binding(
                     get: { store.exportedFileURL.map { IdentifiableURL(url: $0) } },
@@ -111,6 +60,21 @@ public struct SettingsView: View {
                 )
             ) { identifiable in
                 ShareSheet(items: [identifiable.url])
+            }
+        } destination: { store in
+            switch store.case {
+            case .accountManagement(let s):
+                AccountManagementView(store: s)
+            case .categoryManagement(let s):
+                CategoryManagementView(store: s)
+            case .budgetManagement(let s):
+                BudgetManagementView(store: s)
+            case .tagManagement(let s):
+                TagManagementView(store: s)
+            case .notificationSettings(let s):
+                NotificationSettingsView(store: s)
+            case .recurringTransactions(let s):
+                RecurringTransactionManagementView(store: s)
             }
         }
     }
@@ -122,7 +86,7 @@ public struct SettingsView: View {
             sectionHeader(String(localized: "settings_manage"))
             GlassContainer(cornerRadius: 16, padding: 0) {
                 VStack(spacing: 0) {
-                    NavigationLink(value: SettingsRoute.accountManagement) {
+                    Button { store.send(.accountManagementTapped) } label: {
                         settingsRow(
                             icon: "wallet.bifold",
                             iconColor: Color.Design.brandPrimary,
@@ -130,7 +94,8 @@ public struct SettingsView: View {
                             trailing: chevron
                         )
                     }
-                    NavigationLink(value: SettingsRoute.categoryManagement) {
+                    .buttonStyle(.plain)
+                    Button { store.send(.categoryManagementTapped) } label: {
                         settingsRow(
                             icon: "square.grid.2x2",
                             iconColor: Color.Design.brandSecondary,
@@ -138,7 +103,8 @@ public struct SettingsView: View {
                             trailing: chevron
                         )
                     }
-                    NavigationLink(value: SettingsRoute.budgetManagement) {
+                    .buttonStyle(.plain)
+                    Button { store.send(.budgetManagementTapped) } label: {
                         settingsRow(
                             icon: "banknote",
                             iconColor: Color.Design.incomeGreen,
@@ -146,7 +112,8 @@ public struct SettingsView: View {
                             trailing: chevron
                         )
                     }
-                    NavigationLink(value: SettingsRoute.tagManagement) {
+                    .buttonStyle(.plain)
+                    Button { store.send(.tagManagementTapped) } label: {
                         settingsRow(
                             icon: "tag",
                             iconColor: Color.Design.brandAccent,
@@ -154,7 +121,8 @@ public struct SettingsView: View {
                             trailing: chevron
                         )
                     }
-                    NavigationLink(value: SettingsRoute.notificationSettings) {
+                    .buttonStyle(.plain)
+                    Button { store.send(.notificationSettingsTapped) } label: {
                         settingsRow(
                             icon: "bell.badge",
                             iconColor: .orange,
@@ -162,7 +130,8 @@ public struct SettingsView: View {
                             trailing: chevron
                         )
                     }
-                    NavigationLink(value: SettingsRoute.recurringTransactions) {
+                    .buttonStyle(.plain)
+                    Button { store.send(.recurringTransactionsTapped) } label: {
                         settingsRow(
                             icon: "arrow.clockwise.circle",
                             iconColor: Color.Design.brandPrimary,
@@ -170,6 +139,7 @@ public struct SettingsView: View {
                             trailing: chevron
                         )
                     }
+                    .buttonStyle(.plain)
                 }
                 .frame(maxWidth: .infinity)
             }

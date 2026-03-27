@@ -56,6 +56,8 @@ struct CategoryPieChartView: View {
                                 Text(item.amount.twdFormatted)
                                     .font(Font.Design.amount)
                                     .foregroundStyle(Color.Design.textSecondary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                                 if onCategoryTapped != nil {
                                     Image(systemName: "chevron.right")
                                         .font(.caption2)

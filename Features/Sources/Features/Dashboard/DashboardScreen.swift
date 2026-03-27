@@ -80,6 +80,8 @@ public struct DashboardScreen: View {
                     .monospacedDigit()
                     .foregroundStyle(.primary)
                     .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
             .frame(maxWidth: .infinity)
         }

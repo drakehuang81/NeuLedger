@@ -46,9 +46,11 @@ public struct AccountCard: View {
                 }
 
                 // Amount
-                Text(balance.twdFormatted)
+                Text(balance.twdCompact)
                     .font(Font.Design.title2.weight(.bold).monospacedDigit())
                     .foregroundStyle(Color.Design.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
                 // Type
                 Text(type)

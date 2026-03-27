@@ -66,6 +66,8 @@ public struct TransactionRow: View {
                 Text(amountText)
                     .font(Font.Design.amount.weight(.semibold)) // 16pt Mono Semibold
                     .foregroundStyle(amountColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                 Text(date)
                     .font(Font.Design.caption) // 12pt

@@ -88,6 +88,8 @@ public struct TransactionDetailView: View {
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
                 .foregroundStyle(transaction.type.amountDisplayColor)
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
         }
     }
 

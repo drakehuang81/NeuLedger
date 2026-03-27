@@ -28,6 +28,8 @@ public struct BalanceDisplay: View {
                 Text(totalBalance.twdFormatted)
                     .font(Font.Design.largeTitle.weight(.bold).monospacedDigit()) // Bricolage equivalent
                     .foregroundStyle(Color.Design.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
 
                 HStack(spacing: 12) {
                     // Income
@@ -35,9 +37,11 @@ public struct BalanceDisplay: View {
                         Image(systemName: "arrow.down") // Incoming
                             .foregroundStyle(Color.Design.incomeGreen)
                             .font(.caption)
-                        Text(income.twdFormatted)
+                        Text(income.twdCompact)
                             .font(Font.Design.caption)
                             .foregroundStyle(Color.Design.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -49,9 +53,11 @@ public struct BalanceDisplay: View {
                         Image(systemName: "arrow.up") // Outgoing
                             .foregroundStyle(Color.Design.expenseRed)
                             .font(.caption)
-                        Text(expense.twdFormatted)
+                        Text(expense.twdCompact)
                             .font(Font.Design.caption)
                             .foregroundStyle(Color.Design.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)

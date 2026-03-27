@@ -22,7 +22,6 @@ public struct SettingsFeature: Sendable {
         case budgetManagement(BudgetManagementFeature)
         case tagManagement(TagManagementFeature)
         case notificationSettings(NotificationSettingsFeature)
-        case recurringTransactions(RecurringTransactionManagementFeature)
     }
 
     // MARK: - State
@@ -66,7 +65,6 @@ public struct SettingsFeature: Sendable {
         case budgetManagementTapped
         case tagManagementTapped
         case notificationSettingsTapped
-        case recurringTransactionsTapped
         case path(StackActionOf<Destination>)
         case task
         case aiToggleChanged(Bool)
@@ -117,10 +115,6 @@ public struct SettingsFeature: Sendable {
 
             case .notificationSettingsTapped:
                 state.path.append(.notificationSettings(NotificationSettingsFeature.State()))
-                return .none
-
-            case .recurringTransactionsTapped:
-                state.path.append(.recurringTransactions(RecurringTransactionManagementFeature.State()))
                 return .none
 
             case .path:

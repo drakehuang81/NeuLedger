@@ -73,8 +73,6 @@ public struct SettingsView: View {
                 TagManagementView(store: s)
             case .notificationSettings(let s):
                 NotificationSettingsView(store: s)
-            case .recurringTransactions(let s):
-                RecurringTransactionManagementView(store: s)
             }
         }
     }
@@ -127,15 +125,6 @@ public struct SettingsView: View {
                             icon: "bell.badge",
                             iconColor: .orange,
                             label: String(localized: "settings_notification_settings"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.recurringTransactionsTapped) } label: {
-                        settingsRow(
-                            icon: "arrow.clockwise.circle",
-                            iconColor: Color.Design.brandPrimary,
-                            label: String(localized: "settings_recurring_transactions"),
                             trailing: chevron
                         )
                     }

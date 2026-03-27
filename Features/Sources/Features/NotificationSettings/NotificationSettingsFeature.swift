@@ -21,6 +21,7 @@ public struct NotificationSettingsFeature: Sendable {
         public var warningThreshold: Int = 80
         public var isAuthorized: Bool = false
         public var showPermissionDeniedBanner: Bool = false
+        public var recurringManagement: RecurringTransactionManagementFeature.State = .init()
 
         public init(
             dailyReminderEnabled: Bool = false,
@@ -28,7 +29,8 @@ public struct NotificationSettingsFeature: Sendable {
             budgetWarningEnabled: Bool = false,
             warningThreshold: Int = 80,
             isAuthorized: Bool = false,
-            showPermissionDeniedBanner: Bool = false
+            showPermissionDeniedBanner: Bool = false,
+            recurringManagement: RecurringTransactionManagementFeature.State = .init()
         ) {
             self.dailyReminderEnabled = dailyReminderEnabled
             self.reminderDate = reminderDate
@@ -36,6 +38,7 @@ public struct NotificationSettingsFeature: Sendable {
             self.warningThreshold = warningThreshold
             self.isAuthorized = isAuthorized
             self.showPermissionDeniedBanner = showPermissionDeniedBanner
+            self.recurringManagement = recurringManagement
         }
     }
 
@@ -50,6 +53,7 @@ public struct NotificationSettingsFeature: Sendable {
         case warningThresholdChanged(Int)
         case permissionDenied
         case openSystemSettingsTapped
+        case recurringManagement(RecurringTransactionManagementFeature.Action)
     }
 
     // MARK: - Dependencies
@@ -61,6 +65,9 @@ public struct NotificationSettingsFeature: Sendable {
     // MARK: - Reducer
 
     public var body: some ReducerOf<Self> {
+        Scope(state: \.recurringManagement, action: \.recurringManagement) {
+            RecurringTransactionManagementFeature()
+        }
         Reduce { state, action in
             switch action {
 
@@ -78,11 +85,14 @@ public struct NotificationSettingsFeature: Sendable {
                     from: DateComponents(hour: hour, minute: minute)
                 ) ?? state.reminderDate
 
-                return .run { send in
-                    let authorized = await notificationClient.isAuthorized()
-                    await send(.authorizationStatusLoaded(authorized))
-                }
-                .cancellable(id: CancelID.task)
+                return .merge(
+                    .run { send in
+                        let authorized = await notificationClient.isAuthorized()
+                        await send(.authorizationStatusLoaded(authorized))
+                    }
+                    .cancellable(id: CancelID.task),
+                    .send(.recurringManagement(.task))
+                )
 
             case let .authorizationStatusLoaded(authorized):
                 state.isAuthorized = authorized
@@ -162,6 +172,9 @@ public struct NotificationSettingsFeature: Sendable {
                         await openURL(url)
                     }
                 }
+
+            case .recurringManagement:
+                return .none
             }
         }
     }

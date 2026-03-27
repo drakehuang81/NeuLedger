@@ -37,6 +37,7 @@ struct MainTabFeature {
         var inputPurpose: InputPurpose = .record
         var aiAnswer: String? = nil
         var showAccessoryBar: Bool = true
+        var accessoryMode: AccessoryMode = .add
 
         // Recurring transaction confirmation routing
         var pendingRecurringConfirmationId: RecurringTransaction.ID? = nil
@@ -72,6 +73,8 @@ struct MainTabFeature {
         case answerFailed
         case resultPillTapped
         case accessoryBarVisibilityLoaded(Bool)
+        case accessoryModeLoaded(AccessoryMode)
+        case accessoryModeSwitched(AccessoryMode)
 
         case pendingRecurringConfirmationReceived(RecurringTransaction.ID)
         case recurringTemplateFetched(RecurringTransaction)
@@ -109,6 +112,10 @@ struct MainTabFeature {
                             await send(.aiAvailabilityLoaded(isAvailable: aiServiceClient.isAvailable()))
                             let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
                             await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
+                            let rawMode = userSettingsClient.string(.accessoryMode)
+                            let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
+                            let resolvedMode = await aiServiceClient.isAvailable() ? savedMode : .add
+                            await send(.accessoryModeLoaded(resolvedMode))
                         }
                         // Subscribe to recurring notification taps
                         group.addTask {
@@ -217,6 +224,15 @@ struct MainTabFeature {
 
             case let .accessoryBarVisibilityLoaded(visible):
                 state.showAccessoryBar = visible
+                return .none
+
+            case let .accessoryModeLoaded(mode):
+                state.accessoryMode = state.aiUnavailable ? .add : mode
+                return .none
+
+            case let .accessoryModeSwitched(mode):
+                state.accessoryMode = mode
+                userSettingsClient.setString(mode.rawValue, .accessoryMode)
                 return .none
 
             case let .tabSelected(tab):

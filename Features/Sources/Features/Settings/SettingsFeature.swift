@@ -29,7 +29,6 @@ public struct SettingsFeature: Sendable {
     @ObservableState
     public struct State: Equatable {
         public var path: StackState<Destination.State> = StackState()
-        public var isAIEnabled: Bool = true
         public var accounts: [Account] = []
         public var selectedDefaultAccountId: String = ""
         public var defaultAccountName: String = ""
@@ -40,14 +39,12 @@ public struct SettingsFeature: Sendable {
         public var showAccessoryBar: Bool = true
 
         public init(
-            isAIEnabled: Bool = true,
             accounts: [Account] = [],
             selectedDefaultAccountId: String = "",
             defaultAccountName: String = "",
             currentLanguage: String = "",
             showAccessoryBar: Bool = true
         ) {
-            self.isAIEnabled = isAIEnabled
             self.accounts = accounts
             self.selectedDefaultAccountId = selectedDefaultAccountId
             self.defaultAccountName = defaultAccountName
@@ -67,7 +64,6 @@ public struct SettingsFeature: Sendable {
         case notificationSettingsTapped
         case path(StackActionOf<Destination>)
         case task
-        case aiToggleChanged(Bool)
         case accountsLoaded([Account])
         case defaultAccountSelected(String)
         case languageTapped
@@ -123,12 +119,10 @@ public struct SettingsFeature: Sendable {
             case .task:
                 return .run { send in
                     async let accounts = accountClient.fetchActive()
-                    let isAIEnabled = userSettingsClient.bool(.aiEnabled)
                     let defaultId = userSettingsClient.string(.defaultAccountId)
                     let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
                     let fetched = try await accounts
                     await send(.accountsLoaded(fetched))
-                    await send(.aiToggleChanged(isAIEnabled))
                     await send(.defaultAccountSelected(defaultId))
                     let langCode = Locale.current.language.languageCode?.identifier ?? "zh"
                     let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
@@ -136,11 +130,6 @@ public struct SettingsFeature: Sendable {
                     await send(.accessoryBarToggleChanged(showAccessoryBar))
                 }
                 .cancellable(id: CancelID.task)
-
-            case let .aiToggleChanged(value):
-                state.isAIEnabled = value
-                userSettingsClient.setBool(value, .aiEnabled)
-                return .none
 
             case let .accountsLoaded(accounts):
                 state.accounts = accounts

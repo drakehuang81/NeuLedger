@@ -169,14 +169,6 @@ public struct SettingsView: View {
                         )
                     }
                     settingsRow(
-                        icon: "sparkles",
-                        iconColor: Color.Design.brandPrimary,
-                        label: String(localized: "settings_ai_features"),
-                        trailing: Toggle("", isOn: $store.isAIEnabled.sending(\.aiToggleChanged))
-                            .labelsHidden()
-                            .tint(Color.Design.incomeGreen)
-                    )
-                    settingsRow(
                         icon: "dock.rectangle",
                         iconColor: Color.Design.textSecondary,
                         label: String(localized: "settings_show_accessory_bar"),

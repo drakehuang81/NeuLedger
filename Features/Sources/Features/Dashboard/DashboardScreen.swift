@@ -16,7 +16,7 @@ public struct DashboardScreen: View {
     }
 
     public var body: some View {
-        NavigationStack {
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             ZStack {
                 Color.Design.background.ignoresSafeArea()
 
@@ -33,7 +33,6 @@ public struct DashboardScreen: View {
 
                         insightSection
 
-                        Color.clear.frame(height: 1000)
                     }
                     .padding(.horizontal, 16)
                 }
@@ -56,10 +55,10 @@ public struct DashboardScreen: View {
             ) { detailStore in
                 TransactionDetailView(store: detailStore)
             }
-            .navigationDestination(
-                item: $store.scope(state: \.analysis, action: \.analysis)
-            ) { analysisStore in
-                AnalysisView(store: analysisStore)
+        } destination: { store in
+            switch store.case {
+            case .analysis(let store):
+                AnalysisView(store: store)
             }
         }
     }
@@ -185,7 +184,8 @@ public struct DashboardScreen: View {
                                     name: account.name,
                                     balance: store.accountBalances[account.id] ?? 0,
                                     type: account.type.displayLabel,
-                                    icon: account.icon
+                                    icon: account.icon,
+                                    color: account.color
                                 )
                             }
                             .buttonStyle(.plain)

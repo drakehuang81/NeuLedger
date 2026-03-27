@@ -27,7 +27,7 @@ public struct CategoryManagementView: View {
             }
         }
         .navigationTitle(String(localized: "category_management_title"))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 EditButton()
@@ -85,7 +85,7 @@ public struct CategoryManagementView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .padding(.bottom, 100)
+//        .padding(.bottom, 100)
     }
 
     private func categoryRow(_ category: Domain.Category) -> some View {

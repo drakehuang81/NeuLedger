@@ -35,6 +35,15 @@ struct MainTabFeature {
 
         // Recurring transaction confirmation routing
         var pendingRecurringConfirmationId: RecurringTransaction.ID? = nil
+
+        var isAccessoryVisible: Bool {
+            guard showAccessoryBar else { return false }
+            switch selectedTab {
+            case .settings:     return settings.path.isEmpty
+            case .dashboard:    return dashboard.path.isEmpty
+            case .transactions: return true
+            }
+        }
     }
 
     // MARK: - Action

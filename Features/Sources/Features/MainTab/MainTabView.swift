@@ -13,11 +13,11 @@ struct MainTabView: View {
     var body: some View {
         if #available(iOS 26.1, *) {
             tabViewBase
-                .tabViewBottomAccessory(isEnabled: store.showAccessoryBar) {
+                .tabViewBottomAccessory(isEnabled: store.isAccessoryVisible) {
                     CustomAccessoryView(store: store)
                 }
         } else {
-            if store.showAccessoryBar {
+            if store.isAccessoryVisible {
                 tabViewBase
                     .tabViewBottomAccessory {
                         CustomAccessoryView(store: store)
@@ -27,6 +27,7 @@ struct MainTabView: View {
             }
         }
     }
+
 
     private var tabViewBase: some View {
         TabView(selection: Binding(

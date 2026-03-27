@@ -69,11 +69,11 @@ public struct BudgetGauge: View {
             
             // Footer
             HStack {
-                Text("gauge_used") + Text(" \(used.twdFormatted)")
+                Text("\(String(localized: "gauge_used")) \(used.twdFormatted)")
                     .font(Font.Design.amount)
                     .foregroundStyle(Color.Design.textSecondary)
                 Spacer()
-                Text("gauge_remaining") + Text(" \((total - used).twdFormatted)")
+                Text("\(String(localized: "gauge_remaining")) \((total - used).twdFormatted)")
                     .font(Font.Design.amount)
                     .foregroundStyle(Color.Design.textSecondary)
             }

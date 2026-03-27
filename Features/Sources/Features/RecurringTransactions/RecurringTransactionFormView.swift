@@ -36,6 +36,11 @@ public struct RecurringTransactionFormView: View {
                         Text(p.localizedName).tag(p)
                     }
                 }
+                DatePicker(
+                    String(localized: "recurring_transaction_notification_time"),
+                    selection: $store.notificationTime.sending(\.notificationTimeChanged),
+                    displayedComponents: .hourAndMinute
+                )
             }
 
             Section {

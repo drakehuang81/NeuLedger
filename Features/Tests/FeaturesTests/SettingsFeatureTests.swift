@@ -42,8 +42,8 @@ struct SettingsFeatureTests {
 
     // MARK: - task Effect
 
-    @Test(".task loads AI state and account name concurrently")
-    func testTaskLoadsAIStateAndAccountName() async throws {
+    @Test(".task loads account name concurrently")
+    func testTaskLoadsAccountName() async throws {
         let store = await TestStore(
             initialState: SettingsFeature.State()
         ) {
@@ -60,10 +60,6 @@ struct SettingsFeatureTests {
         await store.receive(\.accountsLoaded) {
             $0.accounts = Self.sampleAccounts
             $0.defaultAccountName = "現金錢包"
-        }
-
-        await store.receive(\.aiToggleChanged) {
-            $0.isAIEnabled = false
         }
 
         await store.receive(\.defaultAccountSelected)
@@ -98,9 +94,6 @@ struct SettingsFeatureTests {
             $0.defaultAccountName = String(localized: "settings_none")
         }
 
-        // aiEnabled is already true (default), so no state mutation expected
-        await store.receive(\.aiToggleChanged)
-
         await store.receive(\.defaultAccountSelected)
 
         await store.receive(\.languageLoaded) {
@@ -111,38 +104,6 @@ struct SettingsFeatureTests {
 
         // showAccessoryBar is already true (default), so no state mutation expected
         await store.receive(\.accessoryBarToggleChanged)
-    }
-
-    // MARK: - AI Toggle
-
-    @Test("aiToggleChanged(true) updates isAIEnabled state to true")
-    func testAIToggleChangedTrue() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State(isAIEnabled: false)
-        ) {
-            SettingsFeature()
-        } withDependencies: {
-            $0.userSettingsClient.setBool = { _, _ in }
-        }
-
-        await store.send(.aiToggleChanged(true)) {
-            $0.isAIEnabled = true
-        }
-    }
-
-    @Test("aiToggleChanged(false) updates isAIEnabled state to false")
-    func testAIToggleChangedFalse() async throws {
-        let store = await TestStore(
-            initialState: SettingsFeature.State(isAIEnabled: true)
-        ) {
-            SettingsFeature()
-        } withDependencies: {
-            $0.userSettingsClient.setBool = { _, _ in }
-        }
-
-        await store.send(.aiToggleChanged(false)) {
-            $0.isAIEnabled = false
-        }
     }
 
     // MARK: - accountsLoaded
@@ -373,7 +334,6 @@ struct SettingsAccessoryBarTests {
         await store.receive(\.accountsLoaded) {
             $0.defaultAccountName = String(localized: "settings_none")
         }
-        await store.receive(\.aiToggleChanged)
         await store.receive(\.defaultAccountSelected)
         await store.receive(\.languageLoaded) {
             $0.currentLanguage = Locale.current.localizedString(

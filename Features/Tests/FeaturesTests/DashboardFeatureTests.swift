@@ -323,7 +323,7 @@ struct DashboardFeatureTests {
         }
 
         await store.send(.accountTapped(accountId)) {
-            $0.analysis = AnalysisFeature.State(selectedAccountId: accountId)
+            $0.path.append(.analysis(AnalysisFeature.State(selectedAccountId: accountId)))
         }
     }
 

@@ -31,8 +31,8 @@ public struct TransactionDetailView: View {
                 .padding(.top, 24)
                 .padding(.bottom, 40)
             }
-            .navigationTitle(transaction.type.displayName)
-            .navigationBarTitleDisplayMode(.inline)
+//            .navigationTitle(transaction.type.displayName)
+//            .navigationBarTitleDisplayMode(.inline)
             .task { await store.send(.task).finish() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

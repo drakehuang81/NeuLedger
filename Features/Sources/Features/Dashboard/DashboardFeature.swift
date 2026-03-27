@@ -6,6 +6,13 @@ import Foundation
 public struct DashboardFeature: Sendable {
     public init() {}
 
+    // MARK: - Destination
+
+    @Reducer(state: .equatable, action: .equatable)
+    public enum Destination {
+        case analysis(AnalysisFeature)
+    }
+
     // MARK: - Cancellation IDs
 
     private enum CancelID {
@@ -36,9 +43,11 @@ public struct DashboardFeature: Sendable {
         public var hasAccounts: Bool = false
         public var hasTransactions: Bool = false
 
+        // Navigation
+        public var path: StackState<Destination.State> = StackState()
+
         // Presentation
         @Presents var addTransaction: AddTransactionFeature.State?
-        @Presents var analysis: AnalysisFeature.State?
         @Presents var detail: TransactionDetailFeature.State?
 
         public init() {}
@@ -46,7 +55,7 @@ public struct DashboardFeature: Sendable {
 
     // MARK: - Action
 
-    public enum Action: Sendable, Equatable {
+    public enum Action: Equatable {
         // Lifecycle
         case task
         case pulledToRefresh
@@ -74,8 +83,8 @@ public struct DashboardFeature: Sendable {
         case transactionTapped(Transaction.ID)
 
         // Child features
+        case path(StackActionOf<Destination>)
         case addTransaction(PresentationAction<AddTransactionFeature.Action>)
-        case analysis(PresentationAction<AnalysisFeature.Action>)
         case detail(PresentationAction<TransactionDetailFeature.Action>)
 
         // Delegation to parent
@@ -219,7 +228,7 @@ public struct DashboardFeature: Sendable {
 
             // Task 2.3: Fetch AI insight with caching and graceful fallback
             case .fetchAIInsight:
-                guard aiServiceClient.isAvailable(), userSettingsClient.bool(.aiEnabled) else { return .none }
+                guard aiServiceClient.isAvailable() else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
                     // Build a spending summary from recent transactions
@@ -294,7 +303,7 @@ public struct DashboardFeature: Sendable {
                 return .send(.delegate(.seeAllTransactionsTapped))
 
             case let .accountTapped(id):
-                state.analysis = AnalysisFeature.State(selectedAccountId: id)
+                state.path.append(.analysis(AnalysisFeature.State(selectedAccountId: id)))
                 return .none
 
             case let .transactionTapped(id):
@@ -330,7 +339,7 @@ public struct DashboardFeature: Sendable {
             case .addTransaction:
                 return .none
 
-            case .analysis:
+            case .path:
                 return .none
 
             case .detail(.presented(.delegate(.deleted))),
@@ -351,11 +360,9 @@ public struct DashboardFeature: Sendable {
                 return .none
             }
         }
+        .forEach(\.path, action: \.path)
         .ifLet(\.$addTransaction, action: \.addTransaction) {
             AddTransactionFeature()
-        }
-        .ifLet(\.$analysis, action: \.analysis) {
-            AnalysisFeature()
         }
         .ifLet(\.$detail, action: \.detail) {
             TransactionDetailFeature()

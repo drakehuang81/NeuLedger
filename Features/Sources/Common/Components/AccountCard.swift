@@ -13,17 +13,20 @@ public struct AccountCard: View {
     let balance: Decimal
     let type: String
     let icon: String // System name
-    
+    let color: String // Hex color string
+
     public init(
         name: String,
         balance: Decimal,
         type: String,
-        icon: String = "building.columns"
+        icon: String = "building.columns",
+        color: String = "#3478F6"
     ) {
         self.name = name
         self.balance = balance
         self.type = type
         self.icon = icon
+        self.color = color
     }
     
     public var body: some View {
@@ -33,7 +36,7 @@ public struct AccountCard: View {
                 HStack(spacing: 8) {
                     Image(systemName: icon)
                         .font(.system(size: 20))
-                        .foregroundStyle(Color.Design.brandPrimary)
+                        .foregroundStyle(Color(hex: color))
                         .frame(width: 20, height: 20)
 
                     Text(name)

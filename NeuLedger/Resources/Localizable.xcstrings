@@ -1862,23 +1862,6 @@
         }
       }
     },
-    "settings_ai_features": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI Smart Features"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 智慧功能"
-          }
-        }
-      }
-    },
     "settings_show_accessory_bar": {
       "extractionState": "manual",
       "localizations": {
@@ -3569,8 +3552,8 @@
     "notification_recurring_empty": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "No scheduled reminders yet" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚未設定任何記帳提醒" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Unnamed" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "未命名" } }
       }
     },
     "notification_daily_reminder_title": {
@@ -3622,6 +3605,13 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "頻率" } }
       }
     },
+    "recurring_transaction_notification_time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Notification Time" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "通知時間" } }
+      }
+    },
     "recurring_transaction_notification_title": {
       "extractionState": "manual",
       "localizations": {
@@ -3646,15 +3636,15 @@
     "recurring_transaction_add_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "New Recurring" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增定期交易" } }
+        "en": { "stringUnit": { "state": "translated", "value": "New Reminder" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增記帳提醒" } }
       }
     },
     "recurring_transaction_edit_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Edit Recurring" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯定期交易" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Edit Reminder" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯記帳提醒" } }
       }
     },
     "recurring_transaction_enable_label": {

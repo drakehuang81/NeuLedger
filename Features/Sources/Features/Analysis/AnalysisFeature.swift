@@ -18,7 +18,7 @@ public struct AnalysisFeature: Sendable {
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State: Equatable, Sendable {
         public enum Period: String, Equatable, CaseIterable, Identifiable, Sendable {
             case week
             case month

@@ -23,6 +23,7 @@ public struct RecurringTransactionFormFeature: Sendable {
         public var categoryId: Domain.Category.ID?
         public var accounts: [Account] = []
         public var categories: [Domain.Category] = []
+        public var notificationTime: Date = Date()
         public var amountError: String?
         public var accountError: String?
 
@@ -32,10 +33,14 @@ public struct RecurringTransactionFormFeature: Sendable {
             case .add:
                 amountText = ""; note = ""; type = .expense
                 frequency = .monthly; accountId = nil; toAccountId = nil; categoryId = nil
+                var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                components.hour = 9; components.minute = 0
+                notificationTime = Calendar.current.date(from: components) ?? Date()
             case let .edit(rt):
                 amountText = "\(NSDecimalNumber(decimal: rt.amount).intValue)"
                 note = rt.note ?? ""; type = rt.type; frequency = rt.frequency
                 accountId = rt.accountId; toAccountId = rt.toAccountId; categoryId = rt.categoryId
+                notificationTime = rt.nextDueDate
             }
         }
     }
@@ -50,6 +55,7 @@ public struct RecurringTransactionFormFeature: Sendable {
         case accountChanged(Account.ID?)
         case toAccountChanged(Account.ID?)
         case categoryChanged(Domain.Category.ID?)
+        case notificationTimeChanged(Date)
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
@@ -92,6 +98,7 @@ public struct RecurringTransactionFormFeature: Sendable {
             case let .accountChanged(id): state.accountId = id; return .none
             case let .toAccountChanged(id): state.toAccountId = id; return .none
             case let .categoryChanged(id): state.categoryId = id; return .none
+            case let .notificationTimeChanged(time): state.notificationTime = time; return .none
 
             case .saveTapped:
                 guard let amount = Decimal(string: state.amountText), amount > 0 else {
@@ -111,15 +118,17 @@ public struct RecurringTransactionFormFeature: Sendable {
                 let categoryId = state.categoryId
                 let toAccountId = state.toAccountId
                 let type_ = state.type
+                let notificationTime = state.notificationTime
 
                 let template: RecurringTransaction
                 let isEdit: Bool
 
+                let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: notificationTime)
+
                 switch mode {
                 case let .edit(existing):
                     isEdit = true
-                    // Preserve existing.nextDueDate — it is only advanced after confirming a transaction,
-                    // not during a form edit (amount/note/frequency/account changes).
+                    // Preserve existing.nextDueDate date portion; only update the notification time.
                     var updated = existing
                     updated.amount = amount
                     updated.note = note
@@ -128,16 +137,28 @@ public struct RecurringTransactionFormFeature: Sendable {
                     updated.toAccountId = toAccountId
                     updated.type = type_
                     updated.frequency = frequency
+                    updated.nextDueDate = Calendar.current.date(
+                        bySettingHour: timeComponents.hour ?? 9,
+                        minute: timeComponents.minute ?? 0,
+                        second: 0,
+                        of: existing.nextDueDate
+                    ) ?? existing.nextDueDate
                     template = updated
                 case .add:
                     isEdit = false
                     let now = Date()
-                    let nextDue: Date
+                    let baseDate: Date
                     switch frequency {
-                    case .weekly:  nextDue = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: now) ?? now
-                    case .monthly: nextDue = Calendar.current.date(byAdding: .month, value: 1, to: now) ?? now
-                    case .yearly:  nextDue = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
+                    case .weekly:  baseDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: now) ?? now
+                    case .monthly: baseDate = Calendar.current.date(byAdding: .month, value: 1, to: now) ?? now
+                    case .yearly:  baseDate = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
                     }
+                    let nextDue = Calendar.current.date(
+                        bySettingHour: timeComponents.hour ?? 9,
+                        minute: timeComponents.minute ?? 0,
+                        second: 0,
+                        of: baseDate
+                    ) ?? baseDate
                     template = RecurringTransaction(
                         id: UUID(),
                         amount: amount,

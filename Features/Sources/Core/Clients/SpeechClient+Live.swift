@@ -9,7 +9,18 @@ extension SpeechClient: DependencyKey {
         return SpeechClient(
             requestPermission: { await actor.requestPermission() },
             startRecording: { actor.startRecording() },
-            stopRecording: { Task { await actor.stopRecording() } }
+            stopRecording: {
+                // Fire-and-forget is acceptable here because:
+                // 1. stopRecording() calls streamContinuation?.finish() first,
+                //    so the stream consumer sees the stream end immediately once
+                //    the actor hop completes.
+                // 2. The TCA effect is cancelled via CancelID, so any pending
+                //    stream values are dropped regardless.
+                // 3. AVAudioEngine.stop() and AVAudioSession.setActive(false) are
+                //    idempotent teardown that don't need to complete before the
+                //    next action is processed.
+                Task { await actor.stopRecording() }
+            }
         )
     }
 }
@@ -20,22 +31,22 @@ private actor SpeechRecordingActor {
     private var audioEngine: AVAudioEngine?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    // Fix C1 + C2: store the continuation so stopRecording() can explicitly finish it.
+    private var streamContinuation: AsyncThrowingStream<String, Error>.Continuation?
 
+    // Fix I1: request both permissions concurrently, regardless of mic result.
     func requestPermission() async -> Bool {
-        let micGranted = await AVAudioApplication.requestRecordPermission()
-        guard micGranted else { return false }
-
-        let status = await withCheckedContinuation {
+        async let micGranted = AVAudioApplication.requestRecordPermission()
+        let speechStatus = await withCheckedContinuation {
             (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
         }
-        return status == .authorized
+        return await micGranted && speechStatus == .authorized
     }
 
     nonisolated func startRecording() -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
-            Task { [weak self] in
-                guard let self else { continuation.finish(); return }
+            Task {
                 await self.beginRecording(continuation: continuation)
             }
         }
@@ -44,12 +55,17 @@ private actor SpeechRecordingActor {
     private func beginRecording(
         continuation: AsyncThrowingStream<String, Error>.Continuation
     ) async {
+        // Fix C1 + C2: store continuation before any early-exit path so
+        // stopRecording() can always reach it.
+        self.streamContinuation = continuation
+
         do {
             // zh-TW first; fall back to system locale if unavailable on this device
             guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-TW"))
                     ?? SFSpeechRecognizer(locale: .current),
                   recognizer.isAvailable else {
                 continuation.finish(throwing: SpeechClientError.recognizerUnavailable)
+                self.streamContinuation = nil
                 return
             }
 
@@ -66,7 +82,7 @@ private actor SpeechRecordingActor {
 
             let inputNode = engine.inputNode
             let format = inputNode.outputFormat(forBus: 0)
-            inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
                 request.append(buffer)
             }
 
@@ -85,6 +101,7 @@ private actor SpeechRecordingActor {
             }
         } catch {
             continuation.finish(throwing: error)
+            self.streamContinuation = nil
         }
     }
 
@@ -93,9 +110,13 @@ private actor SpeechRecordingActor {
         audioEngine?.stop()
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
+        // Fix C1 + C2: explicitly finish the stream so the consumer doesn't hang
+        // waiting for a recognition callback that may never arrive after cancel().
+        streamContinuation?.finish()
         audioEngine = nil
         recognitionRequest = nil
         recognitionTask = nil
+        streamContinuation = nil
         try? AVAudioSession.sharedInstance().setActive(
             false, options: .notifyOthersOnDeactivation
         )
@@ -104,6 +125,7 @@ private actor SpeechRecordingActor {
 
 // MARK: - SpeechClientError
 
-enum SpeechClientError: Error {
+// Fix I3: public so callers in the Features layer can pattern-match on it.
+public enum SpeechClientError: Error {
     case recognizerUnavailable
 }

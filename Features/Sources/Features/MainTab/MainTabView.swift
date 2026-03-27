@@ -58,23 +58,29 @@ private struct CustomAccessoryView: View {
     var body: some View {
         switch placement {
         case .inline:
-            HStack(spacing: 20) {
-                Button {
+            Button {
+                if store.accessoryMode == .ai {
                     withAnimation(.spring()) {
                         _ = store.send(.aiInputButtonTapped)
                     }
-                } label: {
-                    Image(systemName: "wand.and.sparkles")
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(store.aiUnavailable ? Color.Design.textTertiary : Color.primary)
-                }
-                .disabled(store.aiUnavailable)
-
-                Button {
+                } else {
                     store.send(.contextActionTapped)
+                }
+            } label: {
+                Image(systemName: store.accessoryMode == .ai ? "wand.and.sparkles" : "plus.circle.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(store.accessoryMode == .ai ? Color.accentColor : Color.primary)
+            }
+            .contextMenu(if: !store.aiUnavailable) {
+                Button {
+                    store.send(.accessoryModeSwitched(.add))
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
+                    Label(String(localized: "accessory_add"), systemImage: "plus")
+                }
+                Button {
+                    store.send(.accessoryModeSwitched(.ai))
+                } label: {
+                    Label(String(localized: "accessory_ai_record"), systemImage: "wand.and.sparkles")
                 }
             }
         case .expanded, _:
@@ -93,43 +99,46 @@ private struct CustomAccessoryView: View {
     // MARK: - ① Compact normal
 
     private var compactPillContent: some View {
-        HStack(spacing: 0) {
-            Button {
+        let isAI = store.accessoryMode == .ai
+        return Button {
+            if isAI {
                 withAnimation(.spring()) {
                     _ = store.send(.aiInputButtonTapped)
                 }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "wand.and.sparkles")
-                        .symbolRenderingMode(.hierarchical)
-                    Text(String(localized: "accessory_ai_record"))
-                        .font(Font.Design.callout)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-            }
-            .disabled(store.aiUnavailable)
-            .foregroundStyle(store.aiUnavailable ? Color.Design.textTertiary : Color.primary)
-
-            Divider().frame(height: 20)
-
-            Button {
+            } else {
                 store.send(.contextActionTapped)
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
-                    Text(String(localized: "accessory_add"))
-                        .font(Font.Design.callout)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
             }
-            .foregroundStyle(Color.accentColor)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: isAI ? "wand.and.sparkles" : "plus.circle.fill")
+                    .symbolRenderingMode(.hierarchical)
+                Text(isAI
+                     ? String(localized: "accessory_ai_record")
+                     : String(localized: "accessory_add"))
+                    .font(Font.Design.callout)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .foregroundStyle(isAI ? Color.accentColor : Color.primary)
         }
         .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
+        .overlay(Capsule().strokeBorder(
+            isAI ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.1),
+            lineWidth: 1
+        ))
         .padding(.vertical, 8)
+        .contextMenu(if: !store.aiUnavailable) {
+            Button {
+                store.send(.accessoryModeSwitched(.add))
+            } label: {
+                Label(String(localized: "accessory_add"), systemImage: "plus")
+            }
+            Button {
+                store.send(.accessoryModeSwitched(.ai))
+            } label: {
+                Label(String(localized: "accessory_ai_record"), systemImage: "wand.and.sparkles")
+            }
+        }
     }
 
     // MARK: - ② Processing
@@ -276,6 +285,19 @@ private struct CustomAccessoryView: View {
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+}
+
+// MARK: - Conditional contextMenu helper
+
+private extension View {
+    @ViewBuilder
+    func contextMenu(if condition: Bool, @ViewBuilder menuItems: () -> some View) -> some View {
+        if condition {
+            self.contextMenu(menuItems: menuItems)
+        } else {
+            self
+        }
     }
 }
 

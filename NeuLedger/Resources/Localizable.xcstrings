@@ -3545,6 +3545,34 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "前往設定" } }
       }
     },
+    "notification_recurring_section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Scheduled Reminders" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記帳提醒" } }
+      }
+    },
+    "notification_recurring_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Set up recurring reminders. You'll get a push notification when it's time to record." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "設定週期性的記帳提醒，到期時推播通知，方便你快速完成記帳。" } }
+      }
+    },
+    "notification_recurring_add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add Reminder" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增提醒" } }
+      }
+    },
+    "notification_recurring_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No scheduled reminders yet" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚未設定任何記帳提醒" } }
+      }
+    },
     "notification_daily_reminder_title": {
       "extractionState": "manual",
       "localizations": {
@@ -3641,13 +3669,6 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Disable" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "停用" } }
-      }
-    },
-    "settings_recurring_transactions": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Recurring Transactions" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "定期交易" } }
       }
     },
     "recurring_transaction_delete_confirm": {

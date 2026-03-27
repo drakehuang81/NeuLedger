@@ -3688,6 +3688,39 @@
         "en": { "stringUnit": { "state": "translated", "value": "Select Account" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "選擇帳戶" } }
       }
+    },
+    "speech_permission_denied_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請至設定 › NeuLedger 開啟麥克風與語音辨識權限。"
+          }
+        }
+      }
+    },
+    "speech_recognition_failed_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "語音辨識失敗，請重試或直接輸入文字。"
+          }
+        }
+      }
+    },
+    "speech_recording_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "錄音中"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

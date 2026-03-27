@@ -78,6 +78,7 @@ public struct BudgetManagementView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .padding(.bottom, 100)
     }
 }
 

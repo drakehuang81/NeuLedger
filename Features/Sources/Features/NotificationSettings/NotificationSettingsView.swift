@@ -24,6 +24,7 @@ public struct NotificationSettingsView: View {
                 budgetWarningSection
             }
             .padding(16)
+            .padding(.bottom, 84)
         }
         .background(Color.Design.background.ignoresSafeArea())
         .navigationTitle(String(localized: "settings_notification_settings"))

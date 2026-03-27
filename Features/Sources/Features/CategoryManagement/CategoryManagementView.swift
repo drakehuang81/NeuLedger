@@ -11,52 +11,50 @@ public struct CategoryManagementView: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            Group {
-                if store.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if store.filteredCategories.isEmpty {
-                    EmptyStateView(
-                        icon: "tag.slash",
-                        title: String(localized: "category_management_empty_title"),
-                        description: String(localized: "category_management_empty_desc")
-                    )
+        Group {
+            if store.isLoading {
+                ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    categoriesList
-                }
+            } else if store.filteredCategories.isEmpty {
+                EmptyStateView(
+                    icon: "tag.slash",
+                    title: String(localized: "category_management_empty_title"),
+                    description: String(localized: "category_management_empty_desc")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                categoriesList
             }
-            .navigationTitle(String(localized: "category_management_title"))
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    EditButton()
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        store.send(.addButtonTapped)
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
-            .safeAreaInset(edge: .top) {
-                typePicker
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.Design.background)
-            }
-            .task {
-                await store.send(.task).finish()
-            }
-            .sheet(
-                item: $store.scope(state: \.addEdit, action: \.addEdit)
-            ) { addEditStore in
-                AddEditCategoryView(store: addEditStore)
-            }
-            .alert($store.scope(state: \.alert, action: \.alert))
         }
+        .navigationTitle(String(localized: "category_management_title"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                EditButton()
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    store.send(.addButtonTapped)
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            typePicker
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.Design.background)
+        }
+        .task {
+            await store.send(.task).finish()
+        }
+        .sheet(
+            item: $store.scope(state: \.addEdit, action: \.addEdit)
+        ) { addEditStore in
+            AddEditCategoryView(store: addEditStore)
+        }
+        .alert($store.scope(state: \.alert, action: \.alert))
     }
 
     // MARK: - Type Picker

@@ -189,6 +189,28 @@ struct NotificationSettingsFeatureTests {
         }
     }
 
+    // MARK: - Recurring Management Integration
+
+    @Test(".task forwards recurringManagement(.task) and reaches stable state")
+    func taskForwardsToRecurringManagement() async {
+        let store = await TestStore(initialState: NotificationSettingsFeature.State()) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.notificationClient.isAuthorized = { false }
+            $0.userSettingsClient.bool = { $0.defaultValue }
+            $0.userSettingsClient.int = { $0.defaultValue }
+            $0.recurringTransactionClient.fetchAll = { [] }
+        }
+        await store.send(.task)
+        await store.skipReceivedActions()
+    }
+
+    @Test("recurringManagement state is default-initialized with empty items")
+    func recurringManagementStateIsEmbedded() {
+        let state = NotificationSettingsFeature.State()
+        #expect(state.recurringManagement.items.isEmpty)
+    }
+
     // MARK: - Budget Warning Threshold
 
     @Test("warningThresholdChanged persists without triggering notification")

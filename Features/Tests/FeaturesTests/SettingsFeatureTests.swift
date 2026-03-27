@@ -457,13 +457,4 @@ struct SettingsNavigationTests {
         }
     }
 
-    @Test("recurringTransactionsTapped appends recurringTransactions to path")
-    func recurringTransactionsTapped() async {
-        let store = await TestStore(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        }
-        await store.send(.recurringTransactionsTapped) {
-            $0.path.append(.recurringTransactions(RecurringTransactionManagementFeature.State()))
-        }
-    }
 }

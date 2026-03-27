@@ -11,36 +11,34 @@ public struct TagManagementView: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            Group {
-                if store.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if store.tags.isEmpty {
-                    emptyState
-                } else {
-                    tagList
-                }
+        Group {
+            if store.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.tags.isEmpty {
+                emptyState
+            } else {
+                tagList
             }
-            .navigationTitle(String(localized: "tag_management_title"))
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        store.send(.addButtonTapped)
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
-            .task {
-                await store.send(.task).finish()
-            }
-            .sheet(item: $store.scope(state: \.addEdit, action: \.addEdit)) { addEditStore in
-                AddEditTagView(store: addEditStore)
-            }
-            .alert($store.scope(state: \.alert, action: \.alert))
         }
+        .navigationTitle(String(localized: "tag_management_title"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    store.send(.addButtonTapped)
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .task {
+            await store.send(.task).finish()
+        }
+        .sheet(item: $store.scope(state: \.addEdit, action: \.addEdit)) { addEditStore in
+            AddEditTagView(store: addEditStore)
+        }
+        .alert($store.scope(state: \.alert, action: \.alert))
     }
 
     // MARK: - Empty State
@@ -78,6 +76,7 @@ public struct TagManagementView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .padding(.bottom, 100)
     }
 
     private func tagRow(_ tag: Tag) -> some View {

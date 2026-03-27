@@ -91,7 +91,7 @@ RecurringTransactionManagementView 裡的 List 內容（inline，非 push）
 
 ## Localisation
 
-新增字串：
+**新增字串：**
 
 | Key | 中文值 |
 |-----|--------|
@@ -99,6 +99,15 @@ RecurringTransactionManagementView 裡的 List 內容（inline，非 push）
 | `notification_recurring_description` | `設定週期性的記帳提醒，到期時推播通知，方便你快速完成記帳。` |
 | `notification_recurring_add` | `新增提醒` |
 | `notification_recurring_empty` | `尚未設定任何記帳提醒` |
+
+**移除字串：**
+
+| Key | 原因 |
+|-----|------|
+| `settings_recurring_transactions` | 設定頁「定期交易」按鈕移除 |
+
+**保留字串（仍在使用）：**
+- `recurring_transaction_*` 系列 — `RecurringTransactionManagementView`、`RecurringTransactionFormView`、`AddTransactionView` 仍在使用，不動
 
 ---
 

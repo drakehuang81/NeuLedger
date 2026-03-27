@@ -150,7 +150,7 @@ struct AddTransactionFeatureTests {
     func suggestCategoryTappedUnavailable() async {
         let store = await makeStore(aiAvailable: false)
         await store.send(.suggestCategoryTapped) {
-            $0.categorySuggestionError = "此裝置不支援 AI 功能"
+            $0.categorySuggestionError = String(localized: "add_transaction_ai_unavailable")
         }
     }
 

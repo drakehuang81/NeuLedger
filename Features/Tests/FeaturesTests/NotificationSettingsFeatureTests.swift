@@ -21,7 +21,9 @@ struct NotificationSettingsFeatureTests {
                 key.rawValue == SettingsKey<Int>.dailyReminderHour.rawValue ? 8 : key.defaultValue
             }
             $0.notificationClient.isAuthorized = { true }
+            $0.recurringTransactionClient.fetchAll = { [] }
         }
+        store.exhaustivity = .off
 
         await store.send(.task) {
             $0.dailyReminderEnabled = true
@@ -126,7 +128,9 @@ struct NotificationSettingsFeatureTests {
             $0.notificationClient.isAuthorized = { true }  // user granted permission in Settings
             $0.userSettingsClient.bool = { $0.defaultValue }
             $0.userSettingsClient.int = { $0.defaultValue }
+            $0.recurringTransactionClient.fetchAll = { [] }
         }
+        store.exhaustivity = .off
 
         await store.send(.task)
         await store.receive(\.authorizationStatusLoaded) {

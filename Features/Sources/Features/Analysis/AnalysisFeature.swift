@@ -46,6 +46,7 @@ public struct AnalysisFeature: Sendable {
         public var budgetMetrics: [BudgetGaugeMetrics] = []
         public var insight: InsightDetail?
         public var categoryDrilldown: CategoryDrilldownState?
+        public var aiAssistant: AIAssistantFeature.State = .init()
 
         public var hasData: Bool {
             summary != nil
@@ -70,6 +71,7 @@ public struct AnalysisFeature: Sendable {
         case categoryTapped(CategoryProportion)
         case categoryTransactionsLoaded(categoryName: String, [Transaction])
         case categoryDrilldownDismissed
+        case aiAssistant(AIAssistantFeature.Action)
     }
 
     public struct AnalysisData: Equatable, Sendable {
@@ -278,7 +280,13 @@ public struct AnalysisFeature: Sendable {
             case .loadedData(.failure):
                 state.isLoading = false
                 return .none
+
+            case .aiAssistant:
+                return .none
             }
+        }
+        Scope(state: \.aiAssistant, action: \.aiAssistant) {
+            AIAssistantFeature()
         }
     }
 

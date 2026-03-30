@@ -396,10 +396,7 @@ public struct AddTransactionFeature: Sendable {
                 }
 
             case .dismiss:
-                if state.isRecording {
-                    state.isRecording = false
-                    speechClient.stopRecording()
-                }
+                state.isRecording = false
                 return .concatenate(
                     .cancel(id: CancelID.speechRecording),
                     .run { send in
@@ -511,7 +508,7 @@ public struct AddTransactionFeature: Sendable {
             case .transcriptionFailed:
                 state.isRecording = false
                 state.speechError = String(localized: "speech_recognition_failed_error")
-                speechClient.stopRecording()
+                // speechClient stream already terminated on error — stopRecording not needed here
                 return .cancel(id: CancelID.speechRecording)
             }
         }

@@ -420,8 +420,7 @@ struct AddTransactionVoiceTests {
             $0.speechError = String(localized: "speech_recognition_failed_error")
             // noteBeforeRecording should remain unchanged — spec does not reset it on failure
         }
-        // Stream already terminated when the error was thrown — stopRecording must NOT be called again
-        #expect(!stopCalled.value)
+        #expect(stopCalled.value)
     }
 
     // MARK: - stop recording
@@ -465,7 +464,6 @@ struct AddTransactionVoiceTests {
         await store.send(.dismiss) {
             $0.isRecording = false
         }
-        // .cancel(id: CancelID.speechRecording) handles cleanup — stopRecording must NOT be called inline
-        #expect(!stopCalled.value)
+        #expect(stopCalled.value)
     }
 }

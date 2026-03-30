@@ -378,6 +378,27 @@ struct AddTransactionVoiceTests {
         }
     }
 
+    @Test("transcriptionUpdated: second update uses original prefix, not cumulative note")
+    func transcriptionUpdatedSecondUpdateUsesOriginalPrefix() async {
+        var initial = AddTransactionFeature.State()
+        initial.isRecording = true
+        initial.noteBeforeRecording = "早餐"
+        initial.note = "早餐 五十五元"   // result of first update already applied
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        // SpeechClient emits FULL transcript each time (not delta).
+        // Second emission should replace the note from the original prefix, not stack.
+        await store.send(.transcriptionUpdated("六十元")) {
+            $0.note = "早餐 六十元"
+        }
+    }
+
     // MARK: - transcriptionFailed
 
     @Test("transcriptionFailed: sets speechError and clears isRecording")
@@ -397,6 +418,7 @@ struct AddTransactionVoiceTests {
         await store.send(.transcriptionFailed) {
             $0.isRecording = false
             $0.speechError = String(localized: "speech_recognition_failed_error")
+            // noteBeforeRecording should remain unchanged — spec does not reset it on failure
         }
         #expect(stopCalled.value)
     }

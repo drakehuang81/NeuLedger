@@ -88,8 +88,6 @@ private struct CustomAccessoryView: View {
                 expandedAIInputContent
             } else if store.isAIInputLoading {
                 processingPillContent
-            } else if let answer = store.aiAnswer {
-                resultPillContent(answer)
             } else {
                 compactPillContent
             }
@@ -149,98 +147,38 @@ private struct CustomAccessoryView: View {
             .padding(.vertical, 8)
     }
 
-    // MARK: - ③ Result
-
-    private func resultPillContent(_ answer: String) -> some View {
-        Button {
-            store.send(.resultPillTapped)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "wand.and.sparkles")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.accentColor)
-                Text(answer)
-                    .font(Font.Design.callout)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 3) {
-                    Text(String(localized: "accessory_expand"))
-                        .font(Font.Design.caption)
-                    Image(systemName: "chevron.up")
-                        .font(Font.Design.caption)
-                }
-                .foregroundStyle(Color.Design.textTertiary)
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 16)
-        }
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-
     // MARK: - ④ Expanded AI input
 
     @ViewBuilder
     private var expandedAIInputContent: some View {
         VStack(spacing: 4) {
-            // AI answer card — shown when aiAnswer is available
-            if let answer = store.aiAnswer {
-                GlassContainer(cornerRadius: 16, padding: 0) {
-                    ScrollView {
-                        Text(answer)
-                            .font(Font.Design.body)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                    }
-                    .frame(maxHeight: 160)
+            // Recording indicator — shown while mic is active
+            if store.isRecording {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.Design.expenseRed)
+                        .frame(width: 7, height: 7)
+                    Text(String(localized: "speech_recording_label"))
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.expenseRed)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
             }
 
-            HStack(spacing: 8) {
-                // Mode badge — tap to toggle between record / ask
-                Button {
-                    store.send(.inputPurposeSwitched(
-                        store.inputPurpose == .record ? .ask : .record
-                    ))
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: store.inputPurpose == .record ? "pencil" : "bubble.left")
-                            .font(.caption)
-                        Text(store.inputPurpose == .record
-                            ? String(localized: "accessory_mode_record_short")
-                            : String(localized: "accessory_mode_ask_short"))
-                            .font(Font.Design.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.accentColor.opacity(0.2), in: Capsule())
-                    .foregroundStyle(Color.accentColor)
-                }
-                .buttonStyle(.plain)
-                .fixedSize()
-
+            HStack(alignment: .bottom, spacing: 8) {
                 TextField(
-                    store.inputPurpose == .record
-                        ? String(localized: "ai_record_placeholder")
-                        : String(localized: "ai_ask_placeholder"),
+                    String(localized: "ai_record_placeholder"),
                     text: Binding(
                         get: { store.aiInputText },
                         set: { store.send(.aiInputTextChanged($0)) }
-                    )
+                    ),
+                    axis: .vertical
                 )
+                .lineLimit(1...3)
                 .textFieldStyle(.plain)
                 .submitLabel(.send)
                 .onSubmit {
-                    if store.inputPurpose == .record {
-                        store.send(.aiInputSubmitted)
-                    } else {
-                        store.send(.askSubmitted)
-                    }
+                    store.send(.aiInputSubmitted)
                 }
 
                 if store.isAIInputLoading {
@@ -248,18 +186,27 @@ private struct CustomAccessoryView: View {
                         .controlSize(.small)
                         .padding(.trailing, 4)
                 } else {
+                    // Mic button — idle: mic icon; recording: stop icon in red
                     Button {
-                        if store.inputPurpose == .record {
-                            store.send(.aiInputSubmitted)
-                        } else {
-                            store.send(.askSubmitted)
-                        }
+                        store.send(.recordingTapped)
+                    } label: {
+                        Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                            .font(.title2)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(
+                                store.isRecording ? Color.Design.expenseRed : Color.primary
+                            )
+                    }
+
+                    // Send button — disabled when text is empty or recording is active
+                    Button {
+                        store.send(.aiInputSubmitted)
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
                             .symbolRenderingMode(.hierarchical)
                     }
-                    .disabled(store.aiInputText.isEmpty)
+                    .disabled(store.aiInputText.isEmpty || store.isRecording)
 
                     Button {
                         store.send(.aiInputDismissed)
@@ -273,7 +220,10 @@ private struct CustomAccessoryView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .glassEffect(Glass.clear.interactive().tint(Color.Design.surface), in: Capsule())
+            .glassEffect(
+                Glass.clear.interactive().tint(Color.Design.surface),
+                in: RoundedRectangle(cornerRadius: 18)
+            )
 
             if let error = store.aiInputError {
                 Text(error)

@@ -229,17 +229,47 @@ public struct AddTransactionView: View {
 
             Divider().padding(.horizontal, 16)
 
-            // Note field
-            HStack {
-                TextField(String(localized: "add_transaction_note_placeholder"), text: Binding(
-                    get: { store.note },
-                    set: { store.send(.noteChanged($0)) }
-                ))
-                .padding(.vertical, 12)
+            // Note field with voice input
+            VStack(alignment: .leading, spacing: 4) {
+                if store.isRecording {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color.Design.expenseRed)
+                            .frame(width: 7, height: 7)
+                        Text(String(localized: "speech_recording_label"))
+                            .font(Font.Design.caption)
+                            .foregroundStyle(Color.Design.expenseRed)
+                    }
+                }
+                HStack {
+                    TextField(String(localized: "add_transaction_note_placeholder"), text: Binding(
+                        get: { store.note },
+                        set: { store.send(.noteChanged($0)) }
+                    ))
+                    .padding(.vertical, 12)
 
-                if store.isBackgroundParsingNote {
-                    ProgressView()
-                        .controlSize(.small)
+                    if store.isBackgroundParsingNote {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Button {
+                            store.send(.recordingTapped)
+                        } label: {
+                            Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle")
+                                .font(.title3)
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(
+                                    store.isRecording
+                                        ? Color.Design.expenseRed
+                                        : Color.Design.textTertiary
+                                )
+                        }
+                    }
+                }
+                if let error = store.speechError {
+                    Text(error)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.expenseRed)
                 }
             }
             .padding(.horizontal, 16)

@@ -104,12 +104,13 @@ struct MainTabFeature {
                     await withTaskGroup(of: Void.self) { group in
                         // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
                         group.addTask {
-                            await send(.aiAvailabilityLoaded(isAvailable: aiServiceClient.isAvailable()))
+                            let isAvailable = await aiServiceClient.isAvailable()
+                            await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
                             let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
                             await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
                             let rawMode = userSettingsClient.string(.accessoryMode)
                             let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
-                            let resolvedMode = await aiServiceClient.isAvailable() ? savedMode : .add
+                            let resolvedMode = isAvailable ? savedMode : .add
                             await send(.accessoryModeLoaded(resolvedMode))
                         }
                         // Subscribe to recurring notification taps
@@ -153,7 +154,7 @@ struct MainTabFeature {
                 return .none
 
             case .aiInputSubmitted:
-                guard !state.aiInputText.isEmpty else { return .none }
+                guard !state.aiInputText.isEmpty, !state.isRecording else { return .none }
                 state.isAIInputLoading = true
                 state.aiInputError = nil
                 let text = state.aiInputText

@@ -364,6 +364,23 @@ struct MainTabRecordingTests {
         }
     }
 
+    @Test("aiInputSubmitted is ignored while recording is active")
+    func submitIgnoredWhileRecording() async {
+        var initial = MainTabFeature.State()
+        initial.isRecording = true
+        initial.aiInputText = "早餐"
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+        }
+
+        // Should be a no-op — isRecording guard prevents extraction
+        await store.send(.aiInputSubmitted)
+        // No isAIInputLoading change, no aiExtractionCompleted expected
+    }
+
     @Test("aiInputDismissed stops active recording")
     func dismissStopsActiveRecording() async {
         var initial = MainTabFeature.State()

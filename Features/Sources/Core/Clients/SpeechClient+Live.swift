@@ -123,9 +123,3 @@ private actor SpeechRecordingActor {
     }
 }
 
-// MARK: - SpeechClientError
-
-// Fix I3: public so callers in the Features layer can pattern-match on it.
-public enum SpeechClientError: Error {
-    case recognizerUnavailable
-}

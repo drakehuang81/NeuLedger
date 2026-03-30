@@ -31,3 +31,12 @@ public extension DependencyValues {
         set { self[SpeechClient.self] = newValue }
     }
 }
+
+// MARK: - SpeechClientError
+
+/// Errors thrown by `SpeechClient.startRecording()`.
+/// Defined in Domain so the Features layer can pattern-match without a Core dependency.
+public enum SpeechClientError: Error {
+    /// The speech recognizer is not available on this device or locale.
+    case recognizerUnavailable
+}

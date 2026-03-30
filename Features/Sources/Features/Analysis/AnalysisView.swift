@@ -74,6 +74,13 @@ public struct AnalysisView: View {
                             onClose: { store.send(.dismissInsight) }
                         )
                     }
+
+                    // AI Assistant card — only shown when Foundation Models is available
+                    if store.aiAssistant.isAvailable {
+                        AIAssistantCardView(
+                            store: store.scope(state: \.aiAssistant, action: \.aiAssistant)
+                        )
+                    }
                 }
                 .padding(.all, 16)
             }

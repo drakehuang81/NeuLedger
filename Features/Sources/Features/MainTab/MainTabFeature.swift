@@ -2,11 +2,6 @@ import Foundation
 import ComposableArchitecture
 import Domain
 
-public enum InputPurpose: Equatable, Sendable {
-    case record
-    case ask
-}
-
 enum AccessoryMode: String, Equatable, Sendable {
     case add
     case ai
@@ -34,8 +29,7 @@ struct MainTabFeature {
         var isAIInputLoading: Bool = false
         var aiInputError: String? = nil      // shown inline below the text field
         var aiUnavailable: Bool = false      // set once on .task; drives all AI UI
-        var inputPurpose: InputPurpose = .record
-        var aiAnswer: String? = nil
+        var isRecording: Bool = false
         var showAccessoryBar: Bool = true
         var accessoryMode: AccessoryMode = .add
 
@@ -67,11 +61,11 @@ struct MainTabFeature {
         case aiInputSubmitted
         case aiInputDismissed
         case aiExtractionCompleted(TaskResult<ExtractedTransaction>)
-        case inputPurposeSwitched(InputPurpose)
-        case askSubmitted
-        case answerReceived(String)
-        case answerFailed
-        case resultPillTapped
+        case recordingTapped
+        case recordingStarted
+        case permissionDenied
+        case transcriptionUpdated(String)
+        case transcriptionFailed
         case accessoryBarVisibilityLoaded(Bool)
         case accessoryModeLoaded(AccessoryMode)
         case accessoryModeSwitched(AccessoryMode)
@@ -89,7 +83,8 @@ struct MainTabFeature {
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-    private enum CancelID { case aiExtraction; case aiAnswer; case task }
+    @Dependency(\.speechClient) var speechClient
+    private enum CancelID { case aiExtraction; case task; case speechRecording }
 
     // MARK: - Body
     var body: some ReducerOf<Self> {
@@ -143,11 +138,18 @@ struct MainTabFeature {
                 return .none
 
             case .aiInputDismissed:
+                let wasRecording = state.isRecording
                 state.isAIInputExpanded = false
                 state.aiInputText = ""
                 state.isAIInputLoading = false
                 state.aiInputError = nil
-                state.aiAnswer = nil
+                state.isRecording = false
+                if wasRecording {
+                    return .merge(
+                        .cancel(id: CancelID.speechRecording),
+                        .run { _ in speechClient.stopRecording() }
+                    )
+                }
                 return .none
 
             case .aiInputSubmitted:
@@ -180,46 +182,48 @@ struct MainTabFeature {
                 state.aiInputError = String(localized: "ai_extraction_error")
                 return .none
 
-            case let .inputPurposeSwitched(purpose):
-                state.inputPurpose = purpose
-                state.aiInputText = ""
-                state.aiAnswer = nil
-                state.aiInputError = nil
-                return .cancel(id: CancelID.aiAnswer)
-
-            case .askSubmitted:
-                guard !state.aiInputText.isEmpty else { return .none }
-                state.isAIInputLoading = true
-                state.aiInputError = nil
-                state.aiAnswer = nil
-                let question = state.aiInputText
-                return .run { send in
-                    do {
-                        let answer = try await aiServiceClient.answerFinancialQuestion(question)
-                        await send(.answerReceived(answer))
-                    } catch {
-                        await send(.answerFailed)
+            case .recordingTapped:
+                if state.isRecording {
+                    state.isRecording = false
+                    return .merge(
+                        .cancel(id: CancelID.speechRecording),
+                        .run { _ in speechClient.stopRecording() }
+                    )
+                } else {
+                    return .run { send in
+                        let granted = await speechClient.requestPermission()
+                        guard granted else {
+                            await send(.permissionDenied)
+                            return
+                        }
+                        await send(.recordingStarted)
+                        do {
+                            for try await text in speechClient.startRecording() {
+                                await send(.transcriptionUpdated(text))
+                            }
+                        } catch {
+                            await send(.transcriptionFailed)
+                        }
                     }
+                    .cancellable(id: CancelID.speechRecording)
                 }
-                .cancellable(id: CancelID.aiAnswer, cancelInFlight: true)
 
-            case let .answerReceived(text):
-                guard state.inputPurpose == .ask else { return .none }
-                state.aiAnswer = text
-                state.isAIInputLoading = false
-                state.aiInputText = ""
-                state.isAIInputExpanded = false
-                return .none
-
-            case .answerFailed:
-                state.isAIInputLoading = false
-                state.aiInputError = String(localized: "ai_ask_error")
-                return .none
-
-            case .resultPillTapped:
-                state.aiAnswer = nil
-                state.isAIInputExpanded = true
+            case .recordingStarted:
+                state.isRecording = true
                 state.aiInputError = nil
+                return .none
+
+            case .permissionDenied:
+                state.aiInputError = String(localized: "speech_permission_denied_error")
+                return .none
+
+            case let .transcriptionUpdated(text):
+                state.aiInputText = text
+                return .none
+
+            case .transcriptionFailed:
+                state.isRecording = false
+                state.aiInputError = String(localized: "speech_recognition_failed_error")
                 return .none
 
             case let .accessoryBarVisibilityLoaded(visible):

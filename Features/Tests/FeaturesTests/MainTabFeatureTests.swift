@@ -63,19 +63,18 @@ struct MainTabFeatureTests {
         initial.isAIInputExpanded = true
         initial.aiInputText = "午餐150"
         initial.aiInputError = "some error"
-        initial.aiAnswer = "previous answer"
 
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
             $0.aiServiceClient.isAvailable = { false }
+            $0.speechClient.stopRecording = { }
         }
         await store.send(.aiInputDismissed) {
             $0.isAIInputExpanded = false
             $0.aiInputText = ""
             $0.isAIInputLoading = false
             $0.aiInputError = nil
-            $0.aiAnswer = nil
         }
     }
 
@@ -129,85 +128,6 @@ struct MainTabFeatureTests {
     }
 }
 
-@Suite("MainTabFeature — ask mode")
-struct MainTabAskModeTests {
-
-    @Test("inputPurposeSwitched clears text and answer")
-    func testInputPurposeSwitchedToAsk() async {
-        var initial = MainTabFeature.State()
-        initial.aiInputText = "some text"
-        initial.aiAnswer = "some answer"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiServiceClient.answerFinancialQuestion = { _ in "" }
-        }
-
-        await store.send(.inputPurposeSwitched(.ask)) {
-            $0.inputPurpose = .ask
-            $0.aiInputText = ""
-            $0.aiAnswer = nil
-            $0.aiInputError = nil
-        }
-    }
-
-    @Test("askSubmitted receives answer and resets loading")
-    func testAskSubmittedReceivesAnswer() async {
-        var initial = MainTabFeature.State()
-        initial.isAIInputExpanded = true
-        initial.inputPurpose = .ask
-        initial.aiInputText = "上個月餐費多少？"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.answerFinancialQuestion = { _ in "上個月餐費 NT$8,500" }
-        }
-
-        await store.send(.askSubmitted) {
-            $0.isAIInputLoading = true
-            $0.aiInputError = nil
-            $0.aiAnswer = nil
-        }
-        await store.receive(\.answerReceived) {
-            $0.aiAnswer = "上個月餐費 NT$8,500"
-            $0.isAIInputLoading = false
-            $0.aiInputText = ""
-            $0.isAIInputExpanded = false
-        }
-    }
-
-    @Test("askSubmitted on failure sets aiInputError")
-    func testAskSubmittedHandlesFailure() async {
-        var initial = MainTabFeature.State()
-        initial.isAIInputExpanded = true
-        initial.inputPurpose = .ask
-        initial.aiInputText = "上個月餐費多少？"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.answerFinancialQuestion = { _ in
-                struct FakeError: Error {}
-                throw FakeError()
-            }
-        }
-
-        await store.send(.askSubmitted) {
-            $0.isAIInputLoading = true
-            $0.aiInputError = nil
-            $0.aiAnswer = nil
-        }
-        await store.receive(\.answerFailed) {
-            $0.isAIInputLoading = false
-            $0.aiInputError = String(localized: "ai_ask_error")
-        }
-    }
-}
-
 @Suite("MainTabFeature — recurring confirmation")
 struct MainTabRecurringConfirmationTests {
 
@@ -243,7 +163,7 @@ struct MainTabRecurringConfirmationTests {
     }
 }
 
-@Suite("MainTabFeature — accessory bar & result pill")
+@Suite("MainTabFeature — accessory bar")
 struct MainTabAccessoryBarTests {
 
     @Test("task reads showAccessoryBar=false and stores it")
@@ -266,45 +186,6 @@ struct MainTabAccessoryBarTests {
             $0.showAccessoryBar = false
         }
         await store.receive(.accessoryModeLoaded(.add))
-    }
-
-    @Test("resultPillTapped clears aiAnswer and expands input")
-    func resultPillTappedClearsAndExpands() async {
-        var initial = MainTabFeature.State()
-        initial.aiAnswer = "上個月餐費 NT$8,500"
-        initial.isAIInputExpanded = false
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-        }
-        await store.send(.resultPillTapped) {
-            $0.aiAnswer = nil
-            $0.isAIInputExpanded = true
-            $0.aiInputError = nil
-        }
-    }
-
-    @Test("answerReceived collapses input bar so compact pill appears")
-    func answerReceivedCollapsesInputBar() async {
-        var initial = MainTabFeature.State()
-        initial.isAIInputExpanded = true
-        initial.inputPurpose = .ask
-        initial.isAIInputLoading = true
-        initial.aiInputText = "上個月餐費多少？"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-        }
-        await store.send(.answerReceived("上個月餐費 NT$8,500")) {
-            $0.aiAnswer = "上個月餐費 NT$8,500"
-            $0.isAIInputLoading = false
-            $0.aiInputText = ""
-            $0.isAIInputExpanded = false
-        }
     }
 }
 
@@ -374,5 +255,136 @@ struct MainTabAccessoryModeTests {
             $0.accessoryMode = .add
         }
         #expect(savedValue.value == "add")
+    }
+}
+
+@Suite("MainTabFeature — recording")
+struct MainTabRecordingTests {
+
+    @Test("recordingTapped requests permission then starts recording")
+    func recordingTappedStartsWhenPermitted() async {
+        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+        continuation.finish()   // empty stream so the effect completes immediately
+
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.requestPermission = { true }
+            $0.speechClient.startRecording = { stream }
+            $0.speechClient.stopRecording = { }
+        }
+
+        await store.send(.recordingTapped)
+        await store.receive(.recordingStarted) {
+            $0.isRecording = true
+            $0.aiInputError = nil
+        }
+        // stream finished immediately — no transcriptionUpdated expected
+    }
+
+    @Test("recordingTapped stops recording when already recording")
+    func recordingTappedStopsWhenRecording() async {
+        var initial = MainTabFeature.State()
+        initial.isRecording = true
+
+        let stopCalled = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+        }
+
+        await store.send(.recordingTapped) {
+            $0.isRecording = false
+        }
+        #expect(stopCalled.value)
+    }
+
+    @Test("recordingTapped shows permission error when denied")
+    func recordingTappedDeniedPermission() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.requestPermission = { false }
+        }
+
+        await store.send(.recordingTapped)
+        await store.receive(.permissionDenied) {
+            $0.aiInputError = String(localized: "speech_permission_denied_error")
+        }
+    }
+
+    @Test("transcriptionUpdated sets aiInputText")
+    func transcriptionUpdatedSetsText() async {
+        var initial = MainTabFeature.State()
+        initial.isRecording = true
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+        }
+
+        await store.send(.transcriptionUpdated("早餐五十五元")) {
+            $0.aiInputText = "早餐五十五元"
+        }
+    }
+
+    @Test("transcriptionUpdated overwrites previous partial result")
+    func transcriptionUpdatedOverwrites() async {
+        var initial = MainTabFeature.State()
+        initial.isRecording = true
+        initial.aiInputText = "早餐"
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+        }
+
+        await store.send(.transcriptionUpdated("早餐五十五元")) {
+            $0.aiInputText = "早餐五十五元"
+        }
+    }
+
+    @Test("transcriptionFailed clears recording state and shows error")
+    func transcriptionFailedShowsError() async {
+        var initial = MainTabFeature.State()
+        initial.isRecording = true
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+        }
+
+        await store.send(.transcriptionFailed) {
+            $0.isRecording = false
+            $0.aiInputError = String(localized: "speech_recognition_failed_error")
+        }
+    }
+
+    @Test("aiInputDismissed stops active recording")
+    func dismissStopsActiveRecording() async {
+        var initial = MainTabFeature.State()
+        initial.isAIInputExpanded = true
+        initial.isRecording = true
+        initial.aiInputText = "早餐"
+
+        let stopCalled = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+        }
+
+        await store.send(.aiInputDismissed) {
+            $0.isAIInputExpanded = false
+            $0.aiInputText = ""
+            $0.isAIInputLoading = false
+            $0.aiInputError = nil
+            $0.isRecording = false
+        }
+        #expect(stopCalled.value)
     }
 }

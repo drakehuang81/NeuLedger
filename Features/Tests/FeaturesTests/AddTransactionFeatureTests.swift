@@ -290,3 +290,158 @@ struct AddTransactionFeatureTests {
         #expect(updatedCapture.value?.id == existing.id)
     }
 }
+
+@Suite("AddTransactionFeature — voice input")
+struct AddTransactionVoiceTests {
+
+    // MARK: - permission denied
+
+    @Test("recordingTapped: permission denied sets speechError")
+    func recordingTappedPermissionDenied() async {
+        let store = await TestStore(initialState: AddTransactionFeature.State()) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.requestPermission = { false }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        await store.send(.recordingTapped)
+        await store.receive(.recordingPermissionResult(false)) {
+            $0.speechError = String(localized: "speech_permission_denied_error")
+        }
+    }
+
+    // MARK: - permission granted
+
+    @Test("recordingTapped: permission granted sets isRecording and saves noteBeforeRecording")
+    func recordingTappedPermissionGranted() async {
+        var initial = AddTransactionFeature.State()
+        initial.note = "早餐"
+
+        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+        continuation.finish()   // finish immediately so effect completes
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.requestPermission = { true }
+            $0.speechClient.startRecording = { stream }
+            $0.speechClient.stopRecording = { }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        await store.send(.recordingTapped)
+        await store.receive(.recordingPermissionResult(true)) {
+            $0.isRecording = true
+            $0.noteBeforeRecording = "早餐"
+            $0.speechError = nil
+        }
+        // stream finished immediately — no further actions
+    }
+
+    // MARK: - transcriptionUpdated
+
+    @Test("transcriptionUpdated: appends transcript to noteBeforeRecording prefix")
+    func transcriptionUpdatedAppendsToPrefix() async {
+        var initial = AddTransactionFeature.State()
+        initial.isRecording = true
+        initial.noteBeforeRecording = "早餐"
+        initial.note = "早餐"
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        await store.send(.transcriptionUpdated("五十五元")) {
+            $0.note = "早餐 五十五元"
+        }
+    }
+
+    @Test("transcriptionUpdated: sets note directly when noteBeforeRecording is empty")
+    func transcriptionUpdatedEmptyPrefix() async {
+        var initial = AddTransactionFeature.State()
+        initial.isRecording = true
+        initial.noteBeforeRecording = ""
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        await store.send(.transcriptionUpdated("午餐便當")) {
+            $0.note = "午餐便當"
+        }
+    }
+
+    // MARK: - transcriptionFailed
+
+    @Test("transcriptionFailed: sets speechError and clears isRecording")
+    func transcriptionFailedSetsError() async {
+        var initial = AddTransactionFeature.State()
+        initial.isRecording = true
+        initial.noteBeforeRecording = "早餐"
+
+        let stopCalled = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        await store.send(.transcriptionFailed) {
+            $0.isRecording = false
+            $0.speechError = String(localized: "speech_recognition_failed_error")
+        }
+        #expect(stopCalled.value)
+    }
+
+    // MARK: - stop recording
+
+    @Test("recordingTapped while recording: stops recording and clears isRecording")
+    func recordingTappedWhileRecording() async {
+        var initial = AddTransactionFeature.State()
+        initial.isRecording = true
+
+        let stopCalled = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+
+        await store.send(.recordingTapped) {
+            $0.isRecording = false
+        }
+        #expect(stopCalled.value)
+    }
+
+    // MARK: - dismiss guard
+
+    @Test("dismiss while recording: stops recording before dismissing")
+    func dismissWhileRecording() async {
+        var initial = AddTransactionFeature.State()
+        initial.isRecording = true
+        initial.noteBeforeRecording = "早餐"
+
+        let stopCalled = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.aiServiceClient.isAvailable = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.dismiss) {
+            $0.isRecording = false
+        }
+        #expect(stopCalled.value)
+    }
+}

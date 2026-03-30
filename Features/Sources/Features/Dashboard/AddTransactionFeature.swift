@@ -491,6 +491,8 @@ public struct AddTransactionFeature: Sendable {
                     state.speechError = String(localized: "speech_permission_denied_error")
                     return .none
                 }
+                // Capture note prefix once; overwritten at each new recording start.
+                // Not reset on stop — always overwritten here, so stale state is safe.
                 state.noteBeforeRecording = state.note
                 state.isRecording = true
                 state.speechError = nil
@@ -511,6 +513,8 @@ public struct AddTransactionFeature: Sendable {
             case .transcriptionFailed:
                 state.isRecording = false
                 state.speechError = String(localized: "speech_recognition_failed_error")
+                // stream.finish(throwing:) does not release AVAudioEngine/AVAudioSession —
+                // explicit stopRecording() is required for hardware teardown.
                 speechClient.stopRecording()
                 return .cancel(id: CancelID.speechRecording)
             }

@@ -48,6 +48,11 @@ public struct AddTransactionFeature: Sendable {
         public var suggestedCategoryNames: [String] = []
         public var categorySuggestionError: String? = nil
 
+        // Voice recording state
+        public var isRecording: Bool = false
+        public var speechError: String? = nil
+        var noteBeforeRecording: String = ""   // saves note prefix at recording start
+
         public init(mode: Mode = .add(.expense), date: Date = Date()) {
             self.mode = mode
             self.accounts = []
@@ -135,6 +140,12 @@ public struct AddTransactionFeature: Sendable {
         case backgroundExtractionCompleted(ExtractedTransaction?)
         case suggestCategoryTapped
         case categorySuggestionsReceived(TaskResult<CategorySuggestions>)
+
+        // Voice recording actions
+        case recordingTapped
+        case transcriptionUpdated(String)   // full transcript so far (not a delta)
+        case transcriptionFailed
+        case recordingPermissionResult(Bool)   // internal: bridges async permission check to state
     }
 
     // MARK: - Dependencies
@@ -147,8 +158,9 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.speechClient) var speechClient
 
-    private enum CancelID { case task; case noteDebounce; case categorySuggest }
+    private enum CancelID { case task; case noteDebounce; case categorySuggest; case speechRecording }
 
     // MARK: - Body
 
@@ -384,10 +396,17 @@ public struct AddTransactionFeature: Sendable {
                 }
 
             case .dismiss:
-                return .run { send in
-                    await send(.delegate(.dismissed))
-                    await dismiss()
+                if state.isRecording {
+                    state.isRecording = false
+                    speechClient.stopRecording()
                 }
+                return .concatenate(
+                    .cancel(id: CancelID.speechRecording),
+                    .run { send in
+                        await send(.delegate(.dismissed))
+                        await dismiss()
+                    }
+                )
 
             case .delegate:
                 return .none
@@ -451,6 +470,49 @@ public struct AddTransactionFeature: Sendable {
                 state.isSuggestingCategory = false
                 state.categorySuggestionError = String(localized: "add_transaction_category_suggestion_failed")
                 return .none
+
+            // MARK: - Voice recording
+
+            case .recordingTapped:
+                guard !state.isRecording else {
+                    // Stop branch
+                    state.isRecording = false
+                    speechClient.stopRecording()
+                    return .cancel(id: CancelID.speechRecording)
+                }
+                // Start branch — check permission asynchronously
+                return .run { send in
+                    let granted = await speechClient.requestPermission()
+                    await send(.recordingPermissionResult(granted))
+                }
+
+            case let .recordingPermissionResult(granted):
+                guard granted else {
+                    state.speechError = String(localized: "speech_permission_denied_error")
+                    return .none
+                }
+                state.noteBeforeRecording = state.note
+                state.isRecording = true
+                state.speechError = nil
+                return .run { send in
+                    for try await text in speechClient.startRecording() {
+                        await send(.transcriptionUpdated(text))
+                    }
+                } catch: { _, send in
+                    await send(.transcriptionFailed)
+                }
+                .cancellable(id: CancelID.speechRecording)
+
+            case let .transcriptionUpdated(text):
+                let prefix = state.noteBeforeRecording
+                state.note = prefix.isEmpty ? text : prefix + " " + text
+                return .none
+
+            case .transcriptionFailed:
+                state.isRecording = false
+                state.speechError = String(localized: "speech_recognition_failed_error")
+                speechClient.stopRecording()
+                return .cancel(id: CancelID.speechRecording)
             }
         }
     }

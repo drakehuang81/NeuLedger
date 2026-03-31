@@ -119,12 +119,6 @@ private struct CustomAccessoryView: View {
             .padding(.vertical, 12)
             .foregroundStyle(isAI ? Color.accentColor : Color.primary)
         }
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(
-            isAI ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.1),
-            lineWidth: 1
-        ))
-        .padding(.vertical, 8)
         .contextMenu(if: !store.aiUnavailable) {
             Button {
                 store.send(.accessoryModeSwitched(.add))

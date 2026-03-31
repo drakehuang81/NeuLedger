@@ -232,7 +232,7 @@ public struct AddTransactionView: View {
             // Note field with voice input
             VStack(alignment: .leading, spacing: 4) {
                 if store.isRecording {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Circle()
                             .fill(Color.Design.expenseRed)
                             .frame(width: 7, height: 7)
@@ -255,7 +255,7 @@ public struct AddTransactionView: View {
                         Button {
                             store.send(.recordingTapped)
                         } label: {
-                            Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle")
+                            Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                                 .font(.title3)
                                 .symbolRenderingMode(.hierarchical)
                                 .foregroundStyle(
@@ -264,12 +264,14 @@ public struct AddTransactionView: View {
                                         : Color.Design.textTertiary
                                 )
                         }
+                        .frame(minWidth: 44, minHeight: 44)
                     }
                 }
                 if let error = store.speechError {
                     Text(error)
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.expenseRed)
+                        .padding(.bottom, 8)
                 }
             }
             .padding(.horizontal, 16)

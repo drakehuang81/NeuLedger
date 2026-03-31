@@ -140,15 +140,45 @@ Core/persistence tests use `DatabaseClient.testValue` (in-memory SwiftData conta
 
 Domain tests verify: entity protocol conformance (Equatable, Hashable, Codable round-trip), enum `allCases` completeness and raw values, `TransactionFilter` equality, and `@DependencyClient` `testValue` accessibility via `DependencyValues` key paths.
 
-## Spec-Driven Workflow
+## Superpowers Workflow
 
-Feature development follows specs in `openspec/specs/` organised in three layers:
+This project uses the **superpowers** plugin. Skills override default Claude behavior, but instructions in this file always take highest priority.
 
-1. **Core & Tech** (`xxxxx.md`) — architecture, data models, persistence, design system, AI integration
-2. **Feature specs** (`feature-xxxxx.md`) — business logic, client interfaces, validation rules
-3. **Screen specs** (`screen-xxxxx.md`) — UI structure, interactions, layout
+### Skill Trigger Map
 
-Agent workflows use the `opsx` skill prefix (e.g., `/opsx:new`, `/opsx:apply`, `/opsx:verify`, `/opsx:archive`).
+| Situation | Skill to invoke |
+|-----------|----------------|
+| Starting any new feature / creative work | `superpowers:brainstorming` |
+| Have a spec, ready to plan implementation | `superpowers:writing-plans` |
+| Have a plan, ready to execute | `superpowers:subagent-driven-development` (preferred) or `superpowers:executing-plans` |
+| Encountered a bug or test failure | `superpowers:systematic-debugging` |
+| Implementing any feature or bugfix | `superpowers:test-driven-development` |
+| About to claim work is done | `superpowers:verification-before-completion` |
+| Work is complete, ready to ship | `superpowers:finishing-a-development-branch` |
+| Need isolated workspace for a feature | `superpowers:using-git-worktrees` |
+
+### Project-Specific Overrides
+
+**Implementation plans** (from `writing-plans` skill) → save to `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
+
+**TDD test commands** (from `test-driven-development` skill) — use xcodebuild, NOT `swift test`:
+
+```bash
+# Run all feature tests
+xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+
+# Run a single suite
+xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -only-testing:FeaturesTests/<SuiteName>
+```
+
+Tests use **Swift Testing** (`@Suite`, `@Test`) — not XCTest. TDD cycle applies the same: write failing test → watch it fail → implement minimally → pass.
+
+**Commits** → use `commit-commands:commit` skill.
+
+**PR** → use `commit-commands:commit-push-pr` skill.
 
 ## Key Constraints
 

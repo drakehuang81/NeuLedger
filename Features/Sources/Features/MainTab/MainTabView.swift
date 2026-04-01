@@ -14,13 +14,13 @@ struct MainTabView: View {
         if #available(iOS 26.1, *) {
             tabViewBase
                 .tabViewBottomAccessory(isEnabled: store.isAccessoryVisible) {
-                    CustomAccessoryView(store: store)
+                    AccessoryView(store: store)
                 }
         } else {
             if store.isAccessoryVisible {
                 tabViewBase
                     .tabViewBottomAccessory {
-                        CustomAccessoryView(store: store)
+                        AccessoryView(store: store)
                     }
             } else {
                 tabViewBase
@@ -49,17 +49,58 @@ struct MainTabView: View {
         }
         .tabBarMinimizeBehavior(.onScrollDown)
     }
-}
 
-private struct CustomAccessoryView: View {
-    let store: StoreOf<MainTabFeature>
-    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    // MARK: - Nested accessory view (internal only)
 
-    var body: some View {
-        switch placement {
-        case .inline:
-            Button {
-                if store.accessoryMode == .ai {
+    private struct AccessoryView: View {
+        let store: StoreOf<MainTabFeature>
+        @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+        var body: some View {
+            switch placement {
+            case .inline:
+                Button {
+                    if store.accessoryMode == .ai {
+                        withAnimation(.spring()) {
+                            _ = store.send(.aiInputButtonTapped)
+                        }
+                    } else {
+                        store.send(.contextActionTapped)
+                    }
+                } label: {
+                    Image(systemName: store.accessoryMode == .ai ? "wand.and.sparkles" : "plus.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(store.accessoryMode == .ai ? Color.accentColor : Color.primary)
+                }
+                .contextMenu(if: !store.aiUnavailable) {
+                    Button {
+                        store.send(.accessoryModeSwitched(.add))
+                    } label: {
+                        Label(String(localized: "accessory_add"), systemImage: "plus")
+                    }
+                    Button {
+                        store.send(.accessoryModeSwitched(.ai))
+                    } label: {
+                        Label(String(localized: "accessory_ai_record"), systemImage: "wand.and.sparkles")
+                    }
+                }
+            case .expanded, _:
+                if store.isAIInputExpanded {
+                    expandedAIInputContent
+                } else if store.isAIInputLoading {
+                    processingPillContent
+                } else {
+                    compactPillContent
+                }
+            }
+        }
+
+        // MARK: - ① Compact normal
+
+        private var compactPillContent: some View {
+            let isAI = store.accessoryMode == .ai
+            return Button {
+                if isAI {
                     withAnimation(.spring()) {
                         _ = store.send(.aiInputButtonTapped)
                     }
@@ -67,9 +108,17 @@ private struct CustomAccessoryView: View {
                     store.send(.contextActionTapped)
                 }
             } label: {
-                Image(systemName: store.accessoryMode == .ai ? "wand.and.sparkles" : "plus.circle.fill")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(store.accessoryMode == .ai ? Color.accentColor : Color.primary)
+                HStack(spacing: 6) {
+                    Image(systemName: isAI ? "wand.and.sparkles" : "plus.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                    Text(isAI
+                         ? String(localized: "accessory_ai_record")
+                         : String(localized: "accessory_add"))
+                        .font(Font.Design.callout)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .foregroundStyle(isAI ? Color.accentColor : Color.primary)
             }
             .contextMenu(if: !store.aiUnavailable) {
                 Button {
@@ -83,152 +132,105 @@ private struct CustomAccessoryView: View {
                     Label(String(localized: "accessory_ai_record"), systemImage: "wand.and.sparkles")
                 }
             }
-        case .expanded, _:
-            if store.isAIInputExpanded {
-                expandedAIInputContent
-            } else if store.isAIInputLoading {
-                processingPillContent
-            } else {
-                compactPillContent
-            }
         }
-    }
 
-    // MARK: - ① Compact normal
+        // MARK: - ② Processing
 
-    private var compactPillContent: some View {
-        let isAI = store.accessoryMode == .ai
-        return Button {
-            if isAI {
-                withAnimation(.spring()) {
-                    _ = store.send(.aiInputButtonTapped)
+        private var processingPillContent: some View {
+            AccessoryShimmerPill(text: String(localized: "accessory_ai_processing"))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+        }
+
+        // MARK: - ④ Expanded AI input
+
+        @ViewBuilder
+        private var expandedAIInputContent: some View {
+            VStack(spacing: 4) {
+                // Recording indicator — shown while mic is active
+                if store.isRecording {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.Design.expenseRed)
+                            .frame(width: 7, height: 7)
+                        Text(String(localized: "speech_recording_label"))
+                            .font(Font.Design.caption)
+                            .foregroundStyle(Color.Design.expenseRed)
+                    }
+                    .padding(.horizontal, 16)
                 }
-            } else {
-                store.send(.contextActionTapped)
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: isAI ? "wand.and.sparkles" : "plus.circle.fill")
-                    .symbolRenderingMode(.hierarchical)
-                Text(isAI
-                     ? String(localized: "accessory_ai_record")
-                     : String(localized: "accessory_add"))
-                    .font(Font.Design.callout)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .foregroundStyle(isAI ? Color.accentColor : Color.primary)
-        }
-        .contextMenu(if: !store.aiUnavailable) {
-            Button {
-                store.send(.accessoryModeSwitched(.add))
-            } label: {
-                Label(String(localized: "accessory_add"), systemImage: "plus")
-            }
-            Button {
-                store.send(.accessoryModeSwitched(.ai))
-            } label: {
-                Label(String(localized: "accessory_ai_record"), systemImage: "wand.and.sparkles")
-            }
-        }
-    }
 
-    // MARK: - ② Processing
+                HStack(alignment: .bottom, spacing: 8) {
+                    TextField(
+                        String(localized: "ai_record_placeholder"),
+                        text: Binding(
+                            get: { store.aiInputText },
+                            set: { store.send(.aiInputTextChanged($0)) }
+                        ),
+                        axis: .vertical
+                    )
+                    .lineLimit(1...3)
+                    .textFieldStyle(.plain)
+                    .submitLabel(.send)
+                    .onSubmit {
+                        store.send(.aiInputSubmitted)
+                    }
 
-    private var processingPillContent: some View {
-        AccessoryShimmerPill(text: String(localized: "accessory_ai_processing"))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-    }
+                    if store.isAIInputLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.trailing, 4)
+                    } else {
+                        // Mic button — idle: mic icon; recording: stop icon in red
+                        Button {
+                            store.send(.recordingTapped)
+                        } label: {
+                            Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                                .font(.title2)
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(
+                                    store.isRecording ? Color.Design.expenseRed : Color.primary
+                                )
+                        }
 
-    // MARK: - ④ Expanded AI input
+                        // Send button — disabled when text is empty or recording is active
+                        Button {
+                            store.send(.aiInputSubmitted)
+                        } label: {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.title2)
+                                .symbolRenderingMode(.hierarchical)
+                        }
+                        .disabled(store.aiInputText.isEmpty || store.isRecording)
 
-    @ViewBuilder
-    private var expandedAIInputContent: some View {
-        VStack(spacing: 4) {
-            // Recording indicator — shown while mic is active
-            if store.isRecording {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.Design.expenseRed)
-                        .frame(width: 7, height: 7)
-                    Text(String(localized: "speech_recording_label"))
-                        .font(Font.Design.caption)
-                        .foregroundStyle(Color.Design.expenseRed)
+                        Button {
+                            store.send(.aiInputDismissed)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(Color.Design.textTertiary)
+                        }
+                    }
                 }
                 .padding(.horizontal, 16)
-            }
-
-            HStack(alignment: .bottom, spacing: 8) {
-                TextField(
-                    String(localized: "ai_record_placeholder"),
-                    text: Binding(
-                        get: { store.aiInputText },
-                        set: { store.send(.aiInputTextChanged($0)) }
-                    ),
-                    axis: .vertical
+                .padding(.vertical, 10)
+                .glassEffect(
+                    Glass.clear.interactive().tint(Color.Design.surface),
+                    in: RoundedRectangle(cornerRadius: 18)
                 )
-                .lineLimit(1...3)
-                .textFieldStyle(.plain)
-                .submitLabel(.send)
-                .onSubmit {
-                    store.send(.aiInputSubmitted)
-                }
 
-                if store.isAIInputLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                        .padding(.trailing, 4)
-                } else {
-                    // Mic button — idle: mic icon; recording: stop icon in red
-                    Button {
-                        store.send(.recordingTapped)
-                    } label: {
-                        Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(
-                                store.isRecording ? Color.Design.expenseRed : Color.primary
-                            )
-                    }
-
-                    // Send button — disabled when text is empty or recording is active
-                    Button {
-                        store.send(.aiInputSubmitted)
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                    .disabled(store.aiInputText.isEmpty || store.isRecording)
-
-                    Button {
-                        store.send(.aiInputDismissed)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(Color.Design.textTertiary)
-                    }
+                if let error = store.aiInputError {
+                    Text(error)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.expenseRed)
+                        .padding(.horizontal, 16)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .glassEffect(
-                Glass.clear.interactive().tint(Color.Design.surface),
-                in: RoundedRectangle(cornerRadius: 18)
-            )
-
-            if let error = store.aiInputError {
-                Text(error)
-                    .font(Font.Design.caption)
-                    .foregroundStyle(Color.Design.expenseRed)
-                    .padding(.horizontal, 16)
-            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 

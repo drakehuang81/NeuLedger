@@ -8,25 +8,25 @@ import SwiftData
 @Model
 final class SDBudget {
     /// The unique identifier of the budget.
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     /// The custom display name of the budget.
-    var name: String
+    var name: String = ""
 
     /// The target spending limit for this budget.
-    var amount: Decimal
+    var amount: Decimal = Decimal(0)
 
     /// The identifier of the specific category this budget applies to, if any.
     var categoryId: UUID?
 
     /// The raw string representation of the ``BudgetPeriod``.
-    var period: String
+    var period: String = ""
 
     /// The original commencement date of this budget.
-    var startDate: Date
+    var startDate: Date = Date()
 
     /// Whether the budget is currently active and being tracked.
-    var isActive: Bool
+    var isActive: Bool = true
 
     init(
         id: UUID = UUID(),

@@ -8,13 +8,13 @@ import SwiftData
 @Model
 final class SDTransaction {
     /// The unique identifier of the transaction.
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     /// The monetary value of the transaction (always positive).
-    var amount: Decimal
+    var amount: Decimal = Decimal(0)
 
     /// The date when the transaction occurred.
-    var date: Date
+    var date: Date = Date()
 
     /// Optional notes or memo for the transaction.
     var note: String?
@@ -23,22 +23,22 @@ final class SDTransaction {
     var categoryId: UUID?
 
     /// The identifier of the primary account involved.
-    var accountId: UUID
+    var accountId: UUID = UUID()
 
     /// The identifier of the destination account (only for transfers).
     var toAccountId: UUID?
 
     /// The raw string representation of the ``TransactionType``.
-    var type: String
+    var type: String = ""
 
     /// Whether this transaction's details were populated by an AI service.
-    var aiSuggested: Bool
+    var aiSuggested: Bool = false
 
     /// The date when this record was originally created.
-    var createdAt: Date
+    var createdAt: Date = Date()
 
     /// The date when this record was last modified.
-    var updatedAt: Date
+    var updatedAt: Date = Date()
 
     /// The tags associated with this transaction (many-to-many).
     @Relationship var tags: [SDTag] = []

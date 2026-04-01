@@ -11,6 +11,8 @@ public enum ExportFormat: Equatable, Sendable {
 
 @Reducer
 public struct SettingsFeature: Sendable {
+    public static let privacyPolicyURL = URL(string: "https://neuledger.app/privacy")!
+
     public init() {}
 
     // MARK: - Destination
@@ -238,8 +240,9 @@ public struct SettingsFeature: Sendable {
                 return .none
 
             case .privacyPolicyTapped:
-                print("[Settings] Privacy policy tapped — not yet implemented")
-                return .none
+                return .run { _ in
+                    await openURL(SettingsFeature.privacyPolicyURL)
+                }
             }
         }
         .forEach(\.path, action: \.path)

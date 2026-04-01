@@ -277,17 +277,27 @@ struct SettingsFeatureTests {
         }
     }
 
-    // MARK: - Placeholder Actions
+    // MARK: - Privacy Policy
 
-    @Test("privacyPolicyTapped does not mutate state")
+    @Test("privacyPolicyTapped opens the privacy policy URL")
     func testPrivacyPolicyTapped() async throws {
+        let openedURLs: LockIsolated<[URL]> = LockIsolated([])
+
         let store = await TestStore(
             initialState: SettingsFeature.State()
         ) {
             SettingsFeature()
+        } withDependencies: {
+            $0.openURL = .init { url in
+                openedURLs.withValue { $0.append(url) }
+                return true
+            }
         }
 
         await store.send(.privacyPolicyTapped)
+
+        #expect(openedURLs.value.count == 1)
+        #expect(openedURLs.value.first == SettingsFeature.privacyPolicyURL)
     }
 
     // MARK: - Language

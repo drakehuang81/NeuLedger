@@ -327,43 +327,103 @@
     "accessory_ai_record": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "AI Record" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "AI 記帳" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Record"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 記帳"
+          }
+        }
       }
     },
     "accessory_add": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增"
+          }
+        }
       }
     },
     "accessory_ai_processing": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "AI is analyzing…" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "AI 正在分析你的交易…" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI is analyzing…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 正在分析你的交易…"
+          }
+        }
       }
     },
     "accessory_mode_record_short": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Rec" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rec"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記"
+          }
+        }
       }
     },
     "accessory_mode_ask_short": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Ask" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "問" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "問"
+          }
+        }
       }
     },
     "accessory_expand": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Expand" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "展開" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展開"
+          }
+        }
       }
     },
     "analysis_empty_desc": {
@@ -3170,8 +3230,7 @@
           }
         }
       }
-    }
-  ,
+    },
     "filter_title": {
       "extractionState": "manual",
       "localizations": {
@@ -3294,515 +3353,1223 @@
     "tag_management_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Tag Management" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "標籤管理" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag Management"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "標籤管理"
+          }
+        }
       }
     },
     "tag_management_empty_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "No Tags" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無標籤" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Tags"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無標籤"
+          }
+        }
       }
     },
     "tag_management_empty_desc": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add tags to categorize transactions more precisely" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增標籤來更細緻地分類交易" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add tags to categorize transactions more precisely"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增標籤來更細緻地分類交易"
+          }
+        }
       }
     },
     "tag_management_add": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add Tag" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增標籤" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Tag"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增標籤"
+          }
+        }
       }
     },
     "tag_form_add_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add Tag" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增標籤" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Tag"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增標籤"
+          }
+        }
       }
     },
     "tag_form_edit_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Edit Tag" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯標籤" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Tag"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯標籤"
+          }
+        }
       }
     },
     "error_tag_name_empty": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Tag name cannot be empty" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "標籤名稱不能為空" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag name cannot be empty"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "標籤名稱不能為空"
+          }
+        }
       }
     },
     "error_category_name_empty": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Please enter a category name" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請輸入分類名稱" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter a category name"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請輸入分類名稱"
+          }
+        }
       }
     },
     "error_account_name_empty": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Please enter an account name" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請輸入帳戶名稱" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter an account name"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請輸入帳戶名稱"
+          }
+        }
       }
     },
     "error_account_name_taken": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This name is already in use" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "此名稱已被使用" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This name is already in use"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此名稱已被使用"
+          }
+        }
       }
     },
     "error_budget_name_empty": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Budget name cannot be empty" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算名稱不能為空" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget name cannot be empty"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預算名稱不能為空"
+          }
+        }
       }
     },
     "error_amount_must_be_positive": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Amount must be greater than zero" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "金額必須大於零" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount must be greater than zero"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金額必須大於零"
+          }
+        }
       }
     },
     "budget_management_empty_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "No Budgets" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無預算" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Budgets"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無預算"
+          }
+        }
       }
     },
     "budget_management_empty_desc": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add a budget to track your spending goals" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增預算來追蹤你的支出目標" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a budget to track your spending goals"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增預算來追蹤你的支出目標"
+          }
+        }
       }
     },
     "budget_management_add": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add Budget" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增預算" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Budget"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增預算"
+          }
+        }
       }
     },
     "budget_form_add_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add Budget" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增預算" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Budget"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增預算"
+          }
+        }
       }
     },
     "budget_form_edit_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Edit Budget" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯預算" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Budget"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯預算"
+          }
+        }
       }
     },
     "alert_delete_tag": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Delete Tag" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除標籤" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Tag"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除標籤"
+          }
+        }
       }
     },
     "alert_delete_category": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Delete Category" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除分類" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Category"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除分類"
+          }
+        }
       }
     },
     "alert_delete_budget": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Delete Budget" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除預算" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Budget"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除預算"
+          }
+        }
       }
     },
     "alert_archived_account": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Archived Account" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已封存帳戶" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived Account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已封存帳戶"
+          }
+        }
       }
     },
     "alert_cannot_delete": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Cannot Delete" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "無法刪除" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot Delete"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法刪除"
+          }
+        }
       }
     },
     "alert_archive_instead": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Archive Instead" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "改為封存" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive Instead"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改為封存"
+          }
+        }
       }
     },
     "alert_delete_tag_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This tag will be removed from all associated transactions. Are you sure you want to delete it?" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "此標籤將從所有關聯交易中移除。確定要刪除嗎？" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This tag will be removed from all associated transactions. Are you sure you want to delete it?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此標籤將從所有關聯交易中移除。確定要刪除嗎？"
+          }
+        }
       }
     },
     "alert_delete_category_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Are you sure you want to delete this category? This action cannot be undone." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除此分類嗎？此操作無法復原。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete this category? This action cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定要刪除此分類嗎？此操作無法復原。"
+          }
+        }
       }
     },
     "alert_delete_budget_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Are you sure you want to delete this budget?" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除此預算嗎？" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete this budget?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定要刪除此預算嗎？"
+          }
+        }
       }
     },
     "alert_unarchive_account_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Do you want to unarchive this account?" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "是否要解除封存此帳戶？" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do you want to unarchive this account?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "是否要解除封存此帳戶？"
+          }
+        }
       }
     },
     "alert_archive_account_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This account has associated transactions and cannot be deleted. Would you like to archive it instead?" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "此帳戶有關聯交易，無法刪除。是否改為封存？" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account has associated transactions and cannot be deleted. Would you like to archive it instead?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此帳戶有關聯交易，無法刪除。是否改為封存？"
+          }
+        }
       }
     },
     "alert_delete_account_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This action cannot be undone." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "此操作無法還原。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作無法還原。"
+          }
+        }
       }
     },
     "alert_confirm_delete": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Confirm Delete?" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除？" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm Delete?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定要刪除？"
+          }
+        }
       }
     },
     "alert_delete_category_message_name %@": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Are you sure you want to delete \"%@\"? This action cannot be undone." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除「%@」嗎？此操作無法復原。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete \"%@\"? This action cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定要刪除「%@」嗎？此操作無法復原。"
+          }
+        }
       }
     },
     "analysis_period_week": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This Week" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "本週" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Week"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本週"
+          }
+        }
       }
     },
     "analysis_period_month": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This Month" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "本月" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Month"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本月"
+          }
+        }
       }
     },
     "analysis_period_year": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This Year" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "今年" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Year"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今年"
+          }
+        }
       }
     },
     "analysis_all_accounts": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "All Accounts" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "全部帳戶" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Accounts"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部帳戶"
+          }
+        }
       }
     },
     "analysis_other_category": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Other" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "其他" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他"
+          }
+        }
       }
     },
     "common_tags": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Tags" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "標籤" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "標籤"
+          }
+        }
       }
     },
     "settings_notification_settings": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Notification Settings" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "通知設定" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notification Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知設定"
+          }
+        }
       }
     },
     "notification_daily_reminder_section": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Daily Reminder" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "每日記帳提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily Reminder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日記帳提醒"
+          }
+        }
       }
     },
     "notification_daily_reminder_toggle": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Enable Daily Reminder" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟每日提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Daily Reminder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟每日提醒"
+          }
+        }
       }
     },
     "notification_reminder_time": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Reminder Time" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "提醒時間" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder Time"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提醒時間"
+          }
+        }
       }
     },
     "notification_budget_warning_section": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Budget Warnings" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算警告" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget Warnings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預算警告"
+          }
+        }
       }
     },
     "notification_budget_warning_toggle": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Enable Budget Warnings" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟預算警告" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Budget Warnings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟預算警告"
+          }
+        }
       }
     },
     "notification_warning_threshold": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Warning Threshold" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "警告門檻" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warning Threshold"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警告門檻"
+          }
+        }
       }
     },
     "notification_permission_denied_banner": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Please enable notifications in system Settings" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請前往系統「設定」開啟通知權限" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enable notifications in system Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請前往系統「設定」開啟通知權限"
+          }
+        }
       }
     },
     "notification_open_settings": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Open Settings" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "前往設定" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前往設定"
+          }
+        }
       }
     },
     "notification_recurring_section": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Scheduled Reminders" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記帳提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scheduled Reminders"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記帳提醒"
+          }
+        }
       }
     },
     "notification_recurring_description": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Set up recurring reminders. You'll get a push notification when it's time to record." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "設定週期性的記帳提醒，到期時推播通知，方便你快速完成記帳。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up recurring reminders. You'll get a push notification when it's time to record."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定週期性的記帳提醒，到期時推播通知，方便你快速完成記帳。"
+          }
+        }
       }
     },
     "notification_recurring_add": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Add Reminder" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Reminder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增提醒"
+          }
+        }
       }
     },
     "notification_recurring_empty": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Unnamed" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "未命名" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unnamed"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未命名"
+          }
+        }
       }
     },
     "notification_daily_reminder_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "NeuLedger Reminder" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "NeuLedger 記帳提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NeuLedger Reminder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NeuLedger 記帳提醒"
+          }
+        }
       }
     },
     "notification_daily_reminder_body": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Time to log your transactions!" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "記得記帳！點此快速新增一筆。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to log your transactions!"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記得記帳！點此快速新增一筆。"
+          }
+        }
       }
     },
     "notification_budget_warning_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Budget Warning" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算使用警告" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget Warning"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預算使用警告"
+          }
+        }
       }
     },
     "notification_budget_warning_body": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Budget \"%@\" is %d%% used. Watch your spending." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預算「%@」已使用 %d%%，請注意支出。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget \"%@\" is %d%% used. Watch your spending."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預算「%@」已使用 %d%%，請注意支出。"
+          }
+        }
       }
     },
     "recurring_transaction_section_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Recurring" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "定期交易" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定期交易"
+          }
+        }
       }
     },
     "recurring_transaction_toggle_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Set as Recurring" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "設為定期交易" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set as Recurring"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設為定期交易"
+          }
+        }
       }
     },
     "recurring_transaction_frequency_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Frequency" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "頻率" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequency"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "頻率"
+          }
+        }
       }
     },
     "recurring_transaction_notification_time": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Notification Time" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "通知時間" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notification Time"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知時間"
+          }
+        }
       }
     },
     "recurring_transaction_notification_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Recurring Transaction Due" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "定期交易提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring Transaction Due"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定期交易提醒"
+          }
+        }
       }
     },
     "recurring_transaction_notification_body": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "A recurring transaction is due today." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "您有一筆定期交易今日到期。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A recurring transaction is due today."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "您有一筆定期交易今日到期。"
+          }
+        }
       }
     },
     "recurring_transaction_empty_state": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "No Recurring Transactions" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無定期交易" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Recurring Transactions"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無定期交易"
+          }
+        }
       }
     },
     "recurring_transaction_add_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "New Reminder" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增記帳提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Reminder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增記帳提醒"
+          }
+        }
       }
     },
     "recurring_transaction_edit_title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Edit Reminder" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯記帳提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Reminder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯記帳提醒"
+          }
+        }
       }
     },
     "recurring_transaction_enable_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Enable" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "啟用" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "啟用"
+          }
+        }
       }
     },
     "recurring_transaction_disable_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Disable" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "停用" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disable"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停用"
+          }
+        }
       }
     },
     "recurring_transaction_delete_confirm": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Reminders will stop after deletion" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除後將停止提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders will stop after deletion"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除後將停止提醒"
+          }
+        }
       }
     },
     "add_transaction_amount_placeholder": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "0" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "0" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0"
+          }
+        }
       }
     },
     "add_transaction_account_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Account" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "帳戶" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "帳戶"
+          }
+        }
       }
     },
     "add_transaction_select_account": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Select Account" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "選擇帳戶" } }
-      }
-    },
-    "speech_permission_denied_error" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "請至設定 › NeuLedger 開啟麥克風與語音辨識權限。"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select Account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選擇帳戶"
           }
         }
       }
     },
-    "speech_recognition_failed_error" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "語音辨識失敗，請重試或直接輸入文字。"
+    "speech_permission_denied_error": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請至設定 › NeuLedger 開啟麥克風與語音辨識權限。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please go to Settings › NeuLedger to enable microphone and speech recognition permissions."
           }
         }
       }
     },
-    "speech_recording_label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "錄音中"
+    "speech_recognition_failed_error": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語音辨識失敗，請重試或直接輸入文字。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition failed. Please try again or type your note manually."
+          }
+        }
+      }
+    },
+    "speech_recording_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "錄音中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording"
           }
         }
       }

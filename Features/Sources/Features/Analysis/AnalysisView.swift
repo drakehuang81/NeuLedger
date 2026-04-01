@@ -52,7 +52,7 @@ public struct AnalysisView: View {
                     if !store.budgetMetrics.isEmpty {
                         GlassContainer(padding: 20) {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("analysis_budget_progress")
+                                Text(String(localized: "analysis_budget_progress"))
                                     .font(Font.Design.headline)
                                     .foregroundStyle(Color.Design.textPrimary)
 

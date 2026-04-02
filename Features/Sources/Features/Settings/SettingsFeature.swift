@@ -24,6 +24,7 @@ public struct SettingsFeature: Sendable {
         case budgetManagement(BudgetManagementFeature)
         case tagManagement(TagManagementFeature)
         case notificationSettings(NotificationSettingsFeature)
+        case syncSettings(SyncSettingsFeature)
     }
 
     // MARK: - State
@@ -64,6 +65,7 @@ public struct SettingsFeature: Sendable {
         case budgetManagementTapped
         case tagManagementTapped
         case notificationSettingsTapped
+        case syncSettingsTapped
         case path(StackActionOf<Destination>)
         case task
         case accountsLoaded([Account])
@@ -113,6 +115,10 @@ public struct SettingsFeature: Sendable {
 
             case .notificationSettingsTapped:
                 state.path.append(.notificationSettings(NotificationSettingsFeature.State()))
+                return .none
+
+            case .syncSettingsTapped:
+                state.path.append(.syncSettings(SyncSettingsFeature.State()))
                 return .none
 
             case .path:

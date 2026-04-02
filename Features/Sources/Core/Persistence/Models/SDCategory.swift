@@ -8,25 +8,25 @@ import SwiftData
 @Model
 final class SDCategory {
     /// The unique identifier of the category.
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     /// The display name of the category.
-    var name: String
+    var name: String = ""
 
     /// The symbol or image name representing this category.
-    var icon: String
+    var icon: String = ""
 
     /// A hex color code associated with the category.
-    var color: String
+    var color: String = ""
 
     /// The raw string representation of the category's ``TransactionType`` (income or expense).
-    var type: String
+    var type: String = ""
 
     /// The preferred sorting position of the category.
-    var sortOrder: Int
+    var sortOrder: Int = 0
 
     /// Whether this category is a system-provided default.
-    var isDefault: Bool
+    var isDefault: Bool = false
 
     init(
         id: UUID = UUID(),

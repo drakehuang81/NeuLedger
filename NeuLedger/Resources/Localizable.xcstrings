@@ -4573,6 +4573,118 @@
           }
         }
       }
+    },
+    "settings_sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 同步" } },
+        "en": { "stringUnit": { "state": "translated", "value": "iCloud Sync" } }
+      }
+    },
+    "sync_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 同步" } },
+        "en": { "stringUnit": { "state": "translated", "value": "iCloud Sync" } }
+      }
+    },
+    "sync_upsell_headline": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "隨時隨地同步您的帳本" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sync Your Finances Everywhere" } }
+      }
+    },
+    "sync_upsell_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "升級進階版，透過 iCloud 在所有裝置上自動備份與同步。" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Upgrade to Pro and keep your data backed up and synced across all your devices via iCloud." } }
+      }
+    },
+    "sync_upsell_feature_devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iPhone、iPad 多裝置同步" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sync across iPhone and iPad" } }
+      }
+    },
+    "sync_upsell_feature_backup": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自動 iCloud 備份，資料不怕遺失" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Automatic iCloud backup, never lose data" } }
+      }
+    },
+    "sync_upsell_feature_private": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "端對端加密，僅限您的 iCloud 帳號存取" } },
+        "en": { "stringUnit": { "state": "translated", "value": "End-to-end encrypted, only your iCloud can access" } }
+      }
+    },
+    "sync_subscribe_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "立即升級進階版" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Upgrade to Pro" } }
+      }
+    },
+    "sync_enable_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟 iCloud 同步" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Enable iCloud Sync" } }
+      }
+    },
+    "sync_enable_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "將本機資料一次性遷移至 iCloud，之後自動同步。" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Migrate local data to iCloud once, then sync automatically." } }
+      }
+    },
+    "sync_enable_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟同步" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Enable Sync" } }
+      }
+    },
+    "sync_enabled_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 同步已啟用" } },
+        "en": { "stringUnit": { "state": "translated", "value": "iCloud Sync Enabled" } }
+      }
+    },
+    "sync_migrating": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在遷移資料…" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Migrating data…" } }
+      }
+    },
+    "sync_retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "重試" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Retry" } }
+      }
+    },
+    "sync_icloud_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請先登入 iCloud 帳號才能開啟同步。" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Please sign in to iCloud before enabling sync." } }
+      }
+    },
+    "sync_icloud_account_active": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 帳號已連線" } },
+        "en": { "stringUnit": { "state": "translated", "value": "iCloud Account Connected" } }
+      }
     }
   },
   "version": "1.0"

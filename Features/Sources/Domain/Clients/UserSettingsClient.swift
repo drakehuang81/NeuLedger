@@ -55,6 +55,12 @@ public extension SettingsKey where Value == Bool {
         rawValue: "budgetWarningEnabled",
         defaultValue: false
     )
+
+    /// Mock subscription gate. Replace with StoreKit entitlement check in the subscription cycle.
+    static let isSubscribed = SettingsKey<Bool>(rawValue: "isSubscribed", defaultValue: false)
+
+    /// Set to true once the one-time local → CloudKit migration has completed and sync is active.
+    static let isSyncEnabled = SettingsKey<Bool>(rawValue: "isSyncEnabled", defaultValue: false)
 }
 
 // MARK: - String Keys

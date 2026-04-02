@@ -73,6 +73,8 @@ public struct SettingsView: View {
                 TagManagementView(store: s)
             case .notificationSettings(let s):
                 NotificationSettingsView(store: s)
+            case .syncSettings(let s):
+                SyncSettingsView(store: s)
             }
         }
     }
@@ -125,6 +127,15 @@ public struct SettingsView: View {
                             icon: "bell.badge",
                             iconColor: .orange,
                             label: String(localized: "settings_notification_settings"),
+                            trailing: chevron
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    Button { store.send(.syncSettingsTapped) } label: {
+                        settingsRow(
+                            icon: "icloud.and.arrow.up",
+                            iconColor: Color.Design.brandPrimary,
+                            label: String(localized: "settings_sync"),
                             trailing: chevron
                         )
                     }

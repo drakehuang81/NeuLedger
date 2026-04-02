@@ -8,10 +8,10 @@ import SwiftData
 @Model
 final class SDRecurringTransaction {
     /// The unique identifier of the recurring transaction.
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     /// The fixed amount charged or received each cycle.
-    var amount: Decimal
+    var amount: Decimal = Decimal(0)
 
     /// An optional description for the recurring transaction.
     var note: String?
@@ -20,28 +20,28 @@ final class SDRecurringTransaction {
     var categoryId: UUID?
 
     /// The identifier of the source account.
-    var accountId: UUID
+    var accountId: UUID = UUID()
 
     /// The identifier of the destination account for transfers, if any.
     var toAccountId: UUID?
 
     /// The raw string representation of the ``TransactionType``.
-    var typeRaw: String
+    var typeRaw: String = ""
 
     /// The identifiers of tags associated with this recurring transaction.
-    var tagIds: [UUID]
+    var tagIds: [UUID] = []
 
     /// The raw string representation of the ``BudgetPeriod`` frequency.
-    var frequencyRaw: String
+    var frequencyRaw: String = ""
 
     /// The next date on which this recurring transaction is due.
-    var nextDueDate: Date
+    var nextDueDate: Date = Date()
 
     /// Whether this recurring transaction is currently active.
-    var isActive: Bool
+    var isActive: Bool = true
 
     /// The date this recurring transaction was first created.
-    var createdAt: Date
+    var createdAt: Date = Date()
 
     init(
         id: UUID = UUID(),

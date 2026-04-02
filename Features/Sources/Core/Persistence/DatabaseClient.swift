@@ -24,8 +24,8 @@ public struct DatabaseClient: Sendable {
 // MARK: - Live Value
 
 extension DatabaseClient: DependencyKey {
-    /// The production `ModelContainer` using on-disk persistent storage.
-    public static let liveValue: DatabaseClient = {
+    /// Shared live container. Replaced once by SyncClient when user enables CloudKit sync.
+    nonisolated(unsafe) public static var container: ModelContainer = {
         let schema = Schema([
             SDTransaction.self,
             SDAccount.self,
@@ -34,19 +34,21 @@ extension DatabaseClient: DependencyKey {
             SDTag.self,
             SDRecurringTransaction.self,
         ])
-        let configuration = ModelConfiguration(schema: schema)
-        let container: ModelContainer
         do {
-            container = try ModelContainer(for: schema, configurations: [configuration])
-            let context = ModelContext(container)
-            seedIfNeeded(in: context)
+            let c = try ModelContainer(
+                for: schema,
+                configurations: [ModelConfiguration(schema: schema)]
+            )
+            seedIfNeeded(in: ModelContext(c))
+            return c
         } catch {
             fatalError("Failed to create live ModelContainer: \(error)")
         }
-        return DatabaseClient(
-            modelContainer: { container }
-        )
     }()
+
+    public static let liveValue = DatabaseClient(
+        modelContainer: { DatabaseClient.container }
+    )
 
     /// An in-memory `ModelContainer` suitable for unit tests.
     public static let testValue: DatabaseClient = {

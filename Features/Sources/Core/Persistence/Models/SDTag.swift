@@ -8,10 +8,10 @@ import SwiftData
 @Model
 final class SDTag {
     /// The unique identifier of the tag.
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     /// The display name of the tag.
-    var name: String
+    var name: String = ""
 
     /// An optional hex color code associated with the tag.
     var color: String?

@@ -8,28 +8,28 @@ import SwiftData
 @Model
 final class SDAccount {
     /// The unique identifier of the account.
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     /// The display name of the account.
-    var name: String
+    var name: String = ""
 
     /// The raw string representation of the account's ``AccountType``.
-    var type: String
+    var type: String = ""
 
     /// The symbol or image name representing this account.
-    var icon: String
+    var icon: String = ""
 
     /// A hex color code associated with the account.
-    var color: String
+    var color: String = ""
 
     /// The preferred sorting position of the account.
-    var sortOrder: Int
+    var sortOrder: Int = 0
 
     /// Whether the account is archived.
-    var isArchived: Bool
+    var isArchived: Bool = false
 
     /// The date and time when this account was created.
-    var createdAt: Date
+    var createdAt: Date = Date()
 
     init(
         id: UUID = UUID(),

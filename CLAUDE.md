@@ -22,7 +22,7 @@ All code lives in the local SPM package at `Features/`. The app target (`NeuLedg
 xcodebuild build -project NeuLedger.xcodeproj -scheme NeuLedger \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
-# Run tests for a specific module (schemes: Domain, Core, Common, Features, NeuLedger)
+# Run all tests (only -scheme Features is configured for testing)
 xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
@@ -30,6 +30,9 @@ xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
 xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -only-testing:FeaturesTests/DashboardFeatureTests
+
+# Available schemes: NeuLedger (build only), Features (all tests)
+# Common / Core / Domain / NeuLedger are NOT configured for the test action
 ```
 
 > `swift test` does NOT work — iOS 26-only APIs (Liquid Glass, Foundation Models, etc.) cause compile errors on macOS.

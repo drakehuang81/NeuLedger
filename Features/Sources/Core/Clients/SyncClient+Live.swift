@@ -27,7 +27,7 @@ extension SyncClient: DependencyKey {
                             ])
                             let cloudConfig = ModelConfiguration(
                                 schema: schema,
-                                cloudKitDatabase: .private("iCloud.com.yourcompany.NeuLedger")
+                                cloudKitDatabase: .private("iCloud.com.drakehuang.NeuLedger")
                             )
                             let cloudContainer = try ModelContainer(
                                 for: schema,

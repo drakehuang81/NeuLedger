@@ -35,4 +35,26 @@ struct CarrierClientTests {
             try await client.add(carrier)
         }
     }
+
+    @Test("CarrierClient update mock override")
+    func testUpdateMock() async throws {
+        try await withDependencies {
+            $0.carrierClient.update = { _ in }
+        } operation: {
+            @Dependency(\.carrierClient) var client
+            let carrier = Carrier(name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234")
+            try await client.update(carrier)
+        }
+    }
+
+    @Test("CarrierClient delete mock override")
+    func testDeleteMock() async throws {
+        let id = UUID()
+        try await withDependencies {
+            $0.carrierClient.delete = { _ in }
+        } operation: {
+            @Dependency(\.carrierClient) var client
+            try await client.delete(id)
+        }
+    }
 }

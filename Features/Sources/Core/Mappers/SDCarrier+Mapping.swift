@@ -2,7 +2,9 @@ import Foundation
 import SwiftData
 import Domain
 
+/// Bidirectional mapping between `SDCarrier` and `Carrier`.
 extension SDCarrier: DomainConvertible {
+    /// Converts this SwiftData model to a Domain `Carrier` value type.
     func toDomain() -> Carrier {
         Carrier(
             id: id,
@@ -13,6 +15,12 @@ extension SDCarrier: DomainConvertible {
         )
     }
 
+    /// Creates an `SDCarrier` from a Domain `Carrier`.
+    ///
+    /// - Parameters:
+    ///   - domain: The Domain `Carrier` value to persist.
+    ///   - context: The `ModelContext` in which to insert the new model.
+    /// - Returns: A new `SDCarrier` instance inserted into the given context.
     @discardableResult
     static func from(_ domain: Carrier, context: ModelContext) -> SDCarrier {
         let model = SDCarrier(

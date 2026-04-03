@@ -162,3 +162,127 @@ struct AddEditCarrierFeatureTests {
         #expect(updatedCarrier.value?.id == Self.sampleCarrier.id)
     }
 }
+
+@Suite("CarrierManagementFeature Tests")
+struct CarrierManagementFeatureTests {
+
+    private static let carrierA = Carrier(
+        id: UUID(uuidString: "30000000-0000-0000-0000-000000000001")!,
+        name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234",
+        createdAt: Date(timeIntervalSince1970: 0)
+    )
+    private static let carrierB = Carrier(
+        id: UUID(uuidString: "30000000-0000-0000-0000-000000000002")!,
+        name: "憑證", type: .citizenDigitalCertificate, barcode: "/PA1B2C3D4E5F6G7H8",
+        createdAt: Date(timeIntervalSince1970: 1)
+    )
+
+    @Test("task loads all carriers")
+    func testTaskLoadsCarriers() async {
+        let carriers = [Self.carrierA, Self.carrierB]
+        let store = await TestStore(
+            initialState: CarrierManagementFeature.State()
+        ) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.fetchAll = { carriers }
+        }
+
+        await store.send(.task) { $0.isLoading = true }
+        await store.receive(\.carriersLoaded) {
+            $0.isLoading = false
+            $0.carriers = carriers
+        }
+    }
+
+    @Test("carrierRowTapped expands the tapped row")
+    func testCarrierRowTappedExpands() async {
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.carrierRowTapped(Self.carrierA.id)) {
+            $0.expandedCarrierId = Self.carrierA.id
+        }
+    }
+
+    @Test("carrierRowTapped same row collapses it")
+    func testCarrierRowTappedCollapses() async {
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA]
+        initial.expandedCarrierId = Self.carrierA.id
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.carrierRowTapped(Self.carrierA.id)) {
+            $0.expandedCarrierId = nil
+        }
+    }
+
+    @Test("carrierRowTapped different row switches expansion")
+    func testCarrierRowTappedSwitches() async {
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+        initial.expandedCarrierId = Self.carrierA.id
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.carrierRowTapped(Self.carrierB.id)) {
+            $0.expandedCarrierId = Self.carrierB.id
+        }
+    }
+
+    @Test("addTapped presents add form")
+    func testAddTapped() async {
+        let store = await TestStore(
+            initialState: CarrierManagementFeature.State()
+        ) { CarrierManagementFeature() }
+
+        await store.send(.addTapped) {
+            $0.addEdit = AddEditCarrierFeature.State(mode: .add)
+        }
+    }
+
+    @Test("deleteTapped removes carrier and reloads")
+    func testDeleteTapped() async {
+        let deletedId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.delete = { id in deletedId.setValue(id) }
+            $0.carrierClient.fetchAll = { [Self.carrierB] }
+        }
+
+        await store.send(.deleteTapped(Self.carrierA.id))
+        await store.receive(\.carriersLoaded) {
+            $0.carriers = [Self.carrierB]
+        }
+
+        #expect(deletedId.value == Self.carrierA.id)
+    }
+
+    @Test("saved delegate reloads carriers")
+    func testSavedDelegateReloads() async {
+        var initial = CarrierManagementFeature.State()
+        initial.addEdit = AddEditCarrierFeature.State(mode: .add)
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.fetchAll = { [Self.carrierA] }
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+        await store.receive(\.carriersLoaded) {
+            $0.carriers = [Self.carrierA]
+        }
+    }
+}

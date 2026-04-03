@@ -33,6 +33,7 @@ extension DatabaseClient: DependencyKey {
             SDBudget.self,
             SDTag.self,
             SDRecurringTransaction.self,
+            SDCarrier.self,
         ])
         do {
             let c = try ModelContainer(
@@ -59,6 +60,7 @@ extension DatabaseClient: DependencyKey {
             SDBudget.self,
             SDTag.self,
             SDRecurringTransaction.self,
+            SDCarrier.self,
         ])
         let configuration = ModelConfiguration(
             schema: schema,

@@ -25,6 +25,7 @@ public struct CarrierManagementFeature: Sendable {
         case carriersLoaded([Carrier])
         case carrierRowTapped(Carrier.ID)
         case addTapped
+        case editTapped(Carrier)
         case deleteTapped(Carrier.ID)
         case addEdit(PresentationAction<AddEditCarrierFeature.Action>)
     }
@@ -65,11 +66,18 @@ public struct CarrierManagementFeature: Sendable {
                 state.addEdit = AddEditCarrierFeature.State(mode: .add)
                 return .none
 
+            case let .editTapped(carrier):
+                state.addEdit = AddEditCarrierFeature.State(mode: .edit(carrier))
+                return .none
+
             case let .deleteTapped(id):
                 state.expandedCarrierId = nil
                 return .run { send in
                     try await carrierClient.delete(id)
                     let carriers = try await carrierClient.fetchAll()
+                    await send(.carriersLoaded(carriers))
+                } catch: { _, send in
+                    let carriers = (try? await carrierClient.fetchAll()) ?? []
                     await send(.carriersLoaded(carriers))
                 }
 

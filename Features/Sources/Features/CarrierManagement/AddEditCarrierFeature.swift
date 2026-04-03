@@ -20,6 +20,7 @@ public struct AddEditCarrierFeature: Sendable {
         public var barcode: String
         public var barcodeError: String?
         public var isSaving: Bool = false
+        public var saveError: String? = nil
 
         public init(mode: Mode = .add) {
             self.mode = mode
@@ -47,6 +48,7 @@ public struct AddEditCarrierFeature: Sendable {
         case saveTapped
         case cancelTapped
         case savedSuccessfully
+        case saveFailed(String)
         case delegate(Delegate)
 
         @CasePathable
@@ -103,14 +105,22 @@ public struct AddEditCarrierFeature: Sendable {
                         try await carrierClient.update(updated)
                     }
                     await send(.savedSuccessfully)
+                } catch: { error, send in
+                    await send(.saveFailed(error.localizedDescription))
                 }
 
             case .savedSuccessfully:
                 state.isSaving = false
+                state.saveError = nil
                 return .run { send in
                     await send(.delegate(.saved))
                     await dismiss()
                 }
+
+            case let .saveFailed(message):
+                state.isSaving = false
+                state.saveError = message
+                return .none
 
             case .cancelTapped:
                 return .run { send in

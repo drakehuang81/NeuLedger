@@ -4756,6 +4756,20 @@
         "en": { "stringUnit": { "state": "translated", "value": "No carriers added yet" } }
       }
     },
+    "carrier_empty_state_desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增您的手機條碼或自然人憑證，方便報稅時使用" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Add your phone barcode or citizen digital certificate for tax filing" } }
+      }
+    },
+    "carrier_add_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Add Carrier" } }
+      }
+    },
     "carrier_add_title": {
       "extractionState": "manual",
       "localizations": {

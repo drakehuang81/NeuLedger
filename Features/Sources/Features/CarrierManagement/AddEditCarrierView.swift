@@ -68,11 +68,20 @@ public struct AddEditCarrierView: View {
                 } header: {
                     Text(String(localized: "carrier_barcode_label"))
                 }
+
+                // MARK: Save Error
+                if let saveError = store.saveError {
+                    Section {
+                        Text(saveError)
+                            .font(Font.Design.caption)
+                            .foregroundStyle(Color.Design.expenseRed)
+                    }
+                }
             }
             .navigationTitle(
                 store.mode == .add
-                    ? String(localized: "carrier_form_add_title")
-                    : String(localized: "carrier_form_edit_title")
+                    ? String(localized: "carrier_add_title")
+                    : String(localized: "carrier_edit_title")
             )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -86,7 +95,7 @@ public struct AddEditCarrierView: View {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
-                    .disabled(!store.canSave)
+                    .disabled(!store.canSave || store.isSaving)
                 }
             }
         }

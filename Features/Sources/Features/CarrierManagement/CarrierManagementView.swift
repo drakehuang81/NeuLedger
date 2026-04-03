@@ -111,12 +111,20 @@ public struct CarrierManagementView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
 
-                    // Barcode text + copy button
+                    // Barcode text + copy + edit buttons
                     HStack {
                         Text(carrier.barcode)
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(Color.Design.textPrimary)
                         Spacer()
+                        Button {
+                            store.send(.editTapped(carrier))
+                        } label: {
+                            Image(systemName: "pencil")
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(Color.Design.brandPrimary)
+                        }
+                        .buttonStyle(.plain)
                         Button {
                             UIPasteboard.general.string = carrier.barcode
                         } label: {

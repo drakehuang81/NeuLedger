@@ -130,7 +130,7 @@ public struct AddEditCarrierFeature: Sendable {
         let errorKey: String
         switch type {
         case .phoneBarcodeCarrier:
-            pattern = #"^/[A-Z0-9+\-.]{7}$"#
+            pattern = #"^/[A-Z0-9+.-]{7}$"#
             errorKey = "carrier_barcode_error_phone"
         case .citizenDigitalCertificate:
             pattern = #"^/P[A-Z0-9]{16}$"#

@@ -55,7 +55,7 @@ public struct AddEditCarrierView: View {
                                 set: { store.send(.barcodeChanged($0.uppercased())) }
                             )
                         )
-                        .font(Font.Design.amount)
+                        .font(.system(.body, design: .monospaced))
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.characters)
 

@@ -71,6 +71,8 @@ public struct SettingsView: View {
                 BudgetManagementView(store: s)
             case .tagManagement(let s):
                 TagManagementView(store: s)
+            case .carrierManagement(let s):
+                CarrierManagementView(store: s)
             case .notificationSettings(let s):
                 NotificationSettingsView(store: s)
             case .syncSettings(let s):
@@ -118,6 +120,15 @@ public struct SettingsView: View {
                             icon: "tag",
                             iconColor: Color.Design.brandAccent,
                             label: String(localized: "settings_tag_management"),
+                            trailing: chevron
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    Button { store.send(.carrierManagementTapped) } label: {
+                        settingsRow(
+                            icon: "creditcard.and.123",
+                            iconColor: Color.Design.brandAccent,
+                            label: String(localized: "settings_carrier_management"),
                             trailing: chevron
                         )
                     }

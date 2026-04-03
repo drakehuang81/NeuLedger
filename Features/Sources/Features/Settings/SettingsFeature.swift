@@ -23,6 +23,7 @@ public struct SettingsFeature: Sendable {
         case categoryManagement(CategoryManagementFeature)
         case budgetManagement(BudgetManagementFeature)
         case tagManagement(TagManagementFeature)
+        case carrierManagement(CarrierManagementFeature)
         case notificationSettings(NotificationSettingsFeature)
         case syncSettings(SyncSettingsFeature)
     }
@@ -64,6 +65,7 @@ public struct SettingsFeature: Sendable {
         case categoryManagementTapped
         case budgetManagementTapped
         case tagManagementTapped
+        case carrierManagementTapped
         case notificationSettingsTapped
         case syncSettingsTapped
         case path(StackActionOf<Destination>)
@@ -111,6 +113,10 @@ public struct SettingsFeature: Sendable {
 
             case .tagManagementTapped:
                 state.path.append(.tagManagement(TagManagementFeature.State()))
+                return .none
+
+            case .carrierManagementTapped:
+                state.path.append(.carrierManagement(CarrierManagementFeature.State()))
                 return .none
 
             case .notificationSettingsTapped:

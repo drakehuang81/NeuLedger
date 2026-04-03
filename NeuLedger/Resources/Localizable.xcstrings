@@ -4685,6 +4685,111 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 帳號已連線" } },
         "en": { "stringUnit": { "state": "translated", "value": "iCloud Account Connected" } }
       }
+    },
+    "settings_carrier_management": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "載具管理" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Carrier Management" } }
+      }
+    },
+    "carrier_management_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "我的載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "My Carriers" } }
+      }
+    },
+    "carrier_type_phone_barcode": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "手機條碼載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Phone Barcode Carrier" } }
+      }
+    },
+    "carrier_type_citizen_cert": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自然人憑證條碼" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Citizen Digital Certificate" } }
+      }
+    },
+    "carrier_name_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "名稱（選填）" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Name (Optional)" } }
+      }
+    },
+    "carrier_barcode_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "條碼" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barcode" } }
+      }
+    },
+    "carrier_barcode_error_phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "格式應為 /XXXXXXX（斜線加 7 位英數字）" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Format must be /XXXXXXX (slash followed by 7 alphanumeric characters)" } }
+      }
+    },
+    "carrier_barcode_error_cert": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "格式應為 /P 加 16 位英數字" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Format must be /P followed by 16 alphanumeric characters" } }
+      }
+    },
+    "carrier_copy_success": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已複製" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Copied" } }
+      }
+    },
+    "carrier_empty_state": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚未新增載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No carriers added yet" } }
+      }
+    },
+    "carrier_add_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Add Carrier" } }
+      }
+    },
+    "carrier_edit_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Edit Carrier" } }
+      }
+    },
+    "carrier_name_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "為載具命名（選填）" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Name this carrier (optional)" } }
+      }
+    },
+    "carrier_barcode_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "輸入條碼" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Enter barcode" } }
+      }
+    },
+    "carrier_delete_confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確認刪除此載具？" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Delete this carrier?" } }
+      }
     }
   },
   "version": "1.0"

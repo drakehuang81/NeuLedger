@@ -247,11 +247,12 @@ struct CarrierManagementFeatureTests {
         }
     }
 
-    @Test("deleteTapped removes carrier and reloads")
+    @Test("deleteTapped with expanded row collapses and removes carrier")
     func testDeleteTapped() async {
         let deletedId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
         var initial = CarrierManagementFeature.State()
         initial.carriers = [Self.carrierA, Self.carrierB]
+        initial.expandedCarrierId = Self.carrierA.id  // carrierA is expanded
 
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
@@ -260,7 +261,9 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.fetchAll = { [Self.carrierB] }
         }
 
-        await store.send(.deleteTapped(Self.carrierA.id))
+        await store.send(.deleteTapped(Self.carrierA.id)) {
+            $0.expandedCarrierId = nil  // expanded row is collapsed immediately
+        }
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
         }

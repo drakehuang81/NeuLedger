@@ -6,6 +6,8 @@ import Foundation
 public struct CarrierManagementFeature: Sendable {
     public init() {}
 
+    // MARK: - State
+
     @ObservableState
     public struct State: Equatable {
         public var carriers: [Carrier] = []
@@ -16,6 +18,8 @@ public struct CarrierManagementFeature: Sendable {
         public init() {}
     }
 
+    // MARK: - Action
+
     public enum Action: Sendable, Equatable {
         case task
         case carriersLoaded([Carrier])
@@ -25,9 +29,13 @@ public struct CarrierManagementFeature: Sendable {
         case addEdit(PresentationAction<AddEditCarrierFeature.Action>)
     }
 
+    // MARK: - Dependencies
+
     @Dependency(\.carrierClient) var carrierClient
 
     private enum CancelID { case task }
+
+    // MARK: - Body
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in

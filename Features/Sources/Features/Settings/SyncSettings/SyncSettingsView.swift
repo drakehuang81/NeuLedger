@@ -12,9 +12,7 @@ public struct SyncSettingsView: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                if !store.isSubscribed {
-                    upsellSection
-                } else if store.isSyncEnabled {
+                if store.isSyncEnabled {
                     enabledSection
                 } else {
                     enableSection
@@ -28,65 +26,7 @@ public struct SyncSettingsView: View {
         .task { await store.send(.task).finish() }
     }
 
-    // MARK: - 未訂閱：廣告頁
-
-    private var upsellSection: some View {
-        VStack(spacing: 16) {
-            GlassContainer(cornerRadius: 20, padding: 24) {
-                VStack(spacing: 16) {
-                    Image(systemName: "icloud.and.arrow.up")
-                        .symbolRenderingMode(.hierarchical)
-                        .font(.system(size: 48, weight: .light))
-                        .foregroundStyle(Color.Design.brandPrimary)
-
-                    VStack(spacing: 8) {
-                        Text(String(localized: "sync_upsell_headline"))
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Color.Design.textPrimary)
-                            .multilineTextAlignment(.center)
-
-                        Text(String(localized: "sync_upsell_subtitle"))
-                            .font(.body)
-                            .foregroundStyle(Color.Design.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    VStack(spacing: 12) {
-                        featureRow(
-                            icon: "iphone.and.ipad",
-                            text: String(localized: "sync_upsell_feature_devices")
-                        )
-                        featureRow(
-                            icon: "arrow.clockwise.icloud",
-                            text: String(localized: "sync_upsell_feature_backup")
-                        )
-                        featureRow(
-                            icon: "lock.icloud",
-                            text: String(localized: "sync_upsell_feature_private")
-                        )
-                    }
-                    .padding(.top, 4)
-
-                    Button {
-                        store.send(.subscribeNowTapped)
-                    } label: {
-                        Text(String(localized: "sync_subscribe_now"))
-                            .font(.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.Design.textInverse)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.Design.brandPrimary, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                    .padding(.top, 8)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    // MARK: - 已訂閱、未開啟同步
+    // MARK: - 未開啟同步
 
     private var enableSection: some View {
         VStack(spacing: 16) {
@@ -269,21 +209,11 @@ public struct SyncSettingsView: View {
     }
 }
 
-#Preview("未訂閱") {
+#Preview("未開啟同步") {
     NavigationStack {
         SyncSettingsView(
             store: Store(
-                initialState: SyncSettingsFeature.State(isSubscribed: false)
-            ) { SyncSettingsFeature() }
-        )
-    }
-}
-
-#Preview("已訂閱未開啟") {
-    NavigationStack {
-        SyncSettingsView(
-            store: Store(
-                initialState: SyncSettingsFeature.State(isSubscribed: true, isSyncEnabled: false, isCloudKitAvailable: true)
+                initialState: SyncSettingsFeature.State(isSyncEnabled: false, isCloudKitAvailable: true)
             ) { SyncSettingsFeature() }
         )
     }
@@ -293,7 +223,7 @@ public struct SyncSettingsView: View {
     NavigationStack {
         SyncSettingsView(
             store: Store(
-                initialState: SyncSettingsFeature.State(isSubscribed: true, isSyncEnabled: true, isCloudKitAvailable: true)
+                initialState: SyncSettingsFeature.State(isSyncEnabled: true, isCloudKitAvailable: true)
             ) { SyncSettingsFeature() }
         )
     }

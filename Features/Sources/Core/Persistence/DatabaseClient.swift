@@ -24,24 +24,40 @@ public struct DatabaseClient: Sendable {
 // MARK: - Live Value
 
 extension DatabaseClient: DependencyKey {
-    /// Shared live container. Replaced once by SyncClient when user enables CloudKit sync.
+    public static let schema = Schema([
+        SDTransaction.self,
+        SDAccount.self,
+        SDCategory.self,
+        SDBudget.self,
+        SDTag.self,
+        SDRecurringTransaction.self,
+        SDCarrier.self,
+    ])
+
+    private static let localConfiguration = ModelConfiguration(
+        schema: schema,
+        cloudKitDatabase: .none
+    )
+
+    public static let cloudConfiguration = ModelConfiguration(
+        schema: schema,
+        cloudKitDatabase: .private("iCloud.com.drakehuang.NeuLedger")
+    )
+
+    /// Shared live container. On launch, restores the CloudKit-backed container if sync was
+    /// previously enabled. Replaced at runtime by SyncClient during the migration flow.
     nonisolated(unsafe) public static var container: ModelContainer = {
-        let schema = Schema([
-            SDTransaction.self,
-            SDAccount.self,
-            SDCategory.self,
-            SDBudget.self,
-            SDTag.self,
-            SDRecurringTransaction.self,
-            SDCarrier.self,
-        ])
         do {
-            let c = try ModelContainer(
-                for: schema,
-                configurations: [ModelConfiguration(schema: schema)]
-            )
-            seedIfNeeded(in: ModelContext(c))
-            return c
+            let isSyncEnabled = UserDefaults.standard.bool(forKey: "isSyncEnabled")
+            let isCloudKitAvailable = FileManager.default.ubiquityIdentityToken != nil
+
+            if isSyncEnabled && isCloudKitAvailable {
+                return try ModelContainer(for: schema, configurations: [cloudConfiguration])
+            } else {
+                let c = try ModelContainer(for: schema, configurations: [localConfiguration])
+                seedIfNeeded(in: ModelContext(c))
+                return c
+            }
         } catch {
             fatalError("Failed to create live ModelContainer: \(error)")
         }
@@ -53,15 +69,6 @@ extension DatabaseClient: DependencyKey {
 
     /// An in-memory `ModelContainer` suitable for unit tests.
     public static let testValue: DatabaseClient = {
-        let schema = Schema([
-            SDTransaction.self,
-            SDAccount.self,
-            SDCategory.self,
-            SDBudget.self,
-            SDTag.self,
-            SDRecurringTransaction.self,
-            SDCarrier.self,
-        ])
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: true

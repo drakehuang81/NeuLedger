@@ -6,11 +6,9 @@ import Foundation
 public struct SyncSettingsFeature: Sendable {
     @ObservableState
     public struct State: Equatable {
-        public var isSubscribed: Bool = false
         public var isSyncEnabled: Bool = false
         public var isCloudKitAvailable: Bool = true
         public var migrationState: MigrationState = .idle
-        public var lastSyncDate: Date? = nil
 
         public enum MigrationState: Equatable {
             case idle
@@ -20,24 +18,19 @@ public struct SyncSettingsFeature: Sendable {
         }
 
         public init(
-            isSubscribed: Bool = false,
             isSyncEnabled: Bool = false,
             isCloudKitAvailable: Bool = true,
-            migrationState: MigrationState = .idle,
-            lastSyncDate: Date? = nil
+            migrationState: MigrationState = .idle
         ) {
-            self.isSubscribed = isSubscribed
             self.isSyncEnabled = isSyncEnabled
             self.isCloudKitAvailable = isCloudKitAvailable
             self.migrationState = migrationState
-            self.lastSyncDate = lastSyncDate
         }
     }
 
     public enum Action: Equatable {
         case task
         case enableSyncTapped
-        case subscribeNowTapped
         case migrationProgressUpdated(Double)
         case migrationCompleted
         case migrationFailed(String)
@@ -52,14 +45,8 @@ public struct SyncSettingsFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
-                state.isSubscribed = userSettingsClient.bool(.isSubscribed)
                 state.isSyncEnabled = userSettingsClient.bool(.isSyncEnabled)
                 state.isCloudKitAvailable = syncClient.isCloudKitAvailable()
-                return .none
-
-            case .subscribeNowTapped:
-                state.isSubscribed = true
-                userSettingsClient.setBool(true, .isSubscribed)
                 return .none
 
             case .enableSyncTapped:

@@ -17,14 +17,12 @@ struct MainTabView: View {
                     AccessoryView(store: store)
                 }
         } else {
-            if store.isAccessoryVisible {
-                tabViewBase
-                    .tabViewBottomAccessory {
+            tabViewBase
+                .tabViewBottomAccessory {
+                    if store.isAccessoryVisible {
                         AccessoryView(store: store)
                     }
-            } else {
-                tabViewBase
-            }
+                }
         }
     }
 

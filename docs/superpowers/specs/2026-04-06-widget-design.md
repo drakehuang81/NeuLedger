@@ -12,7 +12,7 @@
 | Widget | 尺寸 | 主要動作 |
 |--------|------|----------|
 | 我的載具（CarrierWidget） | Medium 2×1 | 顯示手機條碼/自然人憑證條碼供店員掃描 |
-| 語音記帳（VoiceWidget） | Small 1×1 | 長按 → 開啟 app 進行語音錄音與 AI 記帳 |
+| 語音記帳（VoiceWidget） | Small 1×1 | 點按 → App Intent 背景錄音 → Live Activity 回饋 → 不需開啟 app |
 
 ---
 
@@ -122,51 +122,70 @@ struct WidgetAppGroup {
 
 ### 功能
 
-長按麥克風按鈕 → 觸發 App Intent → 開啟 app 進入語音錄音畫面 → AI 辨識 → 記帳至指定帳戶。
+點按 Widget → `StartVoiceRecordingIntent`（主 app target）背景執行錄音 → Live Activity 在 Dynamic Island 顯示即時狀態 → AI 辨識 → 寫入 SwiftData → 全程不需開啟 app。
 
 ### 尺寸
 
 僅支援 **Small（`.systemSmall`）**。
 
-### 視覺設計（五個狀態）
+### 視覺設計（四個狀態）
 
 | 狀態 | 位置 | 視覺 |
 |------|------|------|
-| ① 待機 | Widget | 橙色圓形麥克風按鈕 + 帳戶名稱 + 「點按開始錄音」提示 |
-| ② 啟動感應 | Widget | 按鈕外圈脈衝環動畫 + 「準備中…」（App Intent perform 期間的 optimistic UI）|
-| ③ 錄音中 | **App 內** | 音波動畫 + 紅點閃爍 + 「錄音中」 |
-| ④ AI 辨識中 | **App 內** | 跳動三點 + 「辨識中…」 |
-| ⑤ 記錄完成 | Widget | 綠色勾勾圓圈 + 「已記錄」（顯示約 3 秒後 reload 回 ① 待機） |
+| ① 待機 | Widget | 橙色圓形麥克風按鈕 + 帳戶名稱 |
+| ③ 錄音中 | **Dynamic Island** | 音波動畫（橙色）+ 紅點閃爍 + 「錄音中」 |
+| ④ AI 辨識中 | **Dynamic Island** | 跳動三點（橙色）+ 「AI 辨識中」 |
+| ⑤ 記錄完成 | Widget | 綠色勾勾圓圈 + 「已記錄」（約 3 秒後 reload 回 ① 待機） |
 
-> **手勢說明：** WidgetKit 標準僅支援 `Button` tap（不支援長按手勢）。① → ② 由普通點按觸發 App Intent，② 的動畫是 SwiftUI `invalidatableContent()` 在 intent perform 期間的過渡視覺，隨後 app 開啟並進入 ③。「防誤觸」需求由 app 內的錄音畫面自行設計（例如顯示 1 秒倒數再開始）。
->
-> Widget 本身（WidgetKit 沙箱）無法存取麥克風，③④ 必須在主 app 內執行。
+> **WidgetKit 限制：** Widget 本身無法存取麥克風。`StartVoiceRecordingIntent` 定義於主 app target，由主 app 進程在背景執行錄音與 AI 辨識，透過 ActivityKit 推送 Live Activity 狀態至 Dynamic Island。
 
 ### App Intent
 
 ```swift
+// 定義於主 app target（非 Widget Extension）
 struct StartVoiceRecordingIntent: AppIntent {
     static var title: LocalizedStringResource = "開始語音記帳"
 
-    func perform() async throws -> some IntentResult & OpensIntent {
-        // Deep link 至 app 的 VoiceRecording destination
-        return .result(opensIntent: OpenURLIntent(voiceRecordingDeepLink))
+    func perform() async throws -> some IntentResult {
+        // 1. 啟動 Live Activity（VoiceRecordingAttributes, phase: .recording）
+        // 2. 錄音（AVAudioRecorder）
+        // 3. Speech framework 轉文字
+        // 4. Foundation Models 解析金額/分類
+        // 5. 寫入 SwiftData
+        // 6. 更新 Live Activity phase → .done → dismiss
+        // 7. WidgetCenter.reloadTimelines(ofKind: "VoiceWidget")
+        return .result()
     }
 }
 ```
 
-Widget 按鈕綁定：`Button(intent: StartVoiceRecordingIntent()) { ... }`（iOS 17+ interactive widget）
+Widget 按鈕綁定：`Button(intent: StartVoiceRecordingIntent()) { ... }`
+
+### Live Activity
+
+```swift
+struct VoiceRecordingAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        var phase: Phase
+        enum Phase: String, Codable { case recording, transcribing, done }
+    }
+    var accountName: String
+}
+```
+
+Dynamic Island compact/expanded view 依 `phase` 切換：
+- `.recording` → 音波動畫 + 紅點
+- `.transcribing` → 跳動三點
 
 ### 完成後 Widget 更新
 
-主 app 記帳成功後：
-1. 寫入 App Group（可選：記錄最後記帳時間）
-2. 呼叫 `WidgetCenter.shared.reloadTimelines(ofKind: "VoiceWidget")`
-3. Widget timeline 切換至 ⑤ 完成狀態（顯示 3 秒後回到 ① 待機）
+1. `Activity.end(..., dismissalPolicy: .immediate)`
+2. `WidgetCenter.shared.reloadTimelines(ofKind: "VoiceWidget")`
+3. Widget timeline 切換至 ⑤ 完成狀態，3 秒後自動回到 ① 待機
 
 ### 目標帳戶顯示
 
-從 App Group 讀取 `voiceAccountName`，顯示於按鈕下方。
+從 App Group 讀取 `voiceAccountName`，顯示於麥克風按鈕下方。
 
 ---
 
@@ -199,15 +218,13 @@ case widgetCarriersLoaded([Carrier])   // 若 carriers 尚未在 state 中
 
 ## Deep Link 處理
 
-`AppFeature.Destination` 新增：
+CarrierWidget 點擊時 deep link 開啟 app 至 CarrierManagement：
 
-```swift
-case voiceRecording(targetAccountId: String)
+```
+neuledger://carrier-management
 ```
 
-URL scheme：`neuledger://voice-recording?accountId=<uuid>`
-
-`AppView` 在 `.onOpenURL` 解析並 dispatch 對應 action。
+`AppView` 在 `.onOpenURL` 解析並 dispatch 對應 action。VoiceWidget 全程透過 App Intent 背景執行，不需要 deep link。
 
 ---
 
@@ -227,9 +244,12 @@ URL scheme：`neuledger://voice-recording?accountId=<uuid>`
 | `UserSettingsClient.swift` | 新增 `widgetCarrierId`、`widgetVoiceAccountId` SettingsKey |
 | `SettingsFeature.swift` | 新增 Widget 設定 actions、寫入 App Group、reload timelines |
 | `SettingsView.swift` | 新增 Widget 設定 Section |
-| `AppFeature.swift` | 新增 `voiceRecording` destination、`onOpenURL` handler |
+| `AppFeature.swift` | 新增 `onOpenURL` handler（處理 carrier-management deep link）|
 | `NeuLedger.entitlements` | 新增 App Group entitlement |
 | `NeuLedger.xcodeproj` | 新增 Widget Extension target、App Group capability |
+| `Info.plist` | 新增 `NSSupportsLiveActivities = YES`、`NSMicrophoneUsageDescription` |
+| `StartVoiceRecordingIntent.swift` | 主 app target，App Intent 含錄音 + Live Activity 控制邏輯 |
+| `VoiceRecordingAttributes.swift` | `ActivityAttributes` struct（主 app + Widget Extension 共用，放 Shared/）|
 
 ---
 

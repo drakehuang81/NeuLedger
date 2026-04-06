@@ -19,10 +19,7 @@ struct SyncSettingsFeatureTests {
             }
             $0.syncClient.isCloudKitAvailable = { true }
         }
-        await store.send(.task) {
-            $0.isSyncEnabled = false
-            $0.isCloudKitAvailable = true
-        }
+        await store.send(.task)
     }
 
     @Test("enableSyncTapped 串流進度並完成")

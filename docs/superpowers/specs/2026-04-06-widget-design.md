@@ -167,15 +167,86 @@ Widget 按鈕綁定：`Button(intent: StartVoiceRecordingIntent()) { ... }`
 struct VoiceRecordingAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var phase: Phase
-        enum Phase: String, Codable { case recording, transcribing, done }
+        var recordingDuration: TimeInterval  // 已錄秒數（recording 階段持續更新）
+        var transcribedText: String?         // 完成時的辨識摘要（例如「午餐 120 元」）
+        var errorMessage: String?            // 錯誤訊息（僅 .failed 時有值）
+        enum Phase: String, Codable { case recording, transcribing, done, failed }
     }
     var accountName: String
 }
 ```
 
-Dynamic Island compact/expanded view 依 `phase` 切換：
-- `.recording` → 音波動畫 + 紅點
-- `.transcribing` → 跳動三點
+#### Dynamic Island 三種呈現模式
+
+**Compact（預設，leading + trailing）：**
+
+```
+┌─ leading ──┬── trailing ─┐
+│ 🎙 (橙色)  │  0:03 (秒數) │    ← recording
+│ ●●● (跳點)│  辨識中      │    ← transcribing
+└────────────┴─────────────┘
+```
+
+**Expanded（使用者長按 DI 展開）：**
+
+```
+┌──────────── expanded ─────────────┐
+│  leading:  🎙 mic icon             │
+│  center:   音波動畫 / 跳動三點       │
+│  trailing: 0:05                    │
+│  bottom:   「現金帳戶」 · 點按停止    │
+└───────────────────────────────────┘
+```
+
+- `.recording` → center 顯示音波動畫，bottom 顯示帳戶名 + 「點按停止」
+- `.transcribing` → center 顯示跳動三點，bottom 顯示「AI 辨識中…」
+- `.done` → center 顯示 ✓，bottom 顯示辨識摘要（transcribedText）
+- `.failed` → center 顯示 ✕，bottom 顯示 errorMessage
+
+**Minimal（有其他 Live Activity 同時運行時）：**
+
+DI 另一側顯示橙色小圓圈。`.recording` 時圓圈脈衝，`.transcribing` 時靜態。
+
+#### Lock Screen 呈現
+
+鎖定畫面上以卡片形式顯示，佈局與 Expanded 類似：
+
+```
+┌──────────────────────────────────┐
+│ [N icon]  NeuLedger     ● 錄音中 │
+│  ▍▎▌▎▍▌▍▎▌▍   ← 音波 / 跳點     │
+│  → 現金帳戶          0:05        │
+└──────────────────────────────────┘
+```
+
+### 錄音停止機制
+
+錄音透過以下三種方式之一停止（先觸發者為準）：
+
+1. **使用者點擊 Dynamic Island expanded → 「點按停止」** — 觸發 `StopVoiceRecordingIntent`
+2. **靜音偵測** — 連續 2 秒音量低於閾值自動停止
+3. **最長時限** — 30 秒自動停止（避免忘記關閉）
+
+```swift
+struct StopVoiceRecordingIntent: AppIntent {
+    static var title: LocalizedStringResource = "停止語音記帳"
+
+    func perform() async throws -> some IntentResult {
+        // 通知錄音 session 停止，觸發 transcription 流程
+        return .result()
+    }
+}
+```
+
+### 錯誤處理
+
+| 場景 | 行為 |
+|------|------|
+| 麥克風權限未授予 | 不啟動 Live Activity，直接開啟 app Settings 提示授權 |
+| 錄音失敗 | Live Activity 更新至 `.failed`（errorMessage: 「錄音失敗」），3 秒後 dismiss |
+| Speech 轉文字失敗 | 同上，errorMessage: 「語音辨識失敗」 |
+| Foundation Models 解析失敗 | 保存原始文字，開啟 app 讓使用者手動填入金額/分類 |
+| App crash / 異常中斷 | Live Activity 設定 `staleDate`（啟動後 60 秒），超時系統自動移除 |
 
 ### 完成後 Widget 更新
 
@@ -236,6 +307,9 @@ neuledger://carrier-management
 | `CarrierWidget.swift` | `NeuLedgerWidget/` | 載具 widget TimelineProvider + View |
 | `VoiceWidget.swift` | `NeuLedgerWidget/` | 語音 widget TimelineProvider + View + AppIntent |
 | `WidgetAppGroup.swift` | `Shared/` | App Group UserDefaults 讀寫 helper（兩 target 共用）|
+| `StartVoiceRecordingIntent.swift` | `NeuLedger/` (主 app target) | App Intent：背景錄音 + Live Activity 控制 |
+| `StopVoiceRecordingIntent.swift` | `NeuLedger/` (主 app target) | App Intent：停止錄音觸發辨識 |
+| `VoiceRecordingAttributes.swift` | `Shared/` | `ActivityAttributes` struct（主 app + Widget Extension 共用）|
 
 ### 修改的現有檔案
 
@@ -247,15 +321,17 @@ neuledger://carrier-management
 | `AppFeature.swift` | 新增 `onOpenURL` handler（處理 carrier-management deep link）|
 | `NeuLedger.entitlements` | 新增 App Group entitlement |
 | `NeuLedger.xcodeproj` | 新增 Widget Extension target、App Group capability |
-| `Info.plist` | 新增 `NSSupportsLiveActivities = YES`、`NSMicrophoneUsageDescription` |
-| `StartVoiceRecordingIntent.swift` | 主 app target，App Intent 含錄音 + Live Activity 控制邏輯 |
-| `VoiceRecordingAttributes.swift` | `ActivityAttributes` struct（主 app + Widget Extension 共用，放 Shared/）|
+| `Info.plist` | 新增 `NSSupportsLiveActivities = YES`、`NSMicrophoneUsageDescription`、`UIBackgroundModes` 加入 `audio` |
+| `NeuLedgerWidget.entitlements` | Widget Extension 新增同樣的 App Group entitlement |
 
 ---
 
 ## 測試要點
 
 - `CarrierWidget`：App Group 空值 → 顯示提示；有值 → 正確渲染條碼
-- `VoiceWidget`：Long press intent → app 正確開啟至語音錄音畫面；完成後 timeline reload
+- `VoiceWidget`：點按 → App Intent 背景錄音 → Live Activity 正確顯示於 Dynamic Island；辨識完成後 widget reload 至 ⑤
+- Live Activity：三種 DI 模式（compact / expanded / minimal）均正確渲染；Lock Screen 卡片正確顯示
+- 錄音停止：使用者點按停止、靜音偵測、30 秒超時 — 三種方式均正確觸發辨識流程
+- 錯誤處理：麥克風權限拒絕 → 提示授權；錄音/辨識失敗 → Live Activity 顯示錯誤後 dismiss；staleDate 超時 → 系統自動移除
 - Settings：選擇載具/帳戶 → App Group 寫入正確 → Widget 即時更新
 - 無載具/無帳戶時 Settings UI 的 disabled/empty 狀態

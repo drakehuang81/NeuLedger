@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 @Reducer
 struct AppFeature {
@@ -35,6 +36,7 @@ struct AppFeature {
     
     enum Action: Equatable {
         case onAppear
+        case deepLinkReceived(URL)
         case onboarding(OnboardingFeature.Action)
         case main(MainTabFeature.Action)
     }
@@ -52,13 +54,22 @@ struct AppFeature {
                     : .onboarding(OnboardingFeature.State())
                 return .none
                 
+            case let .deepLinkReceived(url):
+                guard url.scheme == "neuledger",
+                      url.host == "carrier-management" else { return .none }
+                guard case .main(var mainState) = state.destination else { return .none }
+                mainState.selectedTab = .settings
+                mainState.settings.path.append(.carrierManagement(CarrierManagementFeature.State()))
+                state.destination = .main(mainState)
+                return .none
+
             case .onboarding(.delegate(.onboardingCompleted)):
                 state.destination = .main(MainTabFeature.State())
                 return .none
-                
+
             case .onboarding:
                 return .none
-                
+
             case .main:
                 return .none
             }

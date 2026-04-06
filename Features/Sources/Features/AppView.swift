@@ -60,5 +60,8 @@ struct NeuLedgerApp: App {
         .task {
             Self.store.send(.onAppear)
         }
+        .onOpenURL { url in
+            Self.store.send(.deepLinkReceived(url))
+        }
     }
 }

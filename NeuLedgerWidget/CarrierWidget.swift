@@ -2,6 +2,7 @@
 
 import WidgetKit
 import SwiftUI
+import UIKit
 import CoreImage.CIFilterBuiltins
 
 // MARK: - Timeline Entry

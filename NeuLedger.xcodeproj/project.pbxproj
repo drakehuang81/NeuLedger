@@ -7,16 +7,54 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A22663342F8376A300F95069 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A22663332F8376A300F95069 /* WidgetKit.framework */; };
+		A22663362F8376A300F95069 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A22663352F8376A300F95069 /* SwiftUI.framework */; };
+		A22663412F8376A500F95069 /* NeuLedgerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A22663322F8376A300F95069 /* NeuLedgerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A249D8AF2F418E0E00CBA03D /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = A249D8AE2F418E0E00CBA03D /* Features */; };
 		BA24DB8F2F418E0E00CBA03D /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = BA24DB8E2F418E0E00CBA03D /* Core */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A226633F2F8376A500F95069 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A24BD4712F3B34480046D6A4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A22663312F8376A300F95069;
+			remoteInfo = NeuLedgerWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A22663422F8376A500F95069 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A22663412F8376A500F95069 /* NeuLedgerWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		A22663322F8376A300F95069 /* NeuLedgerWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NeuLedgerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A22663332F8376A300F95069 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		A22663352F8376A300F95069 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A22663472F8376D100F95069 /* NeuLedgerWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NeuLedgerWidget.entitlements; sourceTree = "<group>"; };
 		A249D8A82F418AC300CBA03D /* Features */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Features; sourceTree = "<group>"; };
 		A24BD4792F3B34480046D6A4 /* NeuLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A22663462F8376A500F95069 /* Exceptions for "NeuLedgerWidget" folder in "NeuLedgerWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A22663312F8376A300F95069 /* NeuLedgerWidget */;
+		};
 		A249D8B42F418FD200CBA03D /* Exceptions for "NeuLedger" folder in "NeuLedger" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -27,6 +65,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A22663372F8376A300F95069 /* NeuLedgerWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A22663462F8376A500F95069 /* Exceptions for "NeuLedgerWidget" folder in "NeuLedgerWidget" target */,
+			);
+			path = NeuLedgerWidget;
+			sourceTree = "<group>";
+		};
+		A226634A2F83787900F95069 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		A24BD47B2F3B34480046D6A4 /* NeuLedger */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -38,6 +89,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A226632F2F8376A300F95069 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A22663362F8376A300F95069 /* SwiftUI.framework in Frameworks */,
+				A22663342F8376A300F95069 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A24BD4762F3B34480046D6A4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -53,6 +113,8 @@
 		A249D8A92F418C2000CBA03D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A22663332F8376A300F95069 /* WidgetKit.framework */,
+				A22663352F8376A300F95069 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -60,8 +122,11 @@
 		A24BD4702F3B34480046D6A4 = {
 			isa = PBXGroup;
 			children = (
+				A226634A2F83787900F95069 /* Shared */,
+				A22663472F8376D100F95069 /* NeuLedgerWidget.entitlements */,
 				A249D8A82F418AC300CBA03D /* Features */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
+				A22663372F8376A300F95069 /* NeuLedgerWidget */,
 				A249D8A92F418C2000CBA03D /* Frameworks */,
 				A24BD47A2F3B34480046D6A4 /* Products */,
 			);
@@ -71,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				A24BD4792F3B34480046D6A4 /* NeuLedger.app */,
+				A22663322F8376A300F95069 /* NeuLedgerWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -78,6 +144,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A22663312F8376A300F95069 /* NeuLedgerWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A22663452F8376A500F95069 /* Build configuration list for PBXNativeTarget "NeuLedgerWidget" */;
+			buildPhases = (
+				A226632E2F8376A300F95069 /* Sources */,
+				A226632F2F8376A300F95069 /* Frameworks */,
+				A22663302F8376A300F95069 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A22663372F8376A300F95069 /* NeuLedgerWidget */,
+				A226634A2F83787900F95069 /* Shared */,
+			);
+			name = NeuLedgerWidget;
+			packageProductDependencies = (
+			);
+			productName = NeuLedgerWidget;
+			productReference = A22663322F8376A300F95069 /* NeuLedgerWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		A24BD4782F3B34480046D6A4 /* NeuLedger */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A24BD49D2F3B344A0046D6A4 /* Build configuration list for PBXNativeTarget "NeuLedger" */;
@@ -85,12 +174,15 @@
 				A24BD4752F3B34480046D6A4 /* Sources */,
 				A24BD4762F3B34480046D6A4 /* Frameworks */,
 				A24BD4772F3B34480046D6A4 /* Resources */,
+				A22663422F8376A500F95069 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A22663402F8376A500F95069 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				A226634A2F83787900F95069 /* Shared */,
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
 			);
 			name = NeuLedger;
@@ -112,6 +204,9 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					A22663312F8376A300F95069 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					A24BD4782F3B34480046D6A4 = {
 						CreatedOnToolsVersion = 26.3;
 						LastSwiftMigration = 2630;
@@ -137,11 +232,19 @@
 			projectRoot = "";
 			targets = (
 				A24BD4782F3B34480046D6A4 /* NeuLedger */,
+				A22663312F8376A300F95069 /* NeuLedgerWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A22663302F8376A300F95069 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A24BD4772F3B34480046D6A4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -152,6 +255,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A226632E2F8376A300F95069 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A24BD4752F3B34480046D6A4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -161,7 +271,77 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A22663402F8376A500F95069 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A22663312F8376A300F95069 /* NeuLedgerWidget */;
+			targetProxy = A226633F2F8376A500F95069 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		A22663432F8376A500F95069 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NeuLedgerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GVHFFWK64F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NeuLedgerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NeuLedgerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedger.NeuLedgerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A22663442F8376A500F95069 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NeuLedgerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GVHFFWK64F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NeuLedgerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NeuLedgerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedger.NeuLedgerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		A24BD49E2F3B344A0046D6A4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -367,6 +547,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A22663452F8376A500F95069 /* Build configuration list for PBXNativeTarget "NeuLedgerWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A22663432F8376A500F95069 /* Debug */,
+				A22663442F8376A500F95069 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A24BD4742F3B34480046D6A4 /* Build configuration list for PBXProject "NeuLedger" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

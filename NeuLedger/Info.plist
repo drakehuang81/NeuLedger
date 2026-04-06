@@ -12,6 +12,17 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>neuledger</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.drakehuang.NeuLedger</string>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>NSMicrophoneUsageDescription</key>

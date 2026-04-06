@@ -1,9 +1,4 @@
-//
-//  NeuLedgerWidgetBundle.swift
-//  NeuLedgerWidget
-//
-//  Created by Jie Liang Huang on 2026/4/6.
-//
+// NeuLedgerWidget/NeuLedgerWidgetBundle.swift
 
 import WidgetKit
 import SwiftUI
@@ -11,6 +6,7 @@ import SwiftUI
 @main
 struct NeuLedgerWidgetBundle: WidgetBundle {
     var body: some Widget {
-        NeuLedgerWidget()
+        CarrierWidget()
+        // VoiceWidget()  // Phase 2: uncomment to enable
     }
 }

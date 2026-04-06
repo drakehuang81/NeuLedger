@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Domain
 import Foundation
+import WidgetKit
 
 @Reducer
 public struct CarrierManagementFeature: Sendable {
@@ -33,6 +34,7 @@ public struct CarrierManagementFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.carrierClient) var carrierClient
+    @Dependency(\.userSettingsClient) var userSettingsClient
 
     private enum CancelID { case task }
 
@@ -72,9 +74,22 @@ public struct CarrierManagementFeature: Sendable {
 
             case let .deleteTapped(id):
                 state.expandedCarrierId = nil
-                return .run { send in
+                return .run { [userSettingsClient] send in
                     try await carrierClient.delete(id)
                     let carriers = try await carrierClient.fetchAll()
+                    // If deleted carrier was the widget carrier, clear App Group
+                    let widgetCarrierId = userSettingsClient.string(.widgetCarrierId)
+                    if widgetCarrierId == id.uuidString {
+                        let appGroupDefaults = UserDefaults(
+                            suiteName: "group.com.drakehuang.NeuLedger"
+                        )
+                        appGroupDefaults?.removeObject(forKey: "carrierBarcode")
+                        appGroupDefaults?.removeObject(forKey: "carrierType")
+                        appGroupDefaults?.removeObject(forKey: "carrierName")
+                        appGroupDefaults?.removeObject(forKey: "carrierUpdatedAt")
+                        userSettingsClient.setString("", .widgetCarrierId)
+                        await WidgetCenter.shared.reloadTimelines(ofKind: "CarrierWidget")
+                    }
                     await send(.carriersLoaded(carriers))
                 } catch: { _, send in
                     let carriers = (try? await carrierClient.fetchAll()) ?? []
@@ -83,8 +98,34 @@ public struct CarrierManagementFeature: Sendable {
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { send in
+                return .run { [userSettingsClient] send in
                     let carriers = try await carrierClient.fetchAll()
+                    // If the widget carrier was edited, update App Group
+                    let widgetCarrierId = userSettingsClient.string(.widgetCarrierId)
+                    if !widgetCarrierId.isEmpty,
+                       let carrier = carriers.first(where: {
+                           $0.id.uuidString == widgetCarrierId
+                       }) {
+                        let appGroupDefaults = UserDefaults(
+                            suiteName: "group.com.drakehuang.NeuLedger"
+                        )
+                        appGroupDefaults?.set(
+                            carrier.barcode, forKey: "carrierBarcode"
+                        )
+                        appGroupDefaults?.set(
+                            carrier.type.rawValue, forKey: "carrierType"
+                        )
+                        appGroupDefaults?.set(
+                            carrier.name, forKey: "carrierName"
+                        )
+                        appGroupDefaults?.set(
+                            Date(),
+                            forKey: "carrierUpdatedAt"
+                        )
+                        await WidgetCenter.shared.reloadTimelines(
+                            ofKind: "CarrierWidget"
+                        )
+                    }
                     await send(.carriersLoaded(carriers))
                 }
 

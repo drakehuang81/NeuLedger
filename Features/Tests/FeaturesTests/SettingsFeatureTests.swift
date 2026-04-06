@@ -53,6 +53,7 @@ struct SettingsFeatureTests {
             $0.userSettingsClient.string = { _ in "" }
             $0.userSettingsClient.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
+            $0.carrierClient.fetchAll = { [] }
         }
 
         await store.send(.task)
@@ -73,6 +74,8 @@ struct SettingsFeatureTests {
         await store.receive(\.accessoryBarToggleChanged) {
             $0.showAccessoryBar = false
         }
+
+        await store.receive(\.widgetCarriersLoaded)
     }
 
     @Test(".task shows '無' when no active accounts")
@@ -86,6 +89,7 @@ struct SettingsFeatureTests {
             $0.userSettingsClient.string = { _ in "" }
             $0.userSettingsClient.setString = { _, _ in }
             $0.accountClient.fetchActive = { [] }
+            $0.carrierClient.fetchAll = { [] }
         }
 
         await store.send(.task)
@@ -104,6 +108,8 @@ struct SettingsFeatureTests {
 
         // showAccessoryBar is already true (default), so no state mutation expected
         await store.receive(\.accessoryBarToggleChanged)
+
+        await store.receive(\.widgetCarriersLoaded)
     }
 
     // MARK: - accountsLoaded
@@ -339,6 +345,7 @@ struct SettingsAccessoryBarTests {
             }
             $0.userSettingsClient.string = { $0.defaultValue }
             $0.accountClient.fetchActive = { [] }
+            $0.carrierClient.fetchAll = { [] }
         }
         await store.send(.task)
         await store.receive(\.accountsLoaded) {
@@ -353,6 +360,7 @@ struct SettingsAccessoryBarTests {
         await store.receive(.accessoryBarToggleChanged(false)) {
             $0.showAccessoryBar = false
         }
+        await store.receive(\.widgetCarriersLoaded)
     }
 
     @Test("accessoryBarToggleChanged persists and updates state")
@@ -427,4 +435,85 @@ struct SettingsNavigationTests {
         }
     }
 
+}
+
+@Suite("SettingsFeature — widget carrier")
+struct SettingsWidgetCarrierTests {
+
+    // MARK: - Helpers
+
+    private static let sampleAccounts: [Account] = [
+        Account(name: "現金錢包", type: .cash, icon: "wallet.bifold", color: "green", sortOrder: 0),
+        Account(name: "銀行帳戶", type: .bank, icon: "building.columns", color: "blue", sortOrder: 1),
+    ]
+
+    private static let sampleCarriers: [Carrier] = [
+        Carrier(name: "我的手機條碼", type: .phoneBarcodeCarrier, barcode: "/ABC1234"),
+        Carrier(name: "自然人憑證", type: .citizenDigitalCertificate, barcode: "/PCERT1234567890AB"),
+    ]
+
+    @Test(".task loads widget carriers and selected carrier name")
+    func testTaskLoadsWidgetCarriers() async throws {
+        let carrier = Self.sampleCarriers[0]
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.userSettingsClient.bool = { _ in false }
+            $0.userSettingsClient.string = { key in
+                if key.rawValue == "widgetCarrierId" {
+                    return carrier.id.uuidString
+                }
+                return ""
+            }
+            $0.userSettingsClient.setString = { _, _ in }
+            $0.accountClient.fetchActive = { Self.sampleAccounts }
+            $0.carrierClient.fetchAll = { Self.sampleCarriers }
+        }
+
+        await store.send(.task)
+
+        await store.receive(\.accountsLoaded) {
+            $0.accounts = Self.sampleAccounts
+            $0.defaultAccountName = "現金錢包"
+        }
+        await store.receive(\.defaultAccountSelected)
+        await store.receive(\.languageLoaded) {
+            $0.currentLanguage = Locale.current.localizedString(
+                forLanguageCode: Locale.current.language.languageCode?.identifier ?? "zh"
+            )?.localizedCapitalized ?? "zh"
+        }
+        await store.receive(\.accessoryBarToggleChanged) {
+            $0.showAccessoryBar = false
+        }
+        await store.receive(\.widgetCarriersLoaded) {
+            $0.carriers = Self.sampleCarriers
+            $0.widgetCarrierId = carrier.id.uuidString
+            $0.widgetCarrierName = "我的手機條碼"
+        }
+    }
+
+    @Test("widgetCarrierSelected writes to UserSettings")
+    func testWidgetCarrierSelected() async throws {
+        let carriers = Self.sampleCarriers
+        let target = carriers[1]
+        let savedId: LockIsolated<String?> = LockIsolated(nil)
+        let store = await TestStore(
+            initialState: SettingsFeature.State(carriers: carriers)
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.userSettingsClient.setString = { value, key in
+                if key.rawValue == "widgetCarrierId" { savedId.setValue(value) }
+            }
+        }
+
+        await store.send(.widgetCarrierSelected(target.id)) {
+            $0.widgetCarrierId = target.id.uuidString
+            $0.widgetCarrierName = "自然人憑證"
+        }
+
+        #expect(savedId.value == target.id.uuidString)
+    }
 }

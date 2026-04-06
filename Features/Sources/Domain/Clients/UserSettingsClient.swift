@@ -74,6 +74,12 @@ public extension SettingsKey where Value == String {
         rawValue: "accessoryMode",
         defaultValue: "add"
     )
+
+    /// The ID of the carrier selected for the CarrierWidget.
+    static let widgetCarrierId = SettingsKey(
+        rawValue: "widgetCarrierId",
+        defaultValue: ""
+    )
 }
 
 // MARK: - Int Keys

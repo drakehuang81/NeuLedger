@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Common
+import Domain
 import SwiftUI
 import UIKit
 
@@ -40,6 +41,9 @@ public struct SettingsView: View {
 
                     // MARK: 偏好設定
                     sectionPreferences
+
+                    // MARK: Widget 設定
+                    sectionWidget
 
                     // MARK: 資料
                     sectionData
@@ -197,6 +201,58 @@ public struct SettingsView: View {
                         trailing: Toggle("", isOn: $store.showAccessoryBar.sending(\.accessoryBarToggleChanged))
                             .labelsHidden()
                             .tint(Color.Design.incomeGreen)
+                    )
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // MARK: - Widget 設定
+
+    private var sectionWidget: some View {
+        VStack(spacing: 6) {
+            sectionHeader(String(localized: "settings_widget"))
+            GlassContainer(cornerRadius: 16, padding: 0) {
+                VStack(spacing: 0) {
+                    // Carrier picker
+                    if store.carriers.isEmpty {
+                        settingsRow(
+                            icon: "creditcard.fill",
+                            iconColor: Color.Design.brandPrimary,
+                            label: String(localized: "settings_widget_carrier"),
+                            trailing: Text(String(localized: "settings_widget_no_carrier"))
+                                .font(.body)
+                                .foregroundStyle(Color.Design.textTertiary)
+                        )
+                    } else {
+                        Picker(selection: Binding(
+                            get: { store.widgetCarrierId },
+                            set: { newValue in
+                                if let uuid = UUID(uuidString: newValue) {
+                                    store.send(.widgetCarrierSelected(uuid))
+                                }
+                            }
+                        ), label: settingsRow(
+                            icon: "creditcard.fill",
+                            iconColor: Color.Design.brandPrimary,
+                            label: String(localized: "settings_widget_carrier"),
+                            trailing: EmptyView()
+                        )) {
+                            ForEach(store.carriers) { carrier in
+                                Text(carrier.name).tag(carrier.id.uuidString)
+                            }
+                        }
+                    }
+
+                    // Voice account — Phase 2 (coming soon)
+                    settingsRow(
+                        icon: "mic.fill",
+                        iconColor: Color.Design.textTertiary,
+                        label: String(localized: "settings_widget_voice_account"),
+                        trailing: Text(String(localized: "settings_widget_coming_soon"))
+                            .font(.body)
+                            .foregroundStyle(Color.Design.textTertiary)
                     )
                 }
                 .frame(maxWidth: .infinity)

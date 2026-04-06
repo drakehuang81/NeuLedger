@@ -6,14 +6,13 @@ import Testing
 @Suite("SyncSettingsFeature Tests")
 struct SyncSettingsFeatureTests {
 
-    @Test("task 從 dependencies 載入 isSubscribed、isSyncEnabled、isCloudKitAvailable")
+    @Test("task 從 dependencies 載入 isSyncEnabled、isCloudKitAvailable")
     func taskLoadsState() async {
         let store = await TestStore(initialState: SyncSettingsFeature.State()) {
             SyncSettingsFeature()
         } withDependencies: {
             $0.userSettingsClient.bool = { key in
                 switch key.rawValue {
-                case "isSubscribed": return true
                 case "isSyncEnabled": return false
                 default: return key.defaultValue
                 }
@@ -21,32 +20,15 @@ struct SyncSettingsFeatureTests {
             $0.syncClient.isCloudKitAvailable = { true }
         }
         await store.send(.task) {
-            $0.isSubscribed = true
             $0.isSyncEnabled = false
             $0.isCloudKitAvailable = true
         }
     }
 
-    @Test("subscribeNowTapped 設定 isSubscribed 為 true 並儲存至 settings")
-    func subscribeNowPersists() async {
-        let stored = LockIsolated<[String: Bool]>([:])
-        let store = await TestStore(initialState: SyncSettingsFeature.State()) {
-            SyncSettingsFeature()
-        } withDependencies: {
-            $0.userSettingsClient.bool = { _ in false }
-            $0.userSettingsClient.setBool = { value, key in stored.withValue { $0[key.rawValue] = value } }
-            $0.syncClient.isCloudKitAvailable = { false }
-        }
-        await store.send(.subscribeNowTapped) {
-            $0.isSubscribed = true
-        }
-        #expect(stored.value["isSubscribed"] == true)
-    }
-
     @Test("enableSyncTapped 串流進度並完成")
     func enableSyncCompletes() async {
         let store = await TestStore(
-            initialState: SyncSettingsFeature.State(isSubscribed: true)
+            initialState: SyncSettingsFeature.State()
         ) {
             SyncSettingsFeature()
         } withDependencies: {
@@ -81,7 +63,7 @@ struct SyncSettingsFeatureTests {
             var errorDescription: String? { "iCloud not available" }
         }
         let store = await TestStore(
-            initialState: SyncSettingsFeature.State(isSubscribed: true)
+            initialState: SyncSettingsFeature.State()
         ) {
             SyncSettingsFeature()
         } withDependencies: {

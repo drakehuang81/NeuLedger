@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Domain
 import Foundation
+import WidgetKit
 
 // MARK: - ExportFormat
 
@@ -41,19 +42,28 @@ public struct SettingsFeature: Sendable {
         public var exportedFileURL: URL? = nil
         public var exportError: String? = nil
         public var showAccessoryBar: Bool = true
+        public var carriers: [Carrier] = []
+        public var widgetCarrierId: String = ""
+        public var widgetCarrierName: String = ""
 
         public init(
             accounts: [Account] = [],
             selectedDefaultAccountId: String = "",
             defaultAccountName: String = "",
             currentLanguage: String = "",
-            showAccessoryBar: Bool = true
+            showAccessoryBar: Bool = true,
+            carriers: [Carrier] = [],
+            widgetCarrierId: String = "",
+            widgetCarrierName: String = ""
         ) {
             self.accounts = accounts
             self.selectedDefaultAccountId = selectedDefaultAccountId
             self.defaultAccountName = defaultAccountName
             self.currentLanguage = currentLanguage
             self.showAccessoryBar = showAccessoryBar
+            self.carriers = carriers
+            self.widgetCarrierId = widgetCarrierId
+            self.widgetCarrierName = widgetCarrierName
         }
     }
 
@@ -81,6 +91,8 @@ public struct SettingsFeature: Sendable {
         case exportSheetDismissed
         case accessoryBarToggleChanged(Bool)
         case privacyPolicyTapped
+        case widgetCarrierSelected(Carrier.ID)
+        case widgetCarriersLoaded([Carrier])
     }
 
     // MARK: - Dependencies
@@ -89,6 +101,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.carrierClient) var carrierClient
     @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task }
@@ -142,6 +155,8 @@ public struct SettingsFeature: Sendable {
                     let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
                     await send(.languageLoaded(displayName))
                     await send(.accessoryBarToggleChanged(showAccessoryBar))
+                    let fetchedCarriers = try await carrierClient.fetchAll()
+                    await send(.widgetCarriersLoaded(fetchedCarriers))
                 }
                 .cancellable(id: CancelID.task)
 
@@ -254,6 +269,33 @@ public struct SettingsFeature: Sendable {
             case .privacyPolicyTapped:
                 return .run { _ in
                     await openURL(SettingsFeature.privacyPolicyURL)
+                }
+
+            case let .widgetCarriersLoaded(carriers):
+                state.carriers = carriers
+                let savedId = userSettingsClient.string(.widgetCarrierId)
+                state.widgetCarrierId = savedId
+                if let carrier = carriers.first(where: { $0.id.uuidString == savedId }) {
+                    state.widgetCarrierName = carrier.name
+                } else {
+                    state.widgetCarrierName = ""
+                }
+                return .none
+
+            case let .widgetCarrierSelected(id):
+                state.widgetCarrierId = id.uuidString
+                userSettingsClient.setString(id.uuidString, .widgetCarrierId)
+                if let carrier = state.carriers.first(where: { $0.id == id }) {
+                    state.widgetCarrierName = carrier.name
+                    if let defaults = UserDefaults(suiteName: "group.com.drakehuang.NeuLedger") {
+                        defaults.set(carrier.barcode, forKey: "carrierBarcode")
+                        defaults.set(carrier.type.rawValue, forKey: "carrierType")
+                        defaults.set(carrier.name, forKey: "carrierName")
+                        defaults.set(Date(), forKey: "carrierUpdatedAt")
+                    }
+                }
+                return .run { _ in
+                    WidgetCenter.shared.reloadTimelines(ofKind: "CarrierWidget")
                 }
             }
         }

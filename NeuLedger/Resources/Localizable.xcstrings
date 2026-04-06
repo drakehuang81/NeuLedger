@@ -4804,6 +4804,90 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "確認刪除此載具？" } },
         "en": { "stringUnit": { "state": "translated", "value": "Delete this carrier?" } }
       }
+    },
+    "widget_carrier_display_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "我的載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "My Carrier" } }
+      }
+    },
+    "widget_carrier_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示載具條碼供店員掃描" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Display carrier barcode for scanning" } }
+      }
+    },
+    "widget_carrier_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請在 NeuLedger 設定 Widget 載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Set up a carrier in NeuLedger settings" } }
+      }
+    },
+    "widget_carrier_placeholder_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "手機條碼載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Phone Barcode Carrier" } }
+      }
+    },
+    "widget_voice_display_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音記帳" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Voice Bookkeeping" } }
+      }
+    },
+    "widget_voice_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "快速語音記帳" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Quick voice bookkeeping" } }
+      }
+    },
+    "widget_voice_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音記帳" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Voice" } }
+      }
+    },
+    "settings_widget": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Widget 設定" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Widget Settings" } }
+      }
+    },
+    "settings_widget_carrier": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示的載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Display Carrier" } }
+      }
+    },
+    "settings_widget_voice_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音記帳帳戶" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Voice Account" } }
+      }
+    },
+    "settings_widget_coming_soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "即將推出" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Coming Soon" } }
+      }
+    },
+    "settings_widget_no_carrier": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無載具" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No carriers" } }
+      }
     }
   },
   "version": "1.0"

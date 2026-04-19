@@ -36,8 +36,9 @@ public struct BudgetRow: View {
             Spacer()
 
             // Amount
-            Text("NT$\(budget.amount.formatted())")
-                .font(.system(.body, design: .monospaced).monospacedDigit())
+            Text(budget.amount.twdFormatted)
+                .font(Font.Design.amount)
+                .monospacedDigit()
                 .foregroundStyle(Color.Design.textPrimary)
 
             // Active toggle

@@ -128,7 +128,9 @@ extension TransactionClient: DependencyKey {
 
 /// Checks all active budgets and fires a notification if any crosses the user-defined threshold.
 /// Called after add/update only — NOT after delete (intentional simplification).
-/// String(localized:bundle:.main) in Core is acceptable; AIServiceClient+Live.swift uses the same pattern.
+/// NOTE: localization keys are resolved from the app's main bundle because the
+/// `Localizable.xcstrings` catalog lives in the app target, not in the Core SPM package.
+/// Switching to `Bundle.module` would require moving or duplicating the catalog into Core.
 private func checkBudgetWarnings(
     budgetClient: BudgetClient,
     notificationClient: NotificationClient,

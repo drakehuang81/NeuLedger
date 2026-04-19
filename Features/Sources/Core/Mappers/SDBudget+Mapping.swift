@@ -6,12 +6,19 @@ import Domain
 extension SDBudget: DomainConvertible {
     /// Converts this SwiftData model to a Domain `Budget` value type.
     func toDomain() -> Budget {
-        Budget(
+        let resolvedPeriod: BudgetPeriod
+        if let mapped = BudgetPeriod(rawValue: period) {
+            resolvedPeriod = mapped
+        } else {
+            assertionFailure("SDBudget.period has unknown raw value: \(period)")
+            resolvedPeriod = .monthly
+        }
+        return Budget(
             id: id,
             name: name,
             amount: amount,
             categoryId: categoryId,
-            period: BudgetPeriod(rawValue: period) ?? .monthly,
+            period: resolvedPeriod,
             startDate: startDate,
             isActive: isActive
         )

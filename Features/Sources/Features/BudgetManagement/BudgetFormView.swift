@@ -34,12 +34,15 @@ public struct BudgetFormView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text("NT$")
+                            Text(verbatim: "NT$")
+                                .font(Font.Design.amount)
                                 .foregroundStyle(Color.Design.textSecondary)
                             TextField("0", text: Binding(
                                 get: { store.amountText },
                                 set: { store.send(.amountChanged($0)) }
                             ))
+                            .font(Font.Design.amount)
+                            .monospacedDigit()
                             .keyboardType(.numberPad)
                         }
                         if let error = store.amountError {

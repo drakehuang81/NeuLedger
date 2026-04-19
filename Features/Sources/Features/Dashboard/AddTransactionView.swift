@@ -265,6 +265,7 @@ public struct AddTransactionView: View {
                                 )
                         }
                         .frame(minWidth: 44, minHeight: 44)
+                        .accessibilityLabel(store.isRecording ? String(localized: "a11y_voice_stop") : String(localized: "a11y_voice_start"))
                     }
                 }
                 if let error = store.speechError {

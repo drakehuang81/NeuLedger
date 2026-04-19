@@ -194,8 +194,9 @@ private struct RecurringSectionView: View {
                                         Text(item.note ?? String(localized: "notification_recurring_empty"))
                                             .font(.body)
                                             .foregroundStyle(Color.Design.textPrimary)
-                                        Text("NT$\(NSDecimalNumber(decimal: item.amount).intValue) · \(item.frequency.localizedName)")
-                                            .font(.caption)
+                                        Text("\(item.amount.twdFormatted) · \(item.frequency.localizedName)")
+                                            .font(Font.Design.caption)
+                                            .monospacedDigit()
                                             .foregroundStyle(Color.Design.textSecondary)
                                     }
                                     Spacer()

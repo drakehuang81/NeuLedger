@@ -72,13 +72,12 @@ public struct DashboardScreen: View {
         ) {
             VStack(spacing: 8) {
                 Text("dashboard_total_balance")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(Font.Design.subheadline)
+                    .foregroundStyle(Color.Design.textSecondary)
 
                 Text(store.totalBalance.twdFormatted)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.primary)
+                    .font(Font.Design.largeTitle.weight(.bold).monospacedDigit())
+                    .foregroundStyle(Color.Design.textPrimary)
                     .contentTransition(.numericText())
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -173,7 +172,7 @@ public struct DashboardScreen: View {
     private var accountsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("dashboard_my_wallets")
-                .font(.headline)
+                .font(Font.Design.headline)
 
             if store.hasAccounts {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -215,7 +214,7 @@ public struct DashboardScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("dashboard_recent_transactions")
-                    .font(.headline)
+                    .font(Font.Design.headline)
 
                 Spacer()
 
@@ -223,7 +222,7 @@ public struct DashboardScreen: View {
                     Button(String(localized: "dashboard_see_all")) {
                         store.send(.seeAllTransactionsTapped)
                     }
-                    .font(.subheadline)
+                    .font(Font.Design.subheadline)
                 }
             }
 

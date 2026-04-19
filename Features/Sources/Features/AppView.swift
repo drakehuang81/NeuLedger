@@ -8,25 +8,25 @@
 import SwiftUI
 import ComposableArchitecture
 import Domain
-import SwiftData
 import Core
 import Common
 
 @main
 struct NeuLedgerApp: App {
-    @Dependency(\.databaseClient) var databaseClient
-
     static let store = Store(
         initialState: AppFeature.State()
     ) {
         AppFeature()
     }
 
+    // `.modelContainer(_:)` is intentionally NOT applied here: feature views
+    // reach persistence via `@Dependency(\.databaseClient)` instead of
+    // SwiftData's `@Environment(\.modelContext)`, and the Features layer must
+    // not `import SwiftData`.
     var body: some Scene {
         WindowGroup {
             contentView
         }
-        .modelContainer(databaseClient.modelContainer())
     }
     private var contentView: some View {
         VStack {

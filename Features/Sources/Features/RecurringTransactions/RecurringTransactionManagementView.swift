@@ -1,3 +1,4 @@
+import Common
 import SwiftUI
 import ComposableArchitecture
 import Domain
@@ -20,9 +21,11 @@ public struct RecurringTransactionManagementView: View {
                 ForEach(store.items) { item in
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(item.note ?? "—").font(.body)
-                            Text("NT$\(NSDecimalNumber(decimal: item.amount).intValue)")
-                                .font(.caption).foregroundStyle(.secondary)
+                            Text(item.note ?? "—").font(Font.Design.body)
+                            Text(item.amount.twdFormatted)
+                                .font(Font.Design.amount)
+                                .monospacedDigit()
+                                .foregroundStyle(Color.Design.textSecondary)
                         }
                         Spacer()
                         Text(item.frequency.localizedName)

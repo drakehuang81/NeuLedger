@@ -29,11 +29,21 @@ extension TagClient: DependencyKey {
                 }
             },
             delete: { id in
-                try databaseClient.deleteFirst(
-                    matching: FetchDescriptor<SDTag>(
-                        predicate: #Predicate { $0.id == id }
-                    )
+                let context = databaseClient.makeContext()
+                var descriptor = FetchDescriptor<SDTag>(
+                    predicate: #Predicate { $0.id == id }
                 )
+                descriptor.fetchLimit = 1
+                guard let existing = try context.fetch(descriptor).first else {
+                    throw CoreError.notFound("SDTag")
+                }
+                // Explicitly dissociate from linked transactions before delete, so the
+                // inverse relationship is cleared even if SwiftData's nullify rule is
+                // delayed until the next context flush.
+                existing.transactions.removeAll()
+                try context.save()
+                context.delete(existing)
+                try context.save()
             }
         )
     }

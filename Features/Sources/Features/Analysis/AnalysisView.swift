@@ -184,7 +184,7 @@ private struct CategoryTransactionsView: View {
                         .foregroundStyle(Color.Design.textSecondary)
                     }
                     Spacer()
-                    Text("NT$\(txn.amount as NSDecimalNumber)")
+                    Text(txn.amount.twdFormatted)
                         .font(Font.Design.amount)
                         .foregroundStyle(Color.Design.expenseRed)
                 }

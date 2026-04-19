@@ -94,6 +94,7 @@ public struct TransactionsView: View {
                 }
             }
         }
+        .accessibilityLabel(String(localized: "a11y_transactions_filter"))
     }
 
     // MARK: - Empty State

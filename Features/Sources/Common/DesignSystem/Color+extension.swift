@@ -78,20 +78,20 @@ public extension Color {
         public static let warningAmber = accentOrange
         
         // MARK: - Background & Surface Colors
-        public static let background = dynamicColor(light: "#F2F2F7", dark: "#000000")
+        public static let background = Color(uiColor: .systemBackground)
         public static let surface = dynamicColor(light: "#FFFFFF", dark: "#1C1C1E")
         public static let surfaceSecondary = dynamicColor(light: "#F2F2F7", dark: "#2C2C2E")
-        public static let surfaceInverse = dynamicColor(light: "#000000", dark: "#FFFFFF")
-        
+        public static let surfaceInverse = Color(uiColor: .label)
+
         // MARK: - Glassmorphism Surfaces
         public static let glassProminent = dynamicColor(light: "#FFFFFFCC", dark: "#2C2C2ECC")
         public static let glassSurface = dynamicColor(light: "#FFFFFFB3", dark: "#1C1C1EB3")
-        
+
         // MARK: - Text Colors
-        public static let textPrimary = dynamicColor(light: "#000000", dark: "#FFFFFF")
+        public static let textPrimary = Color(uiColor: .label)
         public static let textSecondary = dynamicColor(light: "#3C3C43CC", dark: "#EBEBF5CC")
         public static let textTertiary = dynamicColor(light: "#3C3C434D", dark: "#EBEBF54D")
-        public static let textInverse = dynamicColor(light: "#FFFFFF", dark: "#000000")
+        public static let textInverse = Color(uiColor: .systemBackground)
         
         // MARK: - Divider / Border
         public static let separator = dynamicColor(light: "#3C3C434A", dark: "#54545899")

@@ -190,6 +190,7 @@ struct MainTabView: View {
                                     store.isRecording ? Color.Design.expenseRed : Color.primary
                                 )
                         }
+                        .accessibilityLabel(store.isRecording ? String(localized: "a11y_voice_stop") : String(localized: "a11y_voice_start"))
 
                         // Send button — disabled when text is empty or recording is active
                         Button {
@@ -200,6 +201,7 @@ struct MainTabView: View {
                                 .symbolRenderingMode(.hierarchical)
                         }
                         .disabled(store.aiInputText.isEmpty || store.isRecording)
+                        .accessibilityLabel(String(localized: "a11y_ai_submit"))
 
                         Button {
                             store.send(.aiInputDismissed)
@@ -209,6 +211,7 @@ struct MainTabView: View {
                                 .symbolRenderingMode(.hierarchical)
                                 .foregroundStyle(Color.Design.textTertiary)
                         }
+                        .accessibilityLabel(String(localized: "a11y_ai_close"))
                     }
                 }
                 .padding(.horizontal, 16)

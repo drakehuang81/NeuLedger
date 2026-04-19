@@ -1,3 +1,4 @@
+import Common
 import SwiftUI
 import ComposableArchitecture
 import Domain
@@ -18,7 +19,7 @@ public struct RecurringTransactionFormView: View {
                 )
                 .keyboardType(.numberPad)
                 if let err = store.amountError {
-                    Text(err).font(.caption).foregroundStyle(.red)
+                    Text(err).font(.caption).foregroundStyle(Color.Design.expenseRed)
                 }
 
                 TextField(
@@ -54,7 +55,7 @@ public struct RecurringTransactionFormView: View {
                     }
                 }
                 if let err = store.accountError {
-                    Text(err).font(.caption).foregroundStyle(.red)
+                    Text(err).font(.caption).foregroundStyle(Color.Design.expenseRed)
                 }
             }
         }

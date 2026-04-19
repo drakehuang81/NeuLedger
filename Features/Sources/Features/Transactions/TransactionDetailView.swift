@@ -85,9 +85,8 @@ public struct TransactionDetailView: View {
 
             // Amount
             Text(transaction.amount.twdFormatted)
-                .font(.system(size: 48, weight: .bold, design: .monospaced))
+                .font(Font.Design.largeTitle.weight(.bold).monospacedDigit())
                 .foregroundStyle(transaction.type.amountDisplayColor)
-                .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
         }

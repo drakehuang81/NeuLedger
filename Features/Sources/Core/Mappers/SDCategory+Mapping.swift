@@ -6,12 +6,19 @@ import Domain
 extension SDCategory: DomainConvertible {
     /// Converts this SwiftData model to a Domain `Category` value type.
     func toDomain() -> Domain.Category {
-        Category(
+        let resolvedType: TransactionType
+        if let mapped = TransactionType(rawValue: type) {
+            resolvedType = mapped
+        } else {
+            assertionFailure("SDCategory.type has unknown raw value: \(type)")
+            resolvedType = .expense
+        }
+        return Category(
             id: id,
             name: name,
             icon: icon,
             color: color,
-            type: TransactionType(rawValue: type) ?? .expense,
+            type: resolvedType,
             sortOrder: sortOrder,
             isDefault: isDefault
         )

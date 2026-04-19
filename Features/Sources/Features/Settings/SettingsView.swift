@@ -140,7 +140,7 @@ public struct SettingsView: View {
                     Button { store.send(.notificationSettingsTapped) } label: {
                         settingsRow(
                             icon: "bell.badge",
-                            iconColor: .orange,
+                            iconColor: Color.Design.warningAmber,
                             label: String(localized: "settings_notification_settings"),
                             trailing: chevron
                         )

@@ -27,7 +27,7 @@ public struct InsightCard: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.yellow)
+                    .foregroundStyle(Color.Design.accentYellow)
                     .frame(width: 24, height: 24)
 
                 VStack(alignment: .leading, spacing: 4) {

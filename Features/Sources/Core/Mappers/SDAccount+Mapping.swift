@@ -6,10 +6,17 @@ import Domain
 extension SDAccount: DomainConvertible {
     /// Converts this SwiftData model to a Domain `Account` value type.
     func toDomain() -> Account {
-        Account(
+        let resolvedType: AccountType
+        if let mapped = AccountType(rawValue: type) {
+            resolvedType = mapped
+        } else {
+            assertionFailure("SDAccount.type has unknown raw value: \(type)")
+            resolvedType = .cash
+        }
+        return Account(
             id: id,
             name: name,
-            type: AccountType(rawValue: type) ?? .cash,
+            type: resolvedType,
             icon: icon,
             color: color,
             sortOrder: sortOrder,

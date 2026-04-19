@@ -41,6 +41,7 @@ public struct AccountManagementView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(String(localized: "a11y_account_add"))
             }
         }
         .task { await store.send(.task).finish() }

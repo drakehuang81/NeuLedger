@@ -77,7 +77,22 @@ extension AccountClient: DependencyKey {
                 try databaseClient.deleteFirst(
                     matching: FetchDescriptor<SDAccount>(
                         predicate: #Predicate { $0.id == id }
-                    )
+                    ),
+                    validation: { _ in
+                        let context = databaseClient.makeContext()
+                        var txnDescriptor = FetchDescriptor<SDTransaction>(
+                            predicate: #Predicate {
+                                $0.accountId == id || $0.toAccountId == id
+                            }
+                        )
+                        txnDescriptor.fetchLimit = 1
+                        let linked = try context.fetch(txnDescriptor)
+                        guard linked.isEmpty else {
+                            throw CoreError.operationDenied(
+                                "Cannot delete account with associated transactions; archive it instead."
+                            )
+                        }
+                    }
                 )
             }
         )

@@ -178,6 +178,105 @@ struct AccountManagementFeatureTests {
         }
     }
 
+    // MARK: - Full Delete Confirmation Chain (P1-B)
+
+    @Test("deleteConfirmed calls accountClient.delete and reloads remaining accounts")
+    func testDeleteConfirmedCallsDeleteAndReloadsAccounts() async throws {
+        let deletedId: LockIsolated<Account.ID?> = LockIsolated(nil)
+        let id = Self.cashAccount.id
+
+        // Alert must be present for .alert(.presented(...)) to route through ifLet
+        var initialState = AccountManagementFeature.State()
+        initialState.accounts = [Self.cashAccount, Self.bankAccount]
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_confirm_delete"))
+        } actions: {
+            ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(localized: "alert_delete_account_message"))
+        }
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.accountClient.delete = { deletedId.setValue($0) }
+            // After delete, fetchAll returns only the bank account (1 remaining)
+            $0.accountClient.fetchAll = { [Self.bankAccount] }
+            $0.accountClient.computeBalance = { _ in 5000 }
+        }
+
+        await store.send(.alert(.presented(.deleteConfirmed(id)))) {
+            $0.alert = nil
+        }
+
+        await store.receive(\.accountsLoaded) {
+            $0.isLoading = false
+            $0.accounts = [Self.bankAccount]
+        }
+
+        await store.receive(\.balancesLoaded) {
+            $0.balances = [Self.bankAccount.id: 5000]
+        }
+
+        #expect(deletedId.value == id)
+    }
+
+    // MARK: - Full Archive Confirmation Chain (P1-C)
+
+    @Test("archiveConfirmed calls accountClient.archive and reloads accounts")
+    func testArchiveConfirmedCallsArchiveAndReloadsAccounts() async throws {
+        let archivedId: LockIsolated<Account.ID?> = LockIsolated(nil)
+        let id = Self.cashAccount.id
+
+        var initialState = AccountManagementFeature.State()
+        initialState.accounts = [Self.cashAccount, Self.bankAccount]
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_cannot_delete"))
+        } actions: {
+            ButtonState(action: .archiveConfirmed(id)) {
+                TextState(String(localized: "alert_archive_instead"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(localized: "alert_archive_account_message"))
+        }
+
+        // After archive, fetchAll returns both — cash now archived
+        var archivedCash = Self.cashAccount
+        archivedCash.isArchived = true
+        let afterArchive: [Account] = [archivedCash, Self.bankAccount]
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.accountClient.archive = { archivedId.setValue($0) }
+            $0.accountClient.fetchAll = { afterArchive }
+            $0.accountClient.computeBalance = { _ in 0 }
+        }
+
+        await store.send(.alert(.presented(.archiveConfirmed(id)))) {
+            $0.alert = nil
+        }
+
+        await store.receive(\.accountsLoaded) {
+            $0.isLoading = false
+            $0.accounts = afterArchive
+        }
+
+        await store.receive(\.balancesLoaded) {
+            $0.balances = [Self.cashAccount.id: 0, Self.bankAccount.id: 0]
+        }
+
+        #expect(archivedId.value == id)
+    }
+
     // MARK: - Unarchive Flow
 
     @Test("unarchiveTapped calls update and reloads")

@@ -1,7 +1,6 @@
 import ComposableArchitecture
 import Domain
 import Foundation
-import WidgetKit
 
 @Reducer
 public struct CarrierManagementFeature: Sendable {
@@ -35,6 +34,7 @@ public struct CarrierManagementFeature: Sendable {
 
     @Dependency(\.carrierClient) var carrierClient
     @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.widgetSyncClient) var widgetSyncClient
 
     private enum CancelID { case task }
 
@@ -74,21 +74,14 @@ public struct CarrierManagementFeature: Sendable {
 
             case let .deleteTapped(id):
                 state.expandedCarrierId = nil
-                return .run { [userSettingsClient] send in
+                return .run { [userSettingsClient, widgetSyncClient] send in
                     try await carrierClient.delete(id)
                     let carriers = try await carrierClient.fetchAll()
-                    // If deleted carrier was the widget carrier, clear App Group
+                    // If the deleted carrier was the active widget carrier, clear App Group
                     let widgetCarrierId = userSettingsClient.string(.widgetCarrierId)
                     if widgetCarrierId == id.uuidString {
-                        let appGroupDefaults = UserDefaults(
-                            suiteName: "group.com.drakehuang.NeuLedger"
-                        )
-                        appGroupDefaults?.removeObject(forKey: "carrierBarcode")
-                        appGroupDefaults?.removeObject(forKey: "carrierType")
-                        appGroupDefaults?.removeObject(forKey: "carrierName")
-                        appGroupDefaults?.removeObject(forKey: "carrierUpdatedAt")
                         userSettingsClient.setString("", .widgetCarrierId)
-                        await WidgetCenter.shared.reloadTimelines(ofKind: "CarrierWidget")
+                        await widgetSyncClient.clearCarrier()
                     }
                     await send(.carriersLoaded(carriers))
                 } catch: { _, send in
@@ -98,34 +91,30 @@ public struct CarrierManagementFeature: Sendable {
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { [userSettingsClient] send in
+                return .run { [userSettingsClient, widgetSyncClient] send in
                     let carriers = try await carrierClient.fetchAll()
-                    // If the widget carrier was edited, update App Group
                     let widgetCarrierId = userSettingsClient.string(.widgetCarrierId)
-                    if !widgetCarrierId.isEmpty,
-                       let carrier = carriers.first(where: {
-                           $0.id.uuidString == widgetCarrierId
-                       }) {
-                        let appGroupDefaults = UserDefaults(
-                            suiteName: "group.com.drakehuang.NeuLedger"
+
+                    if widgetCarrierId.isEmpty, let first = carriers.first {
+                        // P0: Auto-assign the first ever carrier as the widget carrier
+                        userSettingsClient.setString(first.id.uuidString, .widgetCarrierId)
+                        await widgetSyncClient.syncCarrier(
+                            first.barcode,
+                            first.type.rawValue,
+                            first.name
                         )
-                        appGroupDefaults?.set(
-                            carrier.barcode, forKey: "carrierBarcode"
-                        )
-                        appGroupDefaults?.set(
-                            carrier.type.rawValue, forKey: "carrierType"
-                        )
-                        appGroupDefaults?.set(
-                            carrier.name, forKey: "carrierName"
-                        )
-                        appGroupDefaults?.set(
-                            Date(),
-                            forKey: "carrierUpdatedAt"
-                        )
-                        await WidgetCenter.shared.reloadTimelines(
-                            ofKind: "CarrierWidget"
+                    } else if !widgetCarrierId.isEmpty,
+                              let carrier = carriers.first(where: {
+                                  $0.id.uuidString == widgetCarrierId
+                              }) {
+                        // If the widget carrier was edited, update App Group
+                        await widgetSyncClient.syncCarrier(
+                            carrier.barcode,
+                            carrier.type.rawValue,
+                            carrier.name
                         )
                     }
+
                     await send(.carriersLoaded(carriers))
                 }
 

@@ -62,7 +62,7 @@ public struct BudgetFormView: View {
                         set: { store.send(.periodChanged($0)) }
                     )) {
                         ForEach(BudgetPeriod.allCases, id: \.self) { period in
-                            Text(periodDisplayName(period)).tag(period)
+                            Text(period.localizedName).tag(period)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -122,14 +122,6 @@ public struct BudgetFormView: View {
             .task {
                 await store.send(.task).finish()
             }
-        }
-    }
-
-    private func periodDisplayName(_ period: BudgetPeriod) -> String {
-        switch period {
-        case .weekly: return String(localized: "budget_period_weekly")
-        case .monthly: return String(localized: "budget_period_monthly")
-        case .yearly: return String(localized: "budget_period_yearly")
         }
     }
 }

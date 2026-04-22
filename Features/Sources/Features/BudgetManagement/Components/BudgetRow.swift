@@ -28,7 +28,7 @@ public struct BudgetRow: View {
                 Text(budget.name)
                     .font(Font.Design.body)
                     .foregroundStyle(Color.Design.textPrimary)
-                Text(periodDisplayName(budget.period))
+                Text(budget.period.localizedName)
                     .font(Font.Design.caption)
                     .foregroundStyle(Color.Design.textSecondary)
             }
@@ -51,13 +51,5 @@ public struct BudgetRow: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
-    }
-
-    private func periodDisplayName(_ period: BudgetPeriod) -> String {
-        switch period {
-        case .weekly: return String(localized: "budget_period_weekly")
-        case .monthly: return String(localized: "budget_period_monthly")
-        case .yearly: return String(localized: "budget_period_yearly")
-        }
     }
 }

@@ -158,7 +158,7 @@ struct CategoryManagementFeatureTests {
                     TextState(String(localized: "common_cancel"))
                 }
             } message: {
-                TextState(String(localized: "alert_delete_category_message_name \(Self.customExpenseCategory.name)"))
+                TextState(String(format: String(localized: "alert_delete_category_message_name %@"), Self.customExpenseCategory.name))
             }
         }
     }

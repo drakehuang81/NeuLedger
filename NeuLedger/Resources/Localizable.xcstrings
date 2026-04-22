@@ -4990,6 +4990,97 @@
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無載具" } },
         "en": { "stringUnit": { "state": "translated", "value": "No carriers" } }
       }
+    },
+    "settings_export_csv_header_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Date" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "日期" } }
+      }
+    },
+    "settings_export_csv_header_type": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Type" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "類型" } }
+      }
+    },
+    "settings_export_csv_header_category": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Category" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "分類" } }
+      }
+    },
+    "settings_export_csv_header_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Note" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "備註" } }
+      }
+    },
+    "settings_export_csv_header_amount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Amount" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "金額" } }
+      }
+    },
+    "settings_export_csv_header_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Account" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "帳戶" } }
+      }
+    },
+    "analysis_period_picker_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Period" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "時間範圍" } }
+      }
+    },
+    "recurring_transaction_error_amount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Please enter a valid amount" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請輸入有效金額" } }
+      }
+    },
+    "recurring_transaction_error_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Please select an account" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請選擇帳戶" } }
+      }
+    },
+    "recurring_transaction_first_run_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "First run date" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "首次執行日期" } }
+      }
+    },
+    "alert_delete_recurring_transaction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Delete Recurring Transaction?" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除定期交易？" } }
+      }
+    },
+    "alert_delete_recurring_transaction_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Are you sure you want to delete this recurring transaction? This cannot be undone." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除這筆定期交易？此操作無法復原。" } }
+      }
+    },
+    "common_empty_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "—" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "—" } }
+      }
     }
   },
   "version": "1.0"

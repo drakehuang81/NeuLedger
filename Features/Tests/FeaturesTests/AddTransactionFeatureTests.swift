@@ -16,6 +16,70 @@ struct AddTransactionFeatureTests {
         name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
     )
 
+    // P1-F: Task loads accounts and categories and populates state
+    @Test(".task loads accounts and categories and sets default accountId from userSettings")
+    func testTaskLoadsOptionsAndAppliesDefaultAccount() async {
+        let cash = Account(
+            id: UUID(uuidString: "AA000000-0000-0000-0000-000000000001")!,
+            name: "現金", type: .cash, icon: "banknote", color: "#34C759"
+        )
+        let bank = Account(
+            id: UUID(uuidString: "AA000000-0000-0000-0000-000000000002")!,
+            name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
+        )
+        let food = Domain.Category(
+            id: UUID(uuidString: "CC000000-0000-0000-0000-000000000001")!,
+            name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
+        )
+
+        let store = await TestStore(
+            initialState: AddTransactionFeature.State(mode: .add(.expense))
+        ) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [cash, bank] }
+            $0.categoryClient.fetchAll = { [food] }
+            // defaultAccountId set to bank.id → state.accountId should match bank.id
+            $0.userSettingsClient.string = { _ in bank.id.uuidString }
+        }
+
+        await store.send(.task) { $0.isLoading = true }
+
+        await store.receive(\.optionsLoaded) {
+            $0.isLoading = false
+            $0.accounts = [cash, bank]
+            $0.categories = [food]
+            $0.accountId = bank.id
+        }
+    }
+
+    @Test(".task falls back to first account when userSettings has no defaultAccountId")
+    func testTaskFallsBackToFirstAccountWhenNoDefault() async {
+        let cash = Account(
+            id: UUID(uuidString: "AB000000-0000-0000-0000-000000000001")!,
+            name: "現金", type: .cash, icon: "banknote", color: "#34C759"
+        )
+
+        let store = await TestStore(
+            initialState: AddTransactionFeature.State(mode: .add(.expense))
+        ) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.accountClient.fetchActive = { [cash] }
+            $0.categoryClient.fetchAll = { [] }
+            $0.userSettingsClient.string = { _ in "" }   // empty = no default
+        }
+
+        await store.send(.task) { $0.isLoading = true }
+
+        await store.receive(\.optionsLoaded) {
+            $0.isLoading = false
+            $0.accounts = [cash]
+            $0.categories = []
+            $0.accountId = cash.id
+        }
+    }
+
     @Test("saveTapped with same source and destination sets transferError")
     func testTransferSameAccountValidation() async throws {
         var state = AddTransactionFeature.State(mode: .add(.transfer))

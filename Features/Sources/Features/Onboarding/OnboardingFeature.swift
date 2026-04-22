@@ -71,7 +71,7 @@ struct OnboardingFeature {
 
             case .finishButtonTapped:
                 let name = state.accountName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let accountName = name.isEmpty ? String(localized: "onboarding_setup_name_placeholder") : name
+                let accountName = name.isEmpty ? Account.defaultCashName : name
                 let accountType = state.accountType
                 return .run { [userSettingsClient, accountClient] send in
                     let account = Account(
@@ -88,10 +88,10 @@ struct OnboardingFeature {
             case .skipButtonTapped:
                 return .run { [userSettingsClient, accountClient] send in
                     let defaultAccount = Account(
-                        name: String(localized: "onboarding_setup_name_placeholder"),
+                        name: Account.defaultCashName,
                         type: .cash,
                         icon: "banknote",
-                        color: "#2ECC71"
+                        color: Account.defaultCashColorHex
                     )
                     try await accountClient.add(defaultAccount)
                     userSettingsClient.setBool(true, .hasCompletedOnboarding)
@@ -107,6 +107,17 @@ struct OnboardingFeature {
             }
         }
     }
+}
+
+// MARK: - Default Account Constants
+
+private extension Account {
+    /// Locale-independent name for the default cash account created during onboarding skip.
+    /// This value is persisted to the database and must not vary by locale.
+    static let defaultCashName = "Cash"
+
+    /// Default hex color for the cash account type.
+    static let defaultCashColorHex = "#2ECC71"
 }
 
 // MARK: - AccountType Defaults

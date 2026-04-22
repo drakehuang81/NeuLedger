@@ -145,18 +145,14 @@ public struct TransactionsView: View {
     }
 
     private func transactionRow(_ transaction: Domain.Transaction) -> some View {
-        let isExpense = transaction.type == .expense
-        let isTransfer = transaction.type == .transfer
-        let signedAmount = isExpense ? -transaction.amount : transaction.amount
-        let amountColor: Color = isTransfer ? Color.Design.textSecondary
-            : isExpense ? Color.Design.expenseRed : Color.Design.incomeGreen
+        let amountColor = transaction.type.uiColor
         return Button {
             store.send(.transactionTapped(transaction))
         } label: {
             TransactionRow(
                 title: transaction.note ?? transaction.type.displayName,
                 subtitle: transaction.type.displayName,
-                amountText: signedAmount.twdFormatted,
+                amountText: transaction.signedAmountText,
                 amountColor: amountColor,
                 date: transaction.date.formatted(date: .omitted, time: .shortened),
                 icon: transaction.type.systemImageName,

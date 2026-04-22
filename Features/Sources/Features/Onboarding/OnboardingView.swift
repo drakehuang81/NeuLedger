@@ -198,7 +198,7 @@ struct OnboardingView: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.Design.textSecondary)
 
-                        Text("$0")
+                        Text(Decimal(0).twdFormatted)
                             .font(.system(size: 24, weight: .bold).monospacedDigit())
                             .foregroundStyle(Color.Design.textPrimary)
                     }

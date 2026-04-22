@@ -1,7 +1,6 @@
 import ComposableArchitecture
 import Domain
 import Foundation
-import WidgetKit
 
 // MARK: - ExportFormat
 
@@ -102,6 +101,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.carrierClient) var carrierClient
+    @Dependency(\.widgetSyncClient) var widgetSyncClient
     @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task }
@@ -200,7 +200,15 @@ public struct SettingsFeature: Sendable {
                         let categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
                         let accountMap = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0) })
 
-                        var lines = ["日期,類型,分類,備註,金額,帳戶"]
+                        let csvHeader = [
+                            String(localized: "settings_export_csv_header_date"),
+                            String(localized: "settings_export_csv_header_type"),
+                            String(localized: "settings_export_csv_header_category"),
+                            String(localized: "settings_export_csv_header_note"),
+                            String(localized: "settings_export_csv_header_amount"),
+                            String(localized: "settings_export_csv_header_account")
+                        ].joined(separator: ",")
+                        var lines = [csvHeader]
                         let formatter = DateFormatter()
                         formatter.dateFormat = "yyyy/MM/dd"
 
@@ -287,16 +295,15 @@ public struct SettingsFeature: Sendable {
                 userSettingsClient.setString(id.uuidString, .widgetCarrierId)
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name
-                    if let defaults = UserDefaults(suiteName: "group.com.drakehuang.NeuLedger") {
-                        defaults.set(carrier.barcode, forKey: "carrierBarcode")
-                        defaults.set(carrier.type.rawValue, forKey: "carrierType")
-                        defaults.set(carrier.name, forKey: "carrierName")
-                        defaults.set(Date(), forKey: "carrierUpdatedAt")
+                    return .run { [widgetSyncClient] _ in
+                        await widgetSyncClient.syncCarrier(
+                            carrier.barcode,
+                            carrier.type.rawValue,
+                            carrier.name
+                        )
                     }
                 }
-                return .run { _ in
-                    WidgetCenter.shared.reloadTimelines(ofKind: "CarrierWidget")
-                }
+                return .none
             }
         }
         .forEach(\.path, action: \.path)

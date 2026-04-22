@@ -12,6 +12,7 @@ public struct RecurringTransactionFormView: View {
 
     public var body: some View {
         Form {
+            // Amount & Note
             Section {
                 TextField(
                     String(localized: "add_transaction_amount_placeholder"),
@@ -28,6 +29,7 @@ public struct RecurringTransactionFormView: View {
                 )
             }
 
+            // Frequency & Schedule
             Section {
                 Picker(
                     String(localized: "recurring_transaction_frequency_label"),
@@ -37,6 +39,15 @@ public struct RecurringTransactionFormView: View {
                         Text(p.localizedName).tag(p)
                     }
                 }
+
+                // P0-2: DatePicker for first run date (y/m/d)
+                DatePicker(
+                    String(localized: "recurring_transaction_first_run_date"),
+                    selection: $store.firstRunDate.sending(\.firstRunDateChanged),
+                    displayedComponents: .date
+                )
+
+                // Time-of-day picker (h/m)
                 DatePicker(
                     String(localized: "recurring_transaction_notification_time"),
                     selection: $store.notificationTime.sending(\.notificationTimeChanged),
@@ -44,6 +55,7 @@ public struct RecurringTransactionFormView: View {
                 )
             }
 
+            // Account
             Section {
                 Picker(
                     String(localized: "add_transaction_account_label"),
@@ -56,6 +68,15 @@ public struct RecurringTransactionFormView: View {
                 }
                 if let err = store.accountError {
                     Text(err).font(.caption).foregroundStyle(Color.Design.expenseRed)
+                }
+            }
+
+            // P0-3: Inline save error
+            if let saveErr = store.saveError {
+                Section {
+                    Text(saveErr)
+                        .font(.caption)
+                        .foregroundStyle(Color.Design.expenseRed)
                 }
             }
         }

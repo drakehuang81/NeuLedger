@@ -494,11 +494,15 @@ struct SettingsWidgetCarrierTests {
         }
     }
 
-    @Test("widgetCarrierSelected writes to UserSettings")
+    @Test("widgetCarrierSelected writes to UserSettings and calls widgetSyncClient.syncCarrier")
     func testWidgetCarrierSelected() async throws {
         let carriers = Self.sampleCarriers
         let target = carriers[1]
         let savedId: LockIsolated<String?> = LockIsolated(nil)
+        let syncedBarcode: LockIsolated<String?> = LockIsolated(nil)
+        let syncedType: LockIsolated<String?> = LockIsolated(nil)
+        let syncedName: LockIsolated<String?> = LockIsolated(nil)
+
         let store = await TestStore(
             initialState: SettingsFeature.State(carriers: carriers)
         ) {
@@ -506,6 +510,11 @@ struct SettingsWidgetCarrierTests {
         } withDependencies: {
             $0.userSettingsClient.setString = { value, key in
                 if key.rawValue == "widgetCarrierId" { savedId.setValue(value) }
+            }
+            $0.widgetSyncClient.syncCarrier = { barcode, type, name in
+                syncedBarcode.setValue(barcode)
+                syncedType.setValue(type)
+                syncedName.setValue(name)
             }
         }
 
@@ -515,5 +524,8 @@ struct SettingsWidgetCarrierTests {
         }
 
         #expect(savedId.value == target.id.uuidString)
+        #expect(syncedBarcode.value == target.barcode)
+        #expect(syncedType.value == target.type.rawValue)
+        #expect(syncedName.value == target.name)
     }
 }

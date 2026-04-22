@@ -67,6 +67,33 @@ struct TransactionDetailFeatureTests {
 
     // MARK: - Delete Flow
 
+    @Test("deleteTapped shows delete confirmation")
+    func testDeleteTappedShowsConfirmation() async {
+        let store = await TestStore(
+            initialState: TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        ) {
+            TransactionDetailFeature()
+        }
+
+        await store.send(.deleteTapped) {
+            $0.showDeleteConfirmation = true
+        }
+    }
+
+    @Test("deleteCancelled clears showDeleteConfirmation flag")
+    func testDeleteCancelledClearsFlag() async {
+        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        initialState.showDeleteConfirmation = true
+
+        let store = await TestStore(initialState: initialState) {
+            TransactionDetailFeature()
+        }
+
+        await store.send(.deleteCancelled) {
+            $0.showDeleteConfirmation = false
+        }
+    }
+
     @Test("deleteConfirmed calls transactionClient.delete and sends delegate")
     func testDeleteConfirmedCallsDeleteAndDismisses() async {
         let deletedId: LockIsolated<Transaction.ID?> = LockIsolated(nil)
@@ -88,5 +115,51 @@ struct TransactionDetailFeatureTests {
         await store.receive(\.delegate.deleted)
 
         #expect(deletedId.value == id)
+    }
+
+    // MARK: - Task (initial load of names)
+
+    @Test(".task loads accountName, toAccountName, categoryName via namesLoaded")
+    func testTaskLoadsNames() async {
+        let account = Account(
+            id: Self.account.id,
+            name: "現金", type: .cash, icon: "banknote", color: "#34C759"
+        )
+        let toAccount = Account(
+            id: UUID(uuidString: "11000000-0000-0000-0000-000000000002")!,
+            name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
+        )
+        let category = Domain.Category(
+            id: UUID(uuidString: "33000000-0000-0000-0000-000000000001")!,
+            name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
+        )
+
+        // Build a transaction referencing all three
+        let txn = Transaction(
+            id: Self.sampleTransaction.id,
+            amount: 200,
+            date: Self.sampleTransaction.date,
+            note: "午餐",
+            categoryId: category.id,
+            accountId: account.id,
+            toAccountId: toAccount.id,
+            type: .expense
+        )
+
+        let store = await TestStore(
+            initialState: TransactionDetailFeature.State(transaction: txn)
+        ) {
+            TransactionDetailFeature()
+        } withDependencies: {
+            $0.accountClient.fetchAll = { [account, toAccount] }
+            $0.categoryClient.fetchAll = { [category] }
+        }
+
+        await store.send(.task)
+        await store.receive(\.namesLoaded) {
+            $0.accountName = "現金"
+            $0.toAccountName = "銀行"
+            $0.categoryName = "餐飲"
+        }
     }
 }

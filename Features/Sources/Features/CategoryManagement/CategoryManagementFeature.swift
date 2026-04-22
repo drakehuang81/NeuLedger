@@ -139,7 +139,7 @@ public struct CategoryManagementFeature: Sendable {
                         TextState(String(localized: "common_cancel"))
                     }
                 } message: {
-                    TextState(String(localized: "alert_delete_category_message_name \(category.name)"))
+                    TextState(String(format: String(localized: "alert_delete_category_message_name %@"), category.name))
                 }
                 return .none
 

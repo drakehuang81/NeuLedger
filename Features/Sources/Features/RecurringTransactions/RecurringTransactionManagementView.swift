@@ -21,7 +21,7 @@ public struct RecurringTransactionManagementView: View {
                 ForEach(store.items) { item in
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(item.note ?? "—").font(Font.Design.body)
+                            Text(item.note ?? String(localized: "common_empty_placeholder")).font(Font.Design.body)
                             Text(item.amount.twdFormatted)
                                 .font(Font.Design.amount)
                                 .monospacedDigit()
@@ -39,8 +39,9 @@ public struct RecurringTransactionManagementView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { store.send(.itemTapped(item)) }
                     .swipeActions(edge: .trailing) {
+                        // P1-5: Use deleteRequested to trigger confirmation alert
                         Button(role: .destructive) {
-                            store.send(.deleteTapped(item.id))
+                            store.send(.deleteRequested(item.id))
                         } label: {
                             Label(String(localized: "common_delete"), systemImage: "trash")
                         }
@@ -62,5 +63,7 @@ public struct RecurringTransactionManagementView: View {
                 RecurringTransactionFormView(store: formStore)
             }
         }
+        // P1-5: Bind alert presentation
+        .alert($store.scope(state: \.alert, action: \.alert))
     }
 }

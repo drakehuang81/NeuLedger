@@ -88,7 +88,7 @@ public struct AnalysisView: View {
     }
     var segmentedView: some View {
         Picker(
-            "Period",
+            String(localized: "analysis_period_picker_label"),
             selection: Binding(
                 get: { store.selectedPeriod },
                 set: { store.send(.periodChanged($0)) }

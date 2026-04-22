@@ -158,7 +158,7 @@ public struct AccountManagementView: View {
 
     private func balanceText(for id: Account.ID) -> String {
         let balance = store.balances[id] ?? 0
-        return "NT$\(balance.formatted(.number.precision(.fractionLength(0))))"
+        return balance.twdFormatted
     }
 }
 

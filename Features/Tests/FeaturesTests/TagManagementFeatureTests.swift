@@ -86,7 +86,7 @@ struct TagManagementFeatureTests {
     @Test("AddEditTagFeature nameChanged clears nameError")
     func testNameChangedClearsError() async throws {
         var initialState = AddEditTagFeature.State(mode: .add)
-        initialState.nameError = "標籤名稱不能為空"
+        initialState.nameError = String(localized: "error_tag_name_empty")
 
         let store = await TestStore(initialState: initialState) {
             AddEditTagFeature()

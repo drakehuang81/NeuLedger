@@ -125,3 +125,5 @@ firebase-debug.*.log
 # Superpowers
 .superpowers/
 .claude/settings.local.json
+.claude/skills/
+.agents/

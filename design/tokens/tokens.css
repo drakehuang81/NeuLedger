@@ -1,0 +1,115 @@
+/* NeuLedger · Design Tokens · v1.0 (B1 · Warm) */
+
+:root {
+  /* ───── Color · Accent ───── */
+  --accent: #FF9500;
+  --accent-dark: #FF9F0A;
+  --accent-soft: #FFD27A;
+  --cta-gradient: linear-gradient(135deg, #FF9500, #FF6A00);
+
+  /* ───── Color · Semantic ───── */
+  --income: #34C759;
+  --income-dark: #30D158;
+  --expense: #FF3B30;
+  --expense-dark: #FF453A;
+
+  /* ───── Color · Account types ───── */
+  --acc-cash: #8E8E93;
+  --acc-bank: #0A84FF;
+  --acc-ewallet: #5E5CE6;
+  --acc-credit: #FF2D55;
+  --acc-savings: #34C759;
+
+  /* ───── Color · Background ───── */
+  --canvas: #FAF7F2;
+  --canvas-dark: #1A1714;
+  --bg-warm-1: #FFE4B8;
+  --bg-warm-2: #FFF6E8;
+  --bg-warm-3: #FAFAF7;
+  --bg-warm-d1: #4A2A0E;
+  --bg-warm-d2: #1a0f08;
+  --bg-warm-d3: #050505;
+
+  /* ───── Color · Ink ───── */
+  --ink: #0A0A0A;
+  --ink-dark: #FFFFFF;
+  --muted-light: rgba(60, 60, 67, 0.65);
+  --muted-dark: rgba(235, 235, 245, 0.65);
+
+  /* ───── Background gradients ───── */
+  --bg-warm-light: radial-gradient(ellipse at 20% 0%, #FFE4B8 0%, #FFF6E8 50%, #FAFAF7 90%);
+  --bg-warm-light-2: radial-gradient(ellipse at 80% 100%, #FFE4B8 0%, #FFF6E8 50%, #FAFAF7 90%);
+  --bg-warm-dark: radial-gradient(ellipse at 50% 30%, #4A2A0E 0%, #1a0f08 40%, #050505 90%);
+
+  /* ───── Type · Families ───── */
+  --font-display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
+  --font-body: "DM Sans", -apple-system, system-ui, sans-serif;
+  --font-mono: "DM Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* ───── Type · Scale ───── */
+  --t-display-xl: 56px;   /* Bricolage 700, lh 1.0,  ls -1.8 */
+  --t-display-l:  40px;   /* Bricolage 700, lh 1.05, ls -1.2 */
+  --t-display-m:  24px;   /* Bricolage 700, lh 1.1,  ls -0.6 */
+  --t-display-s:  18px;   /* Bricolage 600, lh 1.2,  ls -0.3 */
+  --t-body-l:     16px;   /* DM Sans, lh 1.45, ls -0.15 */
+  --t-body-m:     14px;   /* DM Sans, lh 1.45, ls -0.1 */
+  --t-body-s:     12px;   /* DM Sans, lh 1.4 */
+  --t-mono-l:     38px;   /* DM Mono 500, lh 1.0, ls -1.2 */
+  --t-mono-m:     14px;   /* DM Mono 500, lh 1.2, ls -0.2 */
+  --t-mono-eyebrow: 10px; /* DM Mono 500, ALL CAPS, ls +1.2~1.6 */
+
+  /* ───── Spacing (8pt baseline) ───── */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+
+  /* ───── Radius ───── */
+  --r-tap:   8px;
+  --r-chip:  12px;
+  --r-input: 16px;
+  --r-glass: 20px;
+  --r-card:  22px;
+  --r-pill:  999px;
+  --r-phone: 50px;  /* iPhone bezel mock only */
+
+  /* ───── Shadows ───── */
+  --shadow-glass-light: 0 1px 0 rgba(255, 255, 255, 0.7) inset,
+                        0 8px 24px rgba(180, 140, 100, 0.10);
+  --shadow-glass-dark:  0 1px 0 rgba(255, 255, 255, 0.06) inset,
+                        0 8px 24px rgba(0, 0, 0, 0.40);
+  --shadow-cta:         0 10px 28px rgba(255, 149, 0, 0.35);
+  --shadow-cta-soft:    0 6px 18px rgba(255, 149, 0, 0.34);
+  --shadow-card:        0 30px 80px rgba(180, 140, 100, 0.25);
+
+  /* ───── Glass surfaces (for backdrop-filter recipes) ───── */
+  --glass-light-bg: rgba(255, 255, 255, 0.55);
+  --glass-light-border: rgba(255, 255, 255, 0.7);
+  --glass-dark-bg: rgba(255, 255, 255, 0.08);
+  --glass-dark-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: blur(20px) saturate(160%);
+
+  /* ───── Motion ───── */
+  --ease-std: cubic-bezier(0.22, 0.9, 0.32, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 180ms;
+  --dur-base: 320ms;
+  --dur-reveal: 480ms;
+}
+
+/* ───── Dark mode override ───── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #FF9F0A;
+    --income: #30D158;
+    --expense: #FF453A;
+    --canvas: #1A1714;
+    --ink: #FFFFFF;
+    --muted-light: rgba(235, 235, 245, 0.65);
+  }
+}

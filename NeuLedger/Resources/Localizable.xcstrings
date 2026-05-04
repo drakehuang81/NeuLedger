@@ -4679,421 +4679,1089 @@
     "settings_sync": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 同步" } },
-        "en": { "stringUnit": { "state": "translated", "value": "iCloud Sync" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud 同步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Sync"
+          }
+        }
       }
     },
     "sync_title": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 同步" } },
-        "en": { "stringUnit": { "state": "translated", "value": "iCloud Sync" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud 同步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Sync"
+          }
+        }
       }
     },
     "sync_upsell_headline": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "隨時隨地同步您的帳本" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sync Your Finances Everywhere" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隨時隨地同步您的帳本"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync Your Finances Everywhere"
+          }
+        }
       }
     },
     "sync_upsell_subtitle": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "升級進階版，透過 iCloud 在所有裝置上自動備份與同步。" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Upgrade to Pro and keep your data backed up and synced across all your devices via iCloud." } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "升級進階版，透過 iCloud 在所有裝置上自動備份與同步。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upgrade to Pro and keep your data backed up and synced across all your devices via iCloud."
+          }
+        }
       }
     },
     "sync_upsell_feature_devices": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iPhone、iPad 多裝置同步" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sync across iPhone and iPad" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone、iPad 多裝置同步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync across iPhone and iPad"
+          }
+        }
       }
     },
     "sync_upsell_feature_backup": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自動 iCloud 備份，資料不怕遺失" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Automatic iCloud backup, never lose data" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動 iCloud 備份，資料不怕遺失"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic iCloud backup, never lose data"
+          }
+        }
       }
     },
     "sync_upsell_feature_private": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "端對端加密，僅限您的 iCloud 帳號存取" } },
-        "en": { "stringUnit": { "state": "translated", "value": "End-to-end encrypted, only your iCloud can access" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "端對端加密，僅限您的 iCloud 帳號存取"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End-to-end encrypted, only your iCloud can access"
+          }
+        }
       }
     },
     "sync_subscribe_now": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "立即升級進階版" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Upgrade to Pro" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即升級進階版"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upgrade to Pro"
+          }
+        }
       }
     },
     "sync_enable_title": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟 iCloud 同步" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Enable iCloud Sync" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟 iCloud 同步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable iCloud Sync"
+          }
+        }
       }
     },
     "sync_enable_subtitle": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "將本機資料一次性遷移至 iCloud，之後自動同步。" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Migrate local data to iCloud once, then sync automatically." } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將本機資料一次性遷移至 iCloud，之後自動同步。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migrate local data to iCloud once, then sync automatically."
+          }
+        }
       }
     },
     "sync_enable_button": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟同步" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Enable Sync" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟同步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Sync"
+          }
+        }
       }
     },
     "sync_enabled_label": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 同步已啟用" } },
-        "en": { "stringUnit": { "state": "translated", "value": "iCloud Sync Enabled" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud 同步已啟用"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Sync Enabled"
+          }
+        }
       }
     },
     "sync_migrating": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在遷移資料…" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Migrating data…" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在遷移資料…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migrating data…"
+          }
+        }
       }
     },
     "sync_retry": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "重試" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Retry" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重試"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
       }
     },
     "sync_icloud_unavailable": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請先登入 iCloud 帳號才能開啟同步。" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Please sign in to iCloud before enabling sync." } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先登入 iCloud 帳號才能開啟同步。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please sign in to iCloud before enabling sync."
+          }
+        }
       }
     },
     "sync_icloud_account_active": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "iCloud 帳號已連線" } },
-        "en": { "stringUnit": { "state": "translated", "value": "iCloud Account Connected" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud 帳號已連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Account Connected"
+          }
+        }
       }
     },
     "settings_carrier_management": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "載具管理" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Carrier Management" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "載具管理"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carrier Management"
+          }
+        }
       }
     },
     "carrier_management_title": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "我的載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "My Carriers" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Carriers"
+          }
+        }
       }
     },
     "carrier_type_phone_barcode": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "手機條碼載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Phone Barcode Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機條碼載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone Barcode Carrier"
+          }
+        }
       }
     },
     "carrier_type_citizen_cert": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自然人憑證條碼" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Citizen Digital Certificate" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自然人憑證條碼"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Citizen Digital Certificate"
+          }
+        }
       }
     },
     "carrier_name_label": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "名稱（選填）" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Name (Optional)" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名稱（選填）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name (Optional)"
+          }
+        }
       }
     },
     "carrier_barcode_label": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "條碼" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Barcode" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "條碼"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barcode"
+          }
+        }
       }
     },
     "carrier_barcode_error_phone": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "格式應為 /XXXXXXX（斜線加 7 位英數字）" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Format must be /XXXXXXX (slash followed by 7 alphanumeric characters)" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式應為 /XXXXXXX（斜線加 7 位英數字）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format must be /XXXXXXX (slash followed by 7 alphanumeric characters)"
+          }
+        }
       }
     },
     "carrier_barcode_error_cert": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "格式應為 /P 加 16 位英數字" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Format must be /P followed by 16 alphanumeric characters" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式應為 /P 加 16 位英數字"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format must be /P followed by 16 alphanumeric characters"
+          }
+        }
       }
     },
     "carrier_copy_success": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "已複製" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Copied" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已複製"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        }
       }
     },
     "carrier_empty_state": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚未新增載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No carriers added yet" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未新增載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No carriers added yet"
+          }
+        }
       }
     },
     "carrier_empty_state_desc": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增您的手機條碼或自然人憑證，方便報稅時使用" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Add your phone barcode or citizen digital certificate for tax filing" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增您的手機條碼或自然人憑證，方便報稅時使用"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your phone barcode or citizen digital certificate for tax filing"
+          }
+        }
       }
     },
     "carrier_add_button": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Add Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Carrier"
+          }
+        }
       }
     },
     "carrier_add_title": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "新增載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Add Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Carrier"
+          }
+        }
       }
     },
     "carrier_edit_title": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "編輯載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Edit Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Carrier"
+          }
+        }
       }
     },
     "carrier_name_placeholder": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "為載具命名（選填）" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Name this carrier (optional)" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "為載具命名（選填）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name this carrier (optional)"
+          }
+        }
       }
     },
     "carrier_barcode_placeholder": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "輸入條碼" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Enter barcode" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸入條碼"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter barcode"
+          }
+        }
       }
     },
     "carrier_delete_confirm": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確認刪除此載具？" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Delete this carrier?" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認刪除此載具？"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this carrier?"
+          }
+        }
       }
     },
     "widget_carrier_display_name": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "我的載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "My Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Carrier"
+          }
+        }
       }
     },
     "widget_carrier_description": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示載具條碼供店員掃描" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Display carrier barcode for scanning" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示載具條碼供店員掃描"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display carrier barcode for scanning"
+          }
+        }
       }
     },
     "widget_carrier_empty": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請在 NeuLedger 設定 Widget 載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Set up a carrier in NeuLedger settings" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請在 NeuLedger 設定 Widget 載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up a carrier in NeuLedger settings"
+          }
+        }
       }
     },
     "widget_carrier_placeholder_name": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "手機條碼載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Phone Barcode Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機條碼載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone Barcode Carrier"
+          }
+        }
       }
     },
     "widget_carrier_empty_cta": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "點此設定" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tap to set up" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點此設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to set up"
+          }
+        }
       }
     },
     "widget_carrier_stale_warning": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "資料可能已過期" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Data may be outdated" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "資料可能已過期"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data may be outdated"
+          }
+        }
       }
     },
     "widget_voice_display_name": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音記帳" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Voice Bookkeeping" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語音記帳"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice Bookkeeping"
+          }
+        }
       }
     },
     "widget_voice_description": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "快速語音記帳" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Quick voice bookkeeping" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速語音記帳"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick voice bookkeeping"
+          }
+        }
       }
     },
     "widget_voice_title": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音記帳" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Voice" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語音記帳"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice"
+          }
+        }
       }
     },
     "settings_widget": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "Widget 設定" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Widget Settings" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widget 設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widget Settings"
+          }
+        }
       }
     },
     "settings_widget_carrier": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示的載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Display Carrier" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示的載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Carrier"
+          }
+        }
       }
     },
     "settings_widget_voice_account": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音記帳帳戶" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Voice Account" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語音記帳帳戶"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice Account"
+          }
+        }
       }
     },
     "settings_widget_coming_soon": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "即將推出" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Coming Soon" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "即將推出"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming Soon"
+          }
+        }
       }
     },
     "settings_widget_no_carrier": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "尚無載具" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No carriers" } }
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無載具"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No carriers"
+          }
+        }
       }
     },
     "settings_export_csv_header_date": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Date" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "日期" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期"
+          }
+        }
       }
     },
     "settings_export_csv_header_type": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Type" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "類型" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "類型"
+          }
+        }
       }
     },
     "settings_export_csv_header_category": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Category" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "分類" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分類"
+          }
+        }
       }
     },
     "settings_export_csv_header_note": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Note" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "備註" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "備註"
+          }
+        }
       }
     },
     "settings_export_csv_header_amount": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Amount" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "金額" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金額"
+          }
+        }
       }
     },
     "settings_export_csv_header_account": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Account" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "帳戶" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "帳戶"
+          }
+        }
       }
     },
     "analysis_period_picker_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Period" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "時間範圍" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時間範圍"
+          }
+        }
       }
     },
     "recurring_transaction_error_amount": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Please enter a valid amount" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請輸入有效金額" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter a valid amount"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請輸入有效金額"
+          }
+        }
       }
     },
     "recurring_transaction_error_account": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Please select an account" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請選擇帳戶" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please select an account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請選擇帳戶"
+          }
+        }
       }
     },
     "recurring_transaction_first_run_date": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "First run date" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "首次執行日期" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First run date"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次執行日期"
+          }
+        }
       }
     },
     "alert_delete_recurring_transaction": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Delete Recurring Transaction?" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "刪除定期交易？" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Recurring Transaction?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除定期交易？"
+          }
+        }
       }
     },
     "alert_delete_recurring_transaction_message": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Are you sure you want to delete this recurring transaction? This cannot be undone." } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定要刪除這筆定期交易？此操作無法復原。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete this recurring transaction? This cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定要刪除這筆定期交易？此操作無法復原。"
+          }
+        }
       }
     },
     "common_empty_placeholder": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "—" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "—" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        }
+      }
+    },
+    "account_type_cash": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現金"
+          }
+        }
+      }
+    },
+    "account_type_bank": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "銀行帳戶"
+          }
+        }
+      }
+    },
+    "account_type_credit_card": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit Card"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信用卡"
+          }
+        }
+      }
+    },
+    "account_type_e_wallet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-Wallet"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "電子錢包"
+          }
+        }
       }
     }
   },

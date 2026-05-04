@@ -1,6 +1,3 @@
-//  OnboardingView.swift
-//  Features
-
 import SwiftUI
 import ComposableArchitecture
 import Domain
@@ -14,6 +11,10 @@ struct OnboardingView: View {
             backgroundForCurrentStep
             currentStepView
                 .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.currentStep)
+        }
+        .sheet(item: $store.scope(state: \.customAccountSheet, action: \.customAccountSheet)) { sheetStore in
+            CustomAccountFormView(store: sheetStore)
+                .presentationDetents([.medium, .large])
         }
     }
 
@@ -30,9 +31,9 @@ struct OnboardingView: View {
     private var currentStepView: some View {
         switch store.currentStep {
         case .welcome:          welcomeStep
-        case .accountSelection: placeholderStep("Account Selection (Task 11)")
-        case .ready:            placeholderStep("Ready (Task 12)")
-        case .done:             placeholderStep("Done (Task 12)")
+        case .accountSelection: accountSelectionStep
+        case .ready:            readyStep
+        case .done:             doneStep
         }
     }
 
@@ -42,12 +43,10 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Preview glass card (decorative)
             previewCard
                 .padding(.horizontal, 24)
                 .modifier(RevealOnAppear(delay: 0.12))
 
-            // Title block
             titleBlock
                 .padding(.top, 32)
                 .padding(.horizontal, 24)
@@ -55,7 +54,6 @@ struct OnboardingView: View {
 
             Spacer()
 
-            // CTA + dots
             VStack(spacing: 16) {
                 PrimaryButton("onboarding_welcome_button", systemImage: "arrow.forward") {
                     store.send(.startButtonTapped)
@@ -124,17 +122,281 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Placeholder (filled by later tasks)
+    // MARK: - Account Selection
 
-    private func placeholderStep(_ label: String) -> some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Text(label)
-                .font(.title2)
+    private var accountSelectionStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("onboarding_step_indicator_2")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button { store.send(.skipButtonTapped) } label: {
+                    Text("common_skip")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.top, 16)
+
+            Text("onboarding_selection_title")
+                .font(.system(size: 32, weight: .bold))
+                .padding(.top, 12)
+            Text("onboarding_selection_subtitle")
+                .font(.system(size: 14))
                 .foregroundStyle(.secondary)
-            Button("Skip") { store.send(.skipButtonTapped) }
+                .padding(.top, 6)
+                .padding(.bottom, 20)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    LazyVGrid(
+                        columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                        spacing: 12
+                    ) {
+                        ForEach(AccountType.allCases, id: \.self) { type in
+                            typeCard(for: type)
+                        }
+                    }
+
+                    if !store.customAccounts.isEmpty {
+                        VStack(spacing: 8) {
+                            ForEach(store.customAccounts) { draft in
+                                customAccountRow(draft)
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+
+                    Button { store.send(.addCustomAccountTapped) } label: {
+                        HStack {
+                            Image(systemName: "plus")
+                            Text("onboarding_selection_add_custom")
+                        }
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background {
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .strokeBorder(
+                                    Color.secondary.opacity(0.4),
+                                    style: StrokeStyle(lineWidth: 1, dash: [6])
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            VStack(spacing: 16) {
+                PrimaryButton(continueButtonKey) { store.send(.nextButtonTapped) }
+                    .opacity(continueDisabled ? 0.5 : 1)
+                    .disabled(continueDisabled)
+                HStack {
+                    OnboardingPageDots(active: 1)
+                    Spacer()
+                }
+            }
+            .padding(.top, 12)
+        }
+        .padding(.horizontal, 22)
+        .padding(.bottom, 28)
+    }
+
+    private var totalSelectedCount: Int {
+        store.selectedTypes.count + store.customAccounts.count
+    }
+
+    private var continueDisabled: Bool { totalSelectedCount == 0 }
+
+    private var continueButtonKey: LocalizedStringKey {
+        let format = String(localized: "onboarding_selection_continue_format")
+        return LocalizedStringKey(String(format: format, totalSelectedCount))
+    }
+
+    @ViewBuilder
+    private func typeCard(for type: AccountType) -> some View {
+        let isSelected = store.selectedTypes.contains(type)
+        Button { store.send(.typeToggled(type)) } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .fill(Color(hex: type.defaultColor).opacity(0.12))
+                        Image(systemName: type.defaultIcon)
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color(hex: type.defaultColor))
+                    }
+                    .frame(width: 36, height: 36)
+                    Spacer()
+                    selectionIndicator(isSelected: isSelected)
+                }
+                Spacer()
+                Text(eyebrow(for: type))
+                    .font(.system(size: 10, weight: .medium))
+                    .textCase(.uppercase)
+                    .tracking(1)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 4)
+                Text(type.displayLabel)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.primary)
+            }
+            .padding(16)
+            .frame(minHeight: 140, alignment: .topLeading)
+            .background {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(
+                        isSelected ? Color.Design.brandPrimary : Color.clear,
+                        lineWidth: 2
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func selectionIndicator(isSelected: Bool) -> some View {
+        ZStack {
+            Circle()
+                .fill(isSelected ? Color.Design.brandPrimary : Color.clear)
+            Circle()
+                .strokeBorder(
+                    isSelected ? Color.clear : Color.secondary.opacity(0.5),
+                    lineWidth: 1.5
+                )
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: 22, height: 22)
+    }
+
+    private func eyebrow(for type: AccountType) -> String {
+        switch type {
+        case .cash:       "CASH"
+        case .bank:       "BANK"
+        case .creditCard: "CREDIT"
+        case .eWallet:    "WALLET"
+        }
+    }
+
+    @ViewBuilder
+    private func customAccountRow(_ draft: CustomAccountDraft) -> some View {
+        HStack {
+            Image(systemName: draft.type.defaultIcon)
+                .foregroundStyle(Color(hex: draft.color))
+            Text(draft.name)
+                .font(.system(size: 15, weight: .medium))
+            Spacer()
+            Button { store.send(.customAccountDeleted(draft.id)) } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+        }
+    }
+
+    // MARK: - Ready
+
+    private var readyStep: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            VStack(spacing: 32) {
+                ZStack {
+                    Circle()
+                        .fill(Color.Design.brandPrimary)
+                        .frame(width: 100, height: 100)
+                        .shadow(color: Color.Design.brandPrimary.opacity(0.35), radius: 28, x: 0, y: 10)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.white)
+                }
+                VStack(spacing: 12) {
+                    Text("onboarding_ready_title")
+                        .font(.system(size: 36, weight: .bold))
+                    Text("onboarding_ready_subtitle")
+                        .font(.system(size: 17))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                GlassContainer(cornerRadius: 22, padding: 20) {
+                    VStack(spacing: 8) {
+                        Text("onboarding_ready_total_label")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                        Text(Decimal(0).twdFormatted)
+                            .font(.system(size: 24, weight: .bold).monospacedDigit())
+                        Text(accountCountText)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                    }
+                }
+                .frame(width: 220)
+            }
+            .padding(.horizontal, 24)
+            Spacer()
+            VStack(spacing: 16) {
+                PrimaryButton("onboarding_ready_button") { store.send(.finishButtonTapped) }
+                    .disabled(store.isCreatingAccounts)
+                HStack {
+                    OnboardingPageDots(active: 2)
+                    Spacer()
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 28)
+        }
+    }
+
+    private var accountCountText: LocalizedStringKey {
+        let count = max(totalSelectedCount, 1)
+        let format = String(localized: "onboarding_ready_account_count_format")
+        return LocalizedStringKey(String(format: format, count))
+    }
+
+    // MARK: - Done
+
+    private var doneStep: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            ZStack {
+                Circle()
+                    .fill(Color.Design.brandPrimary)
+                    .frame(width: 88, height: 88)
+                    .shadow(color: Color.Design.brandPrimary.opacity(0.55), radius: 30, x: 0, y: 12)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 38, weight: .heavy))
+                    .foregroundStyle(.white)
+            }
+            .modifier(RevealOnAppear(delay: 0.05))
+            VStack(spacing: 8) {
+                Text("onboarding_done_title")
+                    .font(.system(size: 36, weight: .bold))
+                Text("onboarding_done_subtitle")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .modifier(RevealOnAppear(delay: 0.20))
             Spacer()
         }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 28)
     }
 }
 
@@ -157,6 +419,30 @@ private struct RevealOnAppear: ViewModifier {
 #Preview("Welcome") {
     OnboardingView(
         store: Store(initialState: OnboardingFeature.State(currentStep: .welcome)) {
+            OnboardingFeature()
+        }
+    )
+}
+
+#Preview("Account Selection") {
+    OnboardingView(
+        store: Store(initialState: OnboardingFeature.State(currentStep: .accountSelection)) {
+            OnboardingFeature()
+        }
+    )
+}
+
+#Preview("Ready") {
+    OnboardingView(
+        store: Store(initialState: OnboardingFeature.State(currentStep: .ready, selectedTypes: [.cash, .bank])) {
+            OnboardingFeature()
+        }
+    )
+}
+
+#Preview("Done") {
+    OnboardingView(
+        store: Store(initialState: OnboardingFeature.State(currentStep: .done)) {
             OnboardingFeature()
         }
     )

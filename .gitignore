@@ -126,4 +126,8 @@ firebase-debug.*.log
 .superpowers/
 .claude/settings.local.json
 .claude/skills/
+.claude/scheduled_tasks.lock
 .agents/
+
+# oh-my-claudecode runtime state
+.omc/

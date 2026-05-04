@@ -21,10 +21,32 @@ public enum AccountType: String, Codable, CaseIterable, Equatable, Sendable {
     /// A user-facing display label for this account type.
     public var displayLabel: String {
         switch self {
-        case .cash: "Cash"
-        case .bank: "Bank"
-        case .creditCard: "Credit Card"
-        case .eWallet: "E-Wallet"
+        case .cash:       String(localized: "account_type_cash", bundle: .main)
+        case .bank:       String(localized: "account_type_bank", bundle: .main)
+        case .creditCard: String(localized: "account_type_credit_card", bundle: .main)
+        case .eWallet:    String(localized: "account_type_e_wallet", bundle: .main)
+        }
+    }
+}
+
+public extension AccountType {
+    /// Default SF Symbol name for this account type.
+    var defaultIcon: String {
+        switch self {
+        case .cash:       "banknote"
+        case .bank:       "building.columns"
+        case .creditCard: "creditcard"
+        case .eWallet:    "wallet.bifold"
+        }
+    }
+
+    /// Default brand color hex (iOS system palette) for this account type.
+    var defaultColor: String {
+        switch self {
+        case .cash:       "#8E8E93"
+        case .bank:       "#0A84FF"
+        case .creditCard: "#FF2D55"
+        case .eWallet:    "#5E5CE6"
         }
     }
 }

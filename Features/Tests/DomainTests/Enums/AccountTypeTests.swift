@@ -25,3 +25,44 @@ struct AccountTypeTests {
         }
     }
 }
+
+@Suite("AccountType.displayLabel localized")
+struct AccountTypeDisplayLabelTests {
+
+    @Test("displayLabel returns non-empty string for each case")
+    func testDisplayLabelLocalized() {
+        for type in AccountType.allCases {
+            let label = type.displayLabel
+            #expect(!label.isEmpty)
+            #expect(label != type.rawValue)
+        }
+    }
+
+    @Test("displayLabel does not return enum raw value")
+    func testDisplayLabelNotRawValue() {
+        #expect(AccountType.cash.displayLabel != "cash")
+        #expect(AccountType.bank.displayLabel != "bank")
+        #expect(AccountType.creditCard.displayLabel != "creditCard")
+        #expect(AccountType.eWallet.displayLabel != "eWallet")
+    }
+}
+
+@Suite("AccountType.defaultIcon and defaultColor")
+struct AccountTypeDefaultsTests {
+
+    @Test("defaultIcon returns SF Symbol for each case")
+    func testDefaultIcon() {
+        #expect(AccountType.cash.defaultIcon == "banknote")
+        #expect(AccountType.bank.defaultIcon == "building.columns")
+        #expect(AccountType.creditCard.defaultIcon == "creditcard")
+        #expect(AccountType.eWallet.defaultIcon == "wallet.bifold")
+    }
+
+    @Test("defaultColor returns iOS system hex for each case")
+    func testDefaultColor() {
+        #expect(AccountType.cash.defaultColor == "#8E8E93")
+        #expect(AccountType.bank.defaultColor == "#0A84FF")
+        #expect(AccountType.creditCard.defaultColor == "#FF2D55")
+        #expect(AccountType.eWallet.defaultColor == "#5E5CE6")
+    }
+}

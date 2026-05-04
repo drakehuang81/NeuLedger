@@ -63,7 +63,20 @@ private func generateBarcode(from string: String) -> UIImage? {
 // MARK: - Widget View
 
 struct CarrierWidgetView: View {
+    @Environment(\.redactionReasons) private var redactionReasons
+
     let entry: CarrierTimelineEntry
+
+    private static let staleThreshold: TimeInterval = 90 * 24 * 60 * 60
+
+    private var isPlaceholder: Bool {
+        redactionReasons.contains(.placeholder)
+    }
+
+    private var isStale: Bool {
+        guard let updatedAt = entry.carrier?.updatedAt else { return false }
+        return Date().timeIntervalSince(updatedAt) > Self.staleThreshold
+    }
 
     var body: some View {
         Group {
@@ -98,6 +111,14 @@ struct CarrierWidgetView: View {
 
                 Spacer()
 
+                if isStale {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.orange)
+                        .symbolRenderingMode(.hierarchical)
+                        .accessibilityLabel(Text("widget_carrier_stale_warning"))
+                }
+
                 Text(carrier.typeDisplayName)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -115,7 +136,13 @@ struct CarrierWidgetView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.white)
 
-                if let barcodeImage = generateBarcode(from: carrier.barcode) {
+                if isPlaceholder {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(.systemGray5))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                        .unredacted()
+                } else if let barcodeImage = generateBarcode(from: carrier.barcode) {
                     Image(uiImage: barcodeImage)
                         .interpolation(.none)
                         .resizable()
@@ -137,16 +164,25 @@ struct CarrierWidgetView: View {
     // MARK: Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             Image(systemName: "creditcard")
                 .font(.system(size: 28, weight: .light))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.orange)
                 .symbolRenderingMode(.hierarchical)
 
             Text("widget_carrier_empty")
-                .font(.system(size: 13, weight: .regular))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+
+            HStack(spacing: 4) {
+                Text("widget_carrier_empty_cta")
+                    .font(.system(size: 11, weight: .medium))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(.orange)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(12)
@@ -188,4 +224,18 @@ struct CarrierWidget: Widget {
     CarrierWidget()
 } timeline: {
     CarrierTimelineEntry(date: .now, carrier: nil)
+}
+
+#Preview("Stale", as: .systemMedium) {
+    CarrierWidget()
+} timeline: {
+    CarrierTimelineEntry(
+        date: .now,
+        carrier: CarrierEntry(
+            barcode: "/ABC-12345678",
+            typeRawValue: "phoneBarcodeCarrier",
+            name: "手機條碼載具",
+            updatedAt: Calendar.current.date(byAdding: .day, value: -120, to: .now)
+        )
+    )
 }

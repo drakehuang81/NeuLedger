@@ -4935,6 +4935,20 @@
         "en": { "stringUnit": { "state": "translated", "value": "Phone Barcode Carrier" } }
       }
     },
+    "widget_carrier_empty_cta": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "點此設定" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tap to set up" } }
+      }
+    },
+    "widget_carrier_stale_warning": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "資料可能已過期" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Data may be outdated" } }
+      }
+    },
     "widget_voice_display_name": {
       "extractionState": "manual",
       "localizations": {

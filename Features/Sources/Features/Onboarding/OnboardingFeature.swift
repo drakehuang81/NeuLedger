@@ -1,9 +1,6 @@
 //
 //  OnboardingFeature.swift
 //  Features
-//
-//  Created by NeuLedger on 2026/2/28.
-//
 
 import ComposableArchitecture
 import Domain
@@ -12,33 +9,33 @@ import Foundation
 @Reducer
 struct OnboardingFeature {
 
-    // MARK: - Step
-
     enum Step: Equatable {
         case welcome
-        case accountSetup
+        case accountSelection
         case ready
+        case done
     }
-
-    // MARK: - State
 
     @ObservableState
     struct State: Equatable {
         var currentStep: Step = .welcome
-        var accountName: String = String(localized: "onboarding_setup_name_placeholder")
-        var accountType: AccountType = .cash
-        var isCreatingAccount: Bool = false
+        var selectedTypes: Set<AccountType> = [.cash]
+        var customAccounts: [CustomAccountDraft] = []
+        @Presents var customAccountSheet: CustomAccountFormFeature.State?
+        var isCreatingAccounts: Bool = false
     }
 
-    // MARK: - Action
-
-    enum Action: BindableAction, Equatable {
-        case binding(BindingAction<State>)
+    enum Action: Equatable {
         case startButtonTapped
+        case typeToggled(AccountType)
+        case addCustomAccountTapped
+        case customAccountSheet(PresentationAction<CustomAccountFormFeature.Action>)
+        case customAccountDeleted(UUID)
         case nextButtonTapped
         case finishButtonTapped
         case skipButtonTapped
-        case accountCreated
+        case accountsCreated
+        case doneAnimationFinished
         case delegate(Delegate)
 
         @CasePathable
@@ -47,97 +44,110 @@ struct OnboardingFeature {
         }
     }
 
-    // MARK: - Dependencies
-
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.accountClient) var accountClient
+    @Dependency(\.continuousClock) var clock
 
-    // MARK: - Body
+    private enum CancelID { case create }
 
     var body: some ReducerOf<Self> {
-        BindingReducer()
         Reduce { state, action in
             switch action {
-            case .binding:
-                return .none
-
             case .startButtonTapped:
-                state.currentStep = .accountSetup
+                state.currentStep = .accountSelection
                 return .none
 
             case .nextButtonTapped:
                 state.currentStep = .ready
                 return .none
 
-            case .finishButtonTapped:
-                let name = state.accountName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let accountName = name.isEmpty ? Account.defaultCashName : name
-                let accountType = state.accountType
-                return .run { [userSettingsClient, accountClient] send in
-                    let account = Account(
-                        name: accountName,
-                        type: accountType,
-                        icon: accountType.defaultIcon,
-                        color: accountType.defaultColor
-                    )
-                    try await accountClient.add(account)
-                    userSettingsClient.setBool(true, .hasCompletedOnboarding)
-                    await send(.accountCreated)
+            case let .typeToggled(type):
+                if state.selectedTypes.contains(type) {
+                    state.selectedTypes.remove(type)
+                } else {
+                    state.selectedTypes.insert(type)
                 }
+                return .none
+
+            case .addCustomAccountTapped:
+                state.customAccountSheet = CustomAccountFormFeature.State()
+                return .none
+
+            case let .customAccountSheet(.presented(.delegate(.submitted(draft)))):
+                state.customAccounts.append(draft)
+                state.customAccountSheet = nil
+                return .none
+
+            case .customAccountSheet(.presented(.delegate(.dismissed))):
+                state.customAccountSheet = nil
+                return .none
+
+            case .customAccountSheet:
+                return .none
+
+            case let .customAccountDeleted(id):
+                state.customAccounts.removeAll { $0.id == id }
+                return .none
+
+            case .finishButtonTapped:
+                state.isCreatingAccounts = true
+                let types = state.selectedTypes
+                let customs = state.customAccounts
+                return .run { [accountClient, userSettingsClient] send in
+                    for type in types.sorted(by: { $0.rawValue < $1.rawValue }) {
+                        let acc = Account(
+                            name: type.displayLabel,
+                            type: type,
+                            icon: type.defaultIcon,
+                            color: type.defaultColor
+                        )
+                        try await accountClient.add(acc)
+                    }
+                    for d in customs {
+                        let acc = Account(
+                            name: d.name,
+                            type: d.type,
+                            icon: d.type.defaultIcon,
+                            color: d.color
+                        )
+                        try await accountClient.add(acc)
+                    }
+                    userSettingsClient.setBool(true, .hasCompletedOnboarding)
+                    await send(.accountsCreated)
+                }
+                .cancellable(id: CancelID.create)
 
             case .skipButtonTapped:
-                return .run { [userSettingsClient, accountClient] send in
-                    let defaultAccount = Account(
-                        name: Account.defaultCashName,
+                state.isCreatingAccounts = true
+                return .run { [accountClient, userSettingsClient] send in
+                    let acc = Account(
+                        name: AccountType.cash.displayLabel,
                         type: .cash,
-                        icon: "banknote",
-                        color: Account.defaultCashColorHex
+                        icon: AccountType.cash.defaultIcon,
+                        color: AccountType.cash.defaultColor
                     )
-                    try await accountClient.add(defaultAccount)
+                    try await accountClient.add(acc)
                     userSettingsClient.setBool(true, .hasCompletedOnboarding)
-                    await send(.accountCreated)
+                    await send(.accountsCreated)
+                }
+                .cancellable(id: CancelID.create)
+
+            case .accountsCreated:
+                state.currentStep = .done
+                return .run { [clock] send in
+                    try await clock.sleep(for: .milliseconds(1600))
+                    await send(.doneAnimationFinished)
                 }
 
-            case .accountCreated:
-                state.isCreatingAccount = true
+            case .doneAnimationFinished:
                 return .send(.delegate(.onboardingCompleted))
 
             case .delegate:
                 return .none
             }
         }
-    }
-}
-
-// MARK: - Default Account Constants
-
-private extension Account {
-    /// Locale-independent name for the default cash account created during onboarding skip.
-    /// This value is persisted to the database and must not vary by locale.
-    static let defaultCashName = "Cash"
-
-    /// Default hex color for the cash account type.
-    static let defaultCashColorHex = "#2ECC71"
-}
-
-// MARK: - AccountType Defaults
-
-private extension AccountType {
-    var defaultIcon: String {
-        switch self {
-        case .cash: "banknote"
-        case .bank: "building.columns"
-        case .creditCard: "creditcard"
-        case .eWallet: "wallet.bifold"
-        }
-    }
-
-    var defaultColor: String {
-        switch self {
-        case .cash: "#2ECC71"
-        case .bank: "#3498DB"
-        case .creditCard: "#E74C3C"
-        case .eWallet: "#9B59B6"
+        .ifLet(\.$customAccountSheet, action: \.customAccountSheet) {
+            CustomAccountFormFeature()
         }
     }
 }

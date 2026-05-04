@@ -1,9 +1,5 @@
-//
 //  OnboardingView.swift
 //  Features
-//
-//  Created by NeuLedger on 2026/2/28.
-//
 
 import SwiftUI
 import ComposableArchitecture
@@ -15,217 +11,152 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color.Design.background
-                .ignoresSafeArea()
-
-            Group {
-                switch store.currentStep {
-                case .welcome:
-                    welcomeStep
-                        .transition(stepTransition)
-                case .accountSetup:
-                    accountSetupStep
-                        .transition(stepTransition)
-                case .ready:
-                    readyStep
-                        .transition(stepTransition)
-                }
-            }
-            // 綁定 currentStep 加動畫
-            .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.currentStep)
-        }
-        .overlay(alignment: .topTrailing) {
-            if store.currentStep != .ready {
-                Button {
-                    store.send(.skipButtonTapped)
-                } label: {
-                    Text("common_skip")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.Design.textSecondary)
-                }
-                .padding(.trailing, 24)
-                .padding(.top, 16)
-            }
+            backgroundForCurrentStep
+            currentStepView
+                .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.currentStep)
         }
     }
 
-    // MARK: - Transitions
-    
-    private var stepTransition: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .trailing).combined(with: .opacity),
-            removal: .move(edge: .leading).combined(with: .opacity)
-        )
+    @ViewBuilder
+    private var backgroundForCurrentStep: some View {
+        switch store.currentStep {
+        case .welcome:          WarmGradientBackground(variant: .top)
+        case .accountSelection: WarmGradientBackground(variant: .bottomRight)
+        case .ready, .done:     WarmGradientBackground(variant: .center)
+        }
     }
 
-    // MARK: - Step 1: Welcome
+    @ViewBuilder
+    private var currentStepView: some View {
+        switch store.currentStep {
+        case .welcome:          welcomeStep
+        case .accountSelection: placeholderStep("Account Selection (Task 11)")
+        case .ready:            placeholderStep("Ready (Task 12)")
+        case .done:             placeholderStep("Done (Task 12)")
+        }
+    }
+
+    // MARK: - Welcome
 
     private var welcomeStep: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 24) {
-                // App Icon Placeholder
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.Design.brandPrimary, Color.Design.brandSecondary],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
+            // Preview glass card (decorative)
+            previewCard
+                .padding(.horizontal, 24)
+                .modifier(RevealOnAppear(delay: 0.12))
 
-                // Title Group
-                VStack(spacing: 12) {
-                    Text("onboarding_welcome_title")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(Color.Design.textPrimary)
-
-                    Text("onboarding_welcome_subtitle")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.Design.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
+            // Title block
+            titleBlock
+                .padding(.top, 32)
+                .padding(.horizontal, 24)
+                .modifier(RevealOnAppear(delay: 0.46))
 
             Spacer()
 
-            // Start Button
-            PrimaryButton("onboarding_welcome_button", systemImage: "arrow.forward") {
-                store.send(.startButtonTapped)
+            // CTA + dots
+            VStack(spacing: 16) {
+                PrimaryButton("onboarding_welcome_button", systemImage: "arrow.forward") {
+                    store.send(.startButtonTapped)
+                }
+                HStack {
+                    OnboardingPageDots(active: 0)
+                    Spacer()
+                    Button { store.send(.skipButtonTapped) } label: {
+                        Text("common_skip")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 28)
+            .modifier(RevealOnAppear(delay: 0.64))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 60)
     }
 
-    // MARK: - Step 2: Account Setup
-
-    private var accountSetupStep: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 32) {
-                // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("onboarding_setup_title")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Color.Design.textPrimary)
-
-                    Text("onboarding_setup_subtitle")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.Design.textSecondary)
+    private var previewCard: some View {
+        GlassContainer(cornerRadius: 28, padding: 24) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("onboarding_welcome_card_eyebrow")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                Text(Decimal(0).twdFormatted)
+                    .font(.system(size: 44, weight: .bold).monospacedDigit())
+                    .foregroundStyle(.primary)
+                HStack(spacing: 8) {
+                    chip("onboarding_welcome_chip_starting", color: Color.Design.brandPrimary)
+                    chip("onboarding_welcome_chip_on_device", color: .secondary)
                 }
-
-                // Form
-                VStack(alignment: .leading, spacing: 24) {
-                    // Account Name Input
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("onboarding_setup_name_label")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.Design.textSecondary)
-
-                        TextField(
-                            "onboarding_setup_name_placeholder",
-                            text: $store.accountName
-                        )
-                        .font(.system(size: 17))
-                        .padding(16)
-                        .background(Color.Design.surfaceSecondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-
-                    // Account Type Picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("onboarding_setup_type_label")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.Design.textSecondary)
-
-                        Picker("", selection: $store.accountType) {
-                            ForEach(AccountType.allCases, id: \.self) { type in
-                                Text(type.displayLabel)
-                                    .tag(type)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                    }
-                }
-            }
-
-            Spacer()
-
-            // Next Button
-            PrimaryButton("onboarding_setup_button") {
-                store.send(.nextButtonTapped)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 60)
     }
 
-    // MARK: - Step 3: Ready
+    @ViewBuilder
+    private func chip(_ key: LocalizedStringKey, color: Color) -> some View {
+        Text(key)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(color)
+            .padding(.vertical, 5)
+            .padding(.horizontal, 10)
+            .background(
+                Capsule().fill(color.opacity(0.14))
+            )
+    }
 
-    private var readyStep: some View {
-        VStack(spacing: 0) {
-            Spacer()
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            (
+                Text("onboarding_welcome_title_lead")
+                    .font(.system(size: 44, weight: .bold))
+                + Text(" ")
+                + Text("onboarding_welcome_title_emphasis")
+                    .font(.system(size: 44, weight: .semibold).italic())
+                    .foregroundColor(Color.Design.brandPrimary)
+            )
+            .lineSpacing(-2)
 
-            VStack(spacing: 32) {
-                // Success Icon
-                Circle()
-                    .fill(Color.Design.incomeGreen)
-                    .frame(width: 100, height: 100)
-                    .overlay {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 48))
-                            .foregroundStyle(Color.Design.textInverse)
-                    }
-
-                // Title Group
-                VStack(spacing: 12) {
-                    Text("onboarding_ready_title")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(Color.Design.textPrimary)
-
-                    Text("onboarding_ready_subtitle")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.Design.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                // Preview Card
-                GlassContainer(cornerRadius: 20, padding: 20) {
-                    VStack(spacing: 12) {
-                        Text("onboarding_ready_balance_label")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.Design.textSecondary)
-
-                        Text(Decimal(0).twdFormatted)
-                            .font(.system(size: 24, weight: .bold).monospacedDigit())
-                            .foregroundStyle(Color.Design.textPrimary)
-                    }
-                }
-                .frame(width: 200)
-            }
-
-            Spacer()
-
-            // Finish Button
-            PrimaryButton("onboarding_ready_button") {
-                store.send(.finishButtonTapped)
-            }
+            Text("onboarding_welcome_subtitle")
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 60)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    // MARK: - Placeholder (filled by later tasks)
+
+    private func placeholderStep(_ label: String) -> some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Text(label)
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Button("Skip") { store.send(.skipButtonTapped) }
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Reveal modifier
+
+private struct RevealOnAppear: ViewModifier {
+    let delay: Double
+    @State private var visible = false
+    func body(content: Content) -> some View {
+        content
+            .opacity(visible ? 1 : 0)
+            .offset(y: visible ? 0 : 24)
+            .animation(.easeOut(duration: 0.55).delay(delay), value: visible)
+            .task { visible = true }
+    }
 }
 
 // MARK: - Preview
 
 #Preview("Welcome") {
     OnboardingView(
-        store: Store(
-            initialState: OnboardingFeature.State(currentStep: .welcome)
-        ) {
+        store: Store(initialState: OnboardingFeature.State(currentStep: .welcome)) {
             OnboardingFeature()
         }
     )

@@ -38,7 +38,7 @@ struct NeuLedgerApp: App {
                     OnboardingView(store: onboardingStore)
                         .transition(
                             .asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                insertion: .identity,
                                 removal: .move(edge: .leading).combined(with: .opacity)
                             )
                         )

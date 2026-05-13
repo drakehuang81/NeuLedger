@@ -13,7 +13,7 @@ struct DatabaseSeedingTests {
         self.context = ModelContext(client.modelContainer())
     }
 
-    @Test("Seeds initial categories and default account")
+    @Test("Seeds initial categories only — accounts are created via Onboarding")
     func testSeedingInitialData() throws {
         let categories = try context.fetch(FetchDescriptor<SDCategory>())
         let accounts = try context.fetch(FetchDescriptor<SDAccount>())
@@ -25,9 +25,7 @@ struct DatabaseSeedingTests {
         #expect(incomeCategories.count == 5)
         #expect(categories.count == 14)
 
-        #expect(accounts.count == 1)
-        #expect(accounts.first?.name == "Cash")
-        #expect(accounts.first?.type == AccountType.cash.rawValue)
+        #expect(accounts.isEmpty)
     }
 
     @Test("All seeded categories are marked as default")

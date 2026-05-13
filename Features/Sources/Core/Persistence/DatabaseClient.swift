@@ -271,12 +271,6 @@ private extension DatabaseClient {
                 ))
             }
 
-            context.insert(SDAccount(
-                id: UUID(), name: "Cash", type: AccountType.cash.rawValue,
-                icon: "banknote", color: "#2ECC71", sortOrder: 0,
-                isArchived: false, createdAt: Date()
-            ))
-
             try context.save()
         } catch {
             print("Failed to seed default data: \(error)")

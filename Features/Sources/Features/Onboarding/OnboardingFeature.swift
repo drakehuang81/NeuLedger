@@ -89,44 +89,39 @@ struct OnboardingFeature {
                 state.customAccounts.removeAll { $0.id == id }
                 return .none
 
-            case .finishButtonTapped:
+            case .finishButtonTapped, .skipButtonTapped:
                 state.isCreatingAccounts = true
                 let types = state.selectedTypes
                 let customs = state.customAccounts
                 return .run { [accountClient, userSettingsClient] send in
-                    for type in types.sorted(by: { $0.rawValue < $1.rawValue }) {
+                    if types.isEmpty && customs.isEmpty {
                         let acc = Account(
-                            name: type.displayLabel,
-                            type: type,
-                            icon: type.defaultIcon,
-                            color: type.defaultColor
+                            name: AccountType.cash.displayLabel,
+                            type: .cash,
+                            icon: AccountType.cash.defaultIcon,
+                            color: AccountType.cash.defaultColor
                         )
                         try await accountClient.add(acc)
+                    } else {
+                        for type in types.sorted(by: { $0.rawValue < $1.rawValue }) {
+                            let acc = Account(
+                                name: type.displayLabel,
+                                type: type,
+                                icon: type.defaultIcon,
+                                color: type.defaultColor
+                            )
+                            try await accountClient.add(acc)
+                        }
+                        for d in customs {
+                            let acc = Account(
+                                name: d.name,
+                                type: d.type,
+                                icon: d.type.defaultIcon,
+                                color: d.color
+                            )
+                            try await accountClient.add(acc)
+                        }
                     }
-                    for d in customs {
-                        let acc = Account(
-                            name: d.name,
-                            type: d.type,
-                            icon: d.type.defaultIcon,
-                            color: d.color
-                        )
-                        try await accountClient.add(acc)
-                    }
-                    userSettingsClient.setBool(true, .hasCompletedOnboarding)
-                    await send(.accountsCreated)
-                }
-                .cancellable(id: CancelID.create)
-
-            case .skipButtonTapped:
-                state.isCreatingAccounts = true
-                return .run { [accountClient, userSettingsClient] send in
-                    let acc = Account(
-                        name: AccountType.cash.displayLabel,
-                        type: .cash,
-                        icon: AccountType.cash.defaultIcon,
-                        color: AccountType.cash.defaultColor
-                    )
-                    try await accountClient.add(acc)
                     userSettingsClient.setBool(true, .hasCompletedOnboarding)
                     await send(.accountsCreated)
                 }

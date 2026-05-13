@@ -9,12 +9,84 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             backgroundForCurrentStep
-            currentStepView
-                .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.currentStep)
+                .id(backgroundIdentity)
+                .transition(.opacity)
+            VStack(spacing: 0) {
+                currentStepView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .id(store.currentStep)
+                    .transition(stepTransition)
+                bottomBar
+            }
         }
+        .animation(.easeInOut(duration: 0.35), value: store.currentStep)
         .sheet(item: $store.scope(state: \.customAccountSheet, action: \.customAccountSheet)) { sheetStore in
             CustomAccountFormView(store: sheetStore)
                 .presentationDetents([.medium, .large])
+        }
+    }
+
+    // MARK: - Persistent Bottom Bar
+
+    private var bottomBar: some View {
+        VStack(spacing: 16) {
+            if store.currentStep != .done {
+                primaryActionButton
+                    .id(store.currentStep)
+                    .transition(.opacity)
+                HStack {
+                    OnboardingPageDots(active: dotIndex)
+                        .animation(.easeInOut(duration: 0.35), value: dotIndex)
+                    Spacer()
+                    Button { store.send(.skipButtonTapped) } label: {
+                        Text("common_skip")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                    }
+                    .opacity(showsSkip ? 1 : 0)
+                    .disabled(!showsSkip)
+                }
+                .frame(height: 28)
+            }
+        }
+        .frame(height: bottomBarHeight, alignment: .top)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 28)
+    }
+
+    private var bottomBarHeight: CGFloat { 96 }
+
+    @ViewBuilder
+    private var primaryActionButton: some View {
+        switch store.currentStep {
+        case .welcome:
+            PrimaryButton("onboarding_welcome_button", systemImage: "arrow.forward") {
+                store.send(.startButtonTapped)
+            }
+        case .accountSelection:
+            PrimaryButton(continueButtonKey) { store.send(.nextButtonTapped) }
+                .opacity(continueDisabled ? 0.5 : 1)
+                .disabled(continueDisabled)
+        case .ready:
+            PrimaryButton("onboarding_ready_button") { store.send(.finishButtonTapped) }
+                .disabled(store.isCreatingAccounts)
+        case .done:
+            EmptyView()
+        }
+    }
+
+    private var dotIndex: Int {
+        switch store.currentStep {
+        case .welcome:          0
+        case .accountSelection: 1
+        case .ready, .done:     2
+        }
+    }
+
+    private var showsSkip: Bool {
+        switch store.currentStep {
+        case .welcome, .accountSelection: true
+        case .ready, .done:               false
         }
     }
 
@@ -24,6 +96,23 @@ struct OnboardingView: View {
         case .welcome:          WarmGradientBackground(variant: .top)
         case .accountSelection: WarmGradientBackground(variant: .bottomRight)
         case .ready, .done:     WarmGradientBackground(variant: .center)
+        }
+    }
+
+    private var backgroundIdentity: Int {
+        switch store.currentStep {
+        case .welcome:          0
+        case .accountSelection: 1
+        case .ready, .done:     2
+        }
+    }
+
+    private var stepTransition: AnyTransition {
+        switch store.currentStep {
+        case .done:
+            return .opacity.combined(with: .scale(scale: 0.96))
+        default:
+            return .opacity
         }
     }
 
@@ -53,24 +142,6 @@ struct OnboardingView: View {
                 .modifier(RevealOnAppear(delay: 0.46))
 
             Spacer()
-
-            VStack(spacing: 16) {
-                PrimaryButton("onboarding_welcome_button", systemImage: "arrow.forward") {
-                    store.send(.startButtonTapped)
-                }
-                HStack {
-                    OnboardingPageDots(active: 0)
-                    Spacer()
-                    Button { store.send(.skipButtonTapped) } label: {
-                        Text("common_skip")
-                            .font(.system(size: 15))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 28)
-            .modifier(RevealOnAppear(delay: 0.64))
         }
     }
 
@@ -126,18 +197,10 @@ struct OnboardingView: View {
 
     private var accountSelectionStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("onboarding_step_indicator_2")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button { store.send(.skipButtonTapped) } label: {
-                    Text("common_skip")
-                        .font(.system(size: 15))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.top, 16)
+            Text("onboarding_step_indicator_2")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
 
             Text("onboarding_selection_title")
                 .font(.system(size: 32, weight: .bold))
@@ -188,20 +251,8 @@ struct OnboardingView: View {
                     .buttonStyle(.plain)
                 }
             }
-
-            VStack(spacing: 16) {
-                PrimaryButton(continueButtonKey) { store.send(.nextButtonTapped) }
-                    .opacity(continueDisabled ? 0.5 : 1)
-                    .disabled(continueDisabled)
-                HStack {
-                    OnboardingPageDots(active: 1)
-                    Spacer()
-                }
-            }
-            .padding(.top, 12)
         }
         .padding(.horizontal, 22)
-        .padding(.bottom, 28)
     }
 
     private var totalSelectedCount: Int {
@@ -350,16 +401,6 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 24)
             Spacer()
-            VStack(spacing: 16) {
-                PrimaryButton("onboarding_ready_button") { store.send(.finishButtonTapped) }
-                    .disabled(store.isCreatingAccounts)
-                HStack {
-                    OnboardingPageDots(active: 2)
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 28)
         }
     }
 

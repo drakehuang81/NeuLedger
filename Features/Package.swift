@@ -64,7 +64,7 @@ let package = Package(
                 .dependencies,
             ]
         ),
-        .target(name: "Common", dependencies: []),
+        .target(name: "Common", dependencies: ["Domain"]),
         .testTarget(
             name: "FeaturesTests",
             dependencies: ["Features", .tca],

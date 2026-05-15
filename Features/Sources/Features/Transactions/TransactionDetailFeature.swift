@@ -102,7 +102,7 @@ public struct TransactionDetailFeature: Sendable {
                         let (a, c) = try await (accounts, categories)
                         let account = a.first { $0.id == txn.accountId }
                         let toAccount = txn.toAccountId.flatMap { id in a.first { $0.id == id } }
-                        let categoryName = txn.categoryId.flatMap { id in c.first { $0.id == id }?.name }
+                        let categoryName = txn.categoryId.flatMap { id in c.first { $0.id == id }?.localizedName }
                         await send(.namesLoaded(
                             accountName: account?.name,
                             toAccountName: toAccount?.name,

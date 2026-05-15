@@ -53,8 +53,8 @@ struct TransactionsSection: View {
                     TransactionRow(
                         title: tx.note?.isEmpty == false
                             ? (tx.note ?? "")
-                            : (category?.name ?? "—"),
-                        subtitle: category?.name ?? tx.type.displayName,
+                            : (category?.localizedName ?? "—"),
+                        subtitle: category?.localizedName ?? tx.type.displayName,
                         amountText: tx.signedAmountText,
                         amountColor: tx.type == .income
                             ? Color.Design.incomeGreen

@@ -40,7 +40,7 @@ public struct FilterView: View {
                                 store.send(.categoryToggled(category.id))
                             } label: {
                                 HStack {
-                                    Label(category.name, systemImage: category.icon)
+                                    Label(category.localizedName, systemImage: category.icon)
                                         .foregroundStyle(Color.Design.textPrimary)
                                     Spacer()
                                     if store.selectedCategoryIds.contains(category.id) {

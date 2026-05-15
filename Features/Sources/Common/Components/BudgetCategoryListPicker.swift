@@ -39,7 +39,7 @@ public struct BudgetCategoryListPicker: View {
                 row(
                     emoji: cat.icon,
                     color: Color(hex: cat.color),
-                    title: Text(cat.name),
+                    title: Text(cat.localizedName),
                     isAll: false,
                     isSelected: selectedId == cat.id,
                     action: { onSelect(cat.id) }

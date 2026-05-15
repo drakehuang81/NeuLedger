@@ -215,7 +215,7 @@ public struct SettingsFeature: Sendable {
                         for t in transactions {
                             let date = formatter.string(from: t.date)
                             let type = t.type.rawValue
-                            let category = csvField(t.categoryId.flatMap { categoryMap[$0] }?.name ?? "")
+                            let category = csvField(t.categoryId.flatMap { categoryMap[$0] }?.localizedName ?? "")
                             let note = csvField(t.note ?? "")
                             let amount: String
                             switch t.type {

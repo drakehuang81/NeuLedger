@@ -106,7 +106,7 @@ public struct CategoryManagementView: View {
 
                 // Name + default badge
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(category.name)
+                    Text(category.localizedName)
                         .font(Font.Design.body)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Design.textPrimary)

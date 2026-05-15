@@ -136,7 +136,7 @@ public struct AddTransactionView: View {
                                 store.send(.categorySelected(category.id))
                             } label: {
                                 CategoryChip(
-                                    title: category.name,
+                                    title: category.localizedName,
                                     systemImage: category.icon,
                                     color: Color(hex: category.color),
                                     isSelected: store.categoryId == category.id,

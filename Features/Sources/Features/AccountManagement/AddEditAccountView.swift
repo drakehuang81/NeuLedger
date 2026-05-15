@@ -17,89 +17,29 @@ public struct AddEditAccountView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                // MARK: 名稱
-                Section {
-                    TextField(String(localized: "account_form_name_placeholder"), text: Binding(
-                        get: { store.name },
-                        set: { store.send(.nameChanged($0)) }
-                    ))
-                    if let error = store.nameError {
-                        Text(error)
-                            .font(Font.Design.caption)
-                            .foregroundStyle(Color.Design.expenseRed)
+            ZStack {
+                WarmGradientBackground(variant: .top)
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 22) {
+                        typeSection
+                        nameSection
+                        iconSection
+                        colorSection
+                        previewSection
                     }
-                } header: {
-                    Text("common_name")
-                }
-
-                // MARK: 帳戶類型
-                Section {
-                    Picker(String(localized: "common_type"), selection: Binding(
-                        get: { store.type },
-                        set: { store.send(.typeChanged($0)) }
-                    )) {
-                        ForEach(AccountType.allCases, id: \.self) { type in
-                            Text(type.displayLabel).tag(type)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                } header: {
-                    Text("common_type")
-                }
-
-                // MARK: 圖示
-                Section {
-                    IconPickerRow(
-                        icons: DesignConstants.accountIconOptions,
-                        selectedIcon: store.icon,
-                        accentColor: Color(hex: store.colorHex),
-                        onSelect: { store.send(.iconChanged($0)) }
-                    )
-                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
-                } header: {
-                    Text("common_icon")
-                }
-
-                // MARK: 顏色
-                Section {
-                    ColorSwatchPicker(
-                        colors: DesignConstants.accountColorOptions,
-                        selectedHex: store.colorHex,
-                        onSelect: { store.send(.colorHexChanged($0)) }
-                    )
-                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
-                } header: {
-                    Text("common_color")
-                }
-
-                // MARK: 預覽
-                Section {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: store.colorHex).opacity(0.15))
-                                .frame(width: 44, height: 44)
-                            Image(systemName: store.icon)
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(Color(hex: store.colorHex))
-                                .font(.system(size: 20))
-                        }
-                        Text(store.name.isEmpty ? String(localized: "account_form_name_placeholder") : store.name)
-                            .font(Font.Design.body)
-                            .foregroundStyle(
-                                store.name.isEmpty
-                                    ? Color.Design.textTertiary
-                                    : Color.Design.textPrimary
-                            )
-                    }
-                    .padding(.vertical, 4)
-                } header: {
-                    Text("common_preview")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 60)
                 }
             }
-            .navigationTitle(isEditMode ? String(localized: "account_form_edit_title") : String(localized: "account_form_add_title"))
+            .navigationTitle(isEditMode
+                ? String(localized: "account_form_edit_title")
+                : String(localized: "account_form_add_title")
+            )
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common_cancel")) {
@@ -115,4 +55,182 @@ public struct AddEditAccountView: View {
             }
         }
     }
+
+    // MARK: - Type Section
+
+    private var typeSection: some View {
+        sectionGroup(label: "common_type") {
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                spacing: 10
+            ) {
+                ForEach(AccountType.allCases, id: \.self) { type in
+                    typeTile(type)
+                }
+            }
+        }
+    }
+
+    private func typeTile(_ type: AccountType) -> some View {
+        let isSelected = store.type == type
+        let color = Color(hex: type.defaultColor)
+        return Button {
+            store.send(.typeChanged(type))
+            store.send(.iconChanged(type.defaultIcon))
+            store.send(.colorHexChanged(type.defaultColor))
+        } label: {
+            VStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(color)
+                    .frame(width: 36, height: 36)
+                    .overlay {
+                        Image(systemName: type.defaultIcon)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                Text(type.displayLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Design.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.Design.surface.opacity(isSelected ? 0.9 : 0.5))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        isSelected ? color : Color.Design.separator,
+                        lineWidth: isSelected ? 1.5 : 0.5
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Name Section
+
+    private var nameSection: some View {
+        sectionGroup(label: "common_name") {
+            VStack(alignment: .leading, spacing: 6) {
+                GlassContainer(cornerRadius: 12, padding: 14) {
+                    TextField(
+                        String(localized: "account_form_name_placeholder"),
+                        text: Binding(
+                            get: { store.name },
+                            set: { store.send(.nameChanged($0)) }
+                        )
+                    )
+                    .font(Font.Design.body)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                }
+                if let error = store.nameError {
+                    ErrorText(error)
+                        .padding(.horizontal, 4)
+                }
+            }
+        }
+    }
+
+    // MARK: - Icon Section
+
+    private var iconSection: some View {
+        sectionGroup(label: "common_icon") {
+            GlassContainer(cornerRadius: 14, padding: 12) {
+                IconPickerRow(
+                    icons: DesignConstants.accountIconOptions,
+                    selectedIcon: store.icon,
+                    accentColor: Color(hex: store.colorHex),
+                    onSelect: { store.send(.iconChanged($0)) }
+                )
+            }
+        }
+    }
+
+    // MARK: - Color Section
+
+    private var colorSection: some View {
+        sectionGroup(label: "common_color") {
+            GlassContainer(cornerRadius: 14, padding: 14) {
+                ColorSwatchPicker(
+                    colors: DesignConstants.accountColorOptions,
+                    selectedHex: store.colorHex,
+                    onSelect: { store.send(.colorHexChanged($0)) }
+                )
+            }
+        }
+    }
+
+    // MARK: - Preview Section
+
+    private var previewSection: some View {
+        sectionGroup(label: "common_preview") {
+            GlassContainer(cornerRadius: 14, padding: 14) {
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(hex: store.colorHex))
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Image(systemName: store.icon)
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white)
+                        }
+                    Text(store.name.isEmpty
+                        ? String(localized: "account_form_name_placeholder")
+                        : store.name
+                    )
+                    .font(Font.Design.body.weight(.semibold))
+                    .foregroundStyle(
+                        store.name.isEmpty
+                            ? Color.Design.textTertiary
+                            : Color.Design.textPrimary
+                    )
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    // MARK: - Section Group helper
+
+    @ViewBuilder
+    private func sectionGroup<Content: View>(
+        label: LocalizedStringKey,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+            content()
+        }
+    }
+}
+
+#Preview("Add") {
+    AddEditAccountView(
+        store: Store(initialState: AddEditAccountFeature.State(mode: .add)) {
+            AddEditAccountFeature()
+        }
+    )
+}
+
+#Preview("Edit") {
+    AddEditAccountView(
+        store: Store(initialState: AddEditAccountFeature.State(
+            mode: .edit(Account(
+                name: "永豐銀行",
+                type: .bank,
+                icon: "building.columns",
+                color: "#0A84FF"
+            ))
+        )) {
+            AddEditAccountFeature()
+        }
+    )
 }

@@ -21,6 +21,7 @@ public struct TransactionRow: View {
     let isExpanded: Bool
     let tags: [String]
     let onTap: () -> Void
+    let onOpenDetail: (() -> Void)?
 
     public init(
         title: String,
@@ -32,7 +33,8 @@ public struct TransactionRow: View {
         iconColor: Color = .blue,
         isExpanded: Bool = false,
         tags: [String] = [],
-        onTap: @escaping () -> Void = {}
+        onTap: @escaping () -> Void = {},
+        onOpenDetail: (() -> Void)? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -44,6 +46,7 @@ public struct TransactionRow: View {
         self.isExpanded = isExpanded
         self.tags = tags
         self.onTap = onTap
+        self.onOpenDetail = onOpenDetail
     }
 
     public var body: some View {
@@ -91,13 +94,31 @@ public struct TransactionRow: View {
             .contentShape(Rectangle())
             .onTapGesture { onTap() }
 
-            if isExpanded && !tags.isEmpty {
+            if isExpanded && (!tags.isEmpty || onOpenDetail != nil) {
                 Divider()
                     .padding(.horizontal, 16)
 
-                FlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
-                    ForEach(tags, id: \.self) { tag in
-                        TagPill(text: tag, color: iconColor)
+                HStack(alignment: .bottom, spacing: 8) {
+                    if !tags.isEmpty {
+                        FlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                            ForEach(tags, id: \.self) { tag in
+                                TagPill(text: tag, color: iconColor)
+                            }
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    if let onOpenDetail {
+                        Button(action: onOpenDetail) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 11, weight: .medium))
+                                Text("common_edit")
+                                    .font(.system(size: 11, weight: .medium))
+                            }
+                            .foregroundStyle(Color.Design.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("transaction_row_edit_button")
                     }
                 }
                 .padding(.horizontal, 16)

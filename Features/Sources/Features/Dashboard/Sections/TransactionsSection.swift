@@ -63,13 +63,17 @@ struct TransactionsSection: View {
                         icon: category?.icon ?? "questionmark.circle",
                         iconColor: iconColor,
                         isExpanded: store.expandedTransactionID == tx.id,
-                        tags: tx.tags.map(\.name)
-                    ) {
-                        store.send(
-                            .transactionRowToggled(tx.id),
-                            animation: .spring(response: 0.4, dampingFraction: 0.85)
-                        )
-                    }
+                        tags: tx.tags.map(\.name),
+                        onTap: {
+                            store.send(
+                                .transactionRowToggled(tx.id),
+                                animation: .spring(response: 0.4, dampingFraction: 0.85)
+                            )
+                        },
+                        onOpenDetail: {
+                            store.send(.transactionTapped(tx.id))
+                        }
+                    )
                     if tx.id != rows.last?.id {
                         Divider().padding(.horizontal, 16)
                     }

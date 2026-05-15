@@ -52,12 +52,15 @@ struct InsightCarousel: View {
                     ) {
                         // CTA tap — no-op for this slice
                     }
-                    .padding(.horizontal, 2)
+                    // Breathing room so the interactive Glass press/ripple effect
+                    // is not clipped by the TabView page boundary on swipe.
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .tag(idx)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 150)
+            .frame(height: 162)
 
             HStack {
                 PageDots(count: store.insights.count, active: store.insightIndex)

@@ -15,6 +15,7 @@ struct DashboardTopBar: View {
     }
 
     private var dateText: String {
+        // TODO: DateFormatterr -> add in extension 
         let formatter = DateFormatter()
         formatter.locale = .current
         formatter.setLocalizedDateFormatFromTemplate("EEEE · d MMM")
@@ -23,7 +24,7 @@ struct DashboardTopBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // TODO(slice-followup): pull user initial from userSettingsClient when available
+            // TODO: (slice-followup): pull user initial from userSettingsClient when available
             AvatarBadge(initials: "D")
             VStack(alignment: .leading, spacing: 2) {
                 Text(greeting)
@@ -34,10 +35,10 @@ struct DashboardTopBar: View {
             }
             Spacer()
             iconButton(systemName: "sparkles") {
-                // TODO(slice-followup): wire AI assistant entry point
+                // TODO: (slice-followup): wire AI assistant entry point
             }
             iconButton(systemName: "magnifyingglass") {
-                // TODO(slice-followup): wire global search entry point
+                // TODO: (slice-followup): wire global search entry point
             }
         }
     }

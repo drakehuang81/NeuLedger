@@ -3,11 +3,11 @@ import ComposableArchitecture
 import Domain
 import SwiftUI
 
-/// The main Dashboard screen composing the feature store with the SwiftUI view layer.
+/// The main Dashboard screen — composition root for the B1 Warm Redesign.
 ///
-/// This view connects to the `DashboardFeature` store using TCA View paradigms and
-/// composes the design-system components: `refBalance`, `refActions`, `refInsight`,
-/// `AccountCard`, `TransactionRow`, and `EmptyStateView`.
+/// Composes the per-section view stack (Hero balance, stats, transactions,
+/// insight, accounts) on top of a warm gradient background. Other sections
+/// are skeleton placeholders to be filled in by later slices.
 public struct DashboardScreen: View {
     @Bindable var store: StoreOf<DashboardFeature>
 
@@ -18,30 +18,43 @@ public struct DashboardScreen: View {
     public var body: some View {
         NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             ZStack {
-                Color.Design.background.ignoresSafeArea()
+                WarmGradientBackground(variant: .top)
+                    .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 16) {
+                        // Slice 3 placeholder (header)
+                        Color.clear.frame(height: 56)
 
-                        balanceSection
+                        // Slice 4 placeholder (account chip filter)
+                        Color.clear.frame(height: 44)
 
-                        quickActionsSection
+                        HeroBalanceCard(store: store)
 
-                        accountsSection
+                        // Slice 5 placeholder (stats pills)
+                        GlassContainer(cornerRadius: 16, padding: 12) {
+                            Text("…")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .skeleton(when: true)
+
+                        // Slice 7 placeholder (insight card)
+                        GlassContainer(cornerRadius: 22, padding: 16) {
+                            Text("…")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .skeleton(when: true)
 
                         transactionsSection
-
-                        insightSection
-
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 120)
+                }
+                .refreshable {
+                    await store.send(.pulledToRefresh).finish()
                 }
             }
-            .refreshable {
-                await store.send(.pulledToRefresh).finish()
-            }
-            .navigationTitle(String(localized: "dashboard_title"))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarHidden(true)
             .task {
                 await store.send(.task).finish()
             }
@@ -63,151 +76,7 @@ public struct DashboardScreen: View {
         }
     }
 
-    // MARK: - Balance Section (Task 3.2)
-    @ViewBuilder
-    private var balanceSection: some View {
-        GlassContainer(
-            cornerRadius: 20,
-            padding: EdgeInsets(top: 24, leading: 0, bottom: 24, trailing: 0)
-        ) {
-            VStack(spacing: 8) {
-                Text("dashboard_total_balance")
-                    .font(Font.Design.subheadline)
-                    .foregroundStyle(Color.Design.textSecondary)
-
-                Text(store.totalBalance.twdFormatted)
-                    .font(Font.Design.largeTitle.weight(.bold).monospacedDigit())
-                    .foregroundStyle(Color.Design.textPrimary)
-                    .contentTransition(.numericText())
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-
-    // MARK: - Quick Actions Section (Step 4A)
-
-    @ViewBuilder
-    private var quickActionsSection: some View {
-        GlassContainer(
-            cornerRadius: 20,
-            padding: EdgeInsets(top: 16, leading: 0, bottom: 16, trailing: 0)
-        ) {
-            HStack(spacing: 0) {
-                quickActionButton(
-                    title: String(localized: "common_expense"),
-                    icon: "minus.circle.fill",
-                    color: Color.Design.expenseRed
-                ) { store.send(.quickActionExpenseTapped) }
-
-                Divider().frame(height: 40)
-
-                quickActionButton(
-                    title: String(localized: "common_income"),
-                    icon: "plus.circle.fill",
-                    color: Color.Design.incomeGreen
-                ) { store.send(.quickActionIncomeTapped) }
-
-                Divider().frame(height: 40)
-
-                quickActionButton(
-                    title: String(localized: "common_transfer"),
-                    icon: "arrow.left.arrow.right",
-                    color: Color.Design.brandSecondary
-                ) { store.send(.quickActionTransferTapped) }
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    private func quickActionButton(
-        title: String,
-        icon: String,
-        color: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundStyle(color)
-                Text(title)
-                    .font(Font.Design.caption.weight(.medium))
-                    .foregroundStyle(Color.Design.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Insight Section (Task 3.4)
-
-    @ViewBuilder
-    private var insightSection: some View {
-        if store.isLoadingInsight {
-            InsightCard(
-                title: String(localized: "dashboard_ai_insight"),
-                body: String(localized: "dashboard_ai_loading")
-            )
-            .redacted(reason: .placeholder)
-        } else if let insight = store.aiInsight {
-            InsightCard(
-                title: String(localized: "dashboard_ai_insight"),
-                body: insight
-            )
-        } else if store.hasTransactions {
-            InsightCard(
-                title: String(localized: "dashboard_ai_insight"),
-                body: String(localized: "dashboard_ai_unavailable")
-            )
-            .opacity(0.6)
-        }
-    }
-
-    // MARK: - Accounts Section (Task 3.5)
-
-    @ViewBuilder
-    private var accountsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("dashboard_my_wallets")
-                .font(Font.Design.headline)
-
-            if store.hasAccounts {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(store.topAccounts) { account in
-                            Button {
-                                store.send(.accountTapped(account.id))
-                            } label: {
-                                AccountCard(
-                                    name: account.name,
-                                    balance: store.accountBalances[account.id] ?? 0,
-                                    type: account.type.displayLabel,
-                                    icon: account.icon,
-                                    color: account.color
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            } else {
-                // Global EmptyStateView if no accounts
-                EmptyStateView(
-                    icon: "wallet.pass.fill",
-                    title: String(localized: "dashboard_no_wallets_title"),
-                    description: String(localized: "dashboard_no_wallets_desc"),
-                    actionTitle: String(localized: "dashboard_add_wallet"),
-                    action: { store.send(.addTransactionButtonTapped) }
-                )
-                .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    // MARK: - Transactions Section (Task 3.6)
+    // MARK: - Transactions Section (preserved; replaced in Slice 6)
 
     @ViewBuilder
     private var transactionsSection: some View {
@@ -233,12 +102,20 @@ public struct DashboardScreen: View {
                     }
                 }
             } else if store.hasAccounts {
-                // Has accounts but no transactions
                 EmptyStateView(
                     icon: "tray.fill",
                     title: String(localized: "dashboard_no_transactions_title"),
                     description: String(localized: "dashboard_no_transactions_desc"),
                     actionTitle: String(localized: "dashboard_add_first"),
+                    action: { store.send(.addTransactionButtonTapped) }
+                )
+                .frame(maxWidth: .infinity)
+            } else {
+                EmptyStateView(
+                    icon: "wallet.pass.fill",
+                    title: String(localized: "dashboard_no_wallets_title"),
+                    description: String(localized: "dashboard_no_wallets_desc"),
+                    actionTitle: String(localized: "dashboard_add_wallet"),
                     action: { store.send(.addTransactionButtonTapped) }
                 )
                 .frame(maxWidth: .infinity)
@@ -268,8 +145,6 @@ public struct DashboardScreen: View {
     }
 
     /// Resolves the SF Symbol name and tint color for a transaction row.
-    ///
-    /// Priority: transfer type → category icon/color → type-based fallback.
     private func resolvedIconAndColor(
         for transaction: Domain.Transaction,
         category: Domain.Category?
@@ -289,7 +164,7 @@ public struct DashboardScreen: View {
 }
 
 
-#Preview("Dashboard with data") {
+#Preview("Dashboard") {
     DashboardScreen(
         store: Store(initialState: DashboardFeature.State()) {
             DashboardFeature()

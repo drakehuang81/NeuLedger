@@ -44,6 +44,11 @@ public struct TransactionClient: Sendable {
     ///
     /// - Parameter id: The unique identifier of the `Transaction` to delete.
     public var delete: @Sendable (Transaction.ID) async throws -> Void
+
+    /// Returns the per-day expense sums for the most recent `days` days, ordered
+    /// from oldest to newest. Index `days - 1` is today; index `0` is `days - 1`
+    /// days ago. Optionally scopes to a single account by `accountID`.
+    public var weeklySpending: @Sendable (_ accountID: Account.ID?, _ days: Int) async throws -> [Decimal]
 }
 
 extension TransactionClient: TestDependencyKey {

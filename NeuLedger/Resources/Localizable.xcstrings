@@ -851,6 +851,23 @@
         }
       }
     },
+    "dashboard_total_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "總餘額"
+          }
+        }
+      }
+    },
     "dashboard_ai_insight": {
       "extractionState": "manual",
       "localizations": {
@@ -1102,6 +1119,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "近期"
+          }
+        }
+      }
+    },
+    "dashboard_section_load_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to load"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法載入"
           }
         }
       }

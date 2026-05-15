@@ -94,6 +94,7 @@ struct DashboardFeatureTests {
                 return 0
             }
             $0.transactionClient.fetchRecent = { Self.sampleTransactions }
+            $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Test insight" }
@@ -102,22 +103,27 @@ struct DashboardFeatureTests {
 
         await store.send(.task) {
             $0.isLoading = true
+            $0.heroPhase = .loading
+            $0.statsPhase = .loading
+            $0.transactionsPhase = .loading
+            $0.insightPhase = .loading
+            $0.accountsPhase = .loading
         }
 
         // Accounts updated
         await store.receive(\.accountsUpdated) {
             $0.hasAccounts = true
             $0.topAccounts = Self.sampleAccounts.sorted { $0.sortOrder < $1.sortOrder }
+            $0.accountsPhase = .loaded
         }
 
         // Transactions arrive before balance computation completes (concurrent effects)
         await store.receive(\.transactionsUpdated) {
             $0.hasTransactions = true
-            $0.recentTransactions = Array(
-                Self.sampleTransactions
-                    .sorted { $0.date > $1.date }
-                    .prefix(3)
-            )
+            let sorted = Self.sampleTransactions.sorted { $0.date > $1.date }
+            $0.recentTransactions = Array(sorted.prefix(3))
+            $0.filteredRecent = sorted
+            $0.transactionsPhase = .loaded
             $0.isLoading = false
         }
 
@@ -133,6 +139,7 @@ struct DashboardFeatureTests {
                 Self.sampleAccounts[1].id: 1200,
             ]
             $0.totalBalance = 46200 // 45000 + 1200
+            $0.filteredBalance = 46200
         }
 
         await store.receive(\.aiInsightResponse.success) {
@@ -163,8 +170,11 @@ struct DashboardFeatureTests {
         }
 
         // Simulate receiving an updated list with 4 transactions (different count).
-        // No state change: sorted top-3 and flags are identical to the initial state.
-        await store.send(.transactionsUpdated(Self.sampleTransactions))
+        // top-3 are identical to initial state, but transactionsPhase and filteredRecent update.
+        await store.send(.transactionsUpdated(Self.sampleTransactions)) {
+            $0.transactionsPhase = .loaded
+            $0.filteredRecent = Self.sampleTransactions.sorted { $0.date > $1.date }
+        }
 
         // Cache invalidated — fetch triggered
         await store.receive(\.fetchAIInsight) {
@@ -205,6 +215,7 @@ struct DashboardFeatureTests {
             $0.accountClient.fetchActive = { [] }
             $0.accountClient.computeBalance = { _ in 0 }
             $0.transactionClient.fetchRecent = { [] }
+            $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "" }
@@ -213,6 +224,11 @@ struct DashboardFeatureTests {
 
         await store.send(.task) {
             $0.isLoading = true
+            $0.heroPhase = .loading
+            $0.statsPhase = .loading
+            $0.transactionsPhase = .loading
+            $0.insightPhase = .loading
+            $0.accountsPhase = .loading
         }
 
         await store.receive(\.categoriesLoaded) {
@@ -239,6 +255,7 @@ struct DashboardFeatureTests {
             $0.accountClient.fetchActive = { Self.sampleAccounts }
             $0.accountClient.computeBalance = { _ in 1000 }
             $0.transactionClient.fetchRecent = { Array(Self.sampleTransactions.prefix(3)) }
+            $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Fresh insight" }

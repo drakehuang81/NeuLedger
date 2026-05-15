@@ -142,6 +142,43 @@ extension DatabaseClient {
         try context.save()
     }
 
+    // MARK: Aggregates
+
+    /// Returns the per-day expense sums for the most recent `days` days, ordered
+    /// oldest -> newest. Index `days - 1` is today.
+    ///
+    /// - Parameters:
+    ///   - accountID: Optional. When provided, only transactions on that account are summed.
+    ///   - days: Number of buckets to return (must be >= 1).
+    func weeklySpendingSums(accountID: UUID?, days: Int) throws -> [Decimal] {
+        guard days >= 1 else { return [] }
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let earliest = cal.date(byAdding: .day, value: -(days - 1), to: today) else {
+            return Array(repeating: 0, count: days)
+        }
+
+        let typeRaw = TransactionType.expense.rawValue
+        let predicate = #Predicate<SDTransaction> { tx in
+            tx.type == typeRaw && tx.date >= earliest
+        }
+        var descriptor = FetchDescriptor<SDTransaction>(predicate: predicate)
+        descriptor.sortBy = [SortDescriptor(\.date)]
+        let context = makeContext()
+        let rows = try context.fetch(descriptor)
+
+        var buckets = Array(repeating: Decimal(0), count: days)
+        for tx in rows {
+            if let aid = accountID, tx.accountId != aid { continue }
+            let dayStart = cal.startOfDay(for: tx.date)
+            let dayOffset = cal.dateComponents([.day], from: dayStart, to: today).day ?? 0
+            let index = (days - 1) - dayOffset
+            guard index >= 0 && index < days else { continue }
+            buckets[index] += tx.amount
+        }
+        return buckets
+    }
+
     // MARK: Delete
 
     /// Fetches a single model matching the descriptor, optionally validates it, deletes it, and saves.

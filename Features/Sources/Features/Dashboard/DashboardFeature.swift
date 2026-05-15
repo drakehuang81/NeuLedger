@@ -6,6 +6,25 @@ import Foundation
 public struct DashboardFeature: Sendable {
     public init() {}
 
+    // MARK: - Section / Phase
+
+    /// Identifies a Dashboard section for the per-section phase machine.
+    public enum Section: Equatable, Sendable {
+        case hero
+        case stats
+        case transactions
+        case insight
+        case accounts
+    }
+
+    /// Per-section view state used to drive the skeleton + retry UX.
+    public enum SectionPhase: Equatable, Sendable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
     // MARK: - Destination
 
     @Reducer(state: .equatable, action: .equatable)
@@ -20,6 +39,7 @@ public struct DashboardFeature: Sendable {
         case transactionObservation
         case categoryFetch
         case aiInsightFetch
+        case weeklySpending
     }
 
     // MARK: - State
@@ -42,6 +62,31 @@ public struct DashboardFeature: Sendable {
         public var isLoading: Bool = false
         public var hasAccounts: Bool = false
         public var hasTransactions: Bool = false
+
+        // Chip filter
+        public var selectedAccountID: Account.ID? = nil
+        public var filteredBalance: Decimal = 0
+        public var weeklySpending: [Decimal] = []
+        public var filteredRecent: [Transaction] = []
+
+        // Stats (populated by Slice 5)
+        public var todaySpending: Decimal = 0
+        public var weekSpending: Decimal = 0
+        public var savingsPercentage: Double = 0
+
+        // Insight (populated by Slice 7)
+        public var insights: [InsightData] = []
+        public var insightIndex: Int = 0
+
+        // Transaction row expansion (populated by Slice 6)
+        public var expandedTransactionID: Transaction.ID? = nil
+
+        // Per-section view state
+        public var heroPhase: SectionPhase = .idle
+        public var statsPhase: SectionPhase = .idle
+        public var transactionsPhase: SectionPhase = .idle
+        public var insightPhase: SectionPhase = .idle
+        public var accountsPhase: SectionPhase = .idle
 
         // Navigation
         public var path: StackState<Destination.State> = StackState()
@@ -66,6 +111,16 @@ public struct DashboardFeature: Sendable {
         case accountBalancesComputed([Account.ID: Decimal], total: Decimal)
         case transactionsUpdated([Transaction])
         case categoriesLoaded([Domain.Category])
+
+        // B1 Warm Redesign — section-scoped actions
+        case weeklySpendingComputed([Decimal])
+        case accountChipSelected(Account.ID?)
+        case statsComputed(today: Decimal, week: Decimal, savings: Double)
+        case insightsLoaded([InsightData])
+        case insightIndexChanged(Int)
+        case transactionRowToggled(Transaction.ID)
+        case sectionFailed(Section, String)
+        case retrySection(Section)
 
         // AI Insight
         case fetchAIInsight
@@ -116,52 +171,25 @@ public struct DashboardFeature: Sendable {
             // Task 2.1: Start async observation for Accounts and Transactions
             case .task:
                 state.isLoading = true
-                return .merge(
-                    .run { send in
-                        // Observe accounts via periodic fetch (simulating AsyncStream observation)
-                        let accounts = try await accountClient.fetchActive()
-                        await send(.accountsUpdated(accounts))
-                    }
-                    .cancellable(id: CancelID.accountObservation),
-
-                    .run { send in
-                        // Observe transactions via periodic fetch
-                        let transactions = try await transactionClient.fetchRecent()
-                        await send(.transactionsUpdated(transactions))
-                    }
-                    .cancellable(id: CancelID.transactionObservation),
-
-                    .run { send in
-                        let categories = try await categoryClient.fetchAll()
-                        await send(.categoriesLoaded(categories))
-                    }
-                    .cancellable(id: CancelID.categoryFetch, cancelInFlight: true)
+                state.heroPhase = .loading
+                state.statsPhase = .loading
+                state.transactionsPhase = .loading
+                state.insightPhase = .loading
+                state.accountsPhase = .loading
+                return loadAllSections(
+                    accountID: state.selectedAccountID,
+                    cancelInFlight: false
                 )
 
             // Task 2.5: Pull-to-refresh — reload data and force AI insight fetch
             case .pulledToRefresh:
                 state.isLoading = true
-                // Invalidate AI insight cache
                 state.lastInsightTransactionCount = nil
                 return .merge(
-                    .run { send in
-                        let accounts = try await accountClient.fetchActive()
-                        await send(.accountsUpdated(accounts))
-                    }
-                    .cancellable(id: CancelID.accountObservation, cancelInFlight: true),
-
-                    .run { send in
-                        let transactions = try await transactionClient.fetchRecent()
-                        await send(.transactionsUpdated(transactions))
-                    }
-                    .cancellable(id: CancelID.transactionObservation, cancelInFlight: true),
-
-                    .run { send in
-                        let categories = try await categoryClient.fetchAll()
-                        await send(.categoriesLoaded(categories))
-                    }
-                    .cancellable(id: CancelID.categoryFetch, cancelInFlight: true),
-
+                    loadAllSections(
+                        accountID: state.selectedAccountID,
+                        cancelInFlight: true
+                    ),
                     // Force a new AI insight fetch
                     .send(.fetchAIInsight)
                 )
@@ -172,14 +200,11 @@ public struct DashboardFeature: Sendable {
 
             // MARK: Data responses
 
-            // Task 2.2: Compute total balance, top accounts, and recent transactions
             case let .accountsUpdated(accounts):
                 state.hasAccounts = !accounts.isEmpty
-                // Store accounts sorted by sortOrder
-                state.topAccounts = accounts
-                    .sorted { $0.sortOrder < $1.sortOrder }
+                state.topAccounts = accounts.sorted { $0.sortOrder < $1.sortOrder }
+                state.accountsPhase = .loaded
 
-                // Compute per-account balances and total concurrently
                 return .run { [accounts] send in
                     var balances: [Account.ID: Decimal] = [:]
                     await withTaskGroup(of: (Account.ID, Decimal).self) { group in
@@ -197,25 +222,24 @@ public struct DashboardFeature: Sendable {
                     await send(.accountBalancesComputed(balances, total: total))
                 }
 
-            case let .accountBalancesComputed(accounts, total: total):
-                state.accountBalances = accounts
+            case let .accountBalancesComputed(balances, total: total):
+                state.accountBalances = balances
                 state.totalBalance = total
+                state.filteredBalance = state.selectedAccountID.flatMap { balances[$0] } ?? total
                 return .none
 
             case let .transactionsUpdated(transactions):
                 state.hasTransactions = !transactions.isEmpty
-                // Sort by date descending, take top 3
-                state.recentTransactions = Array(
-                    transactions
-                        .sorted { $0.date > $1.date }
-                        .prefix(3)
-                )
+                let sorted = transactions.sorted { $0.date > $1.date }
+                state.recentTransactions = Array(sorted.prefix(3))
+                state.filteredRecent = state.selectedAccountID
+                    .map { id in sorted.filter { $0.accountId == id } }
+                    ?? sorted
+                state.transactionsPhase = .loaded
                 state.isLoading = false
 
-                // Task 2.4: Invalidate AI insight cache when new transaction data detected
                 let currentCount = transactions.count
                 if state.lastInsightTransactionCount != currentCount {
-                    // New transaction data detected — invalidate and re-fetch
                     return .send(.fetchAIInsight)
                 }
                 return .none
@@ -224,14 +248,66 @@ public struct DashboardFeature: Sendable {
                 state.categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
                 return .none
 
+            // MARK: B1 Warm Redesign — section actions
+
+            case let .weeklySpendingComputed(values):
+                state.weeklySpending = values
+                state.heroPhase = .loaded
+                return .none
+
+            case let .sectionFailed(section, message):
+                switch section {
+                case .hero:         state.heroPhase = .failed(message)
+                case .stats:        state.statsPhase = .failed(message)
+                case .transactions: state.transactionsPhase = .failed(message)
+                case .insight:      state.insightPhase = .failed(message)
+                case .accounts:     state.accountsPhase = .failed(message)
+                }
+                return .none
+
+            case let .retrySection(section):
+                switch section {
+                case .hero:
+                    state.heroPhase = .loading
+                    return .run { [accountID = state.selectedAccountID] send in
+                        do {
+                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            await send(.weeklySpendingComputed(values))
+                        } catch {
+                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                        }
+                    }
+                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+                case .stats,
+                     .transactions,
+                     .insight,
+                     .accounts:
+                    // MARK: - Stubs wired in later slices
+                    switch section {
+                    case .stats:        state.statsPhase = .loading
+                    case .transactions: state.transactionsPhase = .loading
+                    case .insight:      state.insightPhase = .loading
+                    case .accounts:     state.accountsPhase = .loading
+                    case .hero:         break
+                    }
+                    return .none
+                }
+
+            // MARK: - Stubs wired in later slices
+
+            case .accountChipSelected,
+                 .statsComputed,
+                 .insightsLoaded,
+                 .insightIndexChanged,
+                 .transactionRowToggled:
+                return .none
+
             // MARK: AI Insight
 
-            // Task 2.3: Fetch AI insight with caching and graceful fallback
             case .fetchAIInsight:
                 guard aiServiceClient.isAvailable() else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
-                    // Build a spending summary from recent transactions
                     let totalExpense = transactions
                         .filter { $0.type == .expense }
                         .reduce(Decimal.zero) { $0 + $1.amount }
@@ -248,7 +324,6 @@ public struct DashboardFeature: Sendable {
                     let insight = try await aiServiceClient.generateInsight(summary)
                     await send(.aiInsightResponse(.success(insight)))
                 } catch: { error, send in
-                    // Graceful fallback on API failure or timeout
                     await send(.aiInsightResponse(.failure(error)))
                 }
                 .cancellable(id: CancelID.aiInsightFetch, cancelInFlight: true)
@@ -256,7 +331,6 @@ public struct DashboardFeature: Sendable {
             case let .aiInsightResponse(.success(insight)):
                 state.isLoadingInsight = false
                 state.aiInsight = insight
-                // Cache the current transaction count to avoid unnecessary re-fetches
                 state.lastInsightTransactionCount = state.recentTransactions.count
                 return .none
 
@@ -267,16 +341,10 @@ public struct DashboardFeature: Sendable {
 
             // MARK: User interactions
 
-            // Triggered by the EmptyStateView CTA when the user has no transactions yet.
-            // Intentionally kept separate from quickActionExpenseTapped — the two entry
-            // points have different UX origins even though both open an expense form.
             case .addTransactionButtonTapped:
                 state.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: now)
                 return .none
 
-            // Triggered by the Quick Actions bar in the Dashboard header.
-            // Same resulting state as addTransactionButtonTapped but originates from a
-            // different UI affordance and may diverge in behaviour in a future iteration.
             case .quickActionExpenseTapped:
                 state.addTransaction = AddTransactionFeature.State(
                     mode: .add(.expense), date: now
@@ -324,7 +392,6 @@ public struct DashboardFeature: Sendable {
                 }
 
             case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
-                // Refresh dashboard data (new transaction was created) and propagate delegate
                 return .merge(
                     .run { send in
                         async let transactions = transactionClient.fetchRecent()
@@ -367,5 +434,57 @@ public struct DashboardFeature: Sendable {
         .ifLet(\.$detail, action: \.detail) {
             TransactionDetailFeature()
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Loads all dashboard sections concurrently. Each loader has its own
+    /// do/catch translating failures into `.sectionFailed(...)` (or, for
+    /// categories, swallowing them silently — categories only feed styling).
+    private func loadAllSections(
+        accountID: Account.ID?,
+        cancelInFlight: Bool
+    ) -> Effect<Action> {
+        .merge(
+            .run { send in
+                do {
+                    let accounts = try await accountClient.fetchActive()
+                    await send(.accountsUpdated(accounts))
+                } catch {
+                    await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                }
+            }
+            .cancellable(id: CancelID.accountObservation, cancelInFlight: cancelInFlight),
+
+            .run { send in
+                do {
+                    let transactions = try await transactionClient.fetchRecent()
+                    await send(.transactionsUpdated(transactions))
+                } catch {
+                    await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                }
+            }
+            .cancellable(id: CancelID.transactionObservation, cancelInFlight: cancelInFlight),
+
+            .run { send in
+                do {
+                    let categories = try await categoryClient.fetchAll()
+                    await send(.categoriesLoaded(categories))
+                } catch {
+                    // Categories feed UI styling; failure leaves the cached map intact.
+                }
+            }
+            .cancellable(id: CancelID.categoryFetch, cancelInFlight: cancelInFlight),
+
+            .run { [accountID] send in
+                do {
+                    let values = try await transactionClient.weeklySpending(accountID, 7)
+                    await send(.weeklySpendingComputed(values))
+                } catch {
+                    await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                }
+            }
+            .cancellable(id: CancelID.weeklySpending, cancelInFlight: cancelInFlight)
+        )
     }
 }

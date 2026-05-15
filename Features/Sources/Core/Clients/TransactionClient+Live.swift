@@ -119,6 +119,9 @@ extension TransactionClient: DependencyKey {
                         predicate: #Predicate { $0.id == id }
                     )
                 )
+            },
+            weeklySpending: { accountID, days in
+                try databaseClient.weeklySpendingSums(accountID: accountID, days: days)
             }
         )
     }

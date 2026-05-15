@@ -1,6 +1,7 @@
+// Features/Sources/Common/Components/PageDots.swift
 import SwiftUI
 
-public struct OnboardingPageDots: View {
+public struct PageDots: View {
     public let count: Int
     public let active: Int
 
@@ -23,9 +24,9 @@ public struct OnboardingPageDots: View {
 
 #Preview {
     VStack(spacing: 12) {
-        OnboardingPageDots(active: 0)
-        OnboardingPageDots(active: 1)
-        OnboardingPageDots(active: 2)
+        PageDots(active: 0)
+        PageDots(active: 1)
+        PageDots(active: 2)
     }
     .padding()
 }

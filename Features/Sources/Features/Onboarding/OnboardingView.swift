@@ -35,7 +35,7 @@ struct OnboardingView: View {
                     .id(store.currentStep)
                     .transition(.opacity)
                 HStack {
-                    OnboardingPageDots(active: dotIndex)
+                    PageDots(active: dotIndex)
                         .animation(.easeInOut(duration: 0.35), value: dotIndex)
                     Spacer()
                     Button { store.send(.skipButtonTapped) } label: {

@@ -12,47 +12,37 @@ public struct AddEditTagView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                // MARK: Name Field
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField(String(localized: "tag_form_name_placeholder"), text: Binding(
-                            get: { store.name },
-                            set: { store.send(.nameChanged($0)) }
-                        ))
+            ZStack {
+                WarmGradientBackground(variant: .top)
+                    .ignoresSafeArea()
 
-                        if let error = store.nameError {
-                            Text(error)
-                                .font(Font.Design.caption)
-                                .foregroundStyle(Color.Design.expenseRed)
-                        }
+                ScrollView {
+                    VStack(spacing: 22) {
+                        livePreviewHero
+                        nameSection
+                        colorSection
+
+                        Text("tag_form_usage_hint")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                } header: {
-                    Text("common_name")
-                }
-
-                // MARK: Color Picker
-                Section {
-                    ColorSwatchPicker(
-                        colors: DesignConstants.tagColorOptions,
-                        selectedHex: store.colorHex,
-                        layout: .grid(columns: 6),
-                        onSelect: { store.send(.colorHexChanged($0)) }
-                    )
-                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
-                } header: {
-                    Text("common_color")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 60)
                 }
             }
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common_cancel")) {
                         store.send(.cancelTapped)
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "common_save")) {
                         store.send(.saveTapped)
                     }
@@ -62,4 +52,109 @@ public struct AddEditTagView: View {
         }
     }
 
+    // MARK: - Live Preview Hero
+
+    private var livePreviewHero: some View {
+        let color = Color(hex: store.colorHex)
+        return HStack(spacing: 8) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+            Text("#\(store.name.isEmpty ? String(localized: "tag_form_name_placeholder") : store.name)")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(color)
+        }
+        .padding(.vertical, 11)
+        .padding(.horizontal, 20)
+        .background(color.opacity(0.13), in: Capsule())
+        .overlay(Capsule().strokeBorder(color, lineWidth: 1.5))
+        .shadow(color: color.opacity(0.3), radius: 12, x: 0, y: 8)
+        .padding(.top, 16)
+        .padding(.bottom, 4)
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Name Section
+
+    private var nameSection: some View {
+        sectionGroup(label: "common_name") {
+            VStack(alignment: .leading, spacing: 6) {
+                GlassContainer(cornerRadius: 12, padding: 14) {
+                    HStack(spacing: 6) {
+                        Text("#")
+                            .font(Font.Design.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        TextField(
+                            String(localized: "tag_form_name_placeholder"),
+                            text: Binding(
+                                get: { store.name },
+                                set: { store.send(.nameChanged($0)) }
+                            )
+                        )
+                        .font(Font.Design.body)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    }
+                }
+                if let error = store.nameError {
+                    ErrorText(error)
+                        .padding(.horizontal, 4)
+                }
+            }
+        }
+    }
+
+    // MARK: - Color Section
+
+    private var colorSection: some View {
+        sectionGroup(label: "common_color") {
+            GlassContainer(cornerRadius: 14, padding: 14) {
+                ColorSwatchPicker(
+                    colors: DesignConstants.tagColorOptions,
+                    selectedHex: store.colorHex,
+                    layout: .grid(columns: 6),
+                    onSelect: { store.send(.colorHexChanged($0)) }
+                )
+            }
+        }
+    }
+
+    // MARK: - Section Group Helper
+
+    @ViewBuilder
+    private func sectionGroup<Content: View>(
+        label: LocalizedStringKey,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+            content()
+        }
+    }
+}
+
+#Preview("Add") {
+    AddEditTagView(
+        store: Store(initialState: AddEditTagFeature.State(mode: .add)) {
+            AddEditTagFeature()
+        }
+    )
+}
+
+#Preview("Edit") {
+    AddEditTagView(
+        store: Store(initialState: AddEditTagFeature.State(
+            mode: .edit(Tag(
+                name: "週末聚餐",
+                color: "#A66BF0"
+            ))
+        )) {
+            AddEditTagFeature()
+        }
+    )
 }

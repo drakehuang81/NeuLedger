@@ -1,115 +1,113 @@
-/* NeuLedger · Design Tokens · v1.0 (B1 · Warm) */
+/* NeuLedger · Design Tokens · v2.0 (B1 Warm Glass)
+   Locked-in direction as of May 15, 2026
+   ─────────────────────────────────────────────── */
 
 :root {
-  /* ───── Color · Accent ───── */
-  --accent: #FF9500;
-  --accent-dark: #FF9F0A;
-  --accent-soft: #FFD27A;
-  --cta-gradient: linear-gradient(135deg, #FF9500, #FF6A00);
+  /* ─── Accent (warm orange) ─── */
+  --nl-accent:       #E8835A;
+  --nl-accent-dark:  #FF6A00;
 
-  /* ───── Color · Semantic ───── */
-  --income: #34C759;
-  --income-dark: #30D158;
-  --expense: #FF3B30;
-  --expense-dark: #FF453A;
+  /* ─── Semantic ─── */
+  --nl-income:   #34C759;
+  --nl-expense:  #FF453A;
+  --nl-ai:       #A66BF0;  /* AI / on-device extraction */
 
-  /* ───── Color · Account types ───── */
-  --acc-cash: #8E8E93;
-  --acc-bank: #0A84FF;
-  --acc-ewallet: #5E5CE6;
-  --acc-credit: #FF2D55;
-  --acc-savings: #34C759;
+  /* ─── Account-type accents ─── */
+  --nl-acc-cash:    #9B7E5F;
+  --nl-acc-bank:    #1B5E8E;
+  --nl-acc-credit:  #7B3F00;
+  --nl-acc-digital: #000000;
+  --nl-acc-jko:     #FF6B6B;
+  --nl-acc-invest:  #5E5CE6;
 
-  /* ───── Color · Background ───── */
-  --canvas: #FAF7F2;
-  --canvas-dark: #1A1714;
-  --bg-warm-1: #FFE4B8;
-  --bg-warm-2: #FFF6E8;
-  --bg-warm-3: #FAFAF7;
-  --bg-warm-d1: #4A2A0E;
-  --bg-warm-d2: #1a0f08;
-  --bg-warm-d3: #050505;
+  /* ─── Frequency / period ─── */
+  --nl-freq-weekly:  #0A84FF;
+  --nl-freq-monthly: #E8835A;
+  --nl-freq-yearly:  #A66BF0;
 
-  /* ───── Color · Ink ───── */
-  --ink: #0A0A0A;
-  --ink-dark: #FFFFFF;
-  --muted-light: rgba(60, 60, 67, 0.65);
-  --muted-dark: rgba(235, 235, 245, 0.65);
+  /* ─── Surface ─── */
+  --nl-canvas:        #ECE9E2;          /* page bg around phone */
+  --nl-ink:           #0A0A0A;
+  --nl-muted:         rgba(60, 60, 67, 0.55);
+  --nl-divider:       rgba(0, 0, 0, 0.05);
+  --nl-glass-fill:    rgba(255, 255, 255, 0.70);
+  --nl-glass-border:  rgba(255, 255, 255, 0.85);
 
-  /* ───── Background gradients ───── */
-  --bg-warm-light: radial-gradient(ellipse at 20% 0%, #FFE4B8 0%, #FFF6E8 50%, #FAFAF7 90%);
-  --bg-warm-light-2: radial-gradient(ellipse at 80% 100%, #FFE4B8 0%, #FFF6E8 50%, #FAFAF7 90%);
-  --bg-warm-dark: radial-gradient(ellipse at 50% 30%, #4A2A0E 0%, #1a0f08 40%, #050505 90%);
+  /* ─── Warm radial bg (light) ─── */
+  --nl-bg-warm-light: radial-gradient(ellipse at 50% -10%, #FFE4D2 0%, #FBF1E5 30%, #F6ECDF 60%);
 
-  /* ───── Type · Families ───── */
-  --font-display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
-  --font-body: "DM Sans", -apple-system, system-ui, sans-serif;
-  --font-mono: "DM Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  /* ─── CTA gradient (135°) ─── */
+  --nl-cta: linear-gradient(135deg, #E8835A, #FF6A00);
 
-  /* ───── Type · Scale ───── */
-  --t-display-xl: 56px;   /* Bricolage 700, lh 1.0,  ls -1.8 */
-  --t-display-l:  40px;   /* Bricolage 700, lh 1.05, ls -1.2 */
-  --t-display-m:  24px;   /* Bricolage 700, lh 1.1,  ls -0.6 */
-  --t-display-s:  18px;   /* Bricolage 600, lh 1.2,  ls -0.3 */
-  --t-body-l:     16px;   /* DM Sans, lh 1.45, ls -0.15 */
-  --t-body-m:     14px;   /* DM Sans, lh 1.45, ls -0.1 */
-  --t-body-s:     12px;   /* DM Sans, lh 1.4 */
-  --t-mono-l:     38px;   /* DM Mono 500, lh 1.0, ls -1.2 */
-  --t-mono-m:     14px;   /* DM Mono 500, lh 1.2, ls -0.2 */
-  --t-mono-eyebrow: 10px; /* DM Mono 500, ALL CAPS, ls +1.2~1.6 */
+  /* ─── Type families ─── */
+  --nl-font-display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
+  --nl-font-body:    "DM Sans", -apple-system, system-ui, sans-serif;
+  --nl-font-mono:    "DM Mono", "SF Mono", ui-monospace, Menlo, monospace;
 
-  /* ───── Spacing (8pt baseline) ───── */
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 20px;
-  --s-6: 24px;
-  --s-7: 32px;
-  --s-8: 40px;
-  --s-9: 56px;
+  /* ─── Spacing (4pt baseline) ─── */
+  --nl-s-1: 4px;
+  --nl-s-2: 8px;
+  --nl-s-3: 12px;
+  --nl-s-4: 16px;
+  --nl-s-5: 20px;
+  --nl-s-6: 24px;
+  --nl-s-7: 32px;
+  --nl-s-8: 40px;
 
-  /* ───── Radius ───── */
-  --r-tap:   8px;
-  --r-chip:  12px;
-  --r-input: 16px;
-  --r-glass: 20px;
-  --r-card:  22px;
-  --r-pill:  999px;
-  --r-phone: 50px;  /* iPhone bezel mock only */
+  /* ─── Radius ─── */
+  --nl-r-tap:    8px;
+  --nl-r-chip:   11px;
+  --nl-r-input:  14px;
+  --nl-r-glass:  18px;
+  --nl-r-card:   20px;
+  --nl-r-sheet:  22px;
+  --nl-r-pill:   999px;
+  --nl-r-phone:  48px;
 
-  /* ───── Shadows ───── */
-  --shadow-glass-light: 0 1px 0 rgba(255, 255, 255, 0.7) inset,
-                        0 8px 24px rgba(180, 140, 100, 0.10);
-  --shadow-glass-dark:  0 1px 0 rgba(255, 255, 255, 0.06) inset,
-                        0 8px 24px rgba(0, 0, 0, 0.40);
-  --shadow-cta:         0 10px 28px rgba(255, 149, 0, 0.35);
-  --shadow-cta-soft:    0 6px 18px rgba(255, 149, 0, 0.34);
-  --shadow-card:        0 30px 80px rgba(180, 140, 100, 0.25);
+  /* ─── Shadows ─── */
+  --nl-shadow-glass-light: 0 1px 0 rgba(255,255,255,0.85) inset, 0 4px 12px rgba(120,80,40,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  --nl-shadow-glass-dark:  0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 28px rgba(0,0,0,0.35);
+  --nl-shadow-cta:         0 8px 20px rgba(232,131,90,0.34);
+  --nl-shadow-phone:       0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12);
 
-  /* ───── Glass surfaces (for backdrop-filter recipes) ───── */
-  --glass-light-bg: rgba(255, 255, 255, 0.55);
-  --glass-light-border: rgba(255, 255, 255, 0.7);
-  --glass-dark-bg: rgba(255, 255, 255, 0.08);
-  --glass-dark-border: rgba(255, 255, 255, 0.12);
-  --glass-blur: blur(20px) saturate(160%);
+  /* ─── Motion ─── */
+  --nl-ease-std:  cubic-bezier(0.22, 0.9, 0.32, 1);
+  --nl-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --nl-dur-fast:   180ms;
+  --nl-dur-base:   320ms;
+  --nl-dur-reveal: 480ms;
 
-  /* ───── Motion ───── */
-  --ease-std: cubic-bezier(0.22, 0.9, 0.32, 1);
-  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-fast: 180ms;
-  --dur-base: 320ms;
-  --dur-reveal: 480ms;
+  /* ─── Frame ─── */
+  --nl-frame-w: 402px;
+  --nl-frame-h: 874px;
 }
 
-/* ───── Dark mode override ───── */
+/* Dark-mode overrides */
 @media (prefers-color-scheme: dark) {
   :root {
-    --accent: #FF9F0A;
-    --income: #30D158;
-    --expense: #FF453A;
-    --canvas: #1A1714;
-    --ink: #FFFFFF;
-    --muted-light: rgba(235, 235, 245, 0.65);
+    --nl-accent:      #FF6A00;
+    --nl-ink:         #FFFFFF;
+    --nl-muted:       rgba(235, 235, 245, 0.55);
+    --nl-divider:     rgba(255, 255, 255, 0.06);
+    --nl-glass-fill:  rgba(255, 255, 255, 0.06);
+    --nl-glass-border: rgba(255, 255, 255, 0.10);
+    --nl-bg-warm-light: radial-gradient(ellipse at 50% -20%, #4A2A0E 0%, #1a0f08 35%, #050505 70%);
   }
 }
+
+/* Type scale */
+.nl-display-xl  { font-family: var(--nl-font-display); font-size: 40px; line-height: 1.05; letter-spacing: -1px;   font-weight: 600; }
+.nl-display-l   { font-family: var(--nl-font-display); font-size: 34px; line-height: 1.05; letter-spacing: -1px;   font-weight: 600; }
+.nl-display-m   { font-family: var(--nl-font-display); font-size: 22px; line-height: 1.15; letter-spacing: -0.4px; font-weight: 600; }
+.nl-display-s   { font-family: var(--nl-font-display); font-size: 18px; line-height: 1.2;  letter-spacing: -0.3px; font-weight: 600; }
+.nl-nav-title   { font-family: var(--nl-font-display); font-size: 17px; line-height: 1.2;  font-weight: 600; }
+
+.nl-body-l      { font-family: var(--nl-font-body); font-size: 16px; line-height: 1.45; letter-spacing: -0.1px;  font-weight: 400; }
+.nl-body-m      { font-family: var(--nl-font-body); font-size: 14px; line-height: 1.45; letter-spacing: -0.05px; font-weight: 400; }
+.nl-body-s      { font-family: var(--nl-font-body); font-size: 12px; line-height: 1.4;  font-weight: 400; }
+.nl-body-xs     { font-family: var(--nl-font-body); font-size: 11px; line-height: 1.4;  font-weight: 400; }
+
+.nl-mono-l      { font-family: var(--nl-font-mono); font-size: 38px; line-height: 1.0; letter-spacing: -1.2px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nl-mono-m      { font-family: var(--nl-font-mono); font-size: 14px; line-height: 1.2; letter-spacing: -0.2px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nl-mono-s      { font-family: var(--nl-font-mono); font-size: 12px; line-height: 1.2; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nl-mono-eyebrow{ font-family: var(--nl-font-mono); font-size: 11px; line-height: 1.4; letter-spacing: 1.2px; font-weight: 500; text-transform: uppercase; }

@@ -1,0 +1,2270 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NeuLedger · Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; min-height: 100vh; }
+  body { font-family: "DM Sans", -apple-system, system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Phone wrapper (simple iPhone 17 Pro frame) -->
+<script type="text/babel" data-presets="react">
+function Phone({ children, dark = false }) {
+  return (
+    <div style={{
+      width: 402, height: 874, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: dark ? '#000' : '#FAF7F2',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
+      WebkitFontSmoothing: 'antialiased',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Dynamic island */}
+      <div style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+      }}/>
+      {/* Status bar */}
+      <div style={{
+        height: 54, paddingTop: 18, display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', padding: '18px 28px 0',
+        flexShrink: 0, position: 'relative', zIndex: 5,
+      }}>
+        <div style={{ fontFamily: '-apple-system, system-ui', fontWeight: 600, fontSize: 16, color: dark ? '#fff' : '#000' }}>9:41</div>
+        <div style={{ width: 100 }}/>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center', color: dark ? '#fff' : '#000' }}>
+          <svg width="17" height="11" viewBox="0 0 17 11">
+            <rect x="0" y="6.5" width="3" height="4.5" rx="0.6" fill="currentColor"/>
+            <rect x="4.5" y="4.5" width="3" height="6.5" rx="0.6" fill="currentColor"/>
+            <rect x="9" y="2.5" width="3" height="8.5" rx="0.6" fill="currentColor"/>
+            <rect x="13.5" y="0" width="3" height="11" rx="0.6" fill="currentColor"/>
+          </svg>
+          <svg width="24" height="11" viewBox="0 0 24 11">
+            <rect x="0.5" y="0.5" width="20" height="10" rx="3" stroke="currentColor" strokeOpacity="0.4" fill="none"/>
+            <rect x="2" y="2" width="17" height="7" rx="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+      </div>
+      {children}
+      {/* Home indicator */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
+        height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+        paddingBottom: 8, pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: 139, height: 5, borderRadius: 100,
+          background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+        }}/>
+      </div>
+    </div>
+  );
+}
+window.Phone = Phone;
+</script>
+
+<script type="text/babel" data-presets="react" data-from="search.jsx">
+// NeuLedger Search — primitives + shared data
+// Frame: 402×874 iPhone 17 Pro
+
+const S_COLORS = {
+  accent: '#FF9500',
+  accentDark: '#FF9F0A',
+  income: '#34C759',
+  incomeDark: '#30D158',
+  expense: '#FF3B30',
+  expenseDark: '#FF453A',
+  ai: '#A66BF0',
+  aiDark: '#BF8DFF',
+};
+const S_FONTS = {
+  display: '"Bricolage Grotesque", -apple-system, system-ui, sans-serif',
+  body: '"DM Sans", -apple-system, system-ui, sans-serif',
+  mono: '"DM Mono", "SF Mono", ui-monospace, Menlo, monospace',
+};
+
+// shared txn corpus — search across these
+const TXNS = [
+  { id: 't1',  name: '星巴克',         cat: '餐飲', sub: '咖啡',     account: '信用卡',     accountColor: '#5E5CE6', amount: 165,   when: 'Today 09:12',     date: '2026-04-25', tags: ['#早餐'],     note: '冰美式 + 司康' },
+  { id: 't2',  name: '7-11',          cat: '餐飲', sub: '便利商店', account: 'Apple Pay',  accountColor: '#000',    amount: 89,    when: 'Today 13:24',     date: '2026-04-25', tags: [],            note: '飯糰' },
+  { id: 't3',  name: 'Uber',          cat: '交通', sub: '計程車',   account: '信用卡',     accountColor: '#5E5CE6', amount: 280,   when: 'Yesterday',       date: '2026-04-24', tags: ['#公帳'],     note: '回家' },
+  { id: 't4',  name: 'Netflix',       cat: '訂閱', sub: '影音',     account: '信用卡',     accountColor: '#5E5CE6', amount: 390,   when: 'Apr 22',          date: '2026-04-22', tags: ['#訂閱'],     note: '月費' },
+  { id: 't5',  name: 'Spotify',       cat: '訂閱', sub: '音樂',     account: '信用卡',     accountColor: '#5E5CE6', amount: 149,   when: 'Apr 22',          date: '2026-04-22', tags: ['#訂閱'],     note: '月費' },
+  { id: 't6',  name: 'iCloud+',       cat: '訂閱', sub: '雲端',     account: '信用卡',     accountColor: '#5E5CE6', amount: 90,    when: 'Apr 21',          date: '2026-04-21', tags: ['#訂閱'],     note: '200GB' },
+  { id: 't7',  name: '誠品書店',       cat: '購物', sub: '書籍',     account: '信用卡',     accountColor: '#5E5CE6', amount: 1280,  when: 'Apr 20',          date: '2026-04-20', tags: ['#閱讀'],     note: '原子習慣 + Designing Data-Intensive' },
+  { id: 't8',  name: '小確幸火鍋',     cat: '餐飲', sub: '聚餐',     account: 'Apple Pay',  accountColor: '#000',    amount: 2400,  when: 'Apr 19 (六)',     date: '2026-04-19', tags: ['#朋友','#公帳'], note: '4 人 AA' },
+  { id: 't9',  name: '中油加油站',     cat: '交通', sub: '加油',     account: '信用卡',     accountColor: '#5E5CE6', amount: 1850,  when: 'Apr 18',          date: '2026-04-18', tags: [],            note: '滿油' },
+  { id: 't10', name: '蝦皮 — Anker',   cat: '購物', sub: '3C',       account: '信用卡',     accountColor: '#5E5CE6', amount: 890,   when: 'Apr 17',          date: '2026-04-17', tags: [],            note: '充電線 ×2' },
+  { id: 't11', name: '台電',          cat: '居住', sub: '水電',     account: '銀行轉帳',   accountColor: '#34C759', amount: 1840,  when: 'Apr 15',          date: '2026-04-15', tags: ['#房子'],     note: '雙月電費' },
+  { id: 't12', name: 'Apple Music?',  cat: '未分類', sub: '',        account: '信用卡',     accountColor: '#5E5CE6', amount: 170,   when: 'Apr 14',          date: '2026-04-14', tags: [],            note: '需要確認', uncat: true },
+  { id: 't13', name: '星巴克',         cat: '餐飲', sub: '咖啡',     account: '信用卡',     accountColor: '#5E5CE6', amount: 155,   when: 'Apr 12',          date: '2026-04-12', tags: ['#早餐'],     note: '拿鐵' },
+  { id: 't14', name: 'Uber Eats',      cat: '餐飲', sub: '外送',     account: '信用卡',     accountColor: '#5E5CE6', amount: 420,   when: 'Apr 11 (五)',     date: '2026-04-11', tags: [],            note: '晚餐' },
+  { id: 't15', name: '街口支付 — 早餐', cat: '餐飲', sub: '早餐',     account: '街口',       accountColor: '#FF6B6B', amount: 65,    when: 'Apr 11',          date: '2026-04-11', tags: [],            note: '蛋餅' },
+  { id: 't16', name: '加州健身',       cat: '健康', sub: '健身',     account: '信用卡',     accountColor: '#5E5CE6', amount: 1880,  when: 'Apr 10',          date: '2026-04-10', tags: ['#訂閱'],     note: '月費 (年約)' },
+  { id: 't17', name: '薪資轉入',       cat: '收入', sub: '薪資',     account: '銀行帳戶',   accountColor: '#34C759', amount: -65000,when: 'Apr 5',           date: '2026-04-05', tags: [],            note: '4 月薪資', isIncome: true },
+  { id: 't18', name: 'JCB 帳單',       cat: '帳單', sub: '信用卡',   account: '銀行轉帳',   accountColor: '#34C759', amount: 28400, when: 'Apr 5',           date: '2026-04-05', tags: [],            note: '3 月帳單' },
+  { id: 't19', name: '不知名扣款',     cat: '未分類', sub: '',        account: '信用卡',     accountColor: '#5E5CE6', amount: 35,    when: 'Apr 3',           date: '2026-04-03', tags: [],            note: '?需要查', uncat: true },
+];
+
+// AI-suggested prompts (smart, contextual)
+const AI_PROMPTS = [
+  { q: '上週訂閱花多少?',         hint: '4 筆 · NT$ 629', icon: 'sparkles', kind: 'ai' },
+  { q: '不常見的扣款',             hint: '2 筆未分類',     icon: 'alert',    kind: 'ai' },
+  { q: '這個月最貴的 3 筆',         hint: 'JCB · 火鍋 · 健身', icon: 'crown',    kind: 'ai' },
+  { q: '週末和朋友一起吃飯',       hint: '#朋友 #公帳',    icon: 'group',    kind: 'ai' },
+  { q: '在星巴克花了多少?',         hint: '2 筆 · NT$ 320', icon: 'recur',    kind: 'ai' },
+  { q: '所有公帳交易',             hint: '可分攤的',       icon: 'split',    kind: 'ai' },
+];
+
+// quick filter chips
+const QUICK_CHIPS = [
+  { label: '本月',     tone: 'neutral' },
+  { label: '本週',     tone: 'neutral' },
+  { label: '> NT$ 500', tone: 'neutral' },
+  { label: '#訂閱',    tone: 'tag' },
+  { label: '#公帳',    tone: 'tag' },
+  { label: '未分類',   tone: 'warn' },
+  { label: '餐飲',     tone: 'cat' },
+  { label: '交通',     tone: 'cat' },
+];
+
+// recent searches (history)
+const RECENT = ['星巴克', '訂閱', '本月外食', 'Netflix'];
+
+const sFmt = (n) => Math.abs(n).toLocaleString('en-US');
+
+// ── Glyph ─────────────────────────────────────────────────
+function SGlyph({ name, size = 18, color = '#000', stroke = 1.8 }) {
+  const s = size;
+  const p = { fill: 'none', stroke: color, strokeWidth: stroke, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (name) {
+    case 'search':   return <svg width={s} height={s} viewBox="0 0 24 24"><circle {...p} cx="11" cy="11" r="7"/><path {...p} d="M20 20l-3.5-3.5"/></svg>;
+    case 'sparkles': return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5L12 3z"/><path {...p} d="M19 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1z"/></svg>;
+    case 'mic':      return <svg width={s} height={s} viewBox="0 0 24 24"><rect {...p} x="9" y="3" width="6" height="12" rx="3"/><path {...p} d="M5 11a7 7 0 0014 0M12 18v3"/></svg>;
+    case 'close':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M6 6l12 12M18 6L6 18"/></svg>;
+    case 'plus':     return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M12 5v14M5 12h14"/></svg>;
+    case 'filter':   return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M4 5h16l-6 8v6l-4-2v-4L4 5z"/></svg>;
+    case 'sliders':  return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M4 7h10M4 17h6"/><circle {...p} cx="17" cy="7" r="2.2"/><circle {...p} cx="13" cy="17" r="2.2"/><path {...p} d="M19 7h1M15 17h5"/></svg>;
+    case 'chev':     return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M9 6l6 6-6 6"/></svg>;
+    case 'chev-d':   return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M6 9l6 6 6-6"/></svg>;
+    case 'arrow-up': return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M12 19V5M5 12l7-7 7 7"/></svg>;
+    case 'arrow-r':  return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M5 12h14M13 6l6 6-6 6"/></svg>;
+    case 'clock':    return <svg width={s} height={s} viewBox="0 0 24 24"><circle {...p} cx="12" cy="12" r="9"/><path {...p} d="M12 7v5l3 2"/></svg>;
+    case 'crown':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M3 8l4 4 5-7 5 7 4-4-1.5 11h-15L3 8z"/></svg>;
+    case 'alert':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M12 4l10 17H2L12 4z"/><path {...p} d="M12 10v5M12 18v.5"/></svg>;
+    case 'recur':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M4 9V5h4M20 15v4h-4"/><path {...p} d="M4 9c2-3 5-5 9-5 4 0 7 2 9 5M20 15c-2 3-5 5-9 5-4 0-7-2-9-5"/></svg>;
+    case 'group':    return <svg width={s} height={s} viewBox="0 0 24 24"><circle {...p} cx="9" cy="9" r="3.5"/><circle {...p} cx="17" cy="11" r="2.5"/><path {...p} d="M3 19c1-3 3.5-4.5 6-4.5s5 1.5 6 4.5M14 19c.5-2 1.5-3 3-3s2.5 1 3 3"/></svg>;
+    case 'split':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M6 4v6c0 4 12 4 12 10v0M6 4l-2 2M6 4l2 2M18 20l-2-2M18 20l2-2"/></svg>;
+    case 'tag':      return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M3 3h8l10 10-8 8L3 11V3z"/><circle {...p} cx="7.5" cy="7.5" r="1"/></svg>;
+    case 'cmd':      return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M9 6a3 3 0 10-3 3v6a3 3 0 103-3V9h6v3a3 3 0 103-3 3 3 0 00-3 3H9V9a3 3 0 00-3-3 3 3 0 003 3"/></svg>;
+    case 'enter':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M20 6v6a2 2 0 01-2 2H5M9 10l-4 4 4 4"/></svg>;
+    case 'globe':    return <svg width={s} height={s} viewBox="0 0 24 24"><circle {...p} cx="12" cy="12" r="9"/><path {...p} d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>;
+    case 'home':     return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M3 11l9-8 9 8M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5"/></svg>;
+    case 'chart':    return <svg width={s} height={s} viewBox="0 0 24 24"><path {...p} d="M4 19h16M7 16V9M12 16V5M17 16v-7"/></svg>;
+    case 'wallet':   return <svg width={s} height={s} viewBox="0 0 24 24"><rect {...p} x="3" y="6" width="18" height="13" rx="2.5"/><path {...p} d="M3 10h18M16 14h2"/></svg>;
+    default: return <svg width={s} height={s}/>;
+  }
+}
+
+// ── Bottom tab bar ────────────────────────────────────────
+function TabBar({ active = 'search', dark }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.45)' : 'rgba(60,60,67,0.45)';
+  const accent = dark ? S_COLORS.accentDark : S_COLORS.accent;
+  const items = [
+    { id: 'home',   label: 'Ledger',  icon: 'wallet' },
+    { id: 'analytics', label: 'Analytics', icon: 'chart' },
+    { id: 'add',    label: '',     icon: 'plus', isFab: true },
+    { id: 'search', label: 'Search', icon: 'search' },
+    { id: 'me',     label: 'Me',     icon: 'globe' },
+  ];
+  return (
+    <div style={{
+      position: 'absolute', left: 0, right: 0, bottom: 0,
+      paddingBottom: 28, paddingTop: 8,
+      background: dark ? 'rgba(20,20,22,0.85)' : 'rgba(255,255,255,0.85)',
+      backdropFilter: 'blur(24px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+      borderTop: dark ? '0.5px solid rgba(255,255,255,0.08)' : '0.5px solid rgba(0,0,0,0.06)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+      zIndex: 5,
+    }}>
+      {items.map(it => {
+        const isActive = it.id === active;
+        const c = isActive ? accent : muted;
+        if (it.isFab) {
+          return (
+            <div key={it.id} style={{
+              width: 48, height: 48, borderRadius: 24,
+              background: `linear-gradient(135deg, ${accent}, #FF6B35)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 14px ${accent}55`,
+              marginTop: -16,
+            }}>
+              <SGlyph name="plus" size={22} color="#fff" stroke={2.4}/>
+            </div>
+          );
+        }
+        return (
+          <div key={it.id} style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+            padding: '4px 12px',
+          }}>
+            <SGlyph name={it.icon} size={20} color={c} stroke={isActive ? 2 : 1.6}/>
+            <div style={{ fontFamily: S_FONTS.body, fontSize: 9, fontWeight: 600, color: c, letterSpacing: -0.1 }}>{it.label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// expose globally
+Object.assign(window, {
+  S_COLORS, S_FONTS, TXNS, AI_PROMPTS, QUICK_CHIPS, RECENT, sFmt,
+  SGlyph, TabBar,
+});
+
+</script>
+<script type="text/babel" data-presets="react" data-from="search-v1.jsx">
+// Search V1 · Conversational — Perplexity / Arc-style "ask your ledger"
+// Big input · AI suggestion cards · submit → AI summary on top + transaction list
+
+function SearchV1({ dark = false }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const subtle = dark ? 'rgba(235,235,245,0.78)' : 'rgba(60,60,67,0.78)';
+  const bg = dark ? '#0A0A0A' : '#FAF7F2';
+  const cardBg = dark ? 'rgba(255,255,255,0.04)' : '#fff';
+  const borderC = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const accent = dark ? S_COLORS.accentDark : S_COLORS.accent;
+  const ai = dark ? S_COLORS.aiDark : S_COLORS.ai;
+
+  const [input, setInput] = React.useState('');
+  const [submitted, setSubmitted] = React.useState(null); // null | { q, results, summary, total }
+
+  // Simulated "answer" computed for each prompt
+  const ANSWERS = {
+    '上週訂閱花多少?': {
+      results: TXNS.filter(t => t.cat === '訂閱'),
+      summary: '你上週有 4 筆訂閱費,共 NT$ 629。Netflix(390)、加州健身(1880,但週三轉成每月看)、Spotify(149)、iCloud+(90)。三筆是月費、加州健身是年約;如果想砍可從 Spotify 開始,半年沒打開過音樂庫。',
+    },
+    '不常見的扣款': {
+      results: TXNS.filter(t => t.uncat),
+      summary: '找到 2 筆我不確定怎麼分類的扣款。「Apple Music?」NT$ 170 和「不知名扣款」NT$ 35;後者商家名稱看起來像 PayPal pre-auth。建議點開逐筆確認,或直接新增「未分類預算」追蹤。',
+    },
+    '這個月最貴的 3 筆': {
+      results: [...TXNS].filter(t => !t.isIncome).sort((a, b) => b.amount - a.amount).slice(0, 3),
+      summary: '這個月支出 Top 3:JCB 帳單 NT$ 28,400(別怕,是上個月的累積)、聚餐 NT$ 2,400(4 人 AA,所以實付 600)、加油 NT$ 1,850。三筆相加占當月支出 62%,但其中兩筆是「結算式」費用,日常花銷反而很穩。',
+    },
+    '週末和朋友一起吃飯': {
+      results: TXNS.filter(t => t.tags.includes('#朋友') || t.tags.includes('#公帳')),
+      summary: '帶 #朋友 或 #公帳 標籤的有 2 筆:小確幸火鍋 NT$ 2,400(4 人 AA)和 Uber 回家 NT$ 280。可考慮直接觸發「分帳」,把火鍋拆給朋友,自動扣除你應付的部分。',
+    },
+    '在星巴克花了多少?': {
+      results: TXNS.filter(t => t.name.includes('星巴克')),
+      summary: '本月 2 筆星巴克,共 NT$ 320。次數比上月少 50%(上月 4 筆),平均單筆 NT$ 160。如果你想戒咖啡,現在的趨勢已經往下走;如果只是工作日早餐,建議買咖啡禮券買 5 送 1。',
+    },
+    '所有公帳交易': {
+      results: TXNS.filter(t => t.tags.includes('#公帳')),
+      summary: '有 2 筆 #公帳 交易共 NT$ 2,680(Uber 280 + 火鍋 2,400)。火鍋 4 人 AA 之後你實付 600;Uber 是同事的車費,看是不是要請他補。',
+    },
+  };
+
+  const submit = (q) => {
+    const a = ANSWERS[q] || { results: TXNS.filter(t => t.name.includes(q) || t.note.includes(q)), summary: `找到 ${TXNS.filter(t => t.name.includes(q) || t.note.includes(q)).length} 筆相關交易。` };
+    setSubmitted({ q, ...a });
+  };
+
+  const reset = () => { setSubmitted(null); setInput(''); };
+
+  return (
+    <Phone dark={dark}>
+      <div style={{
+        flex: 1, position: 'relative', overflow: 'hidden', background: bg,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header — minimal, AI-forward */}
+        <div style={{ padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SGlyph name="sparkles" size={16} color={ai}/>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 500 }}>
+            Ask your ledger
+          </div>
+          {submitted && (
+            <div onClick={reset} style={{
+              marginLeft: 'auto', padding: '4px 10px', borderRadius: 999,
+              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              fontFamily: S_FONTS.body, fontSize: 11, color: subtle, cursor: 'pointer',
+            }}>新問題</div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div style={{ padding: '0 16px 16px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '14px 16px', borderRadius: 18,
+            background: cardBg, border: `0.5px solid ${borderC}`,
+            boxShadow: dark ? 'none' : '0 1px 2px rgba(120,80,40,0.04)',
+          }}>
+            <SGlyph name="sparkles" size={18} color={ai}/>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && input.trim() && submit(input.trim())}
+              placeholder="問你的帳本任何問題…"
+              style={{
+                flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                fontFamily: S_FONTS.body, fontSize: 16, color: fg, letterSpacing: -0.2,
+              }}/>
+            <SGlyph name="mic" size={17} color={muted} stroke={1.6}/>
+            {input && (
+              <div onClick={() => submit(input)} style={{
+                width: 28, height: 28, borderRadius: 14, background: ai,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}>
+                <SGlyph name="arrow-up" size={14} color="#fff" stroke={2.4}/>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Body — empty or results */}
+        <div style={{ flex: 1, overflow: 'auto', paddingBottom: 90 }}>
+          {!submitted ? (
+            <EmptyState dark={dark} onPick={submit} fg={fg} muted={muted} subtle={subtle} cardBg={cardBg} borderC={borderC} ai={ai}/>
+          ) : (
+            <Results dark={dark} data={submitted} fg={fg} muted={muted} subtle={subtle} cardBg={cardBg} borderC={borderC} ai={ai} accent={accent}/>
+          )}
+        </div>
+
+        <TabBar active="search" dark={dark}/>
+      </div>
+    </Phone>
+  );
+}
+
+function EmptyState({ dark, onPick, fg, muted, subtle, cardBg, borderC, ai }) {
+  return (
+    <div style={{ padding: '0 16px' }}>
+      {/* Suggestion intro */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 12px' }}>
+        <div style={{ width: 4, height: 4, borderRadius: 2, background: ai }}/>
+        <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 500 }}>
+          試試這些 — AI 為你準備
+        </div>
+      </div>
+
+      {/* Prompt cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+        {AI_PROMPTS.map((p, i) => (
+          <div key={i} onClick={() => onPick(p.q)} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '14px 14px', borderRadius: 14,
+            background: cardBg, border: `0.5px solid ${borderC}`,
+            cursor: 'pointer',
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 16, flexShrink: 0,
+              background: dark ? 'rgba(166,107,240,0.16)' : 'rgba(166,107,240,0.10)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <SGlyph name={p.icon} size={15} color={ai} stroke={1.8}/>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: S_FONTS.body, fontSize: 14, fontWeight: 500, color: fg, letterSpacing: -0.1, marginBottom: 1 }}>
+                {p.q}
+              </div>
+              <div style={{ fontFamily: S_FONTS.mono, fontSize: 10.5, color: muted, letterSpacing: 0.1 }}>
+                {p.hint}
+              </div>
+            </div>
+            <SGlyph name="arrow-r" size={14} color={muted} stroke={1.8}/>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent — small, muted */}
+      <div style={{ padding: '4px 4px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <SGlyph name="clock" size={12} color={muted} stroke={1.6}/>
+        <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 500 }}>
+          最近搜尋
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0 4px' }}>
+        {RECENT.map(r => (
+          <div key={r} onClick={() => onPick(r)} style={{
+            padding: '6px 12px', borderRadius: 999,
+            background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            fontFamily: S_FONTS.body, fontSize: 12, color: subtle, fontWeight: 500,
+            cursor: 'pointer',
+          }}>{r}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Results({ dark, data, fg, muted, subtle, cardBg, borderC, ai, accent }) {
+  const total = data.results.filter(t => !t.isIncome).reduce((s, t) => s + t.amount, 0);
+  return (
+    <div style={{ padding: '0 16px' }}>
+      {/* Question echo */}
+      <div style={{
+        padding: '8px 14px', borderRadius: 12,
+        background: dark ? 'rgba(166,107,240,0.10)' : 'rgba(166,107,240,0.06)',
+        marginBottom: 12,
+        fontFamily: S_FONTS.body, fontSize: 13, color: subtle, letterSpacing: -0.1,
+      }}>
+        <span style={{ color: ai, marginRight: 6, fontWeight: 600 }}>Q.</span>
+        {data.q}
+      </div>
+
+      {/* AI summary card */}
+      <div style={{
+        padding: '14px 16px', borderRadius: 16,
+        background: cardBg, border: `0.5px solid ${borderC}`,
+        boxShadow: dark ? 'none' : '0 1px 2px rgba(120,80,40,0.04)',
+        marginBottom: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <SGlyph name="sparkles" size={13} color={ai}/>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 9, color: ai, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 600 }}>
+            Answer · 0.6s
+          </div>
+          <div style={{
+            marginLeft: 'auto',
+            fontFamily: S_FONTS.mono, fontSize: 10, color: muted, letterSpacing: 0.2,
+          }}>{data.results.length} 筆 · NT$ {sFmt(total)}</div>
+        </div>
+        <div style={{ fontFamily: S_FONTS.body, fontSize: 14, color: fg, lineHeight: 1.55, letterSpacing: -0.1 }}>
+          {data.summary}
+        </div>
+      </div>
+
+      {/* Result list */}
+      <div style={{ marginTop: 8 }}>
+        <div style={{ padding: '8px 4px 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 500 }}>
+            來源 · {data.results.length} 筆交易
+          </div>
+        </div>
+        {data.results.map((t, i) => (
+          <TxnRow key={t.id} tx={t} dark={dark} fg={fg} muted={muted} borderC={borderC} isLast={i === data.results.length - 1}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TxnRow({ tx, dark, fg, muted, borderC, isLast }) {
+  const incomeC = dark ? S_COLORS.incomeDark : S_COLORS.income;
+  const expenseC = fg;
+  const isIncome = tx.isIncome;
+  const amountColor = isIncome ? incomeC : expenseC;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '10px 4px',
+      borderBottom: isLast ? 'none' : `0.5px solid ${borderC}`,
+    }}>
+      <div style={{
+        width: 30, height: 30, borderRadius: 15, flexShrink: 0,
+        background: tx.accountColor + '22',
+        border: `0.5px solid ${tx.accountColor}33`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: S_FONTS.mono, fontSize: 9, fontWeight: 600, color: tx.accountColor,
+      }}>{tx.cat[0]}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 14, fontWeight: 500, color: fg, letterSpacing: -0.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tx.name}</div>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 13, fontWeight: 500, color: amountColor, letterSpacing: -0.2, whiteSpace: 'nowrap' }}>
+            {isIncome ? '+' : '−'}<span style={{ fontSize: 9, color: muted, marginRight: 1 }}>NT$</span>{sFmt(tx.amount)}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 2 }}>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 11, color: muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {tx.cat}{tx.sub && ` · ${tx.sub}`} · {tx.account}
+          </div>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{tx.when}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.SearchV1 = SearchV1;
+window.SearchV1_TxnRow = TxnRow;
+
+</script>
+<script type="text/babel" data-presets="react" data-from="search-v2.jsx">
+// Search V2 · Hybrid — keyword search w/ semantic fallback
+// Standard iOS search bar · type → live filter · 0 results → AI semantic CTA
+// Quick chips for common filters · recent + AI prompts in empty state
+
+function SearchV2({ dark = false }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const subtle = dark ? 'rgba(235,235,245,0.78)' : 'rgba(60,60,67,0.78)';
+  const bg = dark ? '#0A0A0A' : '#FAF7F2';
+  const cardBg = dark ? 'rgba(255,255,255,0.04)' : '#fff';
+  const borderC = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const accent = dark ? S_COLORS.accentDark : S_COLORS.accent;
+  const ai = dark ? S_COLORS.aiDark : S_COLORS.ai;
+
+  const [query, setQuery] = React.useState('');
+  const [activeChips, setActiveChips] = React.useState([]);
+  const [aiMode, setAiMode] = React.useState(false); // toggled via fallback CTA
+
+  const toggleChip = (label) => {
+    setActiveChips(activeChips.includes(label)
+      ? activeChips.filter(c => c !== label)
+      : [...activeChips, label]);
+  };
+
+  // keyword filter
+  const keywordResults = React.useMemo(() => {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    return TXNS.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.note.toLowerCase().includes(q) ||
+      t.cat.toLowerCase().includes(q) ||
+      (t.sub || '').toLowerCase().includes(q) ||
+      t.tags.some(tag => tag.toLowerCase().includes(q))
+    );
+  }, [query]);
+
+  // chip filter on top of keyword
+  const filtered = React.useMemo(() => {
+    let base = query.trim() ? keywordResults : TXNS;
+    for (const chip of activeChips) {
+      if (chip === '本月') base = base.filter(t => t.date.startsWith('2026-04'));
+      else if (chip === '本週') base = base.filter(t => ['2026-04-25','2026-04-24','2026-04-23','2026-04-22','2026-04-21','2026-04-20','2026-04-19'].includes(t.date));
+      else if (chip === '> NT$ 500') base = base.filter(t => Math.abs(t.amount) > 500);
+      else if (chip.startsWith('#')) base = base.filter(t => t.tags.includes(chip));
+      else if (chip === '未分類') base = base.filter(t => t.uncat);
+      else if (chip === '餐飲' || chip === '交通') base = base.filter(t => t.cat === chip);
+    }
+    return base;
+  }, [query, keywordResults, activeChips]);
+
+  const showResults = query.trim() || activeChips.length > 0;
+  const showSemanticCta = query.trim() && keywordResults.length <= 1 && !aiMode;
+  const total = filtered.filter(t => !t.isIncome).reduce((s, t) => s + t.amount, 0);
+
+  return (
+    <Phone dark={dark}>
+      <div style={{
+        flex: 1, position: 'relative', overflow: 'hidden', background: bg,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header — large title iOS style */}
+        <div style={{ padding: '8px 16px 4px' }}>
+          <div style={{ fontFamily: S_FONTS.display, fontSize: 30, fontWeight: 700, color: fg, letterSpacing: -0.8, lineHeight: 1.1 }}>
+            搜尋
+          </div>
+        </div>
+
+        {/* Search bar (iOS standard) */}
+        <div style={{ padding: '10px 16px 8px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', borderRadius: 12,
+            background: dark ? 'rgba(118,118,128,0.24)' : 'rgba(118,118,128,0.12)',
+          }}>
+            <SGlyph name="search" size={15} color={muted} stroke={2}/>
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="搜尋商家、備註、標籤、類別…"
+              style={{
+                flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                fontFamily: S_FONTS.body, fontSize: 16, color: fg, letterSpacing: -0.2,
+              }}/>
+            {query ? (
+              <div onClick={() => setQuery('')} style={{
+                width: 18, height: 18, borderRadius: 9,
+                background: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}>
+                <SGlyph name="close" size={11} color={dark ? '#1c1c1e' : '#fff'} stroke={2.6}/>
+              </div>
+            ) : (
+              <SGlyph name="mic" size={16} color={muted} stroke={1.6}/>
+            )}
+          </div>
+        </div>
+
+        {/* Quick filter chips */}
+        <div style={{
+          padding: '6px 16px 10px',
+          overflowX: 'auto', whiteSpace: 'nowrap',
+          scrollbarWidth: 'none',
+        }}>
+          <div style={{ display: 'inline-flex', gap: 6 }}>
+            {QUICK_CHIPS.map(c => {
+              const sel = activeChips.includes(c.label);
+              const tones = {
+                neutral: { fill: dark ? '#fff' : '#1c1c1e', text: dark ? '#000' : '#fff' },
+                tag:     { fill: accent, text: '#fff' },
+                warn:    { fill: dark ? S_COLORS.expenseDark : S_COLORS.expense, text: '#fff' },
+                cat:     { fill: ai, text: '#fff' },
+              };
+              const tn = tones[c.tone];
+              return (
+                <div key={c.label} onClick={() => toggleChip(c.label)} style={{
+                  padding: '6px 12px', borderRadius: 999,
+                  background: sel ? tn.fill : (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+                  color: sel ? tn.text : subtle,
+                  fontFamily: S_FONTS.body, fontSize: 12, fontWeight: 500, letterSpacing: -0.1,
+                  cursor: 'pointer', userSelect: 'none', transition: 'all .15s',
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}>
+                  {sel && <SGlyph name="close" size={10} color={tn.text} stroke={2.4}/>}
+                  {c.label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflow: 'auto', paddingBottom: 90, padding: '0 16px 90px' }}>
+          {!showResults ? (
+            <V2EmptyState dark={dark} fg={fg} muted={muted} subtle={subtle} cardBg={cardBg} borderC={borderC} ai={ai} accent={accent}
+              onPickPrompt={(q) => setQuery(q.replace(/[?]/g, '').replace('上週訂閱花多少','訂閱'))}/>
+          ) : (
+            <V2Results
+              dark={dark} fg={fg} muted={muted} subtle={subtle} cardBg={cardBg} borderC={borderC} ai={ai} accent={accent}
+              filtered={filtered} total={total} query={query} activeChips={activeChips}
+              showSemanticCta={showSemanticCta}
+              onSemanticTry={() => setAiMode(true)}
+              aiMode={aiMode}
+            />
+          )}
+        </div>
+
+        <TabBar active="search" dark={dark}/>
+      </div>
+    </Phone>
+  );
+}
+
+function V2EmptyState({ dark, fg, muted, subtle, cardBg, borderC, ai, accent, onPickPrompt }) {
+  return (
+    <div>
+      {/* Recent */}
+      <div style={{ padding: '8px 0 6px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 500 }}>最近搜尋</div>
+        <div style={{ fontFamily: S_FONTS.body, fontSize: 12, color: accent, fontWeight: 500, cursor: 'pointer' }}>清除</div>
+      </div>
+      <div style={{
+        background: cardBg, border: `0.5px solid ${borderC}`, borderRadius: 14,
+        marginBottom: 18,
+      }}>
+        {RECENT.map((r, i) => (
+          <div key={r} onClick={() => onPickPrompt(r)} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px',
+            borderBottom: i < RECENT.length - 1 ? `0.5px solid ${borderC}` : 'none',
+            cursor: 'pointer',
+          }}>
+            <SGlyph name="clock" size={13} color={muted} stroke={1.6}/>
+            <div style={{ flex: 1, fontFamily: S_FONTS.body, fontSize: 14, color: fg, letterSpacing: -0.1 }}>{r}</div>
+            <SGlyph name="arrow-r" size={12} color={muted} stroke={1.6}/>
+          </div>
+        ))}
+      </div>
+
+      {/* AI suggestions */}
+      <div style={{ padding: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <SGlyph name="sparkles" size={12} color={ai}/>
+        <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: ai, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 600 }}>
+          AI 推薦 · 你可能想找
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+        {AI_PROMPTS.slice(0, 4).map(p => (
+          <div key={p.q} onClick={() => onPickPrompt(p.q)} style={{
+            padding: '8px 12px', borderRadius: 10,
+            background: dark ? 'rgba(166,107,240,0.10)' : 'rgba(166,107,240,0.08)',
+            border: `0.5px solid ${dark ? 'rgba(166,107,240,0.30)' : 'rgba(166,107,240,0.20)'}`,
+            display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+          }}>
+            <SGlyph name={p.icon} size={11} color={ai} stroke={1.6}/>
+            <span style={{ fontFamily: S_FONTS.body, fontSize: 12, color: fg, fontWeight: 500, letterSpacing: -0.1 }}>{p.q}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function V2Results({ dark, fg, muted, subtle, cardBg, borderC, ai, accent, filtered, total, query, activeChips, showSemanticCta, onSemanticTry, aiMode }) {
+  const incomeC = dark ? S_COLORS.incomeDark : S_COLORS.income;
+  return (
+    <div>
+      {/* Result count + total */}
+      <div style={{ padding: '6px 4px 12px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 500 }}>
+          {filtered.length} 筆 · 共 NT$ {sFmt(total)}
+        </div>
+        {filtered.length > 0 && (
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 12, color: accent, fontWeight: 500, cursor: 'pointer' }}>
+            存為智慧篩選
+          </div>
+        )}
+      </div>
+
+      {/* Semantic CTA — keyword search returned little */}
+      {showSemanticCta && (
+        <div onClick={onSemanticTry} style={{
+          padding: '14px 16px', borderRadius: 14,
+          background: dark ? 'rgba(166,107,240,0.10)' : 'rgba(166,107,240,0.06)',
+          border: `0.5px dashed ${dark ? 'rgba(166,107,240,0.40)' : 'rgba(166,107,240,0.30)'}`,
+          marginBottom: 12, cursor: 'pointer',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <SGlyph name="sparkles" size={14} color={ai}/>
+            <div style={{ fontFamily: S_FONTS.mono, fontSize: 9, color: ai, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 600 }}>
+              想用 AI 語意搜尋?
+            </div>
+          </div>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 13, color: fg, lineHeight: 1.5, letterSpacing: -0.1 }}>
+            「<b style={{ color: ai }}>{query}</b>」沒有完全相符。AI 可以理解描述性問題,例如<i>「最近一次和朋友吃飯」</i>或<i>「不常見的扣款」</i>。
+          </div>
+          <div style={{
+            marginTop: 8, fontFamily: S_FONTS.body, fontSize: 13, color: ai, fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            試試 AI 搜尋 <SGlyph name="arrow-r" size={12} color={ai} stroke={2}/>
+          </div>
+        </div>
+      )}
+
+      {/* AI summary banner — when in AI mode */}
+      {aiMode && filtered.length > 0 && (
+        <div style={{
+          padding: '12px 14px', borderRadius: 12,
+          background: dark ? 'rgba(166,107,240,0.10)' : 'rgba(166,107,240,0.06)',
+          marginBottom: 12,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <SGlyph name="sparkles" size={11} color={ai}/>
+            <div style={{ fontFamily: S_FONTS.mono, fontSize: 9, color: ai, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 600 }}>AI 摘要</div>
+          </div>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 13, color: fg, lineHeight: 1.5, letterSpacing: -0.1 }}>
+            找到 {filtered.length} 筆與「{query}」相關。最大筆 <b>{filtered.sort((a,b)=>b.amount-a.amount)[0]?.name}</b>(NT$ {sFmt(filtered.sort((a,b)=>b.amount-a.amount)[0]?.amount || 0)}),最近一筆是 {filtered.sort((a,b)=>b.date.localeCompare(a.date))[0]?.when}。
+          </div>
+        </div>
+      )}
+
+      {/* Results list */}
+      {filtered.length === 0 && !showSemanticCta && (
+        <div style={{
+          textAlign: 'center', padding: '60px 16px',
+          fontFamily: S_FONTS.body, fontSize: 14, color: muted,
+        }}>沒有符合的交易</div>
+      )}
+      {filtered.length > 0 && (
+        <div style={{
+          background: cardBg, border: `0.5px solid ${borderC}`, borderRadius: 14, overflow: 'hidden',
+        }}>
+          {filtered.map((tx, i) => (
+            <V2TxnRow key={tx.id} tx={tx} dark={dark} fg={fg} muted={muted} borderC={borderC}
+              isLast={i === filtered.length - 1} highlight={query} ai={ai}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function V2TxnRow({ tx, dark, fg, muted, borderC, isLast, highlight, ai }) {
+  const incomeC = dark ? S_COLORS.incomeDark : S_COLORS.income;
+  const amountColor = tx.isIncome ? incomeC : fg;
+  const renderName = () => {
+    if (!highlight || !highlight.trim()) return tx.name;
+    const idx = tx.name.toLowerCase().indexOf(highlight.toLowerCase());
+    if (idx < 0) return tx.name;
+    return (
+      <>
+        {tx.name.slice(0, idx)}
+        <mark style={{
+          background: dark ? 'rgba(255,159,10,0.30)' : 'rgba(255,149,0,0.22)',
+          color: 'inherit', borderRadius: 2, padding: '0 1px',
+        }}>{tx.name.slice(idx, idx + highlight.length)}</mark>
+        {tx.name.slice(idx + highlight.length)}
+      </>
+    );
+  };
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '11px 14px',
+      borderBottom: isLast ? 'none' : `0.5px solid ${borderC}`,
+    }}>
+      <div style={{
+        width: 30, height: 30, borderRadius: 15, flexShrink: 0,
+        background: tx.accountColor + '22',
+        border: `0.5px solid ${tx.accountColor}33`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: S_FONTS.mono, fontSize: 9, fontWeight: 600, color: tx.accountColor,
+      }}>{tx.cat[0]}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 14, fontWeight: 500, color: fg, letterSpacing: -0.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{renderName()}</div>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 13, fontWeight: 500, color: amountColor, letterSpacing: -0.2, whiteSpace: 'nowrap' }}>
+            {tx.isIncome ? '+' : '−'}<span style={{ fontSize: 9, color: muted, marginRight: 1 }}>NT$</span>{sFmt(tx.amount)}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 2 }}>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 11, color: muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {tx.cat}{tx.sub && ` · ${tx.sub}`} · {tx.account}
+          </div>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{tx.when}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.SearchV2 = SearchV2;
+
+</script>
+<script type="text/babel" data-presets="react" data-from="search-v3.jsx">
+// Search V3 · Faceted — Linear/Notion-style structured filters
+// Builder row of filter pills (category / account / amount / date / tag) — tap to edit, long-press to remove
+// Plain keyword input below for free-text search of merchant + note
+
+function SearchV3({ dark = false }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const subtle = dark ? 'rgba(235,235,245,0.78)' : 'rgba(60,60,67,0.78)';
+  const bg = dark ? '#0A0A0A' : '#FAF7F2';
+  const cardBg = dark ? 'rgba(255,255,255,0.04)' : '#fff';
+  const borderC = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const accent = dark ? S_COLORS.accentDark : S_COLORS.accent;
+  const ai = dark ? S_COLORS.aiDark : S_COLORS.ai;
+  const incomeC = dark ? S_COLORS.incomeDark : S_COLORS.income;
+
+  // Active facets — pre-loaded with a couple to show the pattern
+  const [facets, setFacets] = React.useState([
+    { id: 'f1', kind: 'date',     op: 'in',    value: '本月',     icon: 'clock' },
+    { id: 'f2', kind: 'category', op: 'is',    value: '訂閱',     icon: 'tag', color: '#A66BF0' },
+    { id: 'f3', kind: 'amount',   op: '>',     value: 'NT$ 100', icon: 'sliders' },
+  ]);
+  const [text, setText] = React.useState('');
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [groupBy, setGroupBy] = React.useState('none'); // none | category | account | month
+
+  const removeFacet = (id) => setFacets(facets.filter(f => f.id !== id));
+  const addFacet = (f) => { setFacets([...facets, { ...f, id: 'f' + (facets.length + 4) }]); setPickerOpen(false); };
+
+  const filtered = React.useMemo(() => {
+    let r = TXNS;
+    for (const f of facets) {
+      if (f.kind === 'date' && f.value === '本月') r = r.filter(t => t.date.startsWith('2026-04'));
+      if (f.kind === 'date' && f.value === '本週') r = r.filter(t => ['2026-04-25','2026-04-24','2026-04-23','2026-04-22','2026-04-21','2026-04-20','2026-04-19'].includes(t.date));
+      if (f.kind === 'category') r = r.filter(t => t.cat === f.value);
+      if (f.kind === 'account')  r = r.filter(t => t.account === f.value);
+      if (f.kind === 'tag')      r = r.filter(t => t.tags.includes(f.value));
+      if (f.kind === 'amount' && f.op === '>') {
+        const n = parseInt(f.value.replace(/[^0-9]/g, ''));
+        r = r.filter(t => Math.abs(t.amount) > n);
+      }
+    }
+    if (text.trim()) {
+      const q = text.toLowerCase();
+      r = r.filter(t => t.name.toLowerCase().includes(q) || t.note.toLowerCase().includes(q));
+    }
+    return r;
+  }, [facets, text]);
+
+  const total = filtered.filter(t => !t.isIncome).reduce((s, t) => s + t.amount, 0);
+
+  // Group results
+  const grouped = React.useMemo(() => {
+    if (groupBy === 'none') return [{ key: '__all', label: null, items: filtered }];
+    const key = groupBy === 'category' ? 'cat' : groupBy === 'account' ? 'account' : 'month';
+    const map = {};
+    for (const t of filtered) {
+      const k = key === 'month' ? t.date.slice(0, 7) : t[key];
+      (map[k] = map[k] || []).push(t);
+    }
+    return Object.entries(map).map(([k, items]) => ({ key: k, label: k, items }));
+  }, [filtered, groupBy]);
+
+  return (
+    <Phone dark={dark}>
+      <div style={{
+        flex: 1, position: 'relative', overflow: 'hidden', background: bg,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header */}
+        <div style={{ padding: '12px 16px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontFamily: S_FONTS.display, fontSize: 22, fontWeight: 700, color: fg, letterSpacing: -0.5 }}>篩選</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{
+              padding: '5px 10px', borderRadius: 8,
+              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              fontFamily: S_FONTS.mono, fontSize: 10, color: subtle, fontWeight: 500, letterSpacing: 0.2,
+              display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer',
+            }}>
+              <SGlyph name="sliders" size={11} color={subtle} stroke={1.6}/>
+              {groupBy === 'none' ? '不分組' : groupBy === 'category' ? '依類別' : groupBy === 'account' ? '依帳戶' : '依月份'}
+            </div>
+            <div style={{
+              padding: '5px 10px', borderRadius: 8,
+              background: accent, color: '#fff',
+              fontFamily: S_FONTS.body, fontSize: 11, fontWeight: 600, letterSpacing: -0.1,
+              cursor: 'pointer',
+            }}>存為 View</div>
+          </div>
+        </div>
+
+        {/* Facet builder row */}
+        <div style={{
+          padding: '6px 16px 10px',
+          borderBottom: `0.5px solid ${borderC}`,
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            {facets.map(f => (
+              <FacetPill key={f.id} f={f} dark={dark} onRemove={() => removeFacet(f.id)} ai={ai}/>
+            ))}
+            <div onClick={() => setPickerOpen(true)} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', borderRadius: 8,
+              border: `1px dashed ${dark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.18)'}`,
+              fontFamily: S_FONTS.body, fontSize: 12, color: subtle, fontWeight: 500,
+              cursor: 'pointer', userSelect: 'none',
+            }}>
+              <SGlyph name="plus" size={11} color={subtle} stroke={2}/>
+              加篩選
+            </div>
+          </div>
+
+          {/* free-text */}
+          <div style={{
+            marginTop: 8,
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '6px 10px', borderRadius: 8,
+            background: dark ? 'rgba(118,118,128,0.18)' : 'rgba(118,118,128,0.10)',
+          }}>
+            <SGlyph name="search" size={12} color={muted} stroke={2}/>
+            <input
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="再加上關鍵字…"
+              style={{
+                flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                fontFamily: S_FONTS.body, fontSize: 13, color: fg, letterSpacing: -0.1,
+              }}/>
+            <div style={{
+              fontFamily: S_FONTS.mono, fontSize: 9, color: muted, letterSpacing: 0.4,
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+            }}>
+              <span style={{
+                padding: '1px 4px', borderRadius: 3,
+                background: dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
+                color: subtle,
+              }}>⌘K</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Result summary strip */}
+        <div style={{
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+          borderBottom: `0.5px solid ${borderC}`,
+        }}>
+          <div>
+            <div style={{ fontFamily: S_FONTS.mono, fontSize: 9, color: muted, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 500, marginBottom: 1 }}>結果</div>
+            <div style={{ fontFamily: S_FONTS.body, fontSize: 13, color: fg, fontWeight: 600, letterSpacing: -0.1 }}>
+              {filtered.length} 筆 <span style={{ color: muted, fontWeight: 400 }}>· 共</span>{' '}
+              <span style={{ fontFamily: S_FONTS.mono }}>NT$ {sFmt(total)}</span>
+            </div>
+          </div>
+          {/* Group toggle */}
+          <div style={{ display: 'flex', gap: 2, padding: 2, borderRadius: 8, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}>
+            {[['none','—'],['category','類'],['account','戶'],['month','月']].map(([k, label]) => (
+              <div key={k} onClick={() => setGroupBy(k)} style={{
+                padding: '4px 9px', borderRadius: 6,
+                background: groupBy === k ? (dark ? '#fff' : '#1c1c1e') : 'transparent',
+                color: groupBy === k ? (dark ? '#000' : '#fff') : subtle,
+                fontFamily: S_FONTS.mono, fontSize: 10, fontWeight: 600, letterSpacing: 0.2,
+                cursor: 'pointer',
+              }}>{label}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflow: 'auto', paddingBottom: 90 }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 16px', fontFamily: S_FONTS.body, fontSize: 14, color: muted }}>
+              這組篩選沒有結果
+            </div>
+          ) : grouped.map(g => (
+            <div key={g.key}>
+              {g.label && (
+                <div style={{
+                  padding: '14px 16px 6px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: 1.4, fontWeight: 600 }}>
+                    {g.label}
+                  </div>
+                  <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, letterSpacing: 0.2 }}>
+                    {g.items.length} 筆 · NT$ {sFmt(g.items.filter(t => !t.isIncome).reduce((s,t) => s + t.amount, 0))}
+                  </div>
+                </div>
+              )}
+              <div style={{ padding: '0 16px' }}>
+                {g.items.map((tx, i) => (
+                  <V3Row key={tx.id} tx={tx} dark={dark} fg={fg} muted={muted} borderC={borderC} isLast={i === g.items.length - 1} incomeC={incomeC}/>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Picker overlay */}
+        {pickerOpen && (
+          <FacetPicker dark={dark} fg={fg} muted={muted} cardBg={cardBg} borderC={borderC} accent={accent} ai={ai}
+            onClose={() => setPickerOpen(false)} onPick={addFacet}/>
+        )}
+
+        <TabBar active="search" dark={dark}/>
+      </div>
+    </Phone>
+  );
+}
+
+function FacetPill({ f, dark, onRemove, ai }) {
+  const labels = { date: '日期', category: '類別', account: '帳戶', tag: '標籤', amount: '金額' };
+  const opLabel = f.op === 'is' ? '是' : f.op === 'in' ? '在' : f.op;
+  const tonalBg = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center',
+      borderRadius: 7, overflow: 'hidden', height: 26,
+      border: `0.5px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}`,
+      fontFamily: S_FONTS.body, fontSize: 12, fontWeight: 500,
+    }}>
+      <div style={{
+        padding: '0 8px', height: '100%', display: 'flex', alignItems: 'center',
+        background: tonalBg, color: dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)',
+        fontFamily: S_FONTS.mono, fontSize: 10, letterSpacing: 0.2,
+      }}>{labels[f.kind]}</div>
+      <div style={{
+        padding: '0 6px', height: '100%', display: 'flex', alignItems: 'center',
+        background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+        color: dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)',
+        fontFamily: S_FONTS.mono, fontSize: 10,
+      }}>{opLabel}</div>
+      <div style={{
+        padding: '0 8px', height: '100%', display: 'flex', alignItems: 'center', gap: 4,
+        background: dark ? '#fff' : '#1c1c1e',
+        color: dark ? '#000' : '#fff',
+      }}>
+        {f.color && <div style={{ width: 6, height: 6, borderRadius: 3, background: f.color }}/>}
+        {f.value}
+      </div>
+      <div onClick={onRemove} style={{
+        padding: '0 6px', height: '100%', display: 'flex', alignItems: 'center',
+        background: dark ? '#fff' : '#1c1c1e', color: dark ? '#000' : '#fff',
+        cursor: 'pointer', borderLeft: `0.5px solid ${dark ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.18)'}`,
+      }}>
+        <SGlyph name="close" size={10} color={dark ? '#000' : '#fff'} stroke={2.4}/>
+      </div>
+    </div>
+  );
+}
+
+function FacetPicker({ dark, fg, muted, cardBg, borderC, accent, ai, onClose, onPick }) {
+  const opts = [
+    { kind: 'date',     value: '本週',     label: '日期 · 本週',       icon: 'clock' },
+    { kind: 'date',     value: '本月',     label: '日期 · 本月',       icon: 'clock' },
+    { kind: 'category', value: '餐飲',     label: '類別 · 餐飲',       icon: 'tag', color: '#FF9500' },
+    { kind: 'category', value: '訂閱',     label: '類別 · 訂閱',       icon: 'tag', color: '#A66BF0' },
+    { kind: 'category', value: '交通',     label: '類別 · 交通',       icon: 'tag', color: '#34C759' },
+    { kind: 'account',  value: '信用卡',   label: '帳戶 · 信用卡',     icon: 'wallet' },
+    { kind: 'account',  value: 'Apple Pay',label: '帳戶 · Apple Pay', icon: 'wallet' },
+    { kind: 'tag',      value: '#訂閱',    label: '標籤 · #訂閱',      icon: 'tag' },
+    { kind: 'tag',      value: '#公帳',    label: '標籤 · #公帳',      icon: 'tag' },
+    { kind: 'amount',   value: 'NT$ 500',  label: '金額 · > NT$ 500',  icon: 'sliders', op: '>' },
+    { kind: 'amount',   value: 'NT$ 1000', label: '金額 · > NT$ 1000', icon: 'sliders', op: '>' },
+  ];
+  return (
+    <div onClick={onClose} style={{
+      position: 'absolute', inset: 0, zIndex: 20,
+      background: 'rgba(0,0,0,0.30)',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxHeight: '70%', overflow: 'auto',
+        background: dark ? '#1c1c1e' : '#fff',
+        borderTopLeftRadius: 22, borderTopRightRadius: 22,
+        padding: '14px 16px 32px',
+      }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)', margin: '0 auto 14px' }}/>
+        <div style={{ fontFamily: S_FONTS.display, fontSize: 18, fontWeight: 700, color: fg, letterSpacing: -0.4, marginBottom: 10 }}>
+          加入篩選條件
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {opts.map((o, i) => (
+            <div key={i} onClick={() => onPick({ kind: o.kind, op: o.op || (o.kind === 'date' ? 'in' : 'is'), value: o.value, icon: o.icon, color: o.color })} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 10px', borderRadius: 10, cursor: 'pointer',
+            }}>
+              <SGlyph name={o.icon} size={15} color={o.color || muted} stroke={1.8}/>
+              <div style={{ flex: 1, fontFamily: S_FONTS.body, fontSize: 14, color: fg, letterSpacing: -0.1 }}>{o.label}</div>
+              <SGlyph name="plus" size={13} color={muted} stroke={1.8}/>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function V3Row({ tx, dark, fg, muted, borderC, isLast, incomeC }) {
+  const isIncome = tx.isIncome;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '11px 0',
+      borderBottom: isLast ? 'none' : `0.5px solid ${borderC}`,
+    }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: 14, flexShrink: 0,
+        background: tx.accountColor + '22',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: S_FONTS.mono, fontSize: 9, fontWeight: 600, color: tx.accountColor,
+      }}>{tx.cat[0]}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 14, fontWeight: 500, color: fg, letterSpacing: -0.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tx.name}</div>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 13, fontWeight: 500, color: isIncome ? incomeC : fg, letterSpacing: -0.2, whiteSpace: 'nowrap' }}>
+            {isIncome ? '+' : '−'}<span style={{ fontSize: 9, color: muted, marginRight: 1 }}>NT$</span>{sFmt(tx.amount)}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          <div style={{ fontFamily: S_FONTS.body, fontSize: 11, color: muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+            {tx.cat}{tx.sub && ` · ${tx.sub}`} · {tx.account}
+            {tx.tags.length > 0 && (
+              <span style={{ marginLeft: 4 }}>
+                {tx.tags.map(tg => (
+                  <span key={tg} style={{
+                    marginLeft: 3, padding: '0 4px', borderRadius: 3,
+                    background: dark ? 'rgba(166,107,240,0.18)' : 'rgba(166,107,240,0.10)',
+                    color: dark ? S_COLORS.aiDark : S_COLORS.ai,
+                    fontFamily: S_FONTS.mono, fontSize: 9, letterSpacing: 0.1,
+                  }}>{tg}</span>
+                ))}
+              </span>
+            )}
+          </div>
+          <div style={{ fontFamily: S_FONTS.mono, fontSize: 10, color: muted, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{tx.when}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.SearchV3 = SearchV3;
+
+</script>
+<script type="text/babel" data-presets="react" data-from="design-canvas.jsx">
+
+// DesignCanvas.jsx — Figma-ish design canvas wrapper
+// Warm gray grid bg + Sections + Artboards + PostIt notes.
+// Artboards are reorderable (grip-drag), labels/titles are inline-editable,
+// and any artboard can be opened in a fullscreen focus overlay (←/→/Esc).
+// State persists to a .design-canvas.state.json sidecar via the host
+// bridge. No assets, no deps.
+//
+// Usage:
+//   <DesignCanvas>
+//     <DCSection id="onboarding" title="Onboarding" subtitle="First-run variants">
+//       <DCArtboard id="a" label="A · Dusk" width={260} height={480}>…</DCArtboard>
+//       <DCArtboard id="b" label="B · Minimal" width={260} height={480}>…</DCArtboard>
+//     </DCSection>
+//   </DesignCanvas>
+
+const DC = {
+  bg: '#f0eee9',
+  grid: 'rgba(0,0,0,0.06)',
+  label: 'rgba(60,50,40,0.7)',
+  title: 'rgba(40,30,20,0.85)',
+  subtitle: 'rgba(60,50,40,0.6)',
+  postitBg: '#fef4a8',
+  postitText: '#5a4a2a',
+  font: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+};
+
+// One-time CSS injection (classes are dc-prefixed so they don't collide with
+// the hosted design's own styles).
+if (typeof document !== 'undefined' && !document.getElementById('dc-styles')) {
+  const s = document.createElement('style');
+  s.id = 'dc-styles';
+  s.textContent = [
+    '.dc-editable{cursor:text;outline:none;white-space:nowrap;border-radius:3px;padding:0 2px;margin:0 -2px}',
+    '.dc-editable:focus{background:#fff;box-shadow:0 0 0 1.5px #c96442}',
+    '[data-dc-slot]{transition:transform .18s cubic-bezier(.2,.7,.3,1)}',
+    '[data-dc-slot].dc-dragging{transition:none;z-index:10;pointer-events:none}',
+    '[data-dc-slot].dc-dragging .dc-card{box-shadow:0 12px 40px rgba(0,0,0,.25),0 0 0 2px #c96442;transform:scale(1.02)}',
+    '.dc-card{transition:box-shadow .15s,transform .15s}',
+    '.dc-card *{scrollbar-width:none}',
+    '.dc-card *::-webkit-scrollbar{display:none}',
+    '.dc-labelrow{display:flex;align-items:center;gap:4px;height:24px}',
+    '.dc-grip{cursor:grab;display:flex;align-items:center;padding:5px 4px;border-radius:4px;transition:background .12s}',
+    '.dc-grip:hover{background:rgba(0,0,0,.08)}',
+    '.dc-grip:active{cursor:grabbing}',
+    '.dc-labeltext{cursor:pointer;border-radius:4px;padding:3px 6px;display:flex;align-items:center;transition:background .12s}',
+    '.dc-labeltext:hover{background:rgba(0,0,0,.05)}',
+    '.dc-expand{position:absolute;bottom:100%;right:0;margin-bottom:5px;z-index:2;opacity:0;transition:opacity .12s,background .12s;',
+    '  width:22px;height:22px;border-radius:5px;border:none;cursor:pointer;padding:0;',
+    '  background:transparent;color:rgba(60,50,40,.7);display:flex;align-items:center;justify-content:center}',
+    '.dc-expand:hover{background:rgba(0,0,0,.06);color:#2a251f}',
+    '[data-dc-slot]:hover .dc-expand{opacity:1}',
+  ].join('\n');
+  document.head.appendChild(s);
+}
+
+const DCCtx = React.createContext(null);
+
+// ─────────────────────────────────────────────────────────────
+// DesignCanvas — stateful wrapper around the pan/zoom viewport.
+// Owns runtime state (per-section order, renamed titles/labels, focused
+// artboard). Order/titles/labels persist to a .design-canvas.state.json
+// sidecar next to the HTML. Reads go via plain fetch() so the saved
+// arrangement is visible anywhere the HTML + sidecar are served together
+// (omelette preview, direct link, downloaded zip). Writes go through the
+// host's window.omelette bridge — editing requires the omelette runtime.
+// Focus is ephemeral.
+// ─────────────────────────────────────────────────────────────
+const DC_STATE_FILE = '.design-canvas.state.json';
+
+function DesignCanvas({ children, minScale, maxScale, style }) {
+  const [state, setState] = React.useState({ sections: {}, focus: null });
+  // Hold rendering until the sidecar read settles so the saved order/titles
+  // appear on first paint (no source-order flash). didRead gates writes until
+  // the read settles so the empty initial state can't clobber a slow read;
+  // skipNextWrite suppresses the one echo-write that would otherwise follow
+  // hydration.
+  const [ready, setReady] = React.useState(false);
+  const didRead = React.useRef(false);
+  const skipNextWrite = React.useRef(false);
+
+  React.useEffect(() => {
+    let off = false;
+    fetch('./' + DC_STATE_FILE)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((saved) => {
+        if (off || !saved || !saved.sections) return;
+        skipNextWrite.current = true;
+        setState((s) => ({ ...s, sections: saved.sections }));
+      })
+      .catch(() => {})
+      .finally(() => { didRead.current = true; if (!off) setReady(true); });
+    const t = setTimeout(() => { if (!off) setReady(true); }, 150);
+    return () => { off = true; clearTimeout(t); };
+  }, []);
+
+  React.useEffect(() => {
+    if (!didRead.current) return;
+    if (skipNextWrite.current) { skipNextWrite.current = false; return; }
+    const t = setTimeout(() => {
+      window.omelette?.writeFile(DC_STATE_FILE, JSON.stringify({ sections: state.sections })).catch(() => {});
+    }, 250);
+    return () => clearTimeout(t);
+  }, [state.sections]);
+
+  // Build registries synchronously from children so FocusOverlay can read
+  // them in the same render. Only direct DCSection > DCArtboard children are
+  // walked — wrapping them in other elements opts out of focus/reorder.
+  const registry = {};     // slotId -> { sectionId, artboard }
+  const sectionMeta = {};  // sectionId -> { title, subtitle, slotIds[] }
+  const sectionOrder = [];
+  React.Children.forEach(children, (sec) => {
+    if (!sec || sec.type !== DCSection) return;
+    const sid = sec.props.id ?? sec.props.title;
+    if (!sid) return;
+    sectionOrder.push(sid);
+    const persisted = state.sections[sid] || {};
+    const srcIds = [];
+    React.Children.forEach(sec.props.children, (ab) => {
+      if (!ab || ab.type !== DCArtboard) return;
+      const aid = ab.props.id ?? ab.props.label;
+      if (!aid) return;
+      registry[`${sid}/${aid}`] = { sectionId: sid, artboard: ab };
+      srcIds.push(aid);
+    });
+    const kept = (persisted.order || []).filter((k) => srcIds.includes(k));
+    sectionMeta[sid] = {
+      title: persisted.title ?? sec.props.title,
+      subtitle: sec.props.subtitle,
+      slotIds: [...kept, ...srcIds.filter((k) => !kept.includes(k))],
+    };
+  });
+
+  const api = React.useMemo(() => ({
+    state,
+    section: (id) => state.sections[id] || {},
+    patchSection: (id, p) => setState((s) => ({
+      ...s,
+      sections: { ...s.sections, [id]: { ...s.sections[id], ...(typeof p === 'function' ? p(s.sections[id] || {}) : p) } },
+    })),
+    setFocus: (slotId) => setState((s) => ({ ...s, focus: slotId })),
+  }), [state]);
+
+  // Esc exits focus; any outside pointerdown commits an in-progress rename.
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') api.setFocus(null); };
+    const onPd = (e) => {
+      const ae = document.activeElement;
+      if (ae && ae.isContentEditable && !ae.contains(e.target)) ae.blur();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPd, true);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPd, true);
+    };
+  }, [api]);
+
+  return (
+    <DCCtx.Provider value={api}>
+      <DCViewport minScale={minScale} maxScale={maxScale} style={style}>{ready && children}</DCViewport>
+      {state.focus && registry[state.focus] && (
+        <DCFocusOverlay entry={registry[state.focus]} sectionMeta={sectionMeta} sectionOrder={sectionOrder} />
+      )}
+    </DCCtx.Provider>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// DCViewport — transform-based pan/zoom (internal)
+//
+// Input mapping (Figma-style):
+//   • trackpad pinch  → zoom   (ctrlKey wheel; Safari gesture* events)
+//   • trackpad scroll → pan    (two-finger)
+//   • mouse wheel     → zoom   (notched; distinguished from trackpad scroll)
+//   • middle-drag / primary-drag-on-bg → pan
+//
+// Transform state lives in a ref and is written straight to the DOM
+// (translate3d + will-change) so wheel ticks don't go through React —
+// keeps pans at 60fps on dense canvases.
+// ─────────────────────────────────────────────────────────────
+function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
+  const vpRef = React.useRef(null);
+  const worldRef = React.useRef(null);
+  const tf = React.useRef({ x: 0, y: 0, scale: 1 });
+
+  const apply = React.useCallback(() => {
+    const { x, y, scale } = tf.current;
+    const el = worldRef.current;
+    if (el) el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+  }, []);
+
+  React.useEffect(() => {
+    const vp = vpRef.current;
+    if (!vp) return;
+
+    const zoomAt = (cx, cy, factor) => {
+      const r = vp.getBoundingClientRect();
+      const px = cx - r.left, py = cy - r.top;
+      const t = tf.current;
+      const next = Math.min(maxScale, Math.max(minScale, t.scale * factor));
+      const k = next / t.scale;
+      // keep the world point under the cursor fixed
+      t.x = px - (px - t.x) * k;
+      t.y = py - (py - t.y) * k;
+      t.scale = next;
+      apply();
+    };
+
+    // Mouse-wheel vs trackpad-scroll heuristic. A physical wheel sends
+    // line-mode deltas (Firefox) or large integer pixel deltas with no X
+    // component (Chrome/Safari, typically multiples of 100/120). Trackpad
+    // two-finger scroll sends small/fractional pixel deltas, often with
+    // non-zero deltaX. ctrlKey is set by the browser for trackpad pinch.
+    const isMouseWheel = (e) =>
+      e.deltaMode !== 0 ||
+      (e.deltaX === 0 && Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 40);
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      if (isGesturing) return; // Safari: gesture* owns the pinch — discard concurrent wheels
+      if (e.ctrlKey) {
+        // trackpad pinch (or explicit ctrl+wheel)
+        zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.01));
+      } else if (isMouseWheel(e)) {
+        // notched mouse wheel — fixed-ratio step per click
+        zoomAt(e.clientX, e.clientY, Math.exp(-Math.sign(e.deltaY) * 0.18));
+      } else {
+        // trackpad two-finger scroll — pan
+        tf.current.x -= e.deltaX;
+        tf.current.y -= e.deltaY;
+        apply();
+      }
+    };
+
+    // Safari sends native gesture* events for trackpad pinch with a smooth
+    // e.scale; preferring these over the ctrl+wheel fallback gives a much
+    // better feel there. No-ops on other browsers. Safari also fires
+    // ctrlKey wheel events during the same pinch — isGesturing makes
+    // onWheel drop those entirely so they neither zoom nor pan.
+    let gsBase = 1;
+    let isGesturing = false;
+    const onGestureStart = (e) => { e.preventDefault(); isGesturing = true; gsBase = tf.current.scale; };
+    const onGestureChange = (e) => {
+      e.preventDefault();
+      zoomAt(e.clientX, e.clientY, (gsBase * e.scale) / tf.current.scale);
+    };
+    const onGestureEnd = (e) => { e.preventDefault(); isGesturing = false; };
+
+    // Drag-pan: middle button anywhere, or primary button on canvas
+    // background (anything that isn't an artboard or an inline editor).
+    let drag = null;
+    const onPointerDown = (e) => {
+      const onBg = !e.target.closest('[data-dc-slot], .dc-editable');
+      if (!(e.button === 1 || (e.button === 0 && onBg))) return;
+      e.preventDefault();
+      vp.setPointerCapture(e.pointerId);
+      drag = { id: e.pointerId, lx: e.clientX, ly: e.clientY };
+      vp.style.cursor = 'grabbing';
+    };
+    const onPointerMove = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      tf.current.x += e.clientX - drag.lx;
+      tf.current.y += e.clientY - drag.ly;
+      drag.lx = e.clientX; drag.ly = e.clientY;
+      apply();
+    };
+    const onPointerUp = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      vp.releasePointerCapture(e.pointerId);
+      drag = null;
+      vp.style.cursor = '';
+    };
+
+    vp.addEventListener('wheel', onWheel, { passive: false });
+    vp.addEventListener('gesturestart', onGestureStart, { passive: false });
+    vp.addEventListener('gesturechange', onGestureChange, { passive: false });
+    vp.addEventListener('gestureend', onGestureEnd, { passive: false });
+    vp.addEventListener('pointerdown', onPointerDown);
+    vp.addEventListener('pointermove', onPointerMove);
+    vp.addEventListener('pointerup', onPointerUp);
+    vp.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      vp.removeEventListener('wheel', onWheel);
+      vp.removeEventListener('gesturestart', onGestureStart);
+      vp.removeEventListener('gesturechange', onGestureChange);
+      vp.removeEventListener('gestureend', onGestureEnd);
+      vp.removeEventListener('pointerdown', onPointerDown);
+      vp.removeEventListener('pointermove', onPointerMove);
+      vp.removeEventListener('pointerup', onPointerUp);
+      vp.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [apply, minScale, maxScale]);
+
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M120 0H0v120' fill='none' stroke='${encodeURIComponent(DC.grid)}' stroke-width='1'/%3E%3C/svg%3E")`;
+  return (
+    <div
+      ref={vpRef}
+      className="design-canvas"
+      style={{
+        height: '100vh', width: '100vw',
+        background: DC.bg,
+        overflow: 'hidden',
+        overscrollBehavior: 'none',
+        touchAction: 'none',
+        position: 'relative',
+        fontFamily: DC.font,
+        boxSizing: 'border-box',
+        ...style,
+      }}
+    >
+      <div
+        ref={worldRef}
+        style={{
+          position: 'absolute', top: 0, left: 0,
+          transformOrigin: '0 0',
+          willChange: 'transform',
+          width: 'max-content', minWidth: '100%',
+          minHeight: '100%',
+          padding: '60px 0 80px',
+        }}
+      >
+        <div style={{ position: 'absolute', inset: -6000, backgroundImage: gridSvg, backgroundSize: '120px 120px', pointerEvents: 'none', zIndex: -1 }} />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// DCSection — editable title + h-row of artboards in persisted order
+// ─────────────────────────────────────────────────────────────
+function DCSection({ id, title, subtitle, children, gap = 48 }) {
+  const ctx = React.useContext(DCCtx);
+  const sid = id ?? title;
+  const all = React.Children.toArray(children);
+  const artboards = all.filter((c) => c && c.type === DCArtboard);
+  const rest = all.filter((c) => !(c && c.type === DCArtboard));
+  const srcOrder = artboards.map((a) => a.props.id ?? a.props.label);
+  const sec = (ctx && sid && ctx.section(sid)) || {};
+
+  const order = React.useMemo(() => {
+    const kept = (sec.order || []).filter((k) => srcOrder.includes(k));
+    return [...kept, ...srcOrder.filter((k) => !kept.includes(k))];
+  }, [sec.order, srcOrder.join('|')]);
+
+  const byId = Object.fromEntries(artboards.map((a) => [a.props.id ?? a.props.label, a]));
+
+  return (
+    <div data-dc-section={sid} style={{ marginBottom: 80, position: 'relative' }}>
+      <div style={{ padding: '0 60px 56px' }}>
+        <DCEditable tag="div" value={sec.title ?? title}
+          onChange={(v) => ctx && sid && ctx.patchSection(sid, { title: v })}
+          style={{ fontSize: 28, fontWeight: 600, color: DC.title, letterSpacing: -0.4, marginBottom: 6, display: 'inline-block' }} />
+        {subtitle && <div style={{ fontSize: 16, color: DC.subtitle }}>{subtitle}</div>}
+      </div>
+      <div style={{ display: 'flex', gap, padding: '0 60px', alignItems: 'flex-start', width: 'max-content' }}>
+        {order.map((k) => (
+          <DCArtboardFrame key={k} sectionId={sid} artboard={byId[k]} order={order}
+            label={(sec.labels || {})[k] ?? byId[k].props.label}
+            onRename={(v) => ctx && ctx.patchSection(sid, (x) => ({ labels: { ...x.labels, [k]: v } }))}
+            onReorder={(next) => ctx && ctx.patchSection(sid, { order: next })}
+            onFocus={() => ctx && ctx.setFocus(`${sid}/${k}`)} />
+        ))}
+      </div>
+      {rest}
+    </div>
+  );
+}
+
+// DCArtboard — marker; rendered by DCArtboardFrame via DCSection.
+function DCArtboard() { return null; }
+
+function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorder, onFocus }) {
+  const { id: rawId, label: rawLabel, width = 260, height = 480, children, style = {} } = artboard.props;
+  const id = rawId ?? rawLabel;
+  const ref = React.useRef(null);
+
+  // Live drag-reorder: dragged card sticks to cursor; siblings slide into
+  // their would-be slots in real time via transforms. DOM order only
+  // changes on drop.
+  const onGripDown = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const me = ref.current;
+    // translateX is applied in local (pre-scale) space but pointer deltas and
+    // getBoundingClientRect().left are screen-space — divide by the viewport's
+    // current scale so the dragged card tracks the cursor at any zoom level.
+    const scale = me.getBoundingClientRect().width / me.offsetWidth || 1;
+    const peers = Array.from(document.querySelectorAll(`[data-dc-section="${sectionId}"] [data-dc-slot]`));
+    const homes = peers.map((el) => ({ el, id: el.dataset.dcSlot, x: el.getBoundingClientRect().left }));
+    const slotXs = homes.map((h) => h.x);
+    const startIdx = order.indexOf(id);
+    const startX = e.clientX;
+    let liveOrder = order.slice();
+    me.classList.add('dc-dragging');
+
+    const layout = () => {
+      for (const h of homes) {
+        if (h.id === id) continue;
+        const slot = liveOrder.indexOf(h.id);
+        h.el.style.transform = `translateX(${(slotXs[slot] - h.x) / scale}px)`;
+      }
+    };
+
+    const move = (ev) => {
+      const dx = ev.clientX - startX;
+      me.style.transform = `translateX(${dx / scale}px)`;
+      const cur = homes[startIdx].x + dx;
+      let nearest = 0, best = Infinity;
+      for (let i = 0; i < slotXs.length; i++) {
+        const d = Math.abs(slotXs[i] - cur);
+        if (d < best) { best = d; nearest = i; }
+      }
+      if (liveOrder.indexOf(id) !== nearest) {
+        liveOrder = order.filter((k) => k !== id);
+        liveOrder.splice(nearest, 0, id);
+        layout();
+      }
+    };
+
+    const up = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      const finalSlot = liveOrder.indexOf(id);
+      me.classList.remove('dc-dragging');
+      me.style.transform = `translateX(${(slotXs[finalSlot] - homes[startIdx].x) / scale}px)`;
+      // After the settle transition, kill transitions + clear transforms +
+      // commit the reorder in the same frame so there's no visual snap-back.
+      setTimeout(() => {
+        for (const h of homes) { h.el.style.transition = 'none'; h.el.style.transform = ''; }
+        if (liveOrder.join('|') !== order.join('|')) onReorder(liveOrder);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          for (const h of homes) h.el.style.transition = '';
+        }));
+      }, 180);
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  };
+
+  return (
+    <div ref={ref} data-dc-slot={id} style={{ position: 'relative', flexShrink: 0 }}>
+      <div className="dc-labelrow" style={{ position: 'absolute', bottom: '100%', left: -4, marginBottom: 4, color: DC.label }}>
+        <div className="dc-grip" onPointerDown={onGripDown} title="Drag to reorder">
+          <svg width="9" height="13" viewBox="0 0 9 13" fill="currentColor"><circle cx="2" cy="2" r="1.1"/><circle cx="7" cy="2" r="1.1"/><circle cx="2" cy="6.5" r="1.1"/><circle cx="7" cy="6.5" r="1.1"/><circle cx="2" cy="11" r="1.1"/><circle cx="7" cy="11" r="1.1"/></svg>
+        </div>
+        <div className="dc-labeltext" onClick={onFocus} title="Click to focus">
+          <DCEditable value={label} onChange={onRename} onClick={(e) => e.stopPropagation()}
+            style={{ fontSize: 15, fontWeight: 500, color: DC.label, lineHeight: 1 }} />
+        </div>
+      </div>
+      <button className="dc-expand" onClick={onFocus} onPointerDown={(e) => e.stopPropagation()} title="Focus">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M7 1h4v4M5 11H1V7M11 1L7.5 4.5M1 11l3.5-3.5"/></svg>
+      </button>
+      <div className="dc-card"
+        style={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06)', overflow: 'hidden', width, height, background: '#fff', ...style }}>
+        {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 13, fontFamily: DC.font }}>{id}</div>}
+      </div>
+    </div>
+  );
+}
+
+// Inline rename — commits on blur or Enter.
+function DCEditable({ value, onChange, style, tag = 'span', onClick }) {
+  const T = tag;
+  return (
+    <T className="dc-editable" contentEditable suppressContentEditableWarning
+      onClick={onClick}
+      onPointerDown={(e) => e.stopPropagation()}
+      onBlur={(e) => onChange && onChange(e.currentTarget.textContent)}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+      style={style}>{value}</T>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Focus mode — overlay one artboard; ←/→ within section, ↑/↓ across
+// sections, Esc or backdrop click to exit.
+// ─────────────────────────────────────────────────────────────
+function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
+  const ctx = React.useContext(DCCtx);
+  const { sectionId, artboard } = entry;
+  const sec = ctx.section(sectionId);
+  const meta = sectionMeta[sectionId];
+  const peers = meta.slotIds;
+  const aid = artboard.props.id ?? artboard.props.label;
+  const idx = peers.indexOf(aid);
+  const secIdx = sectionOrder.indexOf(sectionId);
+
+  const go = (d) => { const n = peers[(idx + d + peers.length) % peers.length]; if (n) ctx.setFocus(`${sectionId}/${n}`); };
+  const goSection = (d) => {
+    const ns = sectionOrder[(secIdx + d + sectionOrder.length) % sectionOrder.length];
+    const first = sectionMeta[ns] && sectionMeta[ns].slotIds[0];
+    if (first) ctx.setFocus(`${ns}/${first}`);
+  };
+
+  React.useEffect(() => {
+    const k = (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); goSection(-1); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); goSection(1); }
+    };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  });
+
+  const { width = 260, height = 480, children } = artboard.props;
+  const [vp, setVp] = React.useState({ w: window.innerWidth, h: window.innerHeight });
+  React.useEffect(() => { const r = () => setVp({ w: window.innerWidth, h: window.innerHeight }); window.addEventListener('resize', r); return () => window.removeEventListener('resize', r); }, []);
+  const scale = Math.max(0.1, Math.min((vp.w - 200) / width, (vp.h - 260) / height, 2));
+
+  const [ddOpen, setDd] = React.useState(false);
+  const Arrow = ({ dir, onClick }) => (
+    <button onClick={(e) => { e.stopPropagation(); onClick(); }}
+      style={{ position: 'absolute', top: '50%', [dir]: 28, transform: 'translateY(-50%)',
+        border: 'none', background: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.9)',
+        width: 44, height: 44, borderRadius: 22, fontSize: 18, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.18)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.08)')}>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d={dir === 'left' ? 'M11 3L5 9l6 6' : 'M7 3l6 6-6 6'} /></svg>
+    </button>
+  );
+
+  // Portal to body so position:fixed is the real viewport regardless of any
+  // transform on DesignCanvas's ancestors (including the canvas zoom itself).
+  return ReactDOM.createPortal(
+    <div onClick={() => ctx.setFocus(null)}
+      onWheel={(e) => e.preventDefault()}
+      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(24,20,16,.6)', backdropFilter: 'blur(14px)',
+        fontFamily: DC.font, color: '#fff' }}>
+
+      {/* top bar: section dropdown (left) · close (right) */}
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72, display: 'flex', alignItems: 'flex-start', padding: '16px 20px 0', gap: 16 }}>
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setDd((o) => !o)}
+            style={{ border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', padding: '6px 8px',
+              borderRadius: 6, textAlign: 'left', fontFamily: 'inherit' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>{meta.title}</span>
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ opacity: .7 }}><path d="M2 4l3.5 3.5L9 4"/></svg>
+            </span>
+            {meta.subtitle && <span style={{ display: 'block', fontSize: 13, opacity: .6, fontWeight: 400, marginTop: 2 }}>{meta.subtitle}</span>}
+          </button>
+          {ddOpen && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#2a251f', borderRadius: 8,
+              boxShadow: '0 8px 32px rgba(0,0,0,.4)', padding: 4, minWidth: 200, zIndex: 10 }}>
+              {sectionOrder.map((sid) => (
+                <button key={sid} onClick={() => { setDd(false); const f = sectionMeta[sid].slotIds[0]; if (f) ctx.setFocus(`${sid}/${f}`); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+                    background: sid === sectionId ? 'rgba(255,255,255,.1)' : 'transparent', color: '#fff',
+                    padding: '8px 12px', borderRadius: 5, fontSize: 14, fontWeight: sid === sectionId ? 600 : 400, fontFamily: 'inherit' }}>
+                  {sectionMeta[sid].title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1 }} />
+        <button onClick={() => ctx.setFocus(null)}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.12)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,.7)', width: 32, height: 32,
+            borderRadius: 16, fontSize: 20, cursor: 'pointer', lineHeight: 1, transition: 'background .12s' }}>×</button>
+      </div>
+
+      {/* card centered, label + index below — only the card itself stops
+          propagation so any backdrop click (including the margins around
+          the card) exits focus */}
+      <div
+        style={{ position: 'absolute', top: 64, bottom: 56, left: 100, right: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ width: width * scale, height: height * scale, position: 'relative' }}>
+          <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left', background: '#fff', borderRadius: 2, overflow: 'hidden',
+            boxShadow: '0 20px 80px rgba(0,0,0,.4)' }}>
+            {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb' }}>{aid}</div>}
+          </div>
+        </div>
+        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 500, opacity: .85, textAlign: 'center' }}>
+          {(sec.labels || {})[aid] ?? artboard.props.label}
+          <span style={{ opacity: .5, marginLeft: 10, fontVariantNumeric: 'tabular-nums' }}>{idx + 1} / {peers.length}</span>
+        </div>
+      </div>
+
+      <Arrow dir="left" onClick={() => go(-1)} />
+      <Arrow dir="right" onClick={() => go(1)} />
+
+      {/* dots */}
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
+        {peers.map((p, i) => (
+          <button key={p} onClick={() => ctx.setFocus(`${sectionId}/${p}`)}
+            style={{ border: 'none', padding: 0, cursor: 'pointer', width: 6, height: 6, borderRadius: 3,
+              background: i === idx ? '#fff' : 'rgba(255,255,255,.3)' }} />
+        ))}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Post-it — absolute-positioned sticky note
+// ─────────────────────────────────────────────────────────────
+function DCPostIt({ children, top, left, right, bottom, rotate = -2, width = 180 }) {
+  return (
+    <div style={{
+      position: 'absolute', top, left, right, bottom, width,
+      background: DC.postitBg, padding: '14px 16px',
+      fontFamily: '"Comic Sans MS", "Marker Felt", "Segoe Print", cursive',
+      fontSize: 14, lineHeight: 1.4, color: DC.postitText,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)',
+      transform: `rotate(${rotate}deg)`,
+      zIndex: 5,
+    }}>{children}</div>
+  );
+}
+
+Object.assign(window, { DesignCanvas, DCSection, DCArtboard, DCPostIt });
+
+
+</script>
+<script type="text/babel" data-presets="react" data-from="tweaks-panel.jsx">
+
+// tweaks-panel.jsx
+// Reusable Tweaks shell + form-control helpers.
+//
+// Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,
+// posts __edit_mode_available / __edit_mode_set_keys / __edit_mode_dismissed) so
+// individual prototypes don't re-roll it. Ships a consistent set of controls so you
+// don't hand-draw <input type="range">, segmented radios, steppers, etc.
+//
+// Usage (in an HTML file that loads React + Babel):
+//
+//   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+//     "primaryColor": "#D97757",
+//     "fontSize": 16,
+//     "density": "regular",
+//     "dark": false
+//   }/*EDITMODE-END*/;
+//
+//   function App() {
+//     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+//     return (
+//       <div style={{ fontSize: t.fontSize, color: t.primaryColor }}>
+//         Hello
+//         <TweaksPanel>
+//           <TweakSection label="Typography" />
+//           <TweakSlider label="Font size" value={t.fontSize} min={10} max={32} unit="px"
+//                        onChange={(v) => setTweak('fontSize', v)} />
+//           <TweakRadio  label="Density" value={t.density}
+//                        options={['compact', 'regular', 'comfy']}
+//                        onChange={(v) => setTweak('density', v)} />
+//           <TweakSection label="Theme" />
+//           <TweakColor  label="Primary" value={t.primaryColor}
+//                        onChange={(v) => setTweak('primaryColor', v)} />
+//           <TweakToggle label="Dark mode" value={t.dark}
+//                        onChange={(v) => setTweak('dark', v)} />
+//         </TweaksPanel>
+//       </div>
+//     );
+//   }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+
+  .twk-field{appearance:none;width:100%;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;height:22px;
+    border-radius:6px;cursor:default;padding:0}
+
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  .twk-num{display:flex;align-items:center;height:26px;padding:0 0 0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;background:rgba(255,255,255,.6)}
+  .twk-num-lbl{font-weight:500;color:rgba(41,38,27,.6);cursor:ew-resize;
+    user-select:none;padding-right:8px}
+  .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
+    font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:0 8px 0 0;
+    outline:none;color:inherit;-moz-appearance:textfield}
+  .twk-num input::-webkit-inner-spin-button,.twk-num input::-webkit-outer-spin-button{
+    -webkit-appearance:none;margin:0}
+  .twk-num-unit{padding-right:8px;color:rgba(41,38,27,.45)}
+
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
+  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+  .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+`;
+
+// ── useTweaks ───────────────────────────────────────────────────────────────
+// Single source of truth for tweak values. setTweak persists via the host
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  const setTweak = React.useCallback((key, val) => {
+    setValues((prev) => ({ ...prev, [key]: val }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: val } }, '*');
+  }, []);
+  return [values, setTweak];
+}
+
+// ── TweaksPanel ─────────────────────────────────────────────────────────────
+// Floating shell. Registers the protocol listener BEFORE announcing
+// availability — if the announce ran first, the host's activate could land
+// before our handler exists and the toolbar toggle would silently no-op.
+// The close button posts __edit_mode_dismissed so the host's toolbar toggle
+// flips off in lockstep; the host echoes __deactivate_edit_mode back which
+// is what actually hides the panel.
+function TweaksPanel({ title = 'Tweaks', children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', clampToViewport);
+      return () => window.removeEventListener('resize', clampToViewport);
+    }
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = {
+        x: startRight - (ev.clientX - sx),
+        y: startBottom - (ev.clientY - sy),
+      };
+      clampToViewport();
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel"
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" aria-label="Close tweaks"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">{children}</div>
+      </div>
+    </>
+  );
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <TweakRow label={label} value={`${value}${unit}`}>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </TweakRow>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  // The active value is read by pointer-move handlers attached for the lifetime
+  // of a drag — ref it so a stale closure doesn't fire onChange for every move.
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const v = segAt(ev.clientX);
+      if (v !== valueRef.current) onChange(v);
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown}
+           className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb"
+             style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+                      width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakSelect({ label, value, options, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <select className="twk-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => {
+          const v = typeof o === 'object' ? o.value : o;
+          const l = typeof o === 'object' ? o.label : o;
+          return <option key={v} value={v}>{l}</option>;
+        })}
+      </select>
+    </TweakRow>
+  );
+}
+
+function TweakText({ label, value, placeholder, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <input className="twk-field" type="text" value={value} placeholder={placeholder}
+             onChange={(e) => onChange(e.target.value)} />
+    </TweakRow>
+  );
+}
+
+function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) {
+  const clamp = (n) => {
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+  const startRef = React.useRef({ x: 0, val: 0 });
+  const onScrubStart = (e) => {
+    e.preventDefault();
+    startRef.current = { x: e.clientX, val: value };
+    const decimals = (String(step).split('.')[1] || '').length;
+    const move = (ev) => {
+      const dx = ev.clientX - startRef.current.x;
+      const raw = startRef.current.val + dx * step;
+      const snapped = Math.round(raw / step) * step;
+      onChange(clamp(Number(snapped.toFixed(decimals))));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-num">
+      <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
+      <input type="number" value={value} min={min} max={max} step={step}
+             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      {unit && <span className="twk-num-unit">{unit}</span>}
+    </div>
+  );
+}
+
+function TweakColor({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <input type="color" className="twk-swatch" value={value}
+             onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function TweakButton({ label, onClick, secondary = false }) {
+  return (
+    <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
+            onClick={onClick}>{label}</button>
+  );
+}
+
+Object.assign(window, {
+  useTweaks, TweaksPanel, TweakSection, TweakRow,
+  TweakSlider, TweakToggle, TweakRadio, TweakSelect,
+  TweakText, TweakNumber, TweakColor, TweakButton,
+});
+
+</script>
+
+<script type="text/babel" data-presets="react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "dark": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: 60 }}>
+        <Phone dark={t.dark}>
+          <SearchV1 dark={t.dark}/>
+        </Phone>
+      </div>
+
+      <TweaksPanel title="Search Tweaks">
+        <TweakSection label="Theme"/>
+        <TweakToggle label="Dark mode" value={t.dark} onChange={v => setTweak('dark', v)}/>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

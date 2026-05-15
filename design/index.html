@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NeuLedger · Design Handoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* NeuLedger · Design Tokens · v2.0 (B1 Warm Glass)
+   Locked-in direction as of May 15, 2026
+   ─────────────────────────────────────────────── */
+
+:root {
+  /* ─── Accent (warm orange) ─── */
+  --nl-accent:       #E8835A;
+  --nl-accent-dark:  #FF6A00;
+
+  /* ─── Semantic ─── */
+  --nl-income:   #34C759;
+  --nl-expense:  #FF453A;
+  --nl-ai:       #A66BF0;  /* AI / on-device extraction */
+
+  /* ─── Account-type accents ─── */
+  --nl-acc-cash:    #9B7E5F;
+  --nl-acc-bank:    #1B5E8E;
+  --nl-acc-credit:  #7B3F00;
+  --nl-acc-digital: #000000;
+  --nl-acc-jko:     #FF6B6B;
+  --nl-acc-invest:  #5E5CE6;
+
+  /* ─── Frequency / period ─── */
+  --nl-freq-weekly:  #0A84FF;
+  --nl-freq-monthly: #E8835A;
+  --nl-freq-yearly:  #A66BF0;
+
+  /* ─── Surface ─── */
+  --nl-canvas:        #ECE9E2;          /* page bg around phone */
+  --nl-ink:           #0A0A0A;
+  --nl-muted:         rgba(60, 60, 67, 0.55);
+  --nl-divider:       rgba(0, 0, 0, 0.05);
+  --nl-glass-fill:    rgba(255, 255, 255, 0.70);
+  --nl-glass-border:  rgba(255, 255, 255, 0.85);
+
+  /* ─── Warm radial bg (light) ─── */
+  --nl-bg-warm-light: radial-gradient(ellipse at 50% -10%, #FFE4D2 0%, #FBF1E5 30%, #F6ECDF 60%);
+
+  /* ─── CTA gradient (135°) ─── */
+  --nl-cta: linear-gradient(135deg, #E8835A, #FF6A00);
+
+  /* ─── Type families ─── */
+  --nl-font-display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
+  --nl-font-body:    "DM Sans", -apple-system, system-ui, sans-serif;
+  --nl-font-mono:    "DM Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* ─── Spacing (4pt baseline) ─── */
+  --nl-s-1: 4px;
+  --nl-s-2: 8px;
+  --nl-s-3: 12px;
+  --nl-s-4: 16px;
+  --nl-s-5: 20px;
+  --nl-s-6: 24px;
+  --nl-s-7: 32px;
+  --nl-s-8: 40px;
+
+  /* ─── Radius ─── */
+  --nl-r-tap:    8px;
+  --nl-r-chip:   11px;
+  --nl-r-input:  14px;
+  --nl-r-glass:  18px;
+  --nl-r-card:   20px;
+  --nl-r-sheet:  22px;
+  --nl-r-pill:   999px;
+  --nl-r-phone:  48px;
+
+  /* ─── Shadows ─── */
+  --nl-shadow-glass-light: 0 1px 0 rgba(255,255,255,0.85) inset, 0 4px 12px rgba(120,80,40,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  --nl-shadow-glass-dark:  0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 28px rgba(0,0,0,0.35);
+  --nl-shadow-cta:         0 8px 20px rgba(232,131,90,0.34);
+  --nl-shadow-phone:       0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12);
+
+  /* ─── Motion ─── */
+  --nl-ease-std:  cubic-bezier(0.22, 0.9, 0.32, 1);
+  --nl-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --nl-dur-fast:   180ms;
+  --nl-dur-base:   320ms;
+  --nl-dur-reveal: 480ms;
+
+  /* ─── Frame ─── */
+  --nl-frame-w: 402px;
+  --nl-frame-h: 874px;
+}
+
+/* Dark-mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nl-accent:      #FF6A00;
+    --nl-ink:         #FFFFFF;
+    --nl-muted:       rgba(235, 235, 245, 0.55);
+    --nl-divider:     rgba(255, 255, 255, 0.06);
+    --nl-glass-fill:  rgba(255, 255, 255, 0.06);
+    --nl-glass-border: rgba(255, 255, 255, 0.10);
+    --nl-bg-warm-light: radial-gradient(ellipse at 50% -20%, #4A2A0E 0%, #1a0f08 35%, #050505 70%);
+  }
+}
+
+/* Type scale */
+.nl-display-xl  { font-family: var(--nl-font-display); font-size: 40px; line-height: 1.05; letter-spacing: -1px;   font-weight: 600; }
+.nl-display-l   { font-family: var(--nl-font-display); font-size: 34px; line-height: 1.05; letter-spacing: -1px;   font-weight: 600; }
+.nl-display-m   { font-family: var(--nl-font-display); font-size: 22px; line-height: 1.15; letter-spacing: -0.4px; font-weight: 600; }
+.nl-display-s   { font-family: var(--nl-font-display); font-size: 18px; line-height: 1.2;  letter-spacing: -0.3px; font-weight: 600; }
+.nl-nav-title   { font-family: var(--nl-font-display); font-size: 17px; line-height: 1.2;  font-weight: 600; }
+
+.nl-body-l      { font-family: var(--nl-font-body); font-size: 16px; line-height: 1.45; letter-spacing: -0.1px;  font-weight: 400; }
+.nl-body-m      { font-family: var(--nl-font-body); font-size: 14px; line-height: 1.45; letter-spacing: -0.05px; font-weight: 400; }
+.nl-body-s      { font-family: var(--nl-font-body); font-size: 12px; line-height: 1.4;  font-weight: 400; }
+.nl-body-xs     { font-family: var(--nl-font-body); font-size: 11px; line-height: 1.4;  font-weight: 400; }
+
+.nl-mono-l      { font-family: var(--nl-font-mono); font-size: 38px; line-height: 1.0; letter-spacing: -1.2px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nl-mono-m      { font-family: var(--nl-font-mono); font-size: 14px; line-height: 1.2; letter-spacing: -0.2px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nl-mono-s      { font-family: var(--nl-font-mono); font-size: 12px; line-height: 1.2; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nl-mono-eyebrow{ font-family: var(--nl-font-mono); font-size: 11px; line-height: 1.4; letter-spacing: 1.2px; font-weight: 500; text-transform: uppercase; }
+
+</style>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{
+    background: var(--nl-canvas);
+    color: var(--nl-ink);
+    font-family: var(--nl-font-body);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .wrap{ max-width: 1280px; margin: 0 auto; padding: 64px 32px 96px; }
+  .eyebrow{
+    font-family: var(--nl-font-mono);
+    font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--nl-muted); font-weight: 500;
+  }
+  h1{
+    font-family: var(--nl-font-display);
+    font-size: 56px; font-weight: 600; letter-spacing: -2px;
+    line-height: 1.0; margin-top: 6px;
+  }
+  h1 .accent{ color: var(--nl-accent); }
+  .lede{
+    margin-top: 14px; font-size: 16px; max-width: 640px; line-height: 1.55;
+    color: rgba(60,60,67,0.72);
+  }
+  .meta{
+    display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px;
+    font-family: var(--nl-font-mono); font-size: 12px;
+  }
+  .chip{
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 999px;
+    background: rgba(232,131,90,0.10); color: var(--nl-accent);
+    border: 0.5px solid rgba(232,131,90,0.20);
+    font-weight: 500;
+  }
+  .chip .dot{ width: 6px; height: 6px; border-radius: 3px; background: var(--nl-accent); }
+  .chip.neutral{
+    background: rgba(0,0,0,0.04); color: var(--nl-ink);
+    border-color: rgba(0,0,0,0.08);
+  }
+  .chip.neutral .dot{ background: rgba(0,0,0,0.4); }
+
+  section{ margin-top: 56px; }
+  h2{
+    font-family: var(--nl-font-display);
+    font-size: 22px; font-weight: 600; letter-spacing: -0.4px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  h2 .count{
+    font-family: var(--nl-font-mono); font-size: 12px; font-weight: 500;
+    color: var(--nl-muted); letter-spacing: 0.5px;
+  }
+  .section-sub{
+    margin-top: 4px; color: var(--nl-muted); font-size: 13px; max-width: 640px; line-height: 1.5;
+  }
+
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px; margin-top: 22px;
+  }
+  .card{
+    background: var(--nl-glass-fill);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid var(--nl-glass-border);
+    border-radius: var(--nl-r-glass);
+    box-shadow: var(--nl-shadow-glass-light);
+    overflow: hidden;
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column;
+    transition: transform 200ms var(--nl-ease-std), box-shadow 200ms var(--nl-ease-std);
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset, 0 12px 28px rgba(120,80,40,0.10), 0 0 0 0.5px rgba(0,0,0,0.06);
+  }
+  .card .thumb{
+    height: 180px; position: relative; overflow: hidden;
+    background: var(--nl-bg-warm-light);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card .thumb .frame{
+    width: 140px; height: 248px; border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.55));
+    border: 0.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.06);
+    display: flex; flex-direction: column; padding: 14px 12px 12px;
+    overflow: hidden; position: relative;
+  }
+  .card .thumb .frame::before{
+    content: ""; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    width: 50px; height: 14px; border-radius: 10px; background: #000;
+  }
+  .card .thumb .frame .label{
+    margin-top: 18px; font-family: var(--nl-font-mono); font-size: 8.5px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--nl-muted); text-align: center;
+  }
+  .card .thumb .frame .title-line{
+    margin-top: 6px; font-family: var(--nl-font-display); font-size: 13px; font-weight: 600;
+    color: var(--nl-ink); text-align: center; letter-spacing: -0.2px;
+  }
+  .card .thumb .frame .strip{
+    margin-top: 10px; height: 38px; border-radius: 8px;
+    background: rgba(255,255,255,0.85);
+    border: 0.5px solid rgba(0,0,0,0.04);
+    box-shadow: 0 2px 6px rgba(120,80,40,0.04);
+  }
+  .card .thumb .frame .strip.glass{ background: rgba(255,255,255,0.55); }
+  .card .thumb .frame .strip.accent{ background: linear-gradient(135deg, #E8835A, #FF6A00); }
+  .card .thumb .frame .row{
+    display: flex; gap: 4px; margin-top: 6px;
+  }
+  .card .thumb .frame .row > div{ flex:1; height: 16px; border-radius: 6px; background: rgba(255,255,255,0.7); }
+
+  .card .body{
+    padding: 16px 18px 18px;
+    flex: 1; display: flex; flex-direction: column; gap: 6px;
+  }
+  .card .body .num{
+    font-family: var(--nl-font-mono); font-size: 10px; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--nl-muted);
+  }
+  .card .body .name{
+    font-family: var(--nl-font-display); font-size: 17px; font-weight: 600;
+    letter-spacing: -0.3px; color: var(--nl-ink);
+  }
+  .card .body .desc{
+    font-size: 12.5px; line-height: 1.5; color: var(--nl-muted); margin-top: 2px;
+  }
+  .card .body .feature{
+    margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--nl-divider);
+    font-family: var(--nl-font-mono); font-size: 11px; color: rgba(60,60,67,0.7);
+    display: flex; gap: 6px; align-items: center;
+  }
+  .card .body .feature.todo{ color: var(--nl-accent); }
+
+  /* Resources strip */
+  .resources{ margin-top: 56px; }
+  .resgrid{
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 18px;
+  }
+  .rescard{
+    padding: 18px; border-radius: 14px;
+    background: rgba(255,255,255,0.5);
+    border: 0.5px solid rgba(0,0,0,0.06);
+    text-decoration: none; color: inherit;
+    transition: background 200ms var(--nl-ease-std);
+  }
+  .rescard:hover{ background: rgba(255,255,255,0.75); }
+  .rescard .icon{
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(232,131,90,0.12); color: var(--nl-accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--nl-font-mono); font-size: 12px; font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .rescard .title{ font-weight: 600; font-size: 14.5px; }
+  .rescard .sub{ font-size: 12px; color: var(--nl-muted); margin-top: 4px; line-height: 1.5; }
+
+  footer{
+    margin-top: 80px; padding-top: 32px; border-top: 0.5px solid var(--nl-divider);
+    font-family: var(--nl-font-mono); font-size: 11px; color: var(--nl-muted);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    letter-spacing: 0.3px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">NeuLedger · Design Handoff · v2.0</div>
+    <h1>B1 <span class="accent">Warm Glass</span></h1>
+    <div class="lede">
+      個人記帳 App 完整設計交付包。13 個畫面群 · 暖色玻璃視覺語言 · 對應 SwiftUI + TCA codebase。
+      所有 token、字體、間距、動畫已定稿。
+    </div>
+    <div class="meta">
+      <span class="chip"><span class="dot"></span>13 SCREENS DONE</span>
+      <span class="chip neutral"><span class="dot"></span>5 IN BACKLOG</span>
+      <span class="chip neutral"><span class="dot"></span>iOS · SWIFTUI · TCA</span>
+      <span class="chip neutral"><span class="dot"></span>UPDATED 2026-05-15</span>
+    </div>
+
+    <!-- ─── Core flow ─── -->
+    <section>
+      <h2>Core flow <span class="count">· 5 screens</span></h2>
+      <div class="section-sub">從首次啟動 → 記錄一筆交易 → 看見它出現在 Dashboard 的核心路徑。</div>
+      <div class="grid">
+
+        <a class="card" href="screens/01-Onboarding.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">01 / ONBOARDING</div>
+            <div class="title-line">A new way<br/>to ledger.</div>
+            <div class="strip glass" style="margin-top:auto;"></div>
+            <div class="strip accent" style="margin-top:6px; height:24px; border-radius:999px;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">01 / Onboarding</div>
+            <div class="name">4-step intro</div>
+            <div class="desc">Welcome → Accounts pick → Try AI extract → Ready</div>
+            <div class="feature">Maps to Onboarding feature</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/02-Dashboard.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">02 / DASHBOARD</div>
+            <div class="title-line" style="margin-top:auto; font-family: var(--nl-font-mono); font-size:18px; letter-spacing:-0.6px;">+NT$ 128,400</div>
+            <div class="strip glass" style="margin-top:6px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="row"><div></div><div></div><div></div></div>
+          </div></div>
+          <div class="body">
+            <div class="num">02 / Dashboard</div>
+            <div class="name">Home + Add Transaction</div>
+            <div class="desc">月份總覽、Net worth、Recent · 含 AI 自然語言記帳 overlay (3-tab flow)</div>
+            <div class="feature">Maps to Dashboard / AddTransaction</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/03-Transaction-Detail.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">03 / TX DETAIL</div>
+            <div class="title-line" style="font-family: var(--nl-font-mono); font-size:20px; letter-spacing:-0.8px; color: var(--nl-expense);">−NT$ 1,290</div>
+            <div class="strip glass" style="margin-top:8px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="strip" style="margin-top:auto; background: rgba(232,131,90,0.15);"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">03 / Transaction Detail</div>
+            <div class="name">Single transaction</div>
+            <div class="desc">Read-only 顯示 + 編輯 / 刪除 action bar</div>
+            <div class="feature">Maps to TransactionDetail</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/05-Search.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">05 / SEARCH</div>
+            <div class="strip glass" style="margin-top:8px; height:24px;"></div>
+            <div class="strip" style="margin-top:auto; height:60px; background: rgba(166,107,240,0.10); border:0.5px solid rgba(166,107,240,0.2);"></div>
+            <div class="strip glass" style="margin-top:6px;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">05 / Search</div>
+            <div class="name">Conversational query</div>
+            <div class="desc">Perplexity-style · AI 解讀問題、結構化回答 + 引用交易</div>
+            <div class="feature">Maps to Search</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/12-Flow-Demo.html">
+          <div class="thumb" style="background: linear-gradient(135deg, #FFE4D2 0%, #FBF1E5 60%);"><div class="frame">
+            <div class="label">12 / FLOW DEMO</div>
+            <div class="title-line" style="margin-top:auto;">22s auto-play</div>
+            <div class="strip accent" style="margin-top:8px; height:8px; border-radius:999px; width:60%;"></div>
+            <div style="margin-top:6px; font-family: var(--nl-font-mono); font-size:8px; color: var(--nl-muted); text-align:center;">FIRST-RUN STORYBOARD</div>
+          </div></div>
+          <div class="body">
+            <div class="num">12 / Flow Demo</div>
+            <div class="name">First-run storyboard</div>
+            <div class="desc">22 秒自動播放 Onboarding → Dashboard → Add Tx → Confetti</div>
+            <div class="feature">Animation reference</div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- ─── Insight & management ─── -->
+    <section>
+      <h2>Insight &amp; management <span class="count">· 8 screens</span></h2>
+      <div class="section-sub">分析、預算、通知,以及帳戶/類別/標籤/週期交易的 CRUD 介面。</div>
+      <div class="grid">
+
+        <a class="card" href="screens/04-Analytics.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">04 / ANALYTICS</div>
+            <div style="margin: 10px auto 0; width: 70px; height: 70px; border-radius: 50%; background: conic-gradient(#E8835A 0% 40%, #0A84FF 40% 60%, #34C759 60% 80%, #A66BF0 80% 100%); display:flex; align-items:center; justify-content:center;">
+              <div style="width:42px; height:42px; border-radius:50%; background: rgba(255,255,255,0.85);"></div>
+            </div>
+            <div class="strip" style="margin-top:auto; height: 30px; background: rgba(166,107,240,0.10); border:0.5px solid rgba(166,107,240,0.2);"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">04 / Analytics</div>
+            <div class="name">Data-rich insights</div>
+            <div class="desc">Donut · 月度長條圖 · AI 月度 insight card</div>
+            <div class="feature">Maps to Analysis / AIAssistant</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/06-Accounts-Settings.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">06 / ACCOUNTS</div>
+            <div class="title-line" style="font-family: var(--nl-font-mono); font-size:18px; letter-spacing:-0.6px; margin-top:auto;">NT$ 433,950</div>
+            <div class="strip glass" style="margin-top:6px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">06 / Accounts + Settings</div>
+            <div class="name">Multi-account hub</div>
+            <div class="desc">List · Detail · Add · Settings 主頁 + AI + Appearance</div>
+            <div class="feature">AccountManagement / Settings</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/07-Budget-Notifications.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">07 / BUDGET</div>
+            <div class="strip glass" style="margin-top:8px; height: 50px; position: relative;">
+              <div style="position:absolute; left:0; top:0; bottom:0; width:65%; background: linear-gradient(135deg, #E8835A, #FF6A00); border-radius: inherit;"></div>
+            </div>
+            <div class="strip glass" style="margin-top:6px;"></div>
+            <div class="strip glass" style="margin-top:auto;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">07 / Budget + Notifications</div>
+            <div class="name">Budgets & Inbox</div>
+            <div class="desc">Budget main / detail / sheet + Notification Inbox + Monthly Recap</div>
+            <div class="feature">BudgetManagement / NotificationInbox</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/09-Category-Management.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">09 / CATEGORIES</div>
+            <div class="strip glass" style="margin-top:8px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">09 / Category Management</div>
+            <div class="name">Category CRUD</div>
+            <div class="desc">Expense / Income segmented · Add/Edit form</div>
+            <div class="feature">CategoryManagement</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/10-Tag-Management.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">10 / TAGS</div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;">
+              <div style="padding:2px 8px; border-radius:999px; background:rgba(232,131,90,0.2); color:#E8835A; font-size:8px; font-weight:600;">#午餐</div>
+              <div style="padding:2px 8px; border-radius:999px; background:rgba(166,107,240,0.2); color:#A66BF0; font-size:8px; font-weight:600;">#家庭</div>
+              <div style="padding:2px 8px; border-radius:999px; background:rgba(10,132,246,0.2); color:#0A84FF; font-size:8px; font-weight:600;">#旅行</div>
+              <div style="padding:2px 8px; border-radius:999px; background:rgba(52,199,89,0.2); color:#34C759; font-size:8px; font-weight:600;">#公帳</div>
+            </div>
+            <div class="strip glass" style="margin-top:auto;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">10 / Tag Management</div>
+            <div class="name">Tag CRUD</div>
+            <div class="desc">Chip overview · 使用次數列表 · 12-color swatch picker</div>
+            <div class="feature">TagManagement</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/11-Recurring-Management.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">11 / RECURRING</div>
+            <div class="strip glass" style="margin-top:8px; height: 40px;"></div>
+            <div class="strip glass" style="margin-top:6px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="strip glass" style="margin-top:4px; opacity:0.6;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">11 / Recurring Management</div>
+            <div class="name">Recurring transactions</div>
+            <div class="desc">List (Active/Paused) · 月固定收支摘要 · Empty state with quick-add</div>
+            <div class="feature">RecurringTransactionManagement</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/08-Missing-Screens.html">
+          <div class="thumb"><div class="frame">
+            <div class="label">08 / MISC FORMS</div>
+            <div class="strip glass" style="margin-top:8px;"></div>
+            <div class="strip glass" style="margin-top:4px;"></div>
+            <div class="strip" style="margin-top:auto; height:24px; background: linear-gradient(135deg, #E8835A, #FF6A00); border-radius:999px;"></div>
+          </div></div>
+          <div class="body">
+            <div class="num">08 / Missing Screens v1</div>
+            <div class="name">Carrier · Recurring Form · Filter</div>
+            <div class="desc">電子發票載具列表/表單 · 週期交易 Form · 交易篩選表單</div>
+            <div class="feature">EinvoiceCarrier / Recurring / Filter</div>
+          </div>
+        </a>
+
+        <a class="card" href="screens/99-Design-Tokens.html">
+          <div class="thumb" style="background: linear-gradient(135deg, #FFE4D2, #F6ECDF);"><div class="frame">
+            <div class="label">99 / TOKENS</div>
+            <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:3px; margin-top:8px;">
+              <div style="aspect-ratio:1; background:#E8835A; border-radius:4px;"></div>
+              <div style="aspect-ratio:1; background:#34C759; border-radius:4px;"></div>
+              <div style="aspect-ratio:1; background:#FF453A; border-radius:4px;"></div>
+              <div style="aspect-ratio:1; background:#A66BF0; border-radius:4px;"></div>
+            </div>
+            <div style="margin-top:6px; font-family: var(--nl-font-display); font-size:11px; font-weight:600;">Aa Bb 123</div>
+            <div style="font-family: var(--nl-font-mono); font-size:8px; color: var(--nl-muted); margin-top:auto; text-align:center;">VISUAL REFERENCE</div>
+          </div></div>
+          <div class="body">
+            <div class="num">99 / Design Tokens</div>
+            <div class="name">Visual reference</div>
+            <div class="desc">所有 token 的視覺化文件 — 顏色、字體、間距、陰影、動畫</div>
+            <div class="feature">Reference only</div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- ─── Resources ─── -->
+    <section class="resources">
+      <h2>Resources for engineering</h2>
+      <div class="section-sub">設計交付包與開發追蹤文件。</div>
+      <div class="resgrid">
+        <a class="rescard" href="tokens/Tokens.swift">
+          <div class="icon">.swift</div>
+          <div class="title">Tokens.swift</div>
+          <div class="sub">SwiftUI Color / Font / Spacing / Radius / Shadow / Motion + .glassCard() modifier · 直接 drop in Xcode target</div>
+        </a>
+        <a class="rescard" href="tokens/tokens.css">
+          <div class="icon">.css</div>
+          <div class="title">tokens.css</div>
+          <div class="sub">CSS custom properties · 給任何 web surface 使用 (含 dark mode media query)</div>
+        </a>
+        <a class="rescard" href="tokens/tokens.json">
+          <div class="icon">{ }</div>
+          <div class="title">tokens.json</div>
+          <div class="sub">Style Dictionary input · 可轉成任何平台 token 格式</div>
+        </a>
+        <a class="rescard" href="README.md">
+          <div class="icon">md</div>
+          <div class="title">README.md</div>
+          <div class="sub">使用說明 · 視覺系統摘要 · 推薦建構順序 · glass card SwiftUI 範例</div>
+        </a>
+        <a class="rescard" href="HANDOVER.md">
+          <div class="icon">→</div>
+          <div class="title">HANDOVER.md</div>
+          <div class="sub">設計師端 dev tracker · 已完成清單 · TODO queue · 設計流程備忘</div>
+        </a>
+        <a class="rescard" href="source/">
+          <div class="icon">jsx</div>
+          <div class="title">source/</div>
+          <div class="sub">所有畫面的 JSX 原始檔 · 像素精準的 spec · 數字都在裡面</div>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      <span>NEULEDGER · DESIGN HANDOFF · V2.0</span>
+      <span>B1 WARM GLASS · LOCKED-IN · MAY 15 2026</span>
+    </footer>
+  </div>
+</body>
+</html>

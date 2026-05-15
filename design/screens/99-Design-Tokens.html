@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NeuLedger · Design Tokens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Palette */
+    --accent: #FF9500;
+    --accent-dark: #FF9F0A;
+    --income: #34C759;
+    --income-dark: #30D158;
+    --expense: #FF3B30;
+    --expense-dark: #FF453A;
+
+    --bg-warm-1: #FFE4B8;
+    --bg-warm-2: #FFF6E8;
+    --bg-warm-3: #FAFAF7;
+    --bg-warm-d1: #4A2A0E;
+    --bg-warm-d2: #1a0f08;
+    --bg-warm-d3: #050505;
+
+    --canvas: #FAF7F2;
+    --ink: #0A0A0A;
+    --muted-light: rgba(60,60,67,0.65);
+    --muted-dark: rgba(235,235,245,0.65);
+
+    --acc-cash: #8E8E93;
+    --acc-bank: #0A84FF;
+    --acc-ewallet: #5E5CE6;
+    --acc-credit: #FF2D55;
+    --acc-savings: #34C759;
+
+    /* Type */
+    --display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
+    --body: "DM Sans", -apple-system, system-ui, sans-serif;
+    --mono: "DM Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+    /* Radius */
+    --r-pill: 999px;
+    --r-card: 22px;
+    --r-glass: 20px;
+    --r-input: 16px;
+    --r-chip: 12px;
+    --r-tap: 8px;
+
+    /* Spacing (8px base) */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 56px;
+
+    /* Shadows */
+    --shadow-glass-light: 0 1px 0 rgba(255,255,255,0.7) inset, 0 8px 24px rgba(180,140,100,0.10);
+    --shadow-glass-dark:  0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 24px rgba(0,0,0,0.40);
+    --shadow-cta:         0 10px 28px rgba(255,149,0,0.35);
+    --shadow-card:        0 30px 80px rgba(180,140,100,0.25);
+
+    /* Motion */
+    --ease-std: cubic-bezier(.22,.9,.32,1);
+    --ease-soft: cubic-bezier(.4,0,.2,1);
+    --dur-fast: 180ms;
+    --dur-base: 320ms;
+    --dur-reveal: 480ms;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--canvas); color: var(--ink); font-family: var(--body); }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 56px 40px 96px; }
+
+  .doc-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding-bottom: 28px; border-bottom: 1px solid rgba(0,0,0,0.08); margin-bottom: 56px; flex-wrap: wrap; }
+  .doc-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted-light); font-weight: 500; margin-bottom: 8px; }
+  .doc-title { font-family: var(--display); font-size: 56px; font-weight: 700; letter-spacing: -1.6px; line-height: 1; margin: 0; }
+  .doc-sub { font-family: var(--body); font-size: 16px; color: var(--muted-light); line-height: 1.5; margin: 12px 0 0; max-width: 520px; }
+  .doc-meta { font-family: var(--mono); font-size: 12px; color: var(--muted-light); letter-spacing: 0.2px; text-align: right; line-height: 1.7; }
+
+  section { margin-bottom: 80px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 28px; padding-bottom: 14px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .sec-num { font-family: var(--mono); font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent); font-weight: 500; }
+  .sec-title { font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: -0.6px; margin: 4px 0 0; }
+  .sec-desc { font-family: var(--body); font-size: 14px; color: var(--muted-light); max-width: 480px; text-align: right; line-height: 1.5; }
+
+  /* COLOR */
+  .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+  .swatch { border-radius: 18px; overflow: hidden; background: #fff; border: 1px solid rgba(0,0,0,0.06); display: flex; flex-direction: column; }
+  .swatch-fill { height: 130px; position: relative; }
+  .swatch-fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.05)); }
+  .swatch-meta { padding: 14px 16px 16px; }
+  .sw-name { font-family: var(--display); font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+  .sw-token { font-family: var(--mono); font-size: 11px; color: var(--muted-light); margin-top: 2px; letter-spacing: 0.2px; }
+  .sw-hex { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--ink); font-weight: 500; }
+  .sw-role { font-family: var(--body); font-size: 11px; color: var(--muted-light); margin-top: 8px; line-height: 1.4; }
+  .sw-pair { display: grid; grid-template-columns: 1fr 1fr; }
+  .sw-pair .half { padding: 14px 12px; }
+  .sw-pair .half + .half { border-left: 1px solid rgba(0,0,0,0.06); }
+  .sw-half-lbl { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted-light); margin-bottom: 4px; }
+  .sw-half-hex { font-family: var(--mono); font-size: 11px; }
+
+  .color-group-title { font-family: var(--display); font-size: 16px; font-weight: 600; letter-spacing: -0.2px; margin: 28px 0 12px; }
+
+  /* GRADIENTS / BG */
+  .bg-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .bg-card { border-radius: 20px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }
+  .bg-prev { height: 180px; }
+  .bg-meta { padding: 14px 16px; background: #fff; border-top: 1px solid rgba(0,0,0,0.06); }
+  .bg-name { font-family: var(--display); font-size: 14px; font-weight: 600; }
+  .bg-stops { font-family: var(--mono); font-size: 10px; color: var(--muted-light); margin-top: 4px; }
+
+  .warm-light { background: radial-gradient(ellipse at 20% 0%, #FFE4B8 0%, #FFF6E8 50%, #FAFAF7 90%); }
+  .warm-light-2 { background: radial-gradient(ellipse at 80% 100%, #FFE4B8 0%, #FFF6E8 50%, #FAFAF7 90%); }
+  .warm-dark { background: radial-gradient(ellipse at 50% 30%, #4A2A0E 0%, #1a0f08 40%, #050505 90%); }
+
+  /* TYPE */
+  .type-stack { display: flex; flex-direction: column; gap: 28px; }
+  .type-row { display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .type-row:last-child { border-bottom: none; }
+  .type-spec { font-family: var(--mono); font-size: 11px; color: var(--muted-light); line-height: 1.6; letter-spacing: 0.2px; }
+  .type-spec b { color: var(--ink); font-weight: 500; }
+  .type-sample { color: var(--ink); }
+
+  .t-display-xl { font-family: var(--display); font-size: 56px; font-weight: 700; letter-spacing: -1.8px; line-height: 1; }
+  .t-display-l { font-family: var(--display); font-size: 40px; font-weight: 700; letter-spacing: -1.2px; line-height: 1.05; }
+  .t-display-m { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -0.6px; }
+  .t-display-s { font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .t-body-l { font-family: var(--body); font-size: 16px; line-height: 1.45; letter-spacing: -0.15px; }
+  .t-body-m { font-family: var(--body); font-size: 14px; line-height: 1.45; letter-spacing: -0.1px; }
+  .t-body-s { font-family: var(--body); font-size: 12px; line-height: 1.4; }
+  .t-mono-l { font-family: var(--mono); font-size: 38px; font-weight: 500; letter-spacing: -1.2px; line-height: 1; }
+  .t-mono-m { font-family: var(--mono); font-size: 14px; font-weight: 500; letter-spacing: -0.2px; }
+  .t-mono-eyebrow { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted-light); font-weight: 500; }
+  .t-mono-tag { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted-light); font-weight: 500; }
+
+  /* font cards */
+  .font-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; }
+  .font-card { padding: 24px; border-radius: 18px; background: #fff; border: 1px solid rgba(0,0,0,0.06); }
+  .fc-eyebrow { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.4px; color: var(--accent); font-weight: 500; margin-bottom: 8px; }
+  .fc-name { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
+  .fc-spec { font-family: var(--mono); font-size: 11px; color: var(--muted-light); margin: 6px 0 16px; }
+  .fc-glyphs { font-size: 36px; line-height: 1.1; letter-spacing: -0.5px; }
+
+  /* SPACING */
+  .space-grid { display: flex; flex-direction: column; gap: 10px; }
+  .space-row { display: grid; grid-template-columns: 80px 60px 1fr 200px; gap: 16px; align-items: center; padding: 8px 0; }
+  .space-tok { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .space-px { font-family: var(--mono); font-size: 11px; color: var(--muted-light); }
+  .space-bar { height: 14px; border-radius: 4px; background: var(--accent); }
+  .space-use { font-family: var(--body); font-size: 12px; color: var(--muted-light); }
+
+  /* RADIUS */
+  .radius-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+  .rad-card { padding: 22px; background: #fff; border: 1px solid rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .rad-shape { width: 100px; height: 100px; background: linear-gradient(135deg, #FFD27A, #FF9500); }
+  .rad-meta { text-align: center; }
+  .rad-tok { font-family: var(--mono); font-size: 11px; font-weight: 500; }
+  .rad-px { font-family: var(--mono); font-size: 10px; color: var(--muted-light); margin-top: 2px; }
+
+  /* SHADOWS */
+  .shadow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; padding: 24px; border-radius: 18px; background: var(--canvas); }
+  .shadow-card { background: #fff; border-radius: 18px; padding: 28px; }
+  .shadow-tok { font-family: var(--mono); font-size: 11px; font-weight: 500; margin-bottom: 6px; }
+  .shadow-spec { font-family: var(--mono); font-size: 10px; color: var(--muted-light); line-height: 1.5; }
+  .sh-glass { box-shadow: var(--shadow-glass-light); }
+  .sh-cta { box-shadow: var(--shadow-cta); background: linear-gradient(135deg, #FF9500, #FF6A00); color: #fff; }
+  .sh-cta .shadow-spec { color: rgba(255,255,255,0.7); }
+  .sh-card { box-shadow: var(--shadow-card); }
+
+  /* COMPONENTS / GLASS */
+  .comp-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .comp-frame { padding: 28px; border-radius: 22px; background: radial-gradient(ellipse at 20% 0%, #FFE4B8 0%, #FFF6E8 60%, #FAFAF7 100%); border: 1px solid rgba(0,0,0,0.05); }
+  .comp-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted-light); margin-bottom: 14px; font-weight: 500; }
+
+  .glass-card {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 0.5px solid rgba(255,255,255,0.7);
+    border-radius: 20px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-glass-light);
+  }
+  .glass-card-dark {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 0.5px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 18px 20px;
+    color: #fff;
+    box-shadow: var(--shadow-glass-dark);
+  }
+
+  .btn-cta {
+    display: inline-block; padding: 15px 28px;
+    border-radius: 18px; background: linear-gradient(135deg, #FF9500, #FF6A00);
+    color: #fff; font-family: var(--body); font-size: 16px; font-weight: 600; letter-spacing: -0.2px;
+    box-shadow: var(--shadow-cta);
+  }
+  .btn-pill {
+    display: inline-block; padding: 11px 22px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF9500, #FF6A00);
+    color: #fff; font-family: var(--body); font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+    box-shadow: 0 6px 18px rgba(255,149,0,0.34);
+  }
+  .chip-active { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--accent); color: #fff; font-family: var(--body); font-size: 12px; font-weight: 500; }
+  .chip-rest { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(0,0,0,0.04); color: var(--ink); font-family: var(--body); font-size: 12px; font-weight: 500; }
+  .badge-new { display: inline-block; padding: 1px 6px; border-radius: 4px; background: rgba(52,199,89,0.18); color: var(--income); font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; }
+  .badge-ai { display: inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(52,199,89,0.15); color: var(--income); font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .demo-stack { display: flex; flex-direction: column; gap: 14px; }
+  .demo-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  /* MOTION */
+  .motion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .mot-card { padding: 18px; border-radius: 16px; background: #fff; border: 1px solid rgba(0,0,0,0.06); }
+  .mot-tok { font-family: var(--mono); font-size: 11px; font-weight: 500; }
+  .mot-curve { height: 60px; margin: 12px 0 8px; position: relative; background: rgba(255,149,0,0.06); border-radius: 8px; overflow: hidden; }
+  .mot-curve svg { width: 100%; height: 100%; }
+  .mot-spec { font-family: var(--mono); font-size: 10px; color: var(--muted-light); line-height: 1.5; }
+
+  /* footer */
+  .doc-footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted-light); letter-spacing: 0.2px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="doc-header">
+    <div>
+      <div class="doc-eyebrow">NeuLedger · Design System</div>
+      <h1 class="doc-title">Design tokens.</h1>
+      <p class="doc-sub">B1 · Warm 方向定稿。所有 token 取自實際使用於 Onboarding、Dashboard、Add Transaction 三個畫面的數值,單一來源,單一真相。</p>
+    </div>
+    <div class="doc-meta">
+      v1.0 · 2026.04<br/>
+      iPhone 17 Pro · 402 × 874<br/>
+      8pt baseline grid
+    </div>
+  </header>
+
+  <!-- 1. COLOR -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">01 · Color</div>
+        <h2 class="sec-title">Palette</h2>
+      </div>
+      <p class="sec-desc">所有 accent 顏色都成對出現:Light / Dark mode 各一,follow Apple HIG 的 vibrant pair pattern。</p>
+    </div>
+
+    <div class="color-group-title">Primary · Accent</div>
+    <div class="color-grid">
+
+      <div class="swatch">
+        <div class="swatch-fill" style="background: #FF9500;"></div>
+        <div class="swatch-meta">
+          <div class="sw-name">Accent</div>
+          <div class="sw-token">--accent</div>
+          <div class="sw-pair" style="margin: 8px -16px -16px; border-top: 1px solid rgba(0,0,0,0.06);">
+            <div class="half"><div class="sw-half-lbl">Light</div><div class="sw-half-hex">#FF9500</div></div>
+            <div class="half"><div class="sw-half-lbl">Dark</div><div class="sw-half-hex">#FF9F0A</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="swatch-fill" style="background: linear-gradient(135deg, #FF9500, #FF6A00);"></div>
+        <div class="swatch-meta">
+          <div class="sw-name">CTA Gradient</div>
+          <div class="sw-token">linear-gradient(135deg, accent, #FF6A00)</div>
+          <div class="sw-hex">#FF9500 → #FF6A00</div>
+          <div class="sw-role">Primary buttons · FAB · 大金額正值。永遠 135°。</div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="swatch-fill" style="background: #FFD27A;"></div>
+        <div class="swatch-meta">
+          <div class="sw-name">Accent · Soft</div>
+          <div class="sw-token">accent · 60%</div>
+          <div class="sw-hex">#FFD27A</div>
+          <div class="sw-role">Glow stops · 強調背景 orbs。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-title">Semantic · Money</div>
+    <div class="color-grid">
+      <div class="swatch">
+        <div class="swatch-fill" style="background: #34C759;"></div>
+        <div class="swatch-meta">
+          <div class="sw-name">Income</div>
+          <div class="sw-token">--income</div>
+          <div class="sw-pair" style="margin: 8px -16px -16px; border-top: 1px solid rgba(0,0,0,0.06);">
+            <div class="half"><div class="sw-half-lbl">Light</div><div class="sw-half-hex">#34C759</div></div>
+            <div class="half"><div class="sw-half-lbl">Dark</div><div class="sw-half-hex">#30D158</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-fill" style="background: #FF3B30;"></div>
+        <div class="swatch-meta">
+          <div class="sw-name">Expense</div>
+          <div class="sw-token">--expense</div>
+          <div class="sw-pair" style="margin: 8px -16px -16px; border-top: 1px solid rgba(0,0,0,0.06);">
+            <div class="half"><div class="sw-half-lbl">Light</div><div class="sw-half-hex">#FF3B30</div></div>
+            <div class="half"><div class="sw-half-lbl">Dark</div><div class="sw-half-hex">#FF453A</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-fill" style="background: #5E5CE6;"></div>
+        <div class="swatch-meta">
+          <div class="sw-name">Transfer</div>
+          <div class="sw-token">indigo (system)</div>
+          <div class="sw-hex">#5E5CE6</div>
+          <div class="sw-role">轉帳 mode · 不會被誤讀為支出/收入。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-title">Account · Tagging</div>
+    <div class="color-grid">
+      <div class="swatch"><div class="swatch-fill" style="background: #8E8E93;"></div><div class="swatch-meta"><div class="sw-name">Cash 現金</div><div class="sw-hex">#8E8E93</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #0A84FF;"></div><div class="swatch-meta"><div class="sw-name">Bank · 銀行</div><div class="sw-hex">#0A84FF</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #5E5CE6;"></div><div class="swatch-meta"><div class="sw-name">E-wallet · 悠遊卡</div><div class="sw-hex">#5E5CE6</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #FF2D55;"></div><div class="swatch-meta"><div class="sw-name">Credit · 信用卡</div><div class="sw-hex">#FF2D55</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #34C759;"></div><div class="swatch-meta"><div class="sw-name">Savings · 儲蓄</div><div class="sw-hex">#34C759</div></div></div>
+    </div>
+
+    <div class="color-group-title">Surface · Ink</div>
+    <div class="color-grid">
+      <div class="swatch"><div class="swatch-fill" style="background: #FAF7F2; border-bottom: 1px solid rgba(0,0,0,0.06);"></div><div class="swatch-meta"><div class="sw-name">Canvas · Light</div><div class="sw-hex">#FAF7F2</div><div class="sw-role">主背景 · 暖白。</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #1A1410;"></div><div class="swatch-meta"><div class="sw-name">Canvas · Dark</div><div class="sw-hex">#1A1410</div><div class="sw-role">不用純黑;用暖深棕。</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #0A0A0A;"></div><div class="swatch-meta"><div class="sw-name">Ink · Light</div><div class="sw-hex">#0A0A0A</div><div class="sw-role">主要文字。</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: #FFFFFF; border: 1px solid rgba(0,0,0,0.06);"></div><div class="swatch-meta"><div class="sw-name">Ink · Dark</div><div class="sw-hex">#FFFFFF</div><div class="sw-role">深色模式主要文字。</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: rgba(60,60,67,0.65); position: relative;"><div style="position:absolute; inset:0; background: #FAF7F2; mix-blend-mode: lighten;"></div></div><div class="swatch-meta"><div class="sw-name">Muted · Light</div><div class="sw-hex">rgba(60,60,67,.65)</div><div class="sw-role">次要文字 · meta。</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background: rgba(235,235,245,0.65); position: relative; "><div style="position:absolute; inset:0; background: #1A1410; mix-blend-mode: darken;"></div></div><div class="swatch-meta"><div class="sw-name">Muted · Dark</div><div class="sw-hex">rgba(235,235,245,.65)</div><div class="sw-role">次要文字 · 深色。</div></div></div>
+    </div>
+  </section>
+
+  <!-- 2. BACKGROUND -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">02 · Surface</div><h2 class="sec-title">Background fields</h2></div>
+      <p class="sec-desc">三個 radial gradient,構成 B1 Warm 整套畫面的氣氛。Onboarding 三步切換 anchor 點 (20%/80%/50%) 製造節奏。</p>
+    </div>
+    <div class="bg-row">
+      <div class="bg-card"><div class="bg-prev warm-light"></div><div class="bg-meta"><div class="bg-name">Warm · Light · Top-Left</div><div class="bg-stops">stops: #FFE4B8 → #FFF6E8 → #FAFAF7 · anchor 20% 0%</div></div></div>
+      <div class="bg-card"><div class="bg-prev warm-light-2"></div><div class="bg-meta"><div class="bg-name">Warm · Light · Bottom-Right</div><div class="bg-stops">同 stops · anchor 80% 100%</div></div></div>
+      <div class="bg-card"><div class="bg-prev warm-dark"></div><div class="bg-meta"><div class="bg-name">Warm · Dark · Center</div><div class="bg-stops">stops: #4A2A0E → #1a0f08 → #050505 · anchor 50% 30%</div></div></div>
+    </div>
+  </section>
+
+  <!-- 3. TYPE -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">03 · Typography</div><h2 class="sec-title">Type system</h2></div>
+      <p class="sec-desc">三個 family 各司其職:Bricolage Grotesque 給標題、DM Sans 給 body、DM Mono 給金額與 eyebrow。</p>
+    </div>
+
+    <div class="font-cards">
+      <div class="font-card">
+        <div class="fc-eyebrow">Display</div>
+        <div class="fc-name">Bricolage Grotesque</div>
+        <div class="fc-spec">400 · 500 · 600 · 700 · variable opsz</div>
+        <div class="fc-glyphs" style="font-family: var(--display); font-weight: 700;">Aa Gg ¥ NT$</div>
+      </div>
+      <div class="font-card">
+        <div class="fc-eyebrow">Body</div>
+        <div class="fc-name">DM Sans</div>
+        <div class="fc-spec">400 · 500 · 600 · 700</div>
+        <div class="fc-glyphs" style="font-family: var(--body); font-weight: 500;">Aa Gg 雨庭</div>
+      </div>
+      <div class="font-card">
+        <div class="fc-eyebrow">Mono · Numerals</div>
+        <div class="fc-name">DM Mono</div>
+        <div class="fc-spec">400 · 500</div>
+        <div class="fc-glyphs" style="font-family: var(--mono); font-weight: 500;">0123 NT$ +50,000</div>
+      </div>
+    </div>
+
+    <div class="type-stack">
+      <div class="type-row">
+        <div class="type-spec"><b>display-xl</b><br/>Bricolage 56 / 700<br/>letter -1.8px</div>
+        <div class="type-sample t-display-xl">Every NT$, <span style="font-style: italic; font-weight: 500; color: var(--accent);">seen.</span></div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>display-l</b><br/>Bricolage 40 / 700<br/>letter -1.2px</div>
+        <div class="type-sample t-display-l">一切都<br/>準備好了。</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>display-m</b><br/>Bricolage 24 / 700<br/>letter -0.6px</div>
+        <div class="type-sample t-display-m">Quick add</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>display-s</b><br/>Bricolage 18 / 600<br/>letter -0.3px</div>
+        <div class="type-sample t-display-s">最近交易</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>body-l</b><br/>DM Sans 16 / 400<br/>letter -0.15px · line 1.45</div>
+        <div class="type-sample t-body-l" style="max-width: 480px;">每一筆收支,自動讀懂、自動歸類、私密地留在你裝置裡。一句自然語言就能記下。</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>body-m</b><br/>DM Sans 14 / 500<br/>letter -0.1px</div>
+        <div class="type-sample t-body-m">玉山銀行 · 今天 · AI</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>body-s</b><br/>DM Sans 12 / 500</div>
+        <div class="type-sample t-body-s">Type or speak. AI fills the rest.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>mono-l</b><br/>DM Mono 38 / 500<br/>letter -1.2px</div>
+        <div class="type-sample t-mono-l"><span style="font-size: 18px; font-weight: 400; color: var(--muted-light);">NT$ </span>50,000</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>mono-m</b><br/>DM Mono 14 / 500<br/>金額 inline</div>
+        <div class="type-sample t-mono-m" style="color: var(--income);">+50,000</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>mono-eyebrow</b><br/>DM Mono 10 / 500<br/>UPPERCASE · letter 1.2px</div>
+        <div class="type-sample t-mono-eyebrow">本月餘額</div>
+      </div>
+      <div class="type-row">
+        <div class="type-spec"><b>mono-tag</b><br/>DM Mono 9 / 600<br/>UPPERCASE · letter 1px</div>
+        <div class="type-sample"><span class="badge-new">NEW</span> &nbsp; <span class="badge-ai">FILLED</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SPACING -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">04 · Spacing</div><h2 class="sec-title">8pt grid</h2></div>
+      <p class="sec-desc">所有 padding / gap / margin 走 4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 56。例外:status bar 50px, FAB 64px。</p>
+    </div>
+    <div class="space-grid">
+      <div class="space-row"><div class="space-tok">--s-1</div><div class="space-px">4px</div><div class="space-bar" style="width: 4px;"></div><div class="space-use">Hairline gap · badge padding</div></div>
+      <div class="space-row"><div class="space-tok">--s-2</div><div class="space-px">8px</div><div class="space-bar" style="width: 8px;"></div><div class="space-use">Inline gap · row padding</div></div>
+      <div class="space-row"><div class="space-tok">--s-3</div><div class="space-px">12px</div><div class="space-bar" style="width: 12px;"></div><div class="space-use">Chip padding · stack gap</div></div>
+      <div class="space-row"><div class="space-tok">--s-4</div><div class="space-px">16px</div><div class="space-bar" style="width: 16px;"></div><div class="space-use">Card inner padding · default gap</div></div>
+      <div class="space-row"><div class="space-tok">--s-5</div><div class="space-px">20px</div><div class="space-bar" style="width: 20px;"></div><div class="space-use">Glass card padding</div></div>
+      <div class="space-row"><div class="space-tok">--s-6</div><div class="space-px">24px</div><div class="space-bar" style="width: 24px;"></div><div class="space-use">Section gap · screen edge inset</div></div>
+      <div class="space-row"><div class="space-tok">--s-7</div><div class="space-px">32px</div><div class="space-bar" style="width: 32px;"></div><div class="space-use">Block gap · onboarding hero</div></div>
+      <div class="space-row"><div class="space-tok">--s-8</div><div class="space-px">40px</div><div class="space-bar" style="width: 40px;"></div><div class="space-use">Screen vertical inset</div></div>
+      <div class="space-row"><div class="space-tok">--s-9</div><div class="space-px">56px</div><div class="space-bar" style="width: 56px;"></div><div class="space-use">Hero block separator</div></div>
+    </div>
+  </section>
+
+  <!-- 5. RADIUS -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">05 · Radius</div><h2 class="sec-title">Corner radius</h2></div>
+      <p class="sec-desc">圓角是品牌的溫度計。不混用 — 每種容器只能用一個半徑。</p>
+    </div>
+    <div class="radius-grid">
+      <div class="rad-card"><div class="rad-shape" style="border-radius: 8px;"></div><div class="rad-meta"><div class="rad-tok">--r-tap</div><div class="rad-px">8px · tappable rows</div></div></div>
+      <div class="rad-card"><div class="rad-shape" style="border-radius: 12px;"></div><div class="rad-meta"><div class="rad-tok">--r-chip</div><div class="rad-px">12px · segmented control</div></div></div>
+      <div class="rad-card"><div class="rad-shape" style="border-radius: 16px;"></div><div class="rad-meta"><div class="rad-tok">--r-input</div><div class="rad-px">16px · input fields</div></div></div>
+      <div class="rad-card"><div class="rad-shape" style="border-radius: 20px;"></div><div class="rad-meta"><div class="rad-tok">--r-glass</div><div class="rad-px">20px · glass cards</div></div></div>
+      <div class="rad-card"><div class="rad-shape" style="border-radius: 22px;"></div><div class="rad-meta"><div class="rad-tok">--r-card</div><div class="rad-px">22px · hero balance</div></div></div>
+      <div class="rad-card"><div class="rad-shape" style="border-radius: 999px;"></div><div class="rad-meta"><div class="rad-tok">--r-pill</div><div class="rad-px">999px · chips · CTA</div></div></div>
+    </div>
+  </section>
+
+  <!-- 6. SHADOWS -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">06 · Elevation</div><h2 class="sec-title">Shadows</h2></div>
+      <p class="sec-desc">玻璃有 inset highlight + 暖色投影;CTA 有彩色 glow;phone bezel 有 dramatic 大投影。</p>
+    </div>
+    <div class="shadow-grid">
+      <div class="shadow-card sh-glass">
+        <div class="shadow-tok">--shadow-glass-light</div>
+        <div class="shadow-spec">inset 0 1px 0 rgba(255,255,255,.7),<br/>0 8px 24px rgba(180,140,100,.10)</div>
+      </div>
+      <div class="shadow-card sh-cta">
+        <div class="shadow-tok">--shadow-cta</div>
+        <div class="shadow-spec">0 10px 28px rgba(255,149,0,.35)</div>
+      </div>
+      <div class="shadow-card sh-card">
+        <div class="shadow-tok">--shadow-card</div>
+        <div class="shadow-spec">0 30px 80px rgba(180,140,100,.25)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. COMPONENTS -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">07 · Components</div><h2 class="sec-title">Atoms in context</h2></div>
+      <p class="sec-desc">用真實的 Warm 背景場景示範 — 玻璃要在有顏色的東西上才存在。</p>
+    </div>
+    <div class="comp-row">
+      <div class="comp-frame">
+        <div class="comp-label">Glass card · light</div>
+        <div class="demo-stack">
+          <div class="glass-card">
+            <div class="t-mono-eyebrow" style="margin-bottom: 6px;">本月餘額</div>
+            <div class="t-mono-l"><span style="font-size: 18px; font-weight: 400; color: var(--muted-light);">NT$ </span>50,000</div>
+          </div>
+          <div class="glass-card" style="padding: 10px 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 18px; background: rgba(52,199,89,0.20); display: flex; align-items: center; justify-content: center; font-size: 18px;">💼</div>
+              <div style="flex: 1;">
+                <div class="t-body-m">薪資 <span class="badge-new">NEW</span></div>
+                <div class="t-mono-eyebrow" style="margin-top: 2px; text-transform: none; letter-spacing: -0.1px;">玉山銀行 · 今天</div>
+              </div>
+              <div class="t-mono-m" style="color: var(--income); font-size: 16px;">+50,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comp-frame" style="background: radial-gradient(ellipse at 50% 30%, #4A2A0E 0%, #1a0f08 60%, #050505 100%);">
+        <div class="comp-label" style="color: rgba(235,235,245,0.55);">Glass card · dark</div>
+        <div class="demo-stack">
+          <div class="glass-card-dark">
+            <div class="t-mono-eyebrow" style="color: rgba(235,235,245,0.65); margin-bottom: 6px;">本月餘額</div>
+            <div class="t-mono-l"><span style="font-size: 18px; font-weight: 400; color: rgba(235,235,245,0.65);">NT$ </span>50,000</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comp-frame">
+        <div class="comp-label">Buttons</div>
+        <div class="demo-stack">
+          <div class="btn-cta">完成</div>
+          <div><div class="btn-pill">記一筆</div></div>
+          <div class="demo-row">
+            <span class="chip-active">全部</span>
+            <span class="chip-rest">Cash</span>
+            <span class="chip-rest">玉山</span>
+            <span class="chip-rest">悠遊卡</span>
+          </div>
+          <div class="demo-row">
+            <span class="badge-new">NEW</span>
+            <span class="badge-ai">FILLED</span>
+            <span class="badge-ai" style="background: rgba(255,149,0,0.18); color: var(--accent);">AI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. MOTION -->
+  <section>
+    <div class="sec-head">
+      <div><div class="sec-num">08 · Motion</div><h2 class="sec-title">Easing & duration</h2></div>
+      <p class="sec-desc">兩個曲線 + 三個時長就足夠。所有 interaction 都從這六個值組合。</p>
+    </div>
+    <div class="motion-grid">
+      <div class="mot-card">
+        <div class="mot-tok">--ease-std</div>
+        <div class="mot-curve">
+          <svg viewBox="0 0 100 60" preserveAspectRatio="none">
+            <path d="M0 60 C 22 60, 32 6, 100 0" fill="none" stroke="#FF9500" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="mot-spec">cubic-bezier(.22,.9,.32,1)<br/>標準 · reveal · transition</div>
+      </div>
+      <div class="mot-card">
+        <div class="mot-tok">--ease-soft</div>
+        <div class="mot-curve">
+          <svg viewBox="0 0 100 60" preserveAspectRatio="none">
+            <path d="M0 60 C 40 60, 20 0, 100 0" fill="none" stroke="#FF9500" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="mot-spec">cubic-bezier(.4,0,.2,1)<br/>柔和 · cursor · drift</div>
+      </div>
+      <div class="mot-card">
+        <div class="mot-tok">--dur-fast</div>
+        <div class="mot-curve" style="display: flex; align-items: center; padding: 0 14px;"><div style="width: 30%; height: 6px; background: var(--accent); border-radius: 3px;"></div></div>
+        <div class="mot-spec">180ms · tap feedback · ripple</div>
+      </div>
+      <div class="mot-card">
+        <div class="mot-tok">--dur-base</div>
+        <div class="mot-curve" style="display: flex; align-items: center; padding: 0 14px;"><div style="width: 60%; height: 6px; background: var(--accent); border-radius: 3px;"></div></div>
+        <div class="mot-spec">320ms · screen swap · drawer</div>
+      </div>
+      <div class="mot-card">
+        <div class="mot-tok">--dur-reveal</div>
+        <div class="mot-curve" style="display: flex; align-items: center; padding: 0 14px;"><div style="width: 90%; height: 6px; background: var(--accent); border-radius: 3px;"></div></div>
+        <div class="mot-spec">480ms · entrance · count-up</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="doc-footer">
+    <div>NeuLedger · Design Tokens · v1.0</div>
+    <div>402 × 874 · 8pt grid · Bricolage / DM Sans / DM Mono</div>
+  </footer>
+
+</div>
+</body>
+</html>

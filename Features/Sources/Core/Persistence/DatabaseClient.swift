@@ -179,6 +179,52 @@ extension DatabaseClient {
         return buckets
     }
 
+    /// Returns today's expense total, the last 7 days' expense total, and the
+    /// savings ratio over the same 7-day window.
+    ///
+    /// Savings ratio = max(0, (income - expense) / income), clamped to 0 when
+    /// income is 0.
+    func statsSnapshot() throws -> StatsSnapshot {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let weekStart = cal.date(byAdding: .day, value: -6, to: today) else {
+            return .zero
+        }
+        let predicate = #Predicate<SDTransaction> { tx in
+            tx.date >= weekStart
+        }
+        let descriptor = FetchDescriptor<SDTransaction>(predicate: predicate)
+        let context = makeContext()
+        let rows = try context.fetch(descriptor)
+
+        var todayTotal: Decimal = 0
+        var weekTotal: Decimal = 0
+        var income: Decimal = 0
+        var expense: Decimal = 0
+        let expenseRaw = TransactionType.expense.rawValue
+        let incomeRaw = TransactionType.income.rawValue
+        for tx in rows {
+            if tx.type == expenseRaw {
+                weekTotal += tx.amount
+                expense += tx.amount
+                if cal.isDate(tx.date, inSameDayAs: today) {
+                    todayTotal += tx.amount
+                }
+            } else if tx.type == incomeRaw {
+                income += tx.amount
+            }
+        }
+        let savings: Double
+        if income > 0 {
+            let saved = NSDecimalNumber(decimal: income - expense).doubleValue
+            let inc = NSDecimalNumber(decimal: income).doubleValue
+            savings = max(0, saved / inc)
+        } else {
+            savings = 0
+        }
+        return StatsSnapshot(today: todayTotal, week: weekTotal, savingsPercentage: savings)
+    }
+
     // MARK: Delete
 
     /// Fetches a single model matching the descriptor, optionally validates it, deletes it, and saves.

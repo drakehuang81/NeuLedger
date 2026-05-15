@@ -49,6 +49,10 @@ public struct TransactionClient: Sendable {
     /// from oldest to newest. Index `days - 1` is today; index `0` is `days - 1`
     /// days ago. Optionally scopes to a single account by `accountID`.
     public var weeklySpending: @Sendable (_ accountID: Account.ID?, _ days: Int) async throws -> [Decimal]
+
+    /// Returns a snapshot summarizing today's expense, the last 7 days' expense
+    /// total, and the savings ratio over the same 7-day window.
+    public var statsSnapshot: @Sendable () async throws -> StatsSnapshot
 }
 
 extension TransactionClient: TestDependencyKey {

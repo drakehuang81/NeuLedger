@@ -16,6 +16,7 @@ struct DashboardFeatureSectionPhaseTests {
             $0.transactionClient.weeklySpending = { _, _ in [10, 20, 30, 40, 50, 60, 70] }
             $0.transactionClient.fetchRecent = { [] }
             $0.transactionClient.fetchAll = { [] }
+            $0.transactionClient.statsSnapshot = { .zero }
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiServiceClient.isAvailable = { false }
@@ -38,6 +39,7 @@ struct DashboardFeatureSectionPhaseTests {
             $0.transactionClient.weeklySpending = { _, _ in throw Boom() }
             $0.transactionClient.fetchRecent = { [] }
             $0.transactionClient.fetchAll = { [] }
+            $0.transactionClient.statsSnapshot = { .zero }
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiServiceClient.isAvailable = { false }
@@ -67,15 +69,20 @@ struct DashboardFeatureSectionPhaseTests {
         }
     }
 
-    @Test("retrySection(.stats) resets phase to loading without effect")
+    @Test("retrySection(.stats) resets phase to loading and reloads")
     func testRetryStats() async {
         var initial = DashboardFeature.State()
         initial.statsPhase = .failed("err")
         let store = TestStore(initialState: initial) {
             DashboardFeature()
+        } withDependencies: {
+            $0.transactionClient.statsSnapshot = { StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
         }
         await store.send(.retrySection(.stats)) {
             $0.statsPhase = .loading
+        }
+        await store.receive(\.statsComputed) {
+            $0.statsPhase = .loaded
         }
     }
 

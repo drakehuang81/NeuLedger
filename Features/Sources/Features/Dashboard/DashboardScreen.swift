@@ -29,12 +29,7 @@ public struct DashboardScreen: View {
 
                         HeroBalanceCard(store: store)
 
-                        // Slice 5 placeholder (stats pills)
-                        GlassContainer(cornerRadius: 16, padding: 12) {
-                            Text("…")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .skeleton(when: true)
+                        StatsRow(store: store)
 
                         // Slice 7 placeholder (insight card)
                         GlassContainer(cornerRadius: 22, padding: 16) {

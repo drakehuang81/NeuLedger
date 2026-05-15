@@ -122,6 +122,9 @@ extension TransactionClient: DependencyKey {
             },
             weeklySpending: { accountID, days in
                 try databaseClient.weeklySpendingSums(accountID: accountID, days: days)
+            },
+            statsSnapshot: {
+                try databaseClient.statsSnapshot()
             }
         )
     }

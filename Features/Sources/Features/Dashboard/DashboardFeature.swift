@@ -40,6 +40,7 @@ public struct DashboardFeature: Sendable {
         case categoryFetch
         case aiInsightFetch
         case weeklySpending
+        case stats
     }
 
     // MARK: - State
@@ -300,14 +301,12 @@ public struct DashboardFeature: Sendable {
                         }
                     }
                     .cancellable(id: CancelID.transactionObservation, cancelInFlight: true)
-                case .stats,
-                     .insight:
-                    // MARK: - Stubs wired in later slices
-                    switch section {
-                    case .stats:        state.statsPhase = .loading
-                    case .insight:      state.insightPhase = .loading
-                    default:            break
-                    }
+                case .stats:
+                    state.statsPhase = .loading
+                    return statsEffect(cancelInFlight: true)
+                case .insight:
+                    // MARK: - Stub wired in later slice
+                    state.insightPhase = .loading
                     return .none
                 }
 
@@ -330,10 +329,16 @@ public struct DashboardFeature: Sendable {
                 }
                 .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
 
+            case let .statsComputed(today, week, savings):
+                state.todaySpending = today
+                state.weekSpending = week
+                state.savingsPercentage = savings
+                state.statsPhase = .loaded
+                return .none
+
             // MARK: - Stubs wired in later slices
 
-            case .statsComputed,
-                 .insightsLoaded,
+            case .insightsLoaded,
                  .insightIndexChanged,
                  .transactionRowToggled:
                 return .none
@@ -520,7 +525,27 @@ public struct DashboardFeature: Sendable {
                     await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
                 }
             }
-            .cancellable(id: CancelID.weeklySpending, cancelInFlight: cancelInFlight)
+            .cancellable(id: CancelID.weeklySpending, cancelInFlight: cancelInFlight),
+
+            statsEffect(cancelInFlight: cancelInFlight)
         )
+    }
+
+    /// Loads `StatsSnapshot` and routes success/failure into the
+    /// stats section phase machine.
+    private func statsEffect(cancelInFlight: Bool) -> Effect<Action> {
+        .run { send in
+            do {
+                let snapshot = try await transactionClient.statsSnapshot()
+                await send(.statsComputed(
+                    today: snapshot.today,
+                    week: snapshot.week,
+                    savings: snapshot.savingsPercentage
+                ))
+            } catch {
+                await send(.sectionFailed(.stats, String(localized: "dashboard_section_load_failed", bundle: .main)))
+            }
+        }
+        .cancellable(id: CancelID.stats, cancelInFlight: cancelInFlight)
     }
 }

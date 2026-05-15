@@ -76,6 +76,11 @@ public extension Color {
         public static let incomeGreen = accentGreen
         public static let expenseRed = accentRed
         public static let warningAmber = accentOrange
+
+        /// Transfer 用紫（暖系，對齊設計 token `accInvest`）
+        public static let transferPurple = dynamicColor(light: "#5E5CE6", dark: "#7D7AFF")
+        /// AI 標誌色（sparkles / AI suggestion badge）
+        public static let aiPurple = dynamicColor(light: "#A66BF0", dark: "#BF8DFF")
         
         // MARK: - Background & Surface Colors
         public static let background = Color(uiColor: .systemBackground)

@@ -103,6 +103,23 @@
         }
       }
     },
+    "a11y_dismiss_keyboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss keyboard"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起鍵盤"
+          }
+        }
+      }
+    },
     "add_transaction_ai_unavailable": {
       "extractionState": "manual",
       "localizations": {
@@ -1340,6 +1357,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "取消"
+          }
+        }
+      }
+    },
+    "common_optional": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(optional)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(選填)"
           }
         }
       }

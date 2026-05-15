@@ -17,7 +17,7 @@ public struct TransactionDetailView: View {
             ScrollView {
                 LazyVStack(spacing: 18) {
                     TxHero(transaction: transaction, categoryName: store.categoryName)
-                    placeholderInsight // Task 7 fills this
+                    AIInsightCard(insight: store.insight, categoryName: store.categoryName)
                     DetailFieldsCard(
                         transaction: transaction,
                         account: store.account,
@@ -90,10 +90,6 @@ public struct TransactionDetailView: View {
         )
         .presentationDragIndicator(.visible)
     }
-
-    // MARK: - Placeholders filled in subsequent tasks
-
-    private var placeholderInsight: some View { EmptyView() }
 
     // MARK: - Action bar
 

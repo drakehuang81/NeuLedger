@@ -53,6 +53,11 @@ public struct TransactionClient: Sendable {
     /// Returns a snapshot summarizing today's expense, the last 7 days' expense
     /// total, and the savings ratio over the same 7-day window.
     public var statsSnapshot: @Sendable () async throws -> StatsSnapshot
+
+    /// Returns a `TransactionInsight` summarizing this transaction's
+    /// context (same-category month aggregates, etc.). Used by
+    /// Transaction Detail to render the on-device AI insight card.
+    public var detailStats: @Sendable (_ transaction: Transaction) async throws -> TransactionInsight
 }
 
 extension TransactionClient: TestDependencyKey {

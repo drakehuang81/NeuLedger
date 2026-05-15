@@ -125,6 +125,78 @@ extension TransactionClient: DependencyKey {
             },
             statsSnapshot: {
                 try databaseClient.statsSnapshot()
+            },
+            detailStats: { transaction in
+                let context = databaseClient.makeContext()
+                let cal = Calendar.current
+                guard let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: transaction.date)) else {
+                    return TransactionInsight(kind: .fallback(monthlyCategoryCount: 0))
+                }
+                guard let monthEnd = cal.date(byAdding: .month, value: 1, to: monthStart) else {
+                    return TransactionInsight(kind: .fallback(monthlyCategoryCount: 0))
+                }
+                let descriptor = FetchDescriptor<SDTransaction>(
+                    predicate: #Predicate { $0.date >= monthStart && $0.date < monthEnd }
+                )
+                let rows = try context.fetch(descriptor)
+                let categoryId = transaction.categoryId
+                let expenseRaw = TransactionType.expense.rawValue
+                let incomeRaw = TransactionType.income.rawValue
+                let transferRaw = TransactionType.transfer.rawValue
+
+                switch transaction.type {
+                case .transfer:
+                    let monthCount = rows.filter { $0.type == transferRaw }.count
+                    let monthTotal = rows.filter { $0.type == transferRaw }.reduce(Decimal(0)) { $0 + $1.amount }
+                    return TransactionInsight(kind: .transfer(monthCount: monthCount, monthTotal: monthTotal))
+
+                case .income:
+                    let sameCategory = rows.filter { $0.type == incomeRaw && $0.categoryId == categoryId }
+                    let monthlyCount = sameCategory.count
+                    let netMonth = sameCategory.reduce(Decimal(0)) { $0 + $1.amount }
+                    // Find the most recent prior same-category income before this month — fetch in-memory
+                    let priorDescriptor = FetchDescriptor<SDTransaction>(
+                        predicate: #Predicate { $0.date < monthStart },
+                        sortBy: [SortDescriptor(\.date, order: .reverse)]
+                    )
+                    let priorRows = try context.fetch(priorDescriptor)
+                    let prior = priorRows.first { $0.type == incomeRaw && $0.categoryId == categoryId }
+                    let lastAmount = prior.map { $0.amount } ?? Decimal(0)
+                    let percentDelta: Double
+                    if lastAmount > 0 {
+                        let diff = NSDecimalNumber(decimal: transaction.amount - lastAmount).doubleValue
+                        let base = NSDecimalNumber(decimal: lastAmount).doubleValue
+                        percentDelta = diff / base
+                    } else {
+                        percentDelta = 0
+                    }
+                    return TransactionInsight(kind: .incomeVsLast(
+                        percentDelta: percentDelta,
+                        lastAmount: lastAmount,
+                        monthlyCount: monthlyCount,
+                        netMonth: netMonth
+                    ))
+
+                case .expense:
+                    let sameCategory = rows.filter { $0.type == expenseRaw && $0.categoryId == categoryId }
+                    let monthlyCount = sameCategory.count
+                    let monthTotal = sameCategory.reduce(Decimal(0)) { $0 + $1.amount }
+                    let avg: Decimal = monthlyCount > 0 ? monthTotal / Decimal(monthlyCount) : Decimal(0)
+                    let percentDelta: Double
+                    if avg > 0 {
+                        let diff = NSDecimalNumber(decimal: transaction.amount - avg).doubleValue
+                        let base = NSDecimalNumber(decimal: avg).doubleValue
+                        percentDelta = diff / base
+                    } else {
+                        percentDelta = 0
+                    }
+                    return TransactionInsight(kind: .expenseVsCategoryAvg(
+                        percentDelta: percentDelta,
+                        avg: avg,
+                        monthlyCount: monthlyCount,
+                        monthTotal: monthTotal
+                    ))
+                }
             }
         )
     }

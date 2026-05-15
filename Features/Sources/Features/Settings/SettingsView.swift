@@ -32,30 +32,29 @@ public struct SettingsView: View {
         self.store = store
     }
 
+    // MARK: - Body
+
     public var body: some View {
         NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // MARK: 管理
-                    sectionManage
+            ZStack {
+                WarmGradientBackground(variant: .top)
 
-                    // MARK: 偏好設定
-                    sectionPreferences
-
-                    // MARK: Widget 設定
-                    sectionWidget
-
-                    // MARK: 資料
-                    sectionData
-
-                    // MARK: 關於
-                    sectionAbout
+                ScrollView {
+                    VStack(spacing: 22) {
+                        sectionManage
+                        sectionPreferences
+                        sectionWidget
+                        sectionData
+                        sectionAbout
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 80)
                 }
-                .padding(.all, 16)
             }
-            .background(Color.Design.background.ignoresSafeArea())
             .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .task { await store.send(.task).finish() }
             .sheet(
                 item: Binding(
@@ -67,308 +66,320 @@ public struct SettingsView: View {
             }
         } destination: { store in
             switch store.case {
-            case .accountManagement(let s):
-                AccountManagementView(store: s)
-            case .categoryManagement(let s):
-                CategoryManagementView(store: s)
-            case .budgetManagement(let s):
-                BudgetManagementView(store: s)
-            case .tagManagement(let s):
-                TagManagementView(store: s)
-            case .carrierManagement(let s):
-                CarrierManagementView(store: s)
-            case .notificationSettings(let s):
-                NotificationSettingsView(store: s)
-            case .syncSettings(let s):
-                SyncSettingsView(store: s)
+            case .accountManagement(let s):     AccountManagementView(store: s)
+            case .categoryManagement(let s):    CategoryManagementView(store: s)
+            case .budgetManagement(let s):      BudgetManagementView(store: s)
+            case .tagManagement(let s):         TagManagementView(store: s)
+            case .carrierManagement(let s):     CarrierManagementView(store: s)
+            case .notificationSettings(let s):  NotificationSettingsView(store: s)
+            case .syncSettings(let s):          SyncSettingsView(store: s)
             }
         }
     }
 
-    // MARK: - 管理
+    // MARK: - Sections
 
     private var sectionManage: some View {
-        VStack(spacing: 6) {
-            sectionHeader(String(localized: "settings_manage"))
-            GlassContainer(cornerRadius: 16, padding: 0) {
-                VStack(spacing: 0) {
-                    Button { store.send(.accountManagementTapped) } label: {
-                        settingsRow(
-                            icon: "wallet.bifold",
-                            iconColor: Color.Design.brandPrimary,
-                            label: String(localized: "settings_account_management"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.categoryManagementTapped) } label: {
-                        settingsRow(
-                            icon: "square.grid.2x2",
-                            iconColor: Color.Design.brandSecondary,
-                            label: String(localized: "settings_category_management"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.budgetManagementTapped) } label: {
-                        settingsRow(
-                            icon: "banknote",
-                            iconColor: Color.Design.incomeGreen,
-                            label: String(localized: "settings_budget_management"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.tagManagementTapped) } label: {
-                        settingsRow(
-                            icon: "tag",
-                            iconColor: Color.Design.brandAccent,
-                            label: String(localized: "settings_tag_management"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.carrierManagementTapped) } label: {
-                        settingsRow(
-                            icon: "creditcard.and.123",
-                            iconColor: Color.Design.brandAccent,
-                            label: String(localized: "settings_carrier_management"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.notificationSettingsTapped) } label: {
-                        settingsRow(
-                            icon: "bell.badge",
-                            iconColor: Color.Design.warningAmber,
-                            label: String(localized: "settings_notification_settings"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Button { store.send(.syncSettingsTapped) } label: {
-                        settingsRow(
-                            icon: "icloud.and.arrow.up",
-                            iconColor: Color.Design.brandPrimary,
-                            label: String(localized: "settings_sync"),
-                            trailing: chevron
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-                .frame(maxWidth: .infinity)
+        sGroup(String(localized: "settings_manage")) {
+            sRow(icon: "wallet.bifold", iconBg: Color(hex: "#5AC8FA"),
+                 label: String(localized: "settings_account_management")) {
+                store.send(.accountManagementTapped)
+            }
+            rowDivider
+            sRow(icon: "square.grid.2x2", iconBg: Color(hex: "#FF9500"),
+                 label: String(localized: "settings_category_management")) {
+                store.send(.categoryManagementTapped)
+            }
+            rowDivider
+            sRow(icon: "banknote", iconBg: Color(hex: "#34C759"),
+                 label: String(localized: "settings_budget_management")) {
+                store.send(.budgetManagementTapped)
+            }
+            rowDivider
+            sRow(icon: "tag", iconBg: Color(hex: "#5E5CE6"),
+                 label: String(localized: "settings_tag_management")) {
+                store.send(.tagManagementTapped)
+            }
+            rowDivider
+            sRow(icon: "creditcard.and.123", iconBg: Color(hex: "#AF52DE"),
+                 label: String(localized: "settings_carrier_management")) {
+                store.send(.carrierManagementTapped)
             }
         }
     }
-
-    // MARK: - 偏好設定
 
     private var sectionPreferences: some View {
-        VStack(spacing: 6) {
-            sectionHeader(String(localized: "settings_preferences"))
-            GlassContainer(cornerRadius: 16, padding: 0) {
-                VStack(spacing: 0) {
-                    Picker(selection: Binding(
-                        get: { store.selectedDefaultAccountId },
-                        set: { store.send(.defaultAccountSelected($0)) }
-                    ), label: settingsRow(
-                        icon: "creditcard",
-                        iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_default_account"),
-                        trailing: EmptyView()
-                    )) {
-                        ForEach(store.accounts) { account in
-                            Text(account.name).tag(account.id.uuidString)
-                        }
+        sGroup(String(localized: "settings_preferences")) {
+            // Default account — Menu picker preserves native selection UI but uses our row style
+            Menu {
+                Picker(selection: Binding(
+                    get: { store.selectedDefaultAccountId },
+                    set: { store.send(.defaultAccountSelected($0)) }
+                ), label: EmptyView()) {
+                    ForEach(store.accounts) { account in
+                        Text(account.name).tag(account.id.uuidString)
                     }
-                    Button { store.send(.languageTapped) } label: {
-                        settingsRow(
-                            icon: "globe",
-                            iconColor: Color.Design.textSecondary,
-                            label: String(localized: "settings_language"),
-                            trailing: HStack(spacing: 4) {
-                                Text(store.currentLanguage)
-                                    .font(.body)
-                                    .foregroundStyle(Color.Design.textSecondary)
-                                chevron
-                            }
-                        )
-                    }
-                    settingsRow(
-                        icon: "dock.rectangle",
-                        iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_show_accessory_bar"),
-                        trailing: Toggle("", isOn: $store.showAccessoryBar.sending(\.accessoryBarToggleChanged))
-                            .labelsHidden()
-                            .tint(Color.Design.incomeGreen)
-                    )
                 }
-                .frame(maxWidth: .infinity)
+            } label: {
+                rowContent(
+                    icon: "creditcard.fill",
+                    iconBg: Color(hex: "#0A84FF"),
+                    label: String(localized: "settings_default_account"),
+                    value: store.defaultAccountName,
+                    showChevron: true
+                )
             }
+            .buttonStyle(.plain)
+
+            rowDivider
+
+            sRow(icon: "globe", iconBg: Color(hex: "#0A84FF"),
+                 label: String(localized: "settings_language"),
+                 value: store.currentLanguage) {
+                store.send(.languageTapped)
+            }
+
+            rowDivider
+
+            sRow(icon: "bell.badge", iconBg: Color(hex: "#FF3B30"),
+                 label: String(localized: "settings_notification_settings")) {
+                store.send(.notificationSettingsTapped)
+            }
+
+            rowDivider
+
+            sToggleRow(
+                icon: "dock.rectangle",
+                iconBg: Color(hex: "#34C759"),
+                label: String(localized: "settings_show_accessory_bar"),
+                isOn: $store.showAccessoryBar.sending(\.accessoryBarToggleChanged)
+            )
         }
     }
-
-    // MARK: - Widget 設定
 
     private var sectionWidget: some View {
-        VStack(spacing: 6) {
-            sectionHeader(String(localized: "settings_widget"))
-            GlassContainer(cornerRadius: 16, padding: 0) {
-                VStack(spacing: 0) {
-                    // Carrier picker
-                    if store.carriers.isEmpty {
-                        settingsRow(
-                            icon: "creditcard.fill",
-                            iconColor: Color.Design.brandPrimary,
-                            label: String(localized: "settings_widget_carrier"),
-                            trailing: Text(String(localized: "settings_widget_no_carrier"))
-                                .font(.body)
-                                .foregroundStyle(Color.Design.textTertiary)
-                        )
-                    } else {
-                        Picker(selection: Binding(
-                            get: { store.widgetCarrierId },
-                            set: { newValue in
-                                if let uuid = UUID(uuidString: newValue) {
-                                    store.send(.widgetCarrierSelected(uuid))
-                                }
-                            }
-                        ), label: settingsRow(
-                            icon: "creditcard.fill",
-                            iconColor: Color.Design.brandPrimary,
-                            label: String(localized: "settings_widget_carrier"),
-                            trailing: EmptyView()
-                        )) {
-                            ForEach(store.carriers) { carrier in
-                                Text(carrier.name).tag(carrier.id.uuidString)
+        sGroup(String(localized: "settings_widget")) {
+            if store.carriers.isEmpty {
+                rowContent(
+                    icon: "creditcard.fill",
+                    iconBg: Color(hex: "#5AC8FA"),
+                    label: String(localized: "settings_widget_carrier"),
+                    value: String(localized: "settings_widget_no_carrier"),
+                    showChevron: false
+                )
+            } else {
+                Menu {
+                    Picker(selection: Binding(
+                        get: { store.widgetCarrierId },
+                        set: { newValue in
+                            if let uuid = UUID(uuidString: newValue) {
+                                store.send(.widgetCarrierSelected(uuid))
                             }
                         }
+                    ), label: EmptyView()) {
+                        ForEach(store.carriers) { carrier in
+                            Text(carrier.name).tag(carrier.id.uuidString)
+                        }
                     }
-
-                    // Voice account — Phase 2 (coming soon)
-                    settingsRow(
-                        icon: "mic.fill",
-                        iconColor: Color.Design.textTertiary,
-                        label: String(localized: "settings_widget_voice_account"),
-                        trailing: Text(String(localized: "settings_widget_coming_soon"))
-                            .font(.body)
-                            .foregroundStyle(Color.Design.textTertiary)
+                } label: {
+                    rowContent(
+                        icon: "creditcard.fill",
+                        iconBg: Color(hex: "#5AC8FA"),
+                        label: String(localized: "settings_widget_carrier"),
+                        value: store.widgetCarrierName.isEmpty
+                            ? String(localized: "common_please_select")
+                            : store.widgetCarrierName,
+                        showChevron: true
                     )
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
             }
+
+            rowDivider
+
+            rowContent(
+                icon: "mic.fill",
+                iconBg: Color(hex: "#8E8E93"),
+                label: String(localized: "settings_widget_voice_account"),
+                value: String(localized: "settings_widget_coming_soon"),
+                showChevron: false
+            )
         }
     }
-
-    // MARK: - 資料
 
     private var sectionData: some View {
-        VStack(spacing: 6) {
-            sectionHeader(String(localized: "settings_data"))
-            GlassContainer(cornerRadius: 16, padding: 0) {
-                VStack(spacing: 0) {
-                    Button { store.send(.exportCSVTapped) } label: {
-                        settingsRow(
-                            icon: "square.and.arrow.down",
-                            iconColor: Color.Design.textSecondary,
-                            label: String(localized: "settings_export_csv"),
-                            trailing: store.exportingFormat == .csv ? AnyView(ProgressView()) : AnyView(chevron)
-                        )
-                    }
-                    .disabled(store.exportingFormat != nil)
+        sGroup(
+            String(localized: "settings_data"),
+            footer: store.exportError
+        ) {
+            sRow(icon: "icloud.and.arrow.up", iconBg: Color(hex: "#5AC8FA"),
+                 label: String(localized: "settings_sync")) {
+                store.send(.syncSettingsTapped)
+            }
 
-                    Button { store.send(.exportJSONTapped) } label: {
-                        settingsRow(
-                            icon: "tablecells",
-                            iconColor: Color.Design.textSecondary,
-                            label: String(localized: "settings_export_json"),
-                            trailing: store.exportingFormat == .json ? AnyView(ProgressView()) : AnyView(chevron)
-                        )
-                    }
-                    .disabled(store.exportingFormat != nil)
+            rowDivider
 
-                    if let errorMessage = store.exportError {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Color.Design.expenseRed)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 10)
-                    }
-                }
-                .frame(maxWidth: .infinity)
+            sRow(
+                icon: "square.and.arrow.down",
+                iconBg: Color(hex: "#5E5CE6"),
+                label: String(localized: "settings_export_csv"),
+                trailing: store.exportingFormat == .csv ? AnyView(ProgressView()) : nil
+            ) {
+                if store.exportingFormat == nil { store.send(.exportCSVTapped) }
+            }
+
+            rowDivider
+
+            sRow(
+                icon: "tablecells",
+                iconBg: Color(hex: "#AF52DE"),
+                label: String(localized: "settings_export_json"),
+                trailing: store.exportingFormat == .json ? AnyView(ProgressView()) : nil
+            ) {
+                if store.exportingFormat == nil { store.send(.exportJSONTapped) }
             }
         }
     }
-
-    // MARK: - 關於
 
     private var sectionAbout: some View {
-        VStack(spacing: 6) {
-            sectionHeader(String(localized: "settings_about"))
-            GlassContainer(cornerRadius: 16, padding: 0) {
-                VStack(spacing: 0) {
-                    settingsRow(
-                        icon: "info.circle",
-                        iconColor: Color.Design.textSecondary,
-                        label: String(localized: "settings_version"),
-                        trailing: Text(appVersion)
-                            .font(.body)
-                            .foregroundStyle(Color.Design.textTertiary)
-                    )
-                    Button { store.send(.privacyPolicyTapped) } label: {
-                        settingsRow(
-                            icon: "doc.text",
-                            iconColor: Color.Design.textSecondary,
-                            label: String(localized: "settings_privacy"),
-                            trailing: chevron
-                        )
-                    }
-                }
-                .frame(maxWidth: .infinity)
+        sGroup(String(localized: "settings_about")) {
+            rowContent(
+                icon: "info.circle",
+                iconBg: Color(hex: "#8E8E93"),
+                label: String(localized: "settings_version"),
+                value: appVersion,
+                showChevron: false
+            )
+
+            rowDivider
+
+            sRow(icon: "doc.text", iconBg: Color(hex: "#8E8E93"),
+                 label: String(localized: "settings_privacy")) {
+                store.send(.privacyPolicyTapped)
             }
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Row primitives
 
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(.caption)
-            .fontWeight(.semibold)
-            .foregroundStyle(Color.Design.textSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func settingsRow<Trailing: View>(
-        icon: String,
-        iconColor: Color,
-        label: String,
-        trailing: Trailing
+    @ViewBuilder
+    private func sGroup<Content: View>(
+        _ label: String? = nil,
+        footer: String? = nil,
+        @ViewBuilder content: () -> Content
     ) -> some View {
-        HStack {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(iconColor)
-                    .frame(width: 22, height: 22)
+        VStack(alignment: .leading, spacing: 8) {
+            if let label {
                 Text(label)
-                    .font(.body)
-                    .foregroundStyle(Color.Design.textPrimary)
+                    .font(.system(size: 11, weight: .medium))
+                    .monospaced()
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Color.Design.textSecondary)
+                    .padding(.horizontal, 6)
             }
-            Spacer()
-            trailing
+            GlassContainer(cornerRadius: 14, padding: 0) {
+                VStack(spacing: 0) { content() }
+            }
+            if let footer, !footer.isEmpty {
+                Text(footer)
+                    .font(.system(size: 11))
+                    .foregroundStyle(footer == store.exportError ? Color.Design.expenseRed : Color.Design.textSecondary)
+                    .lineSpacing(2)
+                    .padding(.horizontal, 6)
+            }
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+    }
+
+    private func sRow(
+        icon: String,
+        iconBg: Color,
+        label: String,
+        value: String? = nil,
+        trailing: AnyView? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            rowContent(
+                icon: icon, iconBg: iconBg,
+                label: label, value: value,
+                trailing: trailing,
+                showChevron: trailing == nil
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sToggleRow(
+        icon: String,
+        iconBg: Color,
+        label: String,
+        isOn: Binding<Bool>
+    ) -> some View {
+        HStack(spacing: 12) {
+            iconBox(icon, bg: iconBg)
+            Text(label)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.Design.textPrimary)
+            Spacer(minLength: 0)
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(Color.Design.incomeGreen)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+    }
+
+    @ViewBuilder
+    private func rowContent(
+        icon: String,
+        iconBg: Color,
+        label: String,
+        value: String? = nil,
+        trailing: AnyView? = nil,
+        showChevron: Bool
+    ) -> some View {
+        HStack(spacing: 12) {
+            iconBox(icon, bg: iconBg)
+            Text(label)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.Design.textPrimary)
+            Spacer(minLength: 0)
+            if let value, !value.isEmpty {
+                Text(value)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.Design.textSecondary)
+                    .lineLimit(1)
+            }
+            if let trailing {
+                trailing
+            } else if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Design.textSecondary)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
         .contentShape(Rectangle())
     }
 
-    private var chevron: some View {
-        Image(systemName: "chevron.right")
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(Color.Design.textTertiary)
-            .frame(width: 20, height: 20)
+    private func iconBox(_ system: String, bg: Color) -> some View {
+        Image(systemName: system)
+            .symbolRenderingMode(.monochrome)
+            .foregroundStyle(.white)
+            .font(.system(size: 13, weight: .semibold))
+            .frame(width: 28, height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(bg)
+            )
+    }
+
+    private var rowDivider: some View {
+        Rectangle()
+            .fill(Color.Design.separator.opacity(0.4))
+            .frame(height: 0.5)
+            .padding(.leading, 54) // 14 (h pad) + 28 (icon) + 12 (gap)
     }
 
     private var appVersion: String {

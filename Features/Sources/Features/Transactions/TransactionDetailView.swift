@@ -15,39 +15,46 @@ public struct TransactionDetailView: View {
     public var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    // MARK: 金額 header
-                    amountHeader
-
-                    // MARK: 詳細資訊
-                    detailsCard
-
-                    Spacer(minLength: 0)
-
-                    // MARK: 刪除按鈕
-                    deleteButton
+                LazyVStack(spacing: 18) {
+                    TxHero(transaction: transaction, categoryName: store.categoryName)
+                    placeholderInsight
+                    placeholderFields
+                    if store.detent == .large {
+                        placeholderActivity
+                    }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 24)
-                .padding(.bottom, 40)
+                .padding(.top, 4)
+                .padding(.bottom, 120) // leave room for action bar + undo
             }
-//            .navigationTitle(transaction.type.displayName)
-//            .navigationBarTitleDisplayMode(.inline)
-            .task { await store.send(.task).finish() }
+            .scrollIndicators(.hidden)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                actionBar
+            }
+            .overlay(alignment: .bottom) {
+                if store.pendingDelete {
+                    UndoBanner(onUndo: { store.send(.undoTapped) })
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.22), value: store.pendingDelete)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common_close")) {
-                        store.send(.dismiss)
-                    }
+                    Button(String(localized: "common_close")) { store.send(.dismiss) }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common_edit")) {
-                        store.send(.editTapped)
-                    }
+                ToolbarItem(placement: .principal) {
+                    Text("transaction_detail_title")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .tracking(1.6)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Color.Design.textSecondary)
                 }
             }
+            .task { await store.send(.task).finish() }
             .confirmationDialog(
-                String(localized: "transactions_delete_confirm"),
+                String(localized: "transaction_detail_delete_confirm_title"),
                 isPresented: Binding(
                     get: { store.showDeleteConfirmation },
                     set: { if !$0 { store.send(.deleteCancelled) } }
@@ -60,123 +67,58 @@ public struct TransactionDetailView: View {
                 Button(String(localized: "common_cancel"), role: .cancel) {
                     store.send(.deleteCancelled)
                 }
+            } message: {
+                Text("transaction_detail_delete_confirm_body")
             }
-            .sheet(
-                item: $store.scope(state: \.editTransaction, action: \.editTransaction)
-            ) { editStore in
+            .sheet(item: $store.scope(state: \.editTransaction, action: \.editTransaction)) { editStore in
                 AddTransactionView(store: editStore)
             }
         }
-    }
-
-    // MARK: - Amount Header
-
-    private var amountHeader: some View {
-        VStack(spacing: 8) {
-            // Type badge
-            Text(transaction.type.displayName)
-                .font(Font.Design.caption)
-                .fontWeight(.semibold)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(transaction.type.uiColor.opacity(0.15))
-                .foregroundStyle(transaction.type.uiColor)
-                .clipShape(Capsule())
-
-            // Amount
-            Text(transaction.amount.twdFormatted)
-                .font(Font.Design.largeTitle.weight(.bold).monospacedDigit())
-                .foregroundStyle(transaction.type.amountDisplayColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-        }
-    }
-
-    // MARK: - Details Card
-
-    private var detailsCard: some View {
-        VStack(spacing: 0) {
-            // 日期
-            detailRow(icon: "calendar", label: String(localized: "transaction_detail_date"), value: transaction.date.formatted(date: .long, time: .shortened))
-            Divider().padding(.leading, 56)
-
-            // 帳戶
-            if let accountName = store.accountName {
-                detailRow(icon: "wallet.bifold", label: String(localized: "transaction_detail_account"), value: accountName)
-                Divider().padding(.leading, 56)
-            }
-
-            // 轉帳目標帳戶
-            if transaction.type == .transfer, let toName = store.toAccountName {
-                detailRow(icon: "arrow.right", label: String(localized: "transaction_detail_to_account"), value: toName)
-                Divider().padding(.leading, 56)
-            }
-
-            // 分類
-            if transaction.type != .transfer, let categoryName = store.categoryName {
-                detailRow(icon: "square.grid.2x2", label: String(localized: "transaction_detail_category"), value: categoryName)
-                Divider().padding(.leading, 56)
-            }
-
-            // 備註
-            if let note = transaction.note, !note.isEmpty {
-                detailRow(icon: "text.bubble", label: String(localized: "transaction_detail_note"), value: note)
-                Divider().padding(.leading, 56)
-            }
-
-            // 標籤
-            if !transaction.tags.isEmpty {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "tag")
-                        .frame(width: 24)
-                        .foregroundStyle(Color.Design.textSecondary)
-                    Text("transaction_detail_tags")
-                        .foregroundStyle(Color.Design.textSecondary)
-                    Spacer()
-                    FlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
-                        ForEach(transaction.tags) { tag in
-                            TagPill(text: tag.name)
-                        }
-                    }
+        .presentationDetents(
+            [.medium, .large],
+            selection: Binding(
+                get: { store.detent == .large ? .large : .medium },
+                set: { newValue in
+                    store.send(.detentChanged(newValue == .large ? .large : .medium))
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+            )
+        )
+        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Placeholders filled in subsequent tasks
+
+    private var placeholderInsight: some View { EmptyView() }
+    private var placeholderFields: some View { EmptyView() }
+    private var placeholderActivity: some View { EmptyView() }
+
+    // MARK: - Action bar
+
+    private var actionBar: some View {
+        HStack(spacing: 10) {
+            Button {
+                store.send(.editTapped)
+            } label: {
+                Label(String(localized: "common_edit"), systemImage: "pencil")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
             }
-        }
-        .background(Color.Design.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
+            .buttonStyle(.glassProminent)
+            .tint(Color.Design.accentOrange)
 
-    private func detailRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 24)
-                .foregroundStyle(Color.Design.textSecondary)
-                .symbolRenderingMode(.hierarchical)
-            Text(label)
-                .foregroundStyle(Color.Design.textSecondary)
-            Spacer()
-            Text(value)
-                .foregroundStyle(Color.Design.textPrimary)
-                .multilineTextAlignment(.trailing)
+            Button(role: .destructive) {
+                store.send(.deleteTapped)
+            } label: {
+                Text("common_delete")
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+            }
+            .buttonStyle(.glass)
+            .tint(Color.Design.expenseRed)
+            .disabled(store.pendingDelete)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-
-    // MARK: - Delete Button
-
-    private var deleteButton: some View {
-        Button(role: .destructive) {
-            store.send(.deleteTapped)
-        } label: {
-            Label(String(localized: "transaction_detail_delete"), systemImage: "trash")
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.Design.expenseRed.opacity(0.1))
-                .foregroundStyle(Color.Design.expenseRed)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
+        .background(.ultraThinMaterial)
     }
 }
-

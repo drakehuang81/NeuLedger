@@ -278,25 +278,61 @@ public struct DashboardFeature: Sendable {
                         }
                     }
                     .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+                case .accounts:
+                    state.accountsPhase = .loading
+                    return .run { send in
+                        do {
+                            let accounts = try await accountClient.fetchActive()
+                            await send(.accountsUpdated(accounts))
+                        } catch {
+                            await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                        }
+                    }
+                    .cancellable(id: CancelID.accountObservation, cancelInFlight: true)
+                case .transactions:
+                    state.transactionsPhase = .loading
+                    return .run { send in
+                        do {
+                            let txs = try await transactionClient.fetchRecent()
+                            await send(.transactionsUpdated(txs))
+                        } catch {
+                            await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                        }
+                    }
+                    .cancellable(id: CancelID.transactionObservation, cancelInFlight: true)
                 case .stats,
-                     .transactions,
-                     .insight,
-                     .accounts:
+                     .insight:
                     // MARK: - Stubs wired in later slices
                     switch section {
                     case .stats:        state.statsPhase = .loading
-                    case .transactions: state.transactionsPhase = .loading
                     case .insight:      state.insightPhase = .loading
-                    case .accounts:     state.accountsPhase = .loading
-                    case .hero:         break
+                    default:            break
                     }
                     return .none
                 }
 
+            case let .accountChipSelected(accountID):
+                state.selectedAccountID = accountID
+                state.filteredBalance = accountID.flatMap { state.accountBalances[$0] } ?? state.totalBalance
+                if let id = accountID {
+                    state.filteredRecent = state.recentTransactions.filter { $0.accountId == id }
+                } else {
+                    state.filteredRecent = state.recentTransactions
+                }
+                state.heroPhase = .loading
+                return .run { [accountID] send in
+                    do {
+                        let v = try await transactionClient.weeklySpending(accountID, 7)
+                        await send(.weeklySpendingComputed(v))
+                    } catch {
+                        await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                    }
+                }
+                .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+
             // MARK: - Stubs wired in later slices
 
-            case .accountChipSelected,
-                 .statsComputed,
+            case .statsComputed,
                  .insightsLoaded,
                  .insightIndexChanged,
                  .transactionRowToggled:

@@ -25,8 +25,7 @@ public struct DashboardScreen: View {
                     VStack(spacing: 16) {
                         DashboardTopBar(store: store)
 
-                        // Slice 4 placeholder (account chip filter)
-                        Color.clear.frame(height: 44)
+                        AccountChipsStrip(store: store)
 
                         HeroBalanceCard(store: store)
 

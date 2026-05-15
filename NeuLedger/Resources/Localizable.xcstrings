@@ -1157,6 +1157,23 @@
         }
       }
     },
+    "dashboard_chip_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部"
+          }
+        }
+      }
+    },
     "dashboard_period_recent": {
       "extractionState": "manual",
       "localizations": {

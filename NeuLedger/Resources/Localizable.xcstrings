@@ -1922,6 +1922,23 @@
         }
       }
     },
+    "transactions_try_examples": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try these"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "試試這些"
+          }
+        }
+      }
+    },
     "transactions_no_match_desc": {
       "extractionState": "manual",
       "localizations": {

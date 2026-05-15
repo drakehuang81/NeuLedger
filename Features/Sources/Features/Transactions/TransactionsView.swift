@@ -12,20 +12,19 @@ public struct TransactionsView: View {
 
     public var body: some View {
         NavigationStack {
-            Group {
-                ZStack {
-                    Color.Design.background
-                        .ignoresSafeArea()
-                    if store.isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if store.transactions.isEmpty {
-                        emptyState
-                    } else {
-                        transactionsList
-                    }
+            ZStack {
+                WarmGradientBackground(variant: .top)
+
+                if store.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if store.transactions.isEmpty {
+                    emptyState
+                } else {
+                    transactionsList
                 }
             }
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationTitle(String(localized: "transactions_title"))
             .navigationBarTitleDisplayMode(.large)
             .searchable(
@@ -99,18 +98,111 @@ public struct TransactionsView: View {
 
     // MARK: - Empty State
 
+    @ViewBuilder
     private var emptyState: some View {
-        EmptyStateView(
-            icon: "list.bullet.rectangle",
-            title: store.hasActiveFilters || !store.searchText.isEmpty
-                ? String(localized: "transactions_no_match_title")
-                : String(localized: "transactions_no_records_title"),
-            description: store.hasActiveFilters || !store.searchText.isEmpty
-                ? String(localized: "transactions_no_match_desc")
-                : String(localized: "transactions_no_records_desc")
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if store.hasActiveFilters || !store.searchText.isEmpty {
+            noMatchState
+        } else {
+            EmptyStateView(
+                icon: "list.bullet.rectangle",
+                title: String(localized: "transactions_no_records_title"),
+                description: String(localized: "transactions_no_records_desc")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
+
+    /// "查無結果" 狀態 + 設計的 AI prompt cards（點擊塞回 searchText）
+    private var noMatchState: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(localized: "transactions_no_match_title"))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.Design.textPrimary)
+                    Text(String(localized: "transactions_no_match_desc"))
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 4)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.Design.aiPurple)
+                    Text(String(localized: "transactions_try_examples"))
+                        .font(.system(size: 11, weight: .medium))
+                        .monospaced()
+                        .tracking(1.2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
+                .padding(.horizontal, 4)
+
+                VStack(spacing: 8) {
+                    ForEach(Self.searchExamples, id: \.query) { example in
+                        Button {
+                            store.send(.searchTextChanged(example.query))
+                        } label: {
+                            promptCard(icon: example.icon, query: example.query, hint: example.hint)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 100)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func promptCard(icon: String, query: String, hint: String) -> some View {
+        GlassContainer(cornerRadius: 14, padding: EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 14)) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle().fill(Color.Design.aiPurple.opacity(0.14))
+                    Image(systemName: icon)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.Design.aiPurple)
+                }
+                .frame(width: 32, height: 32)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(query)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.Design.textPrimary)
+                    Text(hint)
+                        .font(.system(size: 10.5).monospacedDigit())
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Design.textSecondary)
+            }
+        }
+    }
+
+    private struct SearchExample {
+        let icon: String
+        let query: String
+        let hint: String
+    }
+
+    /// 字面關鍵字示例，點擊後直接代入 searchText 由 reducer 的 debounce search 接手。
+    /// 不需要 AI 端點，所以全部都是真實會 match 的 substring。
+    private static let searchExamples: [SearchExample] = [
+        .init(icon: "cup.and.saucer", query: "星巴克", hint: "Starbucks · coffee"),
+        .init(icon: "car",            query: "Uber",   hint: "Rides"),
+        .init(icon: "tv",             query: "Netflix", hint: "Subscription"),
+        .init(icon: "bag",            query: "7-11",   hint: "Convenience store"),
+        .init(icon: "arrow.triangle.2.circlepath", query: "訂閱", hint: "Recurring charges"),
+        .init(icon: "person.2",       query: "公帳",   hint: "Shared / splittable"),
+    ]
 
     // MARK: - Transactions List
 
@@ -170,17 +262,19 @@ public struct TransactionsView: View {
     }
 
     private func dateSectionHeader(_ date: Date) -> some View {
-        HStack {
+        HStack(spacing: 6) {
             Text(sectionTitle(for: date))
-                .font(Font.Design.caption)
-                .fontWeight(.semibold)
+                .font(.system(size: 11, weight: .medium))
+                .monospaced()
+                .tracking(1.2)
+                .textCase(.uppercase)
                 .foregroundStyle(Color.Design.textSecondary)
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 6)
-        .background(Color.Design.background)
+        .padding(.horizontal, 22)
+        .padding(.top, 14)
+        .padding(.bottom, 6)
     }
 
     // MARK: - Helpers

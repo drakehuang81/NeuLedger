@@ -11,35 +11,39 @@ public struct AccountManagementView: View {
     }
 
     public var body: some View {
-        Group {
-            if store.isLoading {
-                ProgressView()
+        ZStack {
+            WarmGradientBackground(variant: .top)
+                .ignoresSafeArea()
+
+            Group {
+                if store.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if store.accounts.isEmpty {
+                    EmptyStateView(
+                        icon: "wallet.bifold",
+                        title: String(localized: "account_management_empty_title"),
+                        description: String(localized: "account_management_empty_desc"),
+                        actionTitle: String(localized: "account_management_add")
+                    ) {
+                        store.send(.addButtonTapped)
+                    }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.accounts.isEmpty {
-                EmptyStateView(
-                    icon: "wallet.bifold",
-                    title: String(localized: "account_management_empty_title"),
-                    description: String(localized: "account_management_empty_desc"),
-                    actionTitle: String(localized: "account_management_add")
-                ) {
-                    store.send(.addButtonTapped)
+                } else {
+                    accountList
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                accountList
             }
         }
         .navigationTitle(String(localized: "account_management_title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                EditButton()
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
+                        .font(.system(size: 17, weight: .semibold))
                 }
                 .accessibilityLabel(String(localized: "a11y_account_add"))
             }
@@ -56,59 +60,150 @@ public struct AccountManagementView: View {
     // MARK: - Account List
 
     private var accountList: some View {
-        List {
-            Section(String(localized: "account_management_active")) {
-                ForEach(store.activeAccounts) { account in
-                    Button {
-                        store.send(.accountTapped(account))
-                    } label: {
-                        accountRow(account)
-                    }
-                    .buttonStyle(.plain)
+        ScrollView {
+            VStack(spacing: 18) {
+                netWorthHero
+
+                ForEach(activeGroups, id: \.id) { group in
+                    groupSection(label: group.label, accounts: group.accounts)
                 }
-                .onDelete { indexSet in
-                    for index in indexSet {
-                        let account = store.activeAccounts[index]
-                        store.send(.deleteRequested(account.id))
-                    }
+
+                if !store.archivedAccounts.isEmpty {
+                    archivedSection
                 }
-                .onMove { from, to in
-                    store.send(.accountMoved(from, to))
+
+                addAccountButton
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 120)
+        }
+    }
+
+    // MARK: - Net Worth Hero
+
+    private var netWorthHero: some View {
+        GlassContainer(cornerRadius: 22, padding: 22) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.Design.brandAccent)
+                    Text("account_management_net_worth")
+                        .font(.system(size: 11, weight: .medium))
+                        .textCase(.uppercase)
+                        .tracking(1.2)
+                        .foregroundStyle(.secondary)
+                }
+                Text(totalBalance.twdFormatted)
+                    .font(.system(size: 38, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .padding(.top, 2)
+                Text(
+                    String(
+                        format: String(localized: "account_management_account_count_format"),
+                        store.accounts.count
+                    )
+                )
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Group Section
+
+    private func groupSection(label: LocalizedStringKey, accounts: [Account]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+
+            GlassContainer(cornerRadius: 18, padding: 4) {
+                VStack(spacing: 0) {
+                    ForEach(Array(accounts.enumerated()), id: \.element.id) { index, account in
+                        accountRowButton(account)
+                        if index < accounts.count - 1 {
+                            Divider()
+                                .padding(.leading, 64)
+                        }
+                    }
                 }
             }
+        }
+    }
 
-            if !store.archivedAccounts.isEmpty {
-                Section(String(localized: "account_management_archived")) {
-                    ForEach(store.archivedAccounts) { account in
+    private var archivedSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("account_management_archived")
+                .font(.system(size: 11, weight: .medium))
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+
+            GlassContainer(cornerRadius: 18, padding: 4) {
+                VStack(spacing: 0) {
+                    ForEach(Array(store.archivedAccounts.enumerated()), id: \.element.id) { index, account in
                         archivedAccountRow(account)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    store.send(.deleteRequested(account.id))
-                                } label: {
-                                    Label(String(localized: "common_delete"), systemImage: "trash")
-                                }
+                            .contextMenu {
                                 Button {
                                     store.send(.unarchiveTapped(account.id))
                                 } label: {
                                     Label(String(localized: "account_management_unarchive"), systemImage: "tray.and.arrow.up")
                                 }
-                                .tint(Color.Design.brandPrimary)
+                                Button(role: .destructive) {
+                                    store.send(.deleteRequested(account.id))
+                                } label: {
+                                    Label(String(localized: "common_delete"), systemImage: "trash")
+                                }
                             }
+                        if index < store.archivedAccounts.count - 1 {
+                            Divider()
+                                .padding(.leading, 64)
+                        }
                     }
                 }
             }
         }
-        .listStyle(.insetGrouped)
     }
 
     // MARK: - Row Views
+
+    private func accountRowButton(_ account: Account) -> some View {
+        Button {
+            store.send(.accountTapped(account))
+        } label: {
+            accountRow(account)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                store.send(.accountTapped(account))
+            } label: {
+                Label(String(localized: "common_edit"), systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                store.send(.deleteRequested(account.id))
+            } label: {
+                Label(String(localized: "common_delete"), systemImage: "trash")
+            }
+        }
+    }
 
     private func accountRow(_ account: Account) -> some View {
         HStack(spacing: 12) {
             accountIcon(account)
             VStack(alignment: .leading, spacing: 2) {
                 Text(account.name)
-                    .font(Font.Design.body)
+                    .font(Font.Design.body.weight(.semibold))
                     .foregroundStyle(Color.Design.textPrimary)
                 Text(account.type.displayLabel)
                     .font(Font.Design.caption)
@@ -116,10 +211,12 @@ public struct AccountManagementView: View {
             }
             Spacer()
             Text(balanceText(for: account.id))
-                .font(Font.Design.amount)
-                .foregroundStyle(Color.Design.textPrimary)
+                .font(Font.Design.amount.monospacedDigit())
+                .foregroundStyle(balanceColor(for: account.id))
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
     }
 
     private func archivedAccountRow(_ account: Account) -> some View {
@@ -139,27 +236,85 @@ public struct AccountManagementView: View {
                 .font(Font.Design.caption)
                 .foregroundStyle(Color.Design.textTertiary)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
     }
 
     private func accountIcon(_ account: Account) -> some View {
-        ZStack {
-            Circle()
-                .fill(Color(hex: account.color).opacity(0.15))
-                .frame(width: 40, height: 40)
-            Image(systemName: account.icon)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color(hex: account.color))
-                .font(.system(size: 18))
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color(hex: account.color))
+            .frame(width: 40, height: 40)
+            .overlay {
+                Image(systemName: account.icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+    }
+
+    // MARK: - Add Button
+
+    private var addAccountButton: some View {
+        Button {
+            store.send(.addButtonTapped)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("account_management_add")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(Color.Design.brandAccent)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        Color.Design.brandAccent.opacity(0.45),
+                        style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])
+                    )
+            }
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Helpers
+
+    private var totalBalance: Decimal {
+        store.balances.values.reduce(Decimal.zero, +)
+    }
+
+    private var activeGroups: [AccountGroup] {
+        let active = store.activeAccounts
+        let buckets: [(id: String, label: LocalizedStringKey, types: [AccountType])] = [
+            ("liquid", "account_management_group_liquid", [.cash, .bank]),
+            ("credit", "account_management_group_credit", [.creditCard]),
+            ("digital", "account_management_group_digital", [.eWallet])
+        ]
+        return buckets.compactMap { bucket in
+            let accs = active.filter { bucket.types.contains($0.type) }
+            guard !accs.isEmpty else { return nil }
+            return AccountGroup(id: bucket.id, label: bucket.label, accounts: accs)
+        }
+    }
 
     private func balanceText(for id: Account.ID) -> String {
         let balance = store.balances[id] ?? 0
         return balance.twdFormatted
     }
+
+    private func balanceColor(for id: Account.ID) -> Color {
+        let balance = store.balances[id] ?? 0
+        return balance < 0 ? Color.Design.expenseRed : Color.Design.textPrimary
+    }
+}
+
+// MARK: - Local Types
+
+private struct AccountGroup {
+    let id: String
+    let label: LocalizedStringKey
+    let accounts: [Account]
 }
 
 #Preview {

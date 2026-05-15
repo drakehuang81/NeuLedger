@@ -43,7 +43,8 @@ public struct AnalysisView: View {
             }
             .scrollIndicators(.hidden)
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task {
             await store.send(.task).finish()
         }

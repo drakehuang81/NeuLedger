@@ -15,7 +15,6 @@ struct AnalysisTopBar: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            iconChip
             titleStack
             Spacer(minLength: 8)
             periodSegmented
@@ -24,17 +23,6 @@ struct AnalysisTopBar: View {
     }
 
     // MARK: - Subviews
-
-    private var iconChip: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.Design.textPrimary.opacity(0.06))
-            Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.Design.textPrimary)
-        }
-        .frame(width: 30, height: 30)
-    }
 
     private var titleStack: some View {
         VStack(alignment: .leading, spacing: 2) {

@@ -69,9 +69,9 @@ struct InsightCarousel: View {
     private var placeholder: some View {
         GlassContainer(cornerRadius: 22, padding: 20) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Loading insight…")
+                Text("dashboard_insight_loading_title")
                     .font(.system(size: 16, weight: .semibold))
-                Text("Please wait while we analyze your spending…")
+                Text("dashboard_insight_loading_body")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }

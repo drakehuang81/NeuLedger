@@ -23,6 +23,7 @@ struct DashboardTopBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // TODO(slice-followup): pull user initial from userSettingsClient when available
             AvatarBadge(initials: "D")
             VStack(alignment: .leading, spacing: 2) {
                 Text(greeting)
@@ -32,8 +33,12 @@ struct DashboardTopBar: View {
                     .font(.system(size: 16, weight: .semibold))
             }
             Spacer()
-            iconButton(systemName: "sparkles") { /* AI button — no-op for now */ }
-            iconButton(systemName: "magnifyingglass") { /* Search button — no-op */ }
+            iconButton(systemName: "sparkles") {
+                // TODO(slice-followup): wire AI assistant entry point
+            }
+            iconButton(systemName: "magnifyingglass") {
+                // TODO(slice-followup): wire global search entry point
+            }
         }
     }
 

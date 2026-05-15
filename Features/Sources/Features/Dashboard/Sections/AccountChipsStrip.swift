@@ -72,12 +72,19 @@ struct AccountChipsStrip: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(
-                Capsule().fill(isActive ? color.opacity(0.18) : Color.primary.opacity(0.05))
-            )
-            .overlay(
-                Capsule().strokeBorder(isActive ? color.opacity(0.35) : Color.clear, lineWidth: 0.5)
-            )
+            .background {
+                if isActive {
+                    Capsule().fill(color.opacity(0.28))
+                } else {
+                    Capsule().fill(Color.clear)
+                        .glassEffect(Glass.clear.tint(Color.Design.surface), in: Capsule())
+                }
+            }
+            .overlay {
+                if isActive {
+                    Capsule().strokeBorder(color.opacity(0.65), lineWidth: 1)
+                }
+            }
             .foregroundStyle(isActive ? color : Color.primary)
         }
         .buttonStyle(.plain)

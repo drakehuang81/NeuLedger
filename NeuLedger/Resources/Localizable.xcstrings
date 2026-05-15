@@ -834,6 +834,40 @@
         }
       }
     },
+    "dashboard_insight_loading_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading insight…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在生成洞察…"
+          }
+        }
+      }
+    },
+    "dashboard_insight_loading_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please wait while we analyze your spending"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在分析您的支出"
+          }
+        }
+      }
+    },
     "dashboard_total_balance": {
       "extractionState": "manual",
       "localizations": {

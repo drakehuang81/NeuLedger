@@ -26,21 +26,21 @@ public struct EmptyStateView: View {
             ZStack {
                 Circle()
                     .fill(Color.Design.surfaceSecondary)
-                    .frame(width: 80, height: 80)
-                
+                    .frame(width: 72, height: 72)
+
                 Image(systemName: icon)
-                    .font(.system(size: 32))
+                    .font(.system(size: 28))
                     .foregroundStyle(Color.Design.textSecondary)
             }
             .padding(.bottom, 8)
-            
+
             VStack(spacing: 8) {
                 Text(title)
-                    .font(Font.Design.headline)
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Color.Design.textPrimary)
-                
+
                 Text(description)
-                    .font(Font.Design.subheadline)
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.Design.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 280)

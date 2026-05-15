@@ -3,9 +3,10 @@ import SwiftUI
 
 /// A radio-style picker for choosing a Budget category (or "All expenses").
 ///
-/// Layout: each row has a 32pt color-tinted emoji circle, the category
-/// name, and a trailing checkmark when selected. The first row is a
-/// sentinel "All expenses ∗" with `id == nil`.
+/// Layout: each row has a 32pt color-tinted SF Symbol circle, the
+/// category name, and a trailing checkmark when selected. The first row
+/// is a sentinel "All expenses" with `id == nil`, rendered with the
+/// `asterisk` SF Symbol.
 public struct BudgetCategoryListPicker: View {
     private let categories: [Domain.Category]
     private let selectedId: Domain.Category.ID?
@@ -24,7 +25,7 @@ public struct BudgetCategoryListPicker: View {
     public var body: some View {
         VStack(spacing: 0) {
             row(
-                emoji: "∗",
+                symbol: "asterisk",
                 color: Color.Design.accentOrange,
                 title: Text("budget_form_all_expenses"),
                 isAll: true,
@@ -37,7 +38,7 @@ public struct BudgetCategoryListPicker: View {
                     .padding(.leading, 60)
 
                 row(
-                    emoji: cat.icon,
+                    symbol: cat.icon,
                     color: Color(hex: cat.color),
                     title: Text(cat.localizedName),
                     isAll: false,
@@ -49,7 +50,7 @@ public struct BudgetCategoryListPicker: View {
     }
 
     private func row(
-        emoji: String,
+        symbol: String,
         color: Color,
         title: Text,
         isAll: Bool,
@@ -61,12 +62,13 @@ public struct BudgetCategoryListPicker: View {
                 ZStack {
                     Circle()
                         .fill(color.opacity(0.12))
-                    Text(emoji)
+                    Image(systemName: symbol.isEmpty ? "tag" : symbol)
                         .font(.system(
-                            size: isAll ? 18 : 16,
-                            weight: isAll ? .bold : .regular
+                            size: isAll ? 14 : 15,
+                            weight: isAll ? .bold : .medium
                         ))
                         .foregroundStyle(color)
+                        .symbolRenderingMode(.hierarchical)
                 }
                 .frame(width: 32, height: 32)
 

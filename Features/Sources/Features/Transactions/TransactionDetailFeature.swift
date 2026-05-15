@@ -6,6 +6,13 @@ import Foundation
 public struct TransactionDetailFeature: Sendable {
     public init() {}
 
+    /// Equatable wrapper for the SwiftUI `PresentationDetent` we expose
+    /// to the View — keeps Feature layer free of SwiftUI imports.
+    public enum Detent: Equatable, Sendable {
+        case medium
+        case large
+    }
+
     // MARK: - State
 
     @ObservableState
@@ -14,6 +21,11 @@ public struct TransactionDetailFeature: Sendable {
         public var categoryName: String?
         public var accountName: String?
         public var toAccountName: String?
+        public var account: Account?
+        public var toAccount: Account?
+        public var insight: TransactionInsight?
+        public var detent: Detent = .medium
+        public var pendingDelete: Bool = false
 
         @Presents var editTransaction: AddTransactionFeature.State?
         var showDeleteConfirmation: Bool = false
@@ -27,12 +39,24 @@ public struct TransactionDetailFeature: Sendable {
 
     public enum Action: Sendable, Equatable {
         case task
-        case namesLoaded(accountName: String?, toAccountName: String?, categoryName: String?)
+        case namesLoaded(
+            accountName: String?,
+            toAccountName: String?,
+            categoryName: String?,
+            account: Account?,
+            toAccount: Account?
+        )
+        case insightLoaded(TransactionInsight)
+        case insightFailed
+
+        case detentChanged(Detent)
 
         case editTapped
         case deleteTapped
         case deleteConfirmed
         case deleteCancelled
+        case undoTapped
+        case deleteWindowExpired
         case dismiss
 
         case editTransaction(PresentationAction<AddTransactionFeature.Action>)
@@ -51,7 +75,10 @@ public struct TransactionDetailFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.continuousClock) var clock
     @Dependency(\.dismiss) var dismiss
+
+    private enum CancelID: Hashable { case deleteWindow }
 
     // MARK: - Body
 
@@ -59,23 +86,51 @@ public struct TransactionDetailFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
-                let accountId = state.transaction.accountId
-                let toAccountId = state.transaction.toAccountId
-                let categoryId = state.transaction.categoryId
-                return .run { send in
-                    async let accounts = accountClient.fetchAll()
-                    async let categories = categoryClient.fetchAll()
-                    let (a, c) = try await (accounts, categories)
-                    let accountName = a.first { $0.id == accountId }?.name
-                    let toAccountName = toAccountId.flatMap { id in a.first { $0.id == id }?.name }
-                    let categoryName = categoryId.flatMap { id in c.first { $0.id == id }?.name }
-                    await send(.namesLoaded(accountName: accountName, toAccountName: toAccountName, categoryName: categoryName))
-                }
+                let txn = state.transaction
+                return .merge(
+                    .run { send in
+                        async let accounts = accountClient.fetchAll()
+                        async let categories = categoryClient.fetchAll()
+                        let (a, c) = try await (accounts, categories)
+                        let account = a.first { $0.id == txn.accountId }
+                        let toAccount = txn.toAccountId.flatMap { id in a.first { $0.id == id } }
+                        let categoryName = txn.categoryId.flatMap { id in c.first { $0.id == id }?.name }
+                        await send(.namesLoaded(
+                            accountName: account?.name,
+                            toAccountName: toAccount?.name,
+                            categoryName: categoryName,
+                            account: account,
+                            toAccount: toAccount
+                        ))
+                    },
+                    .run { send in
+                        do {
+                            let insight = try await transactionClient.detailStats(txn)
+                            await send(.insightLoaded(insight))
+                        } catch {
+                            await send(.insightFailed)
+                        }
+                    }
+                )
 
-            case let .namesLoaded(accountName, toAccountName, categoryName):
+            case let .namesLoaded(accountName, toAccountName, categoryName, account, toAccount):
                 state.accountName = accountName
                 state.toAccountName = toAccountName
                 state.categoryName = categoryName
+                state.account = account
+                state.toAccount = toAccount
+                return .none
+
+            case let .insightLoaded(insight):
+                state.insight = insight
+                return .none
+
+            case .insightFailed:
+                state.insight = nil
+                return .none
+
+            case let .detentChanged(detent):
+                state.detent = detent
                 return .none
 
             case .editTapped:
@@ -92,6 +147,19 @@ public struct TransactionDetailFeature: Sendable {
 
             case .deleteConfirmed:
                 state.showDeleteConfirmation = false
+                state.pendingDelete = true
+                return .run { send in
+                    try await clock.sleep(for: .seconds(5))
+                    await send(.deleteWindowExpired)
+                }
+                .cancellable(id: CancelID.deleteWindow, cancelInFlight: true)
+
+            case .undoTapped:
+                state.pendingDelete = false
+                return .cancel(id: CancelID.deleteWindow)
+
+            case .deleteWindowExpired:
+                state.pendingDelete = false
                 let id = state.transaction.id
                 return .run { send in
                     try await transactionClient.delete(id)

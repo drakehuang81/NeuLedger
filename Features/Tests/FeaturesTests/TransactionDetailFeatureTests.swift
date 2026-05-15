@@ -94,29 +94,6 @@ struct TransactionDetailFeatureTests {
         }
     }
 
-    @Test("deleteConfirmed calls transactionClient.delete and sends delegate")
-    func testDeleteConfirmedCallsDeleteAndDismisses() async {
-        let deletedId: LockIsolated<Transaction.ID?> = LockIsolated(nil)
-        let id = Self.sampleTransaction.id
-
-        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
-        initialState.showDeleteConfirmation = true
-
-        let store = await TestStore(initialState: initialState) {
-            TransactionDetailFeature()
-        } withDependencies: {
-            $0.transactionClient.delete = { deletedId.setValue($0) }
-            $0.dismiss = DismissEffect { }
-        }
-
-        await store.send(.deleteConfirmed) {
-            $0.showDeleteConfirmation = false
-        }
-        await store.receive(\.delegate.deleted)
-
-        #expect(deletedId.value == id)
-    }
-
     // MARK: - Task (initial load of names)
 
     @Test(".task loads accountName, toAccountName, categoryName via namesLoaded")
@@ -134,7 +111,6 @@ struct TransactionDetailFeatureTests {
             name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
         )
 
-        // Build a transaction referencing all three
         let txn = Transaction(
             id: Self.sampleTransaction.id,
             amount: 200,
@@ -146,6 +122,8 @@ struct TransactionDetailFeatureTests {
             type: .expense
         )
 
+        let stubInsight = TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
+
         let store = await TestStore(
             initialState: TransactionDetailFeature.State(transaction: txn)
         ) {
@@ -153,13 +131,50 @@ struct TransactionDetailFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchAll = { [account, toAccount] }
             $0.categoryClient.fetchAll = { [category] }
+            $0.transactionClient.detailStats = { _ in stubInsight }
         }
+        store.exhaustivity = .off
 
         await store.send(.task)
+        // namesLoaded and insightLoaded arrive concurrently; exhaust both regardless of order.
         await store.receive(\.namesLoaded) {
             $0.accountName = "現金"
             $0.toAccountName = "銀行"
             $0.categoryName = "餐飲"
+            $0.account = account
+            $0.toAccount = toAccount
         }
+        // insightLoaded may have arrived before namesLoaded; drain any remaining actions.
+        await store.skipReceivedActions(strict: false)
+    }
+
+    @Test("deleteConfirmed enters pending state; window expiry triggers delete + delegate")
+    func testDeleteConfirmedCallsDeleteAndDismisses() async {
+        let deletedId: LockIsolated<Transaction.ID?> = LockIsolated(nil)
+        let id = Self.sampleTransaction.id
+
+        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        initialState.showDeleteConfirmation = true
+
+        let clock = TestClock()
+        let store = await TestStore(initialState: initialState) {
+            TransactionDetailFeature()
+        } withDependencies: {
+            $0.transactionClient.delete = { deletedId.setValue($0) }
+            $0.continuousClock = clock
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.deleteConfirmed) {
+            $0.showDeleteConfirmation = false
+            $0.pendingDelete = true
+        }
+        await clock.advance(by: .seconds(5))
+        await store.receive(\.deleteWindowExpired) {
+            $0.pendingDelete = false
+        }
+        await store.receive(\.delegate.deleted)
+
+        #expect(deletedId.value == id)
     }
 }

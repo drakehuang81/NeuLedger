@@ -225,6 +225,82 @@ extension DatabaseClient {
         return StatsSnapshot(today: todayTotal, week: weekTotal, savingsPercentage: savings)
     }
 
+    /// Computes a `TransactionInsight` for the given transaction.
+    ///
+    /// - `.expense` with categoryId → average + count + total of that category
+    ///   in the current calendar month.
+    /// - `.income` with categoryId → most recent prior amount + monthly count
+    ///   + monthly net.
+    /// - `.transfer` → monthly transfer count + total.
+    /// - Anything else → `.fallback(monthlyCategoryCount:)`.
+    func detailStats(for transaction: Transaction) throws -> TransactionInsight {
+        let cal = Calendar.current
+        let now = Date()
+        guard let monthRange = cal.dateInterval(of: .month, for: now) else {
+            return TransactionInsight(kind: .fallback(monthlyCategoryCount: 0))
+        }
+        let monthStart = monthRange.start
+        let monthEnd = monthRange.end
+
+        let descriptor = FetchDescriptor<SDTransaction>(
+            predicate: #Predicate<SDTransaction> { tx in
+                tx.date >= monthStart && tx.date < monthEnd
+            },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        let context = makeContext()
+        let monthRows = try context.fetch(descriptor)
+
+        switch transaction.type {
+        case .expense:
+            guard let catId = transaction.categoryId else {
+                return TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
+            }
+            let sameCategory = monthRows.filter { $0.type == TransactionType.expense.rawValue && $0.categoryId == catId }
+            let count = sameCategory.count
+            let total = sameCategory.reduce(Decimal(0)) { $0 + $1.amount }
+            let avg: Decimal = count > 0 ? total / Decimal(count) : 0
+            let avgDouble = NSDecimalNumber(decimal: avg).doubleValue
+            let amtDouble = NSDecimalNumber(decimal: transaction.amount).doubleValue
+            let percentDelta: Double = avgDouble > 0 ? (amtDouble - avgDouble) / avgDouble * 100 : 0
+            return TransactionInsight(kind: .expenseVsCategoryAvg(
+                percentDelta: percentDelta,
+                avg: avg,
+                monthlyCount: count,
+                monthTotal: total
+            ))
+
+        case .income:
+            guard let catId = transaction.categoryId else {
+                return TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
+            }
+            let sameCategory = monthRows.filter { $0.type == TransactionType.income.rawValue && $0.categoryId == catId }
+            let count = sameCategory.count
+            let prior = sameCategory.first(where: { $0.id != transaction.id })
+            let lastAmount: Decimal = prior?.amount ?? transaction.amount
+            let lastDouble = NSDecimalNumber(decimal: lastAmount).doubleValue
+            let amtDouble = NSDecimalNumber(decimal: transaction.amount).doubleValue
+            let percentDelta: Double = lastDouble > 0 ? (amtDouble - lastDouble) / lastDouble * 100 : 0
+            let monthIncome = monthRows
+                .filter { $0.type == TransactionType.income.rawValue }
+                .reduce(Decimal(0)) { $0 + $1.amount }
+            let monthExpense = monthRows
+                .filter { $0.type == TransactionType.expense.rawValue }
+                .reduce(Decimal(0)) { $0 + $1.amount }
+            return TransactionInsight(kind: .incomeVsLast(
+                percentDelta: percentDelta,
+                lastAmount: lastAmount,
+                monthlyCount: count,
+                netMonth: monthIncome - monthExpense
+            ))
+
+        case .transfer:
+            let transfers = monthRows.filter { $0.type == TransactionType.transfer.rawValue }
+            let total = transfers.reduce(Decimal(0)) { $0 + $1.amount }
+            return TransactionInsight(kind: .transfer(monthCount: transfers.count, monthTotal: total))
+        }
+    }
+
     // MARK: Delete
 
     /// Fetches a single model matching the descriptor, optionally validates it, deletes it, and saves.

@@ -54,7 +54,8 @@ let package = Package(
             dependencies: [
                 .dependencies,
                 .dependenciesMacros,
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .target(
             name: "Core",

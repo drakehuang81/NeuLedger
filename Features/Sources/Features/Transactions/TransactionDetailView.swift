@@ -32,7 +32,9 @@ public struct TransactionDetailView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 120) // leave room for action bar + undo
             }
+            .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 actionBar
             }
@@ -90,6 +92,9 @@ public struct TransactionDetailView: View {
             )
         )
         .presentationDragIndicator(.visible)
+        .presentationBackground {
+            WarmGradientBackground(variant: .top)
+        }
     }
 
     // MARK: - Action bar
@@ -120,8 +125,8 @@ public struct TransactionDetailView: View {
             .accessibilityIdentifier("transaction_detail_delete_button")
         }
         .padding(.horizontal, 20)
+        .padding(.top, 8)
         .padding(.bottom, 12)
-        .background(.ultraThinMaterial)
     }
 }
 

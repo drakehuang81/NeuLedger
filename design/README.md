@@ -1,6 +1,6 @@
 # NeuLedger — Design Handoff Package
 
-> **Last updated**: May 15, 2026
+> **Last updated**: May 15, 2026 · codebase 設計覆蓋 21/21 main views
 > **Direction (locked)**: B1 Warm Glass — warm orange accent (`#E8835A`) on cream radial-gradient, frosted glass cards, iOS-native feel
 > **Target codebase**: [drakehuang81/NeuLedger](https://github.com/drakehuang81/NeuLedger) (iOS, SwiftUI + The Composable Architecture)
 
@@ -42,7 +42,10 @@ handoff/
 │   ├── 09-Category-Management.html
 │   ├── 10-Tag-Management.html
 │   ├── 11-Recurring-Management.html       (List · populated + empty state)
-│   ├── 12-Flow-Demo.html                  (22 s auto-playing first-run demo)
+│   ├── 12-Sync-Settings.html              (iCloud sync · 4 states)
+│   ├── 13-Notification-Settings.html      (in-app notification preferences)
+│   ├── 14-Add-Edit-Account.html           (Add/Edit account form · 3 states)
+│   ├── 15-Budget-Form.html                (Add/Edit budget form · 3 states)
 │   └── 99-Design-Tokens.html              (visual reference of every token)
 │
 └── source/              ← Original JSX — exact spec for each component
@@ -53,14 +56,17 @@ handoff/
     ├── analytics.jsx
     ├── search.jsx
     ├── settings.jsx
+    ├── sync-settings.jsx                  ← iCloud sync settings sub-page
+    ├── notification-settings.jsx          ← in-app notification preferences
     ├── budget.jsx
+    ├── budget-form.jsx                    ← full BudgetForm (Add/Edit)
     ├── notifications.jsx
     ├── category-management.jsx
     ├── tag-management.jsx
     ├── recurring-management.jsx
     ├── missing-screens.jsx
     ├── onboarding-b-prototype.jsx
-    ├── flow-screens.jsx · flow-controller.jsx
+    ├── add-edit-account.jsx               ← full AddEditAccount form
     └── ios-frame.jsx
 ```
 
@@ -126,16 +132,15 @@ RoundedRectangle(cornerRadius: 18, style: .continuous)
 | 09 | Category Management | `category-management.jsx` | CategoryManagement |
 | 10 | Tag Management | `tag-management.jsx` | TagManagement |
 | 11 | Recurring Management List | `recurring-management.jsx` | RecurringTransactionManagement |
-| 12 | First-run flow demo (22s auto-play) | `flow-screens.jsx` | — (storyboard) |
+| 12 | iCloud Sync Settings (4 states) | `sync-settings.jsx` | Settings/SyncSettings |
+| 13 | Notification Settings | `notification-settings.jsx` | NotificationSettings |
+| 14 | Add / Edit Account Form (3 states) | `add-edit-account.jsx` | AddEditAccount |
+| 15 | Budget Form (3 states) | `budget-form.jsx` | BudgetForm |
 | 99 | Design Tokens reference | — | — |
 
 ### Not yet designed (see `HANDOVER.md`)
 
-- iCloud Sync Settings sub-page
-- Notification Settings (in-app preferences page, not the inbox)
-- AddEditAccount form (verify against current Add Account sheet)
-- BudgetForm (verify against current quick-add sheet)
-- AI Assistant Card (standalone component spec)
+- AI Assistant Card (standalone component spec — currently embedded inside Analytics)
 
 ---
 

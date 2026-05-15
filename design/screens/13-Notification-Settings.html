@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NeuLedger · Notification Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>html,body{margin:0;padding:0;background:#ECE9E2;}*{box-sizing:border-box;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" data-presets="react" data-from="accounts.jsx">
+// NeuLedger — Account 管理
+// 3 artboards: List · Detail · Add Sheet
+// Self-contained: primitives + screens
+
+const ACC_FONTS = {
+  display: '"Bricolage Grotesque", -apple-system, system-ui, sans-serif',
+  body: '"DM Sans", -apple-system, system-ui, sans-serif',
+  mono: '"DM Mono", "SF Mono", ui-monospace, Menlo, monospace',
+};
+
+const ACC_COLORS = {
+  warm: '#E8835A',
+  warmDark: '#FF6A00',
+  income: '#34C759',
+  expense: '#FF453A',
+  ai: '#A66BF0',
+};
+
+// Warm bg (matches Dashboard B1)
+function accBg(dark) {
+  return dark
+    ? 'radial-gradient(ellipse at 50% -20%, #4A2A0E 0%, #1a0f08 35%, #050505 70%)'
+    : 'radial-gradient(ellipse at 50% -10%, #FFE4D2 0%, #FBF1E5 30%, #F6ECDF 60%)';
+}
+
+// SF-Symbol-like glyphs
+function AccGlyph({ name, size = 22, color = 'currentColor', stroke = 1.8 }) {
+  const s = size, sw = stroke;
+  switch (name) {
+    case 'plus': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>);
+    case 'chevron-right': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>);
+    case 'chevron-down': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>);
+    case 'chevron-left': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg>);
+    case 'close': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"><path d="M6 6l12 12M18 6l-12 12"/></svg>);
+    case 'dots': return (<svg width={s} height={s} viewBox="0 0 24 24" fill={color}><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>);
+    case 'edit': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>);
+    case 'archive': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/><path d="M10 12h4"/></svg>);
+    case 'star': return (<svg width={s} height={s} viewBox="0 0 24 24" fill={color}><path d="M12 2l2.6 6.4 6.9.6-5.2 4.5 1.6 6.7L12 17l-5.9 3.2 1.6-6.7-5.2-4.5 6.9-.6L12 2z"/></svg>);
+    case 'card': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 11h20"/></svg>);
+    case 'cash': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw}><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>);
+    case 'bank': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"><path d="M3 10l9-5 9 5"/><path d="M5 10v8M9 10v8M15 10v8M19 10v8"/><path d="M3 20h18"/></svg>);
+    case 'phone': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="17.5" r="0.8" fill={color}/></svg>);
+    case 'invest': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>);
+    case 'crypto': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw}><circle cx="12" cy="12" r="9"/><path d="M9 8h5a2 2 0 010 4H9zm0 4h6a2 2 0 010 4H9zm2-7v2m2-2v2m-2 12v2m2-2v2"/></svg>);
+    case 'check': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>);
+    case 'trash': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>);
+    case 'sparkle': return (<svg width={s} height={s} viewBox="0 0 24 24" fill={color}><path d="M12 2l1.5 6 6 1.5-6 1.5L12 17l-1.5-6-6-1.5 6-1.5L12 2z"/></svg>);
+    case 'arrow-up-right': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>);
+    case 'arrow-down-left': return (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M17 7L7 17M7 8v9h9"/></svg>);
+    default: return null;
+  }
+}
+
+// Phone shell
+function AccPhone({ children, dark }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  return (
+    <div style={{
+      width: 402, height: 874, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: accBg(dark),
+      boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
+      WebkitFontSmoothing: 'antialiased',
+      display: 'flex', flexDirection: 'column',
+      fontFamily: ACC_FONTS.body,
+    }}>
+      {/* Dynamic island */}
+      <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50 }}/>
+      {/* Status bar */}
+      <div style={{ height: 54, paddingTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 28px 0', flexShrink: 0, position: 'relative', zIndex: 5 }}>
+        <div style={{ fontFamily: '-apple-system, system-ui', fontWeight: 600, fontSize: 16, color: fg }}>9:41</div>
+        <div style={{ width: 100 }}/>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center', color: fg }}>
+          <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="6.5" width="3" height="4.5" rx="0.6" fill="currentColor"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="0.6" fill="currentColor"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" rx="0.6" fill="currentColor"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11"><rect x="0.5" y="0.5" width="20" height="10" rx="3" stroke="currentColor" strokeOpacity="0.4" fill="none"/><rect x="2" y="2" width="17" height="7" rx="1.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+      {children}
+      {/* Home indicator */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60, height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', paddingBottom: 8, pointerEvents: 'none' }}>
+        <div style={{ width: 139, height: 5, borderRadius: 100, background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)' }}/>
+      </div>
+    </div>
+  );
+}
+
+// Glass card
+function AccGlass({ children, dark, radius = 18, style }) {
+  return (
+    <div style={{
+      borderRadius: radius,
+      background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      boxShadow: dark
+        ? '0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 28px rgba(0,0,0,0.35)'
+        : '0 1px 0 rgba(255,255,255,0.85) inset, 0 4px 12px rgba(120,80,40,0.06), 0 0 0 0.5px rgba(0,0,0,0.04)',
+      ...style,
+    }}>{children}</div>
+  );
+}
+
+// Account data
+const ACCOUNTS = [
+  { id: 'cash', name: '現金', type: 'cash', icon: 'cash', balance: 3200, color: '#9B7E5F', subtitle: '錢包現金', primary: false, lastTx: '今天' },
+  { id: 'sinopac', name: '永豐銀行', type: 'bank', icon: 'bank', balance: 128400, color: '#1B5E8E', subtitle: '主要薪轉戶', primary: true, lastTx: '今天 · 薪資 +75,000' },
+  { id: 'esun-credit', name: '玉山 e.Fingo', type: 'credit', icon: 'card', balance: -24500, color: '#7B3F00', subtitle: '本期應繳 · 截 5/10', primary: false, lastTx: '昨天 · 7-11 -85' },
+  { id: 'apple-pay', name: 'Apple Pay', type: 'digital', icon: 'phone', balance: null, balanceText: '綁定 玉山', color: '#000000', subtitle: 'Mobile Wallet', primary: false, lastTx: '今天 · 全聯 -456' },
+  { id: 'jko', name: '街口支付', type: 'digital', icon: 'phone', balance: 850, color: '#FF6B6B', subtitle: '街口錢包', primary: false, lastTx: '4/22 · 飲料 -65' },
+  { id: 'fubon', name: '富邦證券', type: 'invest', icon: 'invest', balance: 326000, color: '#5E5CE6', subtitle: '投資 · ETF + 個股', primary: false, lastTx: '4/15 · 配息 +1,200' },
+];
+
+const TOTAL_ASSETS = ACCOUNTS.reduce((s, a) => s + (a.balance ?? 0), 0);
+
+// Format
+function fmt(n) {
+  if (n == null) return '—';
+  const abs = Math.abs(n);
+  return (n < 0 ? '−' : '') + 'NT$ ' + abs.toLocaleString('en-US');
+}
+
+// Account row
+function AccountRow({ acc, dark, onTap }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const bal = acc.balance;
+  const balColor = bal == null ? muted : (bal < 0 ? ACC_COLORS.expense : fg);
+  return (
+    <button onClick={onTap} style={{
+      display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+      padding: '14px 16px', background: 'transparent', border: 'none',
+      cursor: 'pointer', textAlign: 'left', borderRadius: 14,
+      transition: 'background 0.15s',
+    }}
+    onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
+    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <div style={{
+        width: 40, height: 40, borderRadius: 12,
+        background: acc.color, color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <AccGlyph name={acc.icon} size={20} color="#fff" stroke={2}/>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontWeight: 600, fontSize: 15, color: fg }}>{acc.name}</div>
+          {acc.primary && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 6px', borderRadius: 5, background: dark ? 'rgba(232,131,90,0.2)' : 'rgba(232,131,90,0.15)', color: ACC_COLORS.warm, fontSize: 10, fontWeight: 600, fontFamily: ACC_FONTS.mono, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+              <AccGlyph name="star" size={9} color={ACC_COLORS.warm}/> Main
+            </div>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>{acc.subtitle}</div>
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontFamily: ACC_FONTS.mono, fontWeight: 500, fontSize: 14, color: balColor, fontVariantNumeric: 'tabular-nums' }}>
+          {acc.balanceText || fmt(acc.balance)}
+        </div>
+        <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{acc.lastTx}</div>
+      </div>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// AccountList screen
+// ─────────────────────────────────────────────────────────────
+function AccountList({ dark, onAdd, onTap }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const accent = dark ? ACC_COLORS.warmDark : ACC_COLORS.warm;
+
+  // Group by type
+  const groups = [
+    { id: 'liquid', label: '現金 + 銀行', accs: ACCOUNTS.filter(a => ['cash','bank'].includes(a.type)) },
+    { id: 'cards', label: '信用卡', accs: ACCOUNTS.filter(a => a.type === 'credit') },
+    { id: 'digital', label: '電子支付', accs: ACCOUNTS.filter(a => a.type === 'digital') },
+    { id: 'invest', label: '投資', accs: ACCOUNTS.filter(a => a.type === 'invest') },
+  ].filter(g => g.accs.length > 0);
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Top bar */}
+      <div style={{ padding: '8px 22px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontFamily: ACC_FONTS.display, fontSize: 32, fontWeight: 600, color: fg, letterSpacing: -0.5 }}>帳戶</div>
+        <button onClick={onAdd} style={{
+          width: 36, height: 36, borderRadius: 18,
+          background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: fg,
+        }}>
+          <AccGlyph name="plus" size={20} color={fg}/>
+        </button>
+      </div>
+
+      {/* Scroll body */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '14px 16px 100px' }}>
+        {/* Net worth hero */}
+        <AccGlass dark={dark} radius={20} style={{ padding: '20px 22px', marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: muted, fontSize: 11, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <AccGlyph name="sparkle" size={11} color={ACC_COLORS.ai}/> Net Worth
+          </div>
+          <div style={{ fontFamily: ACC_FONTS.display, fontSize: 38, fontWeight: 600, color: fg, letterSpacing: -1, lineHeight: 1.1, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
+            NT$ {TOTAL_ASSETS.toLocaleString('en-US')}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, color: muted }}>
+            <span style={{ color: ACC_COLORS.income, fontWeight: 600 }}>↑ NT$ 12,450</span> 比上月 <span style={{ opacity: 0.6 }}>·</span> {ACCOUNTS.length} 個帳戶
+          </div>
+        </AccGlass>
+
+        {/* Groups */}
+        {groups.map(g => (
+          <div key={g.id} style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase', padding: '0 6px 8px' }}>{g.label}</div>
+            <AccGlass dark={dark} radius={16} style={{ padding: 4 }}>
+              {g.accs.map((a, i) => (
+                <React.Fragment key={a.id}>
+                  <AccountRow acc={a} dark={dark} onTap={() => onTap(a)}/>
+                  {i < g.accs.length - 1 && <div style={{ height: 0.5, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', marginLeft: 68 }}/>}
+                </React.Fragment>
+              ))}
+            </AccGlass>
+          </div>
+        ))}
+
+        {/* Add custom */}
+        <button onClick={onAdd} style={{
+          width: '100%', padding: '14px 16px', borderRadius: 14,
+          background: 'transparent',
+          border: `1.5px dashed ${dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)'}`,
+          color: accent, fontWeight: 600, fontSize: 14,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          cursor: 'pointer', fontFamily: ACC_FONTS.body,
+        }}>
+          <AccGlyph name="plus" size={16} color={accent}/> 新增帳戶
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Account Detail screen — sinopac bank as the showcase
+// ─────────────────────────────────────────────────────────────
+function AccountDetail({ dark, onBack, acc = ACCOUNTS[1] }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const accent = dark ? ACC_COLORS.warmDark : ACC_COLORS.warm;
+
+  // Mock balance history (last 30 days)
+  const balanceHistory = [60, 62, 58, 55, 70, 75, 78, 72, 68, 71, 74, 78, 82, 85, 80, 76, 74, 71, 68, 72, 75, 78, 80, 84, 88, 92, 90, 95, 102, 128];
+  const max = Math.max(...balanceHistory);
+  const min = Math.min(...balanceHistory);
+
+  // Mock recent txns for this account
+  const txns = [
+    { name: '薪資', amt: 75000, date: '今天', cat: '收入' },
+    { name: '電費自扣', amt: -1240, date: '4/22', cat: '帳單' },
+    { name: '提款 — 中山分行', amt: -5000, date: '4/20', cat: '現金' },
+    { name: 'Apple Pay 還款', amt: -8500, date: '4/15', cat: '轉出' },
+    { name: '退稅', amt: 3450, date: '4/10', cat: '收入' },
+  ];
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Top bar */}
+      <div style={{ padding: '8px 16px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button onClick={onBack} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 8, color: accent, display: 'flex', alignItems: 'center', gap: 2, fontSize: 16, fontWeight: 500, fontFamily: ACC_FONTS.body }}>
+          <AccGlyph name="chevron-left" size={20} color={accent}/> 帳戶
+        </button>
+        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 8, color: fg }}>
+          <AccGlyph name="dots" size={20} color={fg}/>
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px 100px' }}>
+        {/* Hero */}
+        <div style={{ textAlign: 'center', padding: '12px 0 18px' }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16, background: acc.color,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+          }}>
+            <AccGlyph name={acc.icon} size={26} color="#fff" stroke={2}/>
+          </div>
+          <div style={{ fontFamily: ACC_FONTS.display, fontSize: 18, fontWeight: 600, color: fg }}>{acc.name}</div>
+          <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>{acc.subtitle}</div>
+
+          <div style={{ fontFamily: ACC_FONTS.mono, fontSize: 11, color: muted, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 18 }}>Balance</div>
+          <div style={{ fontFamily: ACC_FONTS.display, fontSize: 44, fontWeight: 600, color: fg, letterSpacing: -1, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+            NT$ {acc.balance.toLocaleString('en-US')}
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, padding: '4px 10px', borderRadius: 8, background: dark ? 'rgba(52,199,89,0.18)' : 'rgba(52,199,89,0.12)', color: ACC_COLORS.income, fontSize: 12, fontWeight: 600 }}>
+            <AccGlyph name="arrow-up-right" size={12} color={ACC_COLORS.income}/> +NT$ 68,400 過去 30 天
+          </div>
+        </div>
+
+        {/* Balance trend */}
+        <AccGlass dark={dark} radius={18} style={{ padding: 18, marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase' }}>30-day balance</div>
+            <div style={{ fontSize: 11, color: muted }}>4/1 → 4/30</div>
+          </div>
+          {/* Sparkline */}
+          <svg viewBox="0 0 280 80" width="100%" height="80" style={{ display: 'block' }}>
+            <defs>
+              <linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={accent} stopOpacity="0.35"/>
+                <stop offset="100%" stopColor={accent} stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d={`M0,${80 - ((balanceHistory[0] - min) / (max - min)) * 70} ` + balanceHistory.map((v, i) => `L${(i / (balanceHistory.length - 1)) * 280},${80 - ((v - min) / (max - min)) * 70}`).join(' ')} stroke={accent} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d={`M0,${80 - ((balanceHistory[0] - min) / (max - min)) * 70} ` + balanceHistory.map((v, i) => `L${(i / (balanceHistory.length - 1)) * 280},${80 - ((v - min) / (max - min)) * 70}`).join(' ') + ` L280,80 L0,80 Z`} fill="url(#sparkfill)"/>
+            <circle cx="280" cy={80 - ((balanceHistory[balanceHistory.length - 1] - min) / (max - min)) * 70} r="4" fill={accent}/>
+            <circle cx="280" cy={80 - ((balanceHistory[balanceHistory.length - 1] - min) / (max - min)) * 70} r="6" fill={accent} opacity="0.3"/>
+          </svg>
+        </AccGlass>
+
+        {/* Flow */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+          <AccGlass dark={dark} radius={14} style={{ padding: '12px 14px' }}>
+            <div style={{ fontSize: 10, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase' }}>本月入</div>
+            <div style={{ fontFamily: ACC_FONTS.mono, fontSize: 18, fontWeight: 600, color: ACC_COLORS.income, fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>+78,450</div>
+          </AccGlass>
+          <AccGlass dark={dark} radius={14} style={{ padding: '12px 14px' }}>
+            <div style={{ fontSize: 10, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase' }}>本月出</div>
+            <div style={{ fontFamily: ACC_FONTS.mono, fontSize: 18, fontWeight: 600, color: ACC_COLORS.expense, fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>−10,050</div>
+          </AccGlass>
+        </div>
+
+        {/* AI insight */}
+        <div style={{ display: 'flex', gap: 10, padding: '12px 14px', borderRadius: 14, background: dark ? 'rgba(166,107,240,0.10)' : 'rgba(166,107,240,0.08)', marginBottom: 14, border: `0.5px solid ${dark ? 'rgba(166,107,240,0.25)' : 'rgba(166,107,240,0.18)'}` }}>
+          <div style={{ flexShrink: 0, color: ACC_COLORS.ai, marginTop: 1 }}>
+            <AccGlyph name="sparkle" size={16} color={ACC_COLORS.ai}/>
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: fg }}>
+            <span style={{ color: ACC_COLORS.ai, fontWeight: 600 }}>AI · </span>這個帳戶餘額這個月 <b>成長 11.5%</b>,主要來自 4/25 薪資入帳 NT$ 75,000。本月扣款穩定在 5 筆固定支出。
+          </div>
+        </div>
+
+        {/* Recent */}
+        <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase', padding: '0 6px 8px' }}>近期交易</div>
+        <AccGlass dark={dark} radius={14} style={{ padding: 4 }}>
+          {txns.map((t, i) => (
+            <React.Fragment key={i}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 9, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <AccGlyph name={t.amt > 0 ? 'arrow-down-left' : 'arrow-up-right'} size={14} color={t.amt > 0 ? ACC_COLORS.income : muted}/>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 500, fontSize: 14, color: fg }}>{t.name}</div>
+                  <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{t.date} · {t.cat}</div>
+                </div>
+                <div style={{ fontFamily: ACC_FONTS.mono, fontWeight: 500, fontSize: 14, color: t.amt > 0 ? ACC_COLORS.income : fg, fontVariantNumeric: 'tabular-nums' }}>
+                  {t.amt > 0 ? '+' : '−'}{Math.abs(t.amt).toLocaleString('en-US')}
+                </div>
+              </div>
+              {i < txns.length - 1 && <div style={{ height: 0.5, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', marginLeft: 54 }}/>}
+            </React.Fragment>
+          ))}
+        </AccGlass>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          <button style={{ flex: 1, padding: '12px', borderRadius: 12, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: fg, fontWeight: 600, fontSize: 14, fontFamily: ACC_FONTS.body }}>
+            <AccGlyph name="edit" size={15} color={fg}/> 編輯
+          </button>
+          <button style={{ flex: 1, padding: '12px', borderRadius: 12, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: muted, fontWeight: 600, fontSize: 14, fontFamily: ACC_FONTS.body }}>
+            <AccGlyph name="archive" size={15} color={muted}/> 封存
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Add Account sheet
+// ─────────────────────────────────────────────────────────────
+function AddAccountSheet({ dark, onBack }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const accent = dark ? ACC_COLORS.warmDark : ACC_COLORS.warm;
+  const [step, setStep] = React.useState(0);
+  const [pickedType, setPickedType] = React.useState('bank');
+  const [pickedColor, setPickedColor] = React.useState('#1B5E8E');
+
+  const types = [
+    { id: 'cash', label: '現金', icon: 'cash', color: '#9B7E5F' },
+    { id: 'bank', label: '銀行', icon: 'bank', color: '#1B5E8E' },
+    { id: 'credit', label: '信用卡', icon: 'card', color: '#7B3F00' },
+    { id: 'digital', label: '電子支付', icon: 'phone', color: '#FF6B6B' },
+    { id: 'invest', label: '投資', icon: 'invest', color: '#5E5CE6' },
+    { id: 'crypto', label: '加密貨幣', icon: 'crypto', color: '#F7931A' },
+  ];
+
+  const swatches = ['#1B5E8E', '#7B3F00', '#9B7E5F', '#5E5CE6', '#FF6B6B', '#34C759', '#FF9500', '#A66BF0', '#000000', '#FF453A'];
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: dark ? '#0A0A0A' : '#FAF7F2' }}>
+      {/* Sheet handle area */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, display: 'flex', justifyContent: 'center', paddingTop: 8, zIndex: 5 }}>
+        <div style={{ width: 36, height: 5, borderRadius: 100, background: dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.18)' }}/>
+      </div>
+
+      {/* Top bar */}
+      <div style={{ padding: '24px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `0.5px solid ${dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
+        <button onClick={onBack} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, color: accent, fontSize: 15, fontWeight: 500, fontFamily: ACC_FONTS.body }}>取消</button>
+        <div style={{ fontWeight: 600, fontSize: 16, color: fg }}>新增帳戶</div>
+        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, color: muted, fontSize: 15, fontWeight: 600, fontFamily: ACC_FONTS.body }} disabled>儲存</button>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: '20px 16px 100px' }}>
+        {/* Type picker */}
+        <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>類型</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 22 }}>
+          {types.map(t => {
+            const active = pickedType === t.id;
+            return (
+              <button key={t.id} onClick={() => { setPickedType(t.id); setPickedColor(t.color); }} style={{
+                padding: '14px 8px', borderRadius: 14,
+                background: active ? (dark ? 'rgba(255,255,255,0.08)' : '#fff') : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.5)'),
+                border: active ? `1.5px solid ${t.color}` : `0.5px solid ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                cursor: 'pointer', fontFamily: ACC_FONTS.body,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AccGlyph name={t.icon} size={20} color="#fff" stroke={2}/>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: fg }}>{t.label}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Name field */}
+        <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 }}>名稱</div>
+        <AccGlass dark={dark} radius={12} style={{ padding: '12px 14px', marginBottom: 16 }}>
+          <input type="text" placeholder="例:永豐銀行" defaultValue="" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', color: fg, fontSize: 16, fontFamily: ACC_FONTS.body }}/>
+        </AccGlass>
+
+        {/* Opening balance */}
+        <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 }}>起始餘額</div>
+        <AccGlass dark={dark} radius={12} style={{ padding: '12px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: muted, fontFamily: ACC_FONTS.mono, fontSize: 14 }}>NT$</span>
+          <input type="text" placeholder="0" defaultValue="" style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', color: fg, fontSize: 16, fontFamily: ACC_FONTS.mono, fontVariantNumeric: 'tabular-nums' }}/>
+        </AccGlass>
+
+        {/* Color */}
+        <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 }}>顏色</div>
+        <AccGlass dark={dark} radius={12} style={{ padding: '14px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {swatches.map(c => {
+              const active = pickedColor === c;
+              return (
+                <button key={c} onClick={() => setPickedColor(c)} style={{
+                  width: 32, height: 32, borderRadius: 16, background: c,
+                  border: active ? `2.5px solid ${dark ? '#fff' : '#0A0A0A'}` : '2.5px solid transparent',
+                  cursor: 'pointer', padding: 0,
+                  boxShadow: active ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {active && <AccGlyph name="check" size={14} color="#fff" stroke={2.5}/>}
+                </button>
+              );
+            })}
+          </div>
+        </AccGlass>
+
+        {/* Set as primary toggle */}
+        <AccGlass dark={dark} radius={12} style={{ padding: '14px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: fg }}>設為主要帳戶</div>
+            <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>新增交易時的預設選項</div>
+          </div>
+          <div style={{ width: 51, height: 31, borderRadius: 16, background: dark ? 'rgba(120,120,128,0.32)' : 'rgba(120,120,128,0.16)', position: 'relative', cursor: 'pointer' }}>
+            <div style={{ position: 'absolute', top: 2, left: 2, width: 27, height: 27, borderRadius: 14, background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}/>
+          </div>
+        </AccGlass>
+
+        {/* AI suggestion */}
+        <div style={{ display: 'flex', gap: 10, padding: '12px 14px', borderRadius: 12, background: dark ? 'rgba(166,107,240,0.10)' : 'rgba(166,107,240,0.08)', border: `0.5px solid ${dark ? 'rgba(166,107,240,0.25)' : 'rgba(166,107,240,0.18)'}` }}>
+          <div style={{ flexShrink: 0, color: ACC_COLORS.ai, marginTop: 1 }}>
+            <AccGlyph name="sparkle" size={14} color={ACC_COLORS.ai}/>
+          </div>
+          <div style={{ fontSize: 12, lineHeight: 1.5, color: fg }}>
+            <span style={{ color: ACC_COLORS.ai, fontWeight: 600 }}>AI · </span>新增完成後,我會自動把符合的近期交易歸類到這個帳戶。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { AccountList, AccountDetail, AddAccountSheet, AccPhone, AccGlass, AccGlyph, ACC_FONTS, ACC_COLORS, ACCOUNTS });
+
+</script>
+<script type="text/babel" data-presets="react" data-from="notification-settings.jsx">
+// NeuLedger — Notification Settings sub-page
+// Maps to NotificationSettingsFeature / NotificationSettingsView (drakehuang81/NeuLedger)
+//
+// Sections (per Swift):
+//   • Permission denied banner (conditional)
+//   • Daily reminder · toggle + time picker (hour/minute)
+//   • Budget warning  · toggle + threshold picker (50/60/70/80/90 %)
+//   • Recurring section · list w/ per-item toggle + add row
+//
+// 2 artboards:
+//   01 · 全部開啟      — 預設快樂路徑
+//   02 · 權限被拒絕     — 橘色 banner · 全部 toggle 關閉
+
+// ─── L10n keys (mirroring code) ──────────────────────────────
+const NL = {
+  title: '通知',
+  permissionBanner: '通知權限已關閉。前往「設定」開啟後,提醒才能送達。',
+  openSettings: '前往設定',
+  dailyHeader: '每日記帳提醒',
+  dailyToggle: '每日提醒',
+  dailyTime: '提醒時間',
+  dailyDesc: '在你設定的時間提示記下今日支出,不漏記。',
+  budgetHeader: '預算警示',
+  budgetToggle: '接近預算上限時通知',
+  budgetThreshold: '警示閾值',
+  budgetDesc: '當分類預算達到設定百分比時收到提醒。',
+  recurringHeader: '週期交易提醒',
+  recurringDesc: '在週期交易到期前一天提醒你確認金額。可在此切換是否啟用,點擊項目可編輯。',
+  recurringAdd: '新增週期提醒',
+};
+
+// ─── Tiny components ─────────────────────────────────────────
+function NavBar2({ dark, title }) {
+  const muted = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
+  return (
+    <div style={{ padding: '6px 8px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <button style={{ background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', gap: 2, color: ACC_COLORS.warm, padding: '6px 8px', cursor: 'pointer' }}>
+        <AccGlyph name="chevron-left" size={20} color={ACC_COLORS.warm} stroke={2.2}/>
+        <span style={{ fontSize: 16, fontFamily: ACC_FONTS.body }}>設定</span>
+      </button>
+      <div style={{ fontSize: 12, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1, textTransform: 'uppercase' }}>{title}</div>
+      <div style={{ width: 52 }}/>
+    </div>
+  );
+}
+
+function LargeTitle2({ dark, children, subtitle }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
+  return (
+    <div style={{ padding: '4px 20px 14px' }}>
+      <div style={{ fontFamily: ACC_FONTS.display, fontSize: 34, fontWeight: 600, letterSpacing: -0.8, color: fg, lineHeight: 1.1 }}>{children}</div>
+      {subtitle && <div style={{ marginTop: 6, fontSize: 13, color: muted, lineHeight: 1.45 }}>{subtitle}</div>}
+    </div>
+  );
+}
+
+function SectionHeader({ dark, children, eyebrow }) {
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  return (
+    <div style={{ padding: '0 6px 8px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+      <div style={{ fontSize: 11.5, fontFamily: ACC_FONTS.mono, color: muted, letterSpacing: 1.2, textTransform: 'uppercase' }}>{children}</div>
+      {eyebrow && <div style={{ fontSize: 11, fontFamily: ACC_FONTS.mono, color: muted, letterSpacing: 0.6 }}>{eyebrow}</div>}
+    </div>
+  );
+}
+
+function Toggle({ on, dark }) {
+  return (
+    <div style={{
+      width: 51, height: 31, borderRadius: 16,
+      background: on ? ACC_COLORS.income : (dark ? 'rgba(120,120,128,0.4)' : 'rgba(120,120,128,0.24)'),
+      position: 'relative', transition: 'background 200ms', flexShrink: 0,
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, left: on ? 22 : 2,
+        width: 27, height: 27, borderRadius: 14,
+        background: '#fff',
+        boxShadow: '0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
+        transition: 'left 200ms',
+      }}/>
+    </div>
+  );
+}
+
+function Row({ label, trailing, dark, divider, sub }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  return (
+    <div>
+      <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, minHeight: 48 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, color: fg, letterSpacing: -0.1 }}>{label}</div>
+          {sub && <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>{sub}</div>}
+        </div>
+        <div style={{ flexShrink: 0 }}>{trailing}</div>
+      </div>
+      {divider && <div style={{ height: 0.5, marginLeft: 16, marginRight: 0, background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(60,60,67,0.12)' }}/>}
+    </div>
+  );
+}
+
+// iOS DatePicker compact pill (HH:MM bg-tinted pill)
+function TimePill({ hour, minute, dark }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '7px 11px', borderRadius: 8,
+      background: dark ? 'rgba(120,120,128,0.24)' : 'rgba(120,120,128,0.16)',
+      fontFamily: ACC_FONTS.body, fontSize: 17, fontWeight: 400,
+      color: fg, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2,
+    }}>
+      <span>{String(hour).padStart(2, '0')}</span>
+      <span style={{ opacity: 0.6 }}>:</span>
+      <span>{String(minute).padStart(2, '0')}</span>
+    </div>
+  );
+}
+
+// iOS Picker trailing — chevrons compact menu trigger
+function MenuValue({ value, dark }) {
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: muted, fontSize: 16 }}>
+      <span style={{ fontFamily: ACC_FONTS.mono, fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>{value}</span>
+      <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke={muted} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2 }}>
+        <path d="M3.5 8L6 5.5L8.5 8"/>
+        <path d="M3.5 12L6 14.5L8.5 12"/>
+      </svg>
+    </div>
+  );
+}
+
+// Threshold "preview" mini-meter — visual confirmation of % choice
+function ThresholdMeter({ value, dark }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  const choices = [50, 60, 70, 80, 90];
+  return (
+    <div style={{ padding: '14px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 0.5, textTransform: 'uppercase' }}>選擇閾值</div>
+        <div style={{ fontFamily: ACC_FONTS.mono, fontSize: 13, color: muted }}>達 <span style={{ color: ACC_COLORS.warm, fontWeight: 600 }}>{value}%</span> 時通知</div>
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {choices.map(c => {
+          const selected = c === value;
+          return (
+            <div key={c} style={{
+              flex: 1, padding: '10px 0',
+              borderRadius: 10,
+              background: selected
+                ? `linear-gradient(180deg, ${ACC_COLORS.warm} 0%, ${ACC_COLORS.warmDark} 100%)`
+                : (dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.55)'),
+              border: selected ? 'none' : `0.5px solid ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+              textAlign: 'center',
+              fontFamily: ACC_FONTS.mono,
+              fontSize: 14, fontWeight: 500,
+              color: selected ? '#fff' : fg,
+              boxShadow: selected ? `0 4px 12px ${ACC_COLORS.warm}40` : 'none',
+              letterSpacing: -0.2,
+            }}>{c}%</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Recurring item row inside the recurring section
+function RecurringNotifRow({ item, dark, divider }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.55)' : 'rgba(60,60,67,0.55)';
+  return (
+    <div>
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `${item.accent}1E`,
+          color: item.accent,
+        }}>
+          <AccGlyph name={item.icon} size={18} color={item.accent} stroke={1.8}/>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, color: fg, letterSpacing: -0.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.note}</div>
+          <div style={{ marginTop: 2, fontSize: 12, color: muted, fontFamily: ACC_FONTS.mono, fontVariantNumeric: 'tabular-nums' }}>
+            NT${item.amount.toLocaleString('en-US')} <span style={{ opacity: 0.6 }}>·</span> 每{item.frequency === 'monthly' ? '月' : item.frequency === 'yearly' ? '年' : '週'} <span style={{ opacity: 0.6 }}>·</span> {item.nextDue}
+          </div>
+        </div>
+        <Toggle on={item.isActive} dark={dark}/>
+      </div>
+      {divider && <div style={{ height: 0.5, marginLeft: 64, background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(60,60,67,0.10)' }}/>}
+    </div>
+  );
+}
+
+function AddRow({ dark, divider }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  return (
+    <div>
+      {divider && <div style={{ height: 0.5, marginLeft: 16, background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(60,60,67,0.10)' }}/>}
+      <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ color: ACC_COLORS.warm, display: 'flex' }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill={ACC_COLORS.warm}/>
+            <path d="M12 8v8M8 12h8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div style={{ fontSize: 16, color: fg, letterSpacing: -0.1 }}>{NL.recurringAdd}</div>
+      </div>
+    </div>
+  );
+}
+
+// Permission denied banner
+function PermissionBanner({ dark }) {
+  const fg = dark ? '#fff' : '#0A0A0A';
+  const muted = dark ? 'rgba(235,235,245,0.7)' : 'rgba(60,60,67,0.7)';
+  const orange = ACC_COLORS.warm;
+  return (
+    <AccGlass dark={dark} radius={14} style={{ padding: 14, marginBottom: 18, borderTop: `0.5px solid ${orange}55`, borderLeft: `0.5px solid ${orange}55`, background: dark ? `linear-gradient(180deg, ${orange}1F 0%, rgba(255,255,255,0.04) 100%)` : `linear-gradient(180deg, ${orange}1A 0%, rgba(255,255,255,0.7) 100%)` }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `${orange}26`,
+          color: orange,
+        }}>
+          {/* bell-slash icon */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={orange} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 8a6 6 0 0112 0c0 2 0 5 2 7H4c1-1 1.4-2.5 1.7-4"/>
+            <path d="M10 21a2 2 0 004 0"/>
+            <path d="M3 3l18 18"/>
+          </svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: fg, letterSpacing: -0.1 }}>通知權限已關閉</div>
+          <div style={{ marginTop: 2, fontSize: 12.5, color: muted, lineHeight: 1.5 }}>{NL.permissionBanner}</div>
+          <button style={{
+            marginTop: 10, padding: '7px 12px', borderRadius: 8, border: 'none',
+            background: orange, color: '#fff',
+            fontFamily: ACC_FONTS.body, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            boxShadow: `0 3px 8px ${orange}40`,
+          }}>
+            {NL.openSettings}
+            <AccGlyph name="arrow-up-right" size={12} color="#fff" stroke={2.2}/>
+          </button>
+        </div>
+      </div>
+    </AccGlass>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// 01 · Default · all enabled
+// ═══════════════════════════════════════════════════════════
+const NOTIF_RECURRINGS = [
+  { id: 'r1', note: '房租',      amount: 22000, frequency: 'monthly', nextDue: '6/5 到期',  isActive: true,  accent: '#0A84FF', icon: 'bank' },
+  { id: 'r2', note: 'Netflix Premium', amount: 390, frequency: 'monthly', nextDue: '5/15 到期',  isActive: true,  accent: '#FF453A', icon: 'phone' },
+  { id: 'r3', note: '健身房 World Gym', amount: 1290, frequency: 'monthly', nextDue: '6/1 到期', isActive: true, accent: '#E8835A', icon: 'arrow-up-right' },
+  { id: 'r4', note: '蘋果日報訂閱', amount: 168, frequency: 'monthly', nextDue: '提醒已暫停', isActive: false, accent: '#8B6F47', icon: 'phone' },
+];
+
+function NotifSettingsActive({ dark }) {
+  return (
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <NavBar2 dark={dark} title="Notifications"/>
+      <LargeTitle2 dark={dark}>{NL.title}</LargeTitle2>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 100px' }}>
+
+        {/* Daily reminder */}
+        <SectionHeader dark={dark}>{NL.dailyHeader}</SectionHeader>
+        <AccGlass dark={dark} radius={16} style={{ padding: 0, overflow: 'hidden', marginBottom: 8 }}>
+          <Row dark={dark} divider label={NL.dailyToggle} trailing={<Toggle on={true} dark={dark}/>}/>
+          <Row dark={dark} label={NL.dailyTime} trailing={<TimePill hour={21} minute={0} dark={dark}/>}/>
+        </AccGlass>
+        <div style={{ padding: '0 6px 22px', fontSize: 12, color: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.5)', lineHeight: 1.45 }}>{NL.dailyDesc}</div>
+
+        {/* Budget warning */}
+        <SectionHeader dark={dark}>{NL.budgetHeader}</SectionHeader>
+        <AccGlass dark={dark} radius={16} style={{ padding: 0, overflow: 'hidden', marginBottom: 8 }}>
+          <Row dark={dark} divider label={NL.budgetToggle} trailing={<Toggle on={true} dark={dark}/>}/>
+          <ThresholdMeter value={80} dark={dark}/>
+        </AccGlass>
+        <div style={{ padding: '0 6px 22px', fontSize: 12, color: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.5)', lineHeight: 1.45 }}>{NL.budgetDesc}</div>
+
+        {/* Recurring */}
+        <SectionHeader dark={dark} eyebrow={`${NOTIF_RECURRINGS.filter(r => r.isActive).length} / ${NOTIF_RECURRINGS.length} 開啟`}>{NL.recurringHeader}</SectionHeader>
+        <div style={{ padding: '0 6px 8px', fontSize: 12, color: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.5)', lineHeight: 1.45 }}>{NL.recurringDesc}</div>
+        <AccGlass dark={dark} radius={16} style={{ padding: 0, overflow: 'hidden' }}>
+          {NOTIF_RECURRINGS.map((item, i) => (
+            <RecurringNotifRow key={item.id} item={item} dark={dark} divider={i < NOTIF_RECURRINGS.length}/>
+          ))}
+          <AddRow dark={dark}/>
+        </AccGlass>
+
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// 02 · Permission denied
+// ═══════════════════════════════════════════════════════════
+function NotifSettingsDenied({ dark }) {
+  return (
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <NavBar2 dark={dark} title="Notifications · Off"/>
+      <LargeTitle2 dark={dark}>{NL.title}</LargeTitle2>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 100px' }}>
+
+        <PermissionBanner dark={dark}/>
+
+        {/* Daily reminder (off) */}
+        <SectionHeader dark={dark}>{NL.dailyHeader}</SectionHeader>
+        <AccGlass dark={dark} radius={16} style={{ padding: 0, overflow: 'hidden', marginBottom: 8 }}>
+          <Row dark={dark} label={NL.dailyToggle} trailing={<Toggle on={false} dark={dark}/>}/>
+        </AccGlass>
+        <div style={{ padding: '0 6px 22px', fontSize: 12, color: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.5)', lineHeight: 1.45 }}>{NL.dailyDesc}</div>
+
+        {/* Budget warning (off) */}
+        <SectionHeader dark={dark}>{NL.budgetHeader}</SectionHeader>
+        <AccGlass dark={dark} radius={16} style={{ padding: 0, overflow: 'hidden', marginBottom: 8 }}>
+          <Row dark={dark} label={NL.budgetToggle} trailing={<Toggle on={false} dark={dark}/>}/>
+        </AccGlass>
+        <div style={{ padding: '0 6px 22px', fontSize: 12, color: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.5)', lineHeight: 1.45 }}>{NL.budgetDesc}</div>
+
+        {/* Recurring — empty add row only */}
+        <SectionHeader dark={dark}>{NL.recurringHeader}</SectionHeader>
+        <div style={{ padding: '0 6px 8px', fontSize: 12, color: dark ? 'rgba(235,235,245,0.5)' : 'rgba(60,60,67,0.5)', lineHeight: 1.45 }}>{NL.recurringDesc}</div>
+        <AccGlass dark={dark} radius={16} style={{ padding: 0, overflow: 'hidden' }}>
+          <AddRow dark={dark}/>
+        </AccGlass>
+
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// Canvas
+// ═══════════════════════════════════════════════════════════
+function NotifSettingsCanvas() {
+  const dark = false;
+  const muted = 'rgba(60,60,67,0.55)';
+  const screens = [
+    { id: 'active', label: '01 / Notifications · All On',     desc: '預設快樂路徑 · 每日 21:00 提醒 · 預算 80% · 週期清單', Comp: NotifSettingsActive },
+    { id: 'denied', label: '02 / Permission Denied',          desc: 'showPermissionDeniedBanner = true · 橘色 banner · 全部 off', Comp: NotifSettingsDenied },
+  ];
+  return (
+    <div style={{ minHeight: '100vh', background: '#ECE9E2', padding: '40px 24px 80px', fontFamily: ACC_FONTS.body }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto 32px' }}>
+        <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.4, textTransform: 'uppercase' }}>NeuLedger · Settings › Notifications</div>
+        <div style={{ fontFamily: ACC_FONTS.display, fontSize: 40, fontWeight: 600, letterSpacing: -1, marginTop: 4 }}>通知偏好設定</div>
+        <div style={{ fontSize: 14, color: muted, marginTop: 6, maxWidth: 720, lineHeight: 1.55 }}>
+          對應 <code style={{ fontFamily: ACC_FONTS.mono, fontSize: 13 }}>NotificationSettingsFeature</code>。
+          三大區塊 — <strong>Daily Reminder</strong>(toggle + 時間)、<strong>Budget Warning</strong>(toggle + 50/60/70/80/90% 閾值)、<strong>Recurring</strong>(每筆 toggle + add)。
+          當權限被系統拒絕,最上面會出現橘色 banner。
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, max-content)', gap: '40px 32px', justifyContent: 'center' }}>
+        {screens.map(s => (
+          <div key={s.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 402, textAlign: 'left' }}>
+              <div style={{ fontSize: 11, color: muted, fontFamily: ACC_FONTS.mono, letterSpacing: 1.2, textTransform: 'uppercase' }}>{s.label}</div>
+              <div style={{ fontFamily: ACC_FONTS.display, fontSize: 18, fontWeight: 600, letterSpacing: -0.3, marginTop: 2 }}>{s.desc}</div>
+            </div>
+            <div data-screen-label={s.label}>
+              <AccPhone dark={dark}>
+                <s.Comp dark={dark}/>
+              </AccPhone>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<NotifSettingsCanvas/>);
+
+</script>
+</body>
+</html>

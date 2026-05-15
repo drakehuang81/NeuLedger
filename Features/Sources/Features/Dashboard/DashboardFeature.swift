@@ -41,6 +41,7 @@ public struct DashboardFeature: Sendable {
         case aiInsightFetch
         case weeklySpending
         case stats
+        case insights
     }
 
     // MARK: - State
@@ -305,9 +306,8 @@ public struct DashboardFeature: Sendable {
                     state.statsPhase = .loading
                     return statsEffect(cancelInFlight: true)
                 case .insight:
-                    // MARK: - Stub wired in later slice
                     state.insightPhase = .loading
-                    return .none
+                    return insightsEffect(cancelInFlight: true)
                 }
 
             case let .accountChipSelected(accountID):
@@ -340,10 +340,15 @@ public struct DashboardFeature: Sendable {
                 state.expandedTransactionID = (state.expandedTransactionID == id) ? nil : id
                 return .none
 
-            // MARK: - Stubs wired in later slices
+            case let .insightsLoaded(list):
+                state.insights = list
+                state.insightIndex = 0
+                state.insightPhase = .loaded
+                return .none
 
-            case .insightsLoaded,
-                 .insightIndexChanged:
+            case let .insightIndexChanged(i):
+                let upper = max(state.insights.count - 1, 0)
+                state.insightIndex = max(0, min(i, upper))
                 return .none
 
             // MARK: AI Insight
@@ -530,8 +535,24 @@ public struct DashboardFeature: Sendable {
             }
             .cancellable(id: CancelID.weeklySpending, cancelInFlight: cancelInFlight),
 
-            statsEffect(cancelInFlight: cancelInFlight)
+            statsEffect(cancelInFlight: cancelInFlight),
+
+            insightsEffect(cancelInFlight: cancelInFlight)
         )
+    }
+
+    /// Loads the AI insight carousel entries.
+    private func insightsEffect(cancelInFlight: Bool) -> Effect<Action> {
+        .run { send in
+            do {
+                let summary = SpendingSummary(monthTotal: 0, weekTotal: 0)
+                let list = try await aiServiceClient.generateInsights(summary)
+                await send(.insightsLoaded(list))
+            } catch {
+                await send(.sectionFailed(.insight, String(localized: "dashboard_section_load_failed", bundle: .main)))
+            }
+        }
+        .cancellable(id: CancelID.insights, cancelInFlight: cancelInFlight)
     }
 
     /// Loads `StatsSnapshot` and routes success/failure into the

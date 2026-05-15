@@ -31,12 +31,7 @@ public struct DashboardScreen: View {
 
                         StatsRow(store: store)
 
-                        // Slice 7 placeholder (insight card)
-                        GlassContainer(cornerRadius: 22, padding: 16) {
-                            Text("…")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .skeleton(when: true)
+                        InsightCarousel(store: store)
 
                         TransactionsSection(store: store)
                     }

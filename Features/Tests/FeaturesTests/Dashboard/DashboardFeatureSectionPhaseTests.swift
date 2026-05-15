@@ -20,6 +20,7 @@ struct DashboardFeatureSectionPhaseTests {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiServiceClient.isAvailable = { false }
+            $0.aiServiceClient.generateInsights = { _ in [] }
         }
 
         store.exhaustivity = .off
@@ -43,6 +44,7 @@ struct DashboardFeatureSectionPhaseTests {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiServiceClient.isAvailable = { false }
+            $0.aiServiceClient.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
         await store.send(.task)

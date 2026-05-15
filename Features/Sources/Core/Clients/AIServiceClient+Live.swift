@@ -123,6 +123,36 @@ extension AIServiceClient: DependencyKey {
             return result
         },
 
+        // MARK: - generateInsights
+        // TODO: replace with FoundationModels output — currently returns 3 hard-coded
+        // entries matching the designer-supplied B1 Warm Redesign copy. Schema is
+        // stable so swapping in a real LLM call requires no reducer change.
+        generateInsights: { _ in
+            [
+                InsightData(
+                    title: "本週支出減少 12%",
+                    body: "你比上週省下 NT$ 3,200，可以考慮加碼儲蓄",
+                    metric: "-12%",
+                    metricColor: .income,
+                    cta: "查看分析"
+                ),
+                InsightData(
+                    title: "餐飲花費偏高",
+                    body: "本月已花 NT$ 8,400，佔總支出 42%",
+                    metric: "42%",
+                    metricColor: .expense,
+                    cta: "設定預算"
+                ),
+                InsightData(
+                    title: "儲蓄率達標",
+                    body: "本月儲蓄率 28%，超出目標 5%",
+                    metric: "28%",
+                    metricColor: .accent,
+                    cta: "查看詳情"
+                )
+            ]
+        },
+
         // MARK: - answerFinancialQuestion
         // Uses Foundation Models Tool Calling: the model decides when to invoke QueryTransactionsTool
         // to fetch real transaction data, then synthesises a natural language answer in the language of the question.

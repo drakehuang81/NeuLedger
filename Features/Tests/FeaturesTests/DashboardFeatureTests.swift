@@ -99,6 +99,7 @@ struct DashboardFeatureTests {
             $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Test insight" }
+            $0.aiServiceClient.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
 
@@ -221,6 +222,7 @@ struct DashboardFeatureTests {
             $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "" }
+            $0.aiServiceClient.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
 
@@ -262,6 +264,7 @@ struct DashboardFeatureTests {
             $0.categoryClient.fetchAll = { Self.sampleCategories }
             $0.aiServiceClient.isAvailable = { true }
             $0.aiServiceClient.generateInsight = { _ in "Fresh insight" }
+            $0.aiServiceClient.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
 

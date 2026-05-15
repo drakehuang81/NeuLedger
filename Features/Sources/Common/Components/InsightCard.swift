@@ -3,56 +3,88 @@ import SwiftUI
 /// A card displaying AI insights or tips.
 ///
 /// Design Spec:
-/// - Corner Radius: 16 (LG)
+/// - Corner Radius: 22 (B1 Warm Redesign)
 /// - Background: Glass Surface
 /// - Padding: 16
-/// - Content: Sparkle Icon + Title + Body text
+/// - Content: Title + optional MetricBadge on right + Body text + optional CTA button
 public struct InsightCard: View {
     let title: String
     let bodyText: String
+    let metric: String?
+    let metricColor: Color?
+    let cta: String?
     let onClose: (() -> Void)?
-    
+    let onCTATap: (() -> Void)?
+
     public init(
         title: String,
         body: String,
-        onClose: (() -> Void)? = nil
+        metric: String? = nil,
+        metricColor: Color? = nil,
+        cta: String? = nil,
+        onClose: (() -> Void)? = nil,
+        onCTATap: (() -> Void)? = nil
     ) {
         self.title = title
         self.bodyText = body
+        self.metric = metric
+        self.metricColor = metricColor
+        self.cta = cta
         self.onClose = onClose
+        self.onCTATap = onCTATap
     }
-    
+
     public var body: some View {
-        GlassContainer(cornerRadius: 16, padding: 16) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 24))
-                    .foregroundStyle(Color.Design.accentYellow)
-                    .frame(width: 24, height: 24)
+        GlassContainer(cornerRadius: 22, padding: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.Design.accentYellow)
 
-                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(Font.Design.headline)
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(Color.Design.textPrimary)
+                        .lineLimit(1)
 
-                    Text(bodyText)
-                        .font(Font.Design.subheadline)
-                        .foregroundStyle(Color.Design.textSecondary)
-                        .lineSpacing(4)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+
+                    if let metric, let metricColor {
+                        MetricBadge(text: metric, color: metricColor)
+                    }
+
+                    if let onClose {
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(Font.Design.caption)
+                                .foregroundStyle(Color.Design.textSecondary)
+                                .padding(6)
+                                .background(Color.Design.separator)
+                                .clipShape(Circle())
+                        }
+                    }
                 }
 
-                Spacer()
+                Text(bodyText)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Design.textSecondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                if let onClose {
-                    Button(action: onClose) {
-                        Image(systemName: "xmark")
-                            .font(Font.Design.caption)
-                            .foregroundStyle(Color.Design.textSecondary)
-                            .padding(8)
-                            .background(Color.Design.separator)
-                            .clipShape(Circle())
+                if let cta {
+                    Button {
+                        onCTATap?()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(cta)
+                                .font(.system(size: 13, weight: .semibold))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.Design.brandPrimary)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -62,17 +94,19 @@ public struct InsightCard: View {
 #Preview {
     ZStack {
         Color.gray.opacity(0.3).ignoresSafeArea()
-        
+
         VStack {
             InsightCard(
-                title: "AI Analysis",
-                body: "Spending on dining increased by 15% this week compared to last month average.",
-                onClose: {}
+                title: "本週支出減少 12%",
+                body: "你比上週省下 NT$ 3,200，可以考慮加碼儲蓄",
+                metric: "-12%",
+                metricColor: Color.Design.incomeGreen,
+                cta: "查看分析"
             )
-            
+
             InsightCard(
                 title: "Tip",
-                body: "Consider settings a budget for Coffee."
+                body: "Consider setting a budget for Coffee."
             )
         }
         .padding()

@@ -28,6 +28,12 @@ public struct AIServiceClient: Sendable {
     /// - Returns: A localized string containing the generated insights.
     public var generateInsight: @Sendable (SpendingSummary) async throws -> String
 
+    /// Generates a list of carousel insights for the Dashboard B1 Warm Redesign.
+    ///
+    /// - Parameter summary: The `SpendingSummary` containing aggregated financial data.
+    /// - Returns: An array of `InsightData` items to show in the swipe-able carousel.
+    public var generateInsights: @Sendable (_ summary: SpendingSummary) async throws -> [InsightData] = { _ in [] }
+
     /// Answers a natural language financial question by querying transaction history via Tool Calling.
     ///
     /// - Parameter question: The user's question in natural language (e.g., "上個月餐費花了多少？").

@@ -336,11 +336,14 @@ public struct DashboardFeature: Sendable {
                 state.statsPhase = .loaded
                 return .none
 
+            case let .transactionRowToggled(id):
+                state.expandedTransactionID = (state.expandedTransactionID == id) ? nil : id
+                return .none
+
             // MARK: - Stubs wired in later slices
 
             case .insightsLoaded,
-                 .insightIndexChanged,
-                 .transactionRowToggled:
+                 .insightIndexChanged:
                 return .none
 
             // MARK: AI Insight

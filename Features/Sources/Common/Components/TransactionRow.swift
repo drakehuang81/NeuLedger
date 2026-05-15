@@ -7,7 +7,9 @@ import SwiftUI
 /// - Background: Surface (Card Surface)
 /// - Padding: Horizontal 16, Vertical 12
 /// - Gap: 12
-/// - Icon: 22x22 in 40x40 container
+/// - Icon: 22x22 in 40x40 container (tint @ 13% opacity)
+/// - Expansion: when `isExpanded && !tags.isEmpty`, reveals a flow-wrapped
+///   list of `TagPill`s below a divider.
 public struct TransactionRow: View {
     let title: String
     let subtitle: String
@@ -16,6 +18,9 @@ public struct TransactionRow: View {
     let date: String
     let icon: String // System Name
     let iconColor: Color
+    let isExpanded: Bool
+    let tags: [String]
+    let onTap: () -> Void
 
     public init(
         title: String,
@@ -24,7 +29,10 @@ public struct TransactionRow: View {
         amountColor: Color,
         date: String,
         icon: String,
-        iconColor: Color = .blue
+        iconColor: Color = .blue,
+        isExpanded: Bool = false,
+        tags: [String] = [],
+        onTap: @escaping () -> Void = {}
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -33,50 +41,70 @@ public struct TransactionRow: View {
         self.date = date
         self.icon = icon
         self.iconColor = iconColor
+        self.isExpanded = isExpanded
+        self.tags = tags
+        self.onTap = onTap
     }
 
     public var body: some View {
-        HStack(spacing: 12) {
-            // Icon Container
-            ZStack {
-                Circle()
-                    .fill(Color.Design.surfaceSecondary) // Surface Secondary
-                    .frame(width: 40, height: 40)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                // Icon Container — tinted background at 13% opacity
+                ZStack {
+                    Circle()
+                        .fill(iconColor.opacity(0.13))
+                        .frame(width: 40, height: 40)
 
-                Image(systemName: icon)
-                    .font(.system(size: 20)) // 22x22 approx
-                    .foregroundStyle(iconColor)
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundStyle(iconColor)
+                }
+
+                // Content
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(Font.Design.headline)
+                        .foregroundStyle(Color.Design.textPrimary)
+
+                    Text(subtitle)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
+
+                Spacer()
+
+                // Right Content
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(amountText)
+                        .font(Font.Design.amount.weight(.semibold))
+                        .foregroundStyle(amountColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    Text(date)
+                        .font(Font.Design.caption)
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
             }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .contentShape(Rectangle())
+            .onTapGesture { onTap() }
 
-            // Content
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(Font.Design.headline) // 16pt Medium
-                    .foregroundStyle(Color.Design.textPrimary)
+            if isExpanded && !tags.isEmpty {
+                Divider()
+                    .padding(.horizontal, 16)
 
-                Text(subtitle)
-                    .font(Font.Design.caption) // 13pt
-                    .foregroundStyle(Color.Design.textSecondary)
-            }
-
-            Spacer()
-
-            // Right Content
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(amountText)
-                    .font(Font.Design.amount.weight(.semibold)) // 16pt Mono Semibold
-                    .foregroundStyle(amountColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-
-                Text(date)
-                    .font(Font.Design.caption) // 12pt
-                    .foregroundStyle(Color.Design.textSecondary)
+                FlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                    ForEach(tags, id: \.self) { tag in
+                        TagPill(text: tag, color: iconColor)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .background(Color.Design.surface) // Surface (Card)
+        .background(Color.Design.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
@@ -85,7 +113,7 @@ public struct TransactionRow: View {
 #Preview {
     ZStack {
         Color.gray.opacity(0.1).ignoresSafeArea()
-        
+
         VStack {
             TransactionRow(
                 title: "Lunch",
@@ -94,7 +122,9 @@ public struct TransactionRow: View {
                 amountColor: .red,
                 date: "Today 12:30",
                 icon: "fork.knife",
-                iconColor: .orange
+                iconColor: .orange,
+                isExpanded: true,
+                tags: ["work", "team"]
             )
 
             TransactionRow(

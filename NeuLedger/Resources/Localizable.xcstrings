@@ -1106,6 +1106,40 @@
         }
       }
     },
+    "transactions_empty_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions yet"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無交易"
+          }
+        }
+      }
+    },
+    "transactions_empty_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record your first expense"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記錄您的第一筆花費吧"
+          }
+        }
+      }
+    },
     "dashboard_add_first": {
       "extractionState": "manual",
       "localizations": {

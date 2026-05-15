@@ -38,7 +38,7 @@ public struct DashboardScreen: View {
                         }
                         .skeleton(when: true)
 
-                        transactionsSection
+                        TransactionsSection(store: store)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 120)
@@ -69,91 +69,6 @@ public struct DashboardScreen: View {
         }
     }
 
-    // MARK: - Transactions Section (preserved; replaced in Slice 6)
-
-    @ViewBuilder
-    private var transactionsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("dashboard_recent_transactions")
-                    .font(Font.Design.headline)
-
-                Spacer()
-
-                if store.hasTransactions {
-                    Button(String(localized: "dashboard_see_all")) {
-                        store.send(.seeAllTransactionsTapped)
-                    }
-                    .font(Font.Design.subheadline)
-                }
-            }
-
-            if store.hasTransactions {
-                VStack(spacing: 8) {
-                    ForEach(store.recentTransactions) { transaction in
-                        transactionButton(for: transaction)
-                    }
-                }
-            } else if store.hasAccounts {
-                EmptyStateView(
-                    icon: "tray.fill",
-                    title: String(localized: "dashboard_no_transactions_title"),
-                    description: String(localized: "dashboard_no_transactions_desc"),
-                    actionTitle: String(localized: "dashboard_add_first"),
-                    action: { store.send(.addTransactionButtonTapped) }
-                )
-                .frame(maxWidth: .infinity)
-            } else {
-                EmptyStateView(
-                    icon: "wallet.pass.fill",
-                    title: String(localized: "dashboard_no_wallets_title"),
-                    description: String(localized: "dashboard_no_wallets_desc"),
-                    actionTitle: String(localized: "dashboard_add_wallet"),
-                    action: { store.send(.addTransactionButtonTapped) }
-                )
-                .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func transactionButton(for transaction: Domain.Transaction) -> some View {
-        let category = transaction.categoryId.flatMap { store.categoryMap[$0] }
-        let (icon, iconColor) = resolvedIconAndColor(for: transaction, category: category)
-        return Button {
-            store.send(.transactionTapped(transaction.id))
-        } label: {
-            TransactionRow(
-                title: transaction.note ?? String(localized: "dashboard_transaction_default"),
-                subtitle: transaction.type.displayName,
-                amountText: transaction.signedAmountText,
-                amountColor: iconColor,
-                date: transaction.date.formatted(date: .abbreviated, time: .shortened),
-                icon: icon,
-                iconColor: iconColor
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// Resolves the SF Symbol name and tint color for a transaction row.
-    private func resolvedIconAndColor(
-        for transaction: Domain.Transaction,
-        category: Domain.Category?
-    ) -> (icon: String, color: Color) {
-        switch transaction.type {
-        case .transfer:
-            return ("arrow.left.arrow.right", Color.Design.textSecondary)
-        case .expense, .income:
-            if let cat = category {
-                return (cat.icon, Color(hex: cat.color))
-            }
-            return transaction.type == .expense
-                ? ("minus.circle.fill", Color.Design.expenseRed)
-                : ("plus.circle.fill", Color.Design.incomeGreen)
-        }
-    }
 }
 
 

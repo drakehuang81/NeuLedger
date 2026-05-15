@@ -156,10 +156,9 @@ public struct BudgetFormView: View {
 
     private var startDateSection: some View {
         FormSection("budget_form_start_date") {
-            HStack(spacing: 12) {
-                Text("budget_form_start_date")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.Design.textPrimary)
+            // The section header already labels this row, so the picker
+            // sits alone on the trailing edge to avoid a redundant label.
+            HStack {
                 Spacer(minLength: 0)
                 DatePicker(
                     "",

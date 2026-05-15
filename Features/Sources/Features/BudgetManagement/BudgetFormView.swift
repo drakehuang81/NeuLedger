@@ -12,98 +12,22 @@ public struct BudgetFormView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                // MARK: Name Field
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField(String(localized: "budget_form_name_placeholder"), text: Binding(
-                            get: { store.name },
-                            set: { store.send(.nameChanged($0)) }
-                        ))
-                        if let error = store.nameError {
-                            Text(error)
-                                .font(Font.Design.caption)
-                                .foregroundStyle(Color.Design.expenseRed)
-                        }
-                    }
-                } header: {
-                    Text("common_name")
-                }
-
-                // MARK: Amount Field
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(verbatim: "NT$")
-                                .font(Font.Design.amount)
-                                .foregroundStyle(Color.Design.textSecondary)
-                            TextField("0", text: Binding(
-                                get: { store.amountText },
-                                set: { store.send(.amountChanged($0)) }
-                            ))
-                            .font(Font.Design.amount)
-                            .monospacedDigit()
-                            .keyboardType(.numberPad)
-                        }
-                        if let error = store.amountError {
-                            Text(error)
-                                .font(Font.Design.caption)
-                                .foregroundStyle(Color.Design.expenseRed)
-                        }
-                    }
-                } header: {
-                    Text("budget_form_amount")
-                }
-
-                // MARK: Period Picker
-                Section {
-                    Picker(String(localized: "budget_form_period"), selection: Binding(
-                        get: { store.period },
-                        set: { store.send(.periodChanged($0)) }
-                    )) {
-                        ForEach(BudgetPeriod.allCases, id: \.self) { period in
-                            Text(period.localizedName).tag(period)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    Text("budget_form_period")
-                }
-
-                // MARK: Start Date
-                Section {
-                    DatePicker(
-                        String(localized: "budget_form_start_date"),
-                        selection: Binding(
-                            get: { store.startDate },
-                            set: { store.send(.startDateChanged($0)) }
-                        ),
-                        displayedComponents: .date
-                    )
-                } header: {
-                    Text("budget_form_start_date")
-                }
-
-                // MARK: Category (optional)
-                if !store.availableCategories.isEmpty {
-                    Section {
-                        Picker(String(localized: "add_transaction_category"), selection: Binding(
-                            get: { store.categoryId },
-                            set: { store.send(.categoryChanged($0)) }
-                        )) {
-                            Text("budget_form_all_expenses").tag(Domain.Category.ID?.none)
-                            ForEach(store.availableCategories) { category in
-                                Text(category.name).tag(Optional(category.id))
-                            }
-                        }
-                    } header: {
-                        Text("budget_form_apply_category")
-                    } footer: {
-                        Text("budget_form_all_expenses_hint")
-                            .font(Font.Design.caption)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    nameSection
+                    amountSection
+                    periodSection
+                    startDateSection
+                    if !store.availableCategories.isEmpty {
+                        categorySection
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 100)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Design.background)
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -117,11 +41,154 @@ public struct BudgetFormView: View {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
+                    .disabled(!isSaveEnabled)
                 }
             }
-            .task {
-                await store.send(.task).finish()
+            .task { await store.send(.task).finish() }
+        }
+    }
+
+    // MARK: - Save gating
+
+    private var isSaveEnabled: Bool {
+        guard !store.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+        guard let amount = Decimal(string: store.amountText), amount > 0 else {
+            return false
+        }
+        return true
+    }
+
+    // MARK: - Sections
+
+    private var nameSection: some View {
+        FormSection("common_name") {
+            VStack(alignment: .leading, spacing: 0) {
+                TextField(
+                    String(localized: "budget_form_name_placeholder"),
+                    text: Binding(
+                        get: { store.name },
+                        set: { store.send(.nameChanged($0)) }
+                    )
+                )
+                .font(.system(size: 17))
+                .foregroundStyle(Color.Design.textPrimary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                if let error = store.nameError {
+                    ErrorText(error)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 10)
+                }
             }
+        }
+    }
+
+    private var amountSection: some View {
+        FormSection("budget_form_amount") {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .lastTextBaseline, spacing: 8) {
+                    Text(verbatim: "NT$")
+                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundStyle(Color.Design.textSecondary)
+
+                    TextField(
+                        "0",
+                        text: Binding(
+                            get: { store.amountText },
+                            set: { store.send(.amountChanged($0)) }
+                        )
+                    )
+                    .font(.system(size: 32, weight: .medium, design: .monospaced))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.Design.textPrimary)
+                    .keyboardType(.numberPad)
+
+                    Text("/ \(store.period.localizedSuffix)")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.Design.textSecondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
+                if let error = store.amountError {
+                    ErrorText(error)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 10)
+                } else if let breakdown = breakdownText {
+                    Text(breakdown)
+                        .font(.system(size: 12, design: .monospaced))
+                        .tracking(-0.1)
+                        .foregroundStyle(Color.Design.textSecondary)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 10)
+                }
+            }
+        }
+    }
+
+    private var breakdownText: String? {
+        guard let amount = Decimal(string: store.amountText), amount > 0 else { return nil }
+        return amount.perPeriodBreakdown(store.period)
+    }
+
+    private var periodSection: some View {
+        FormSection("budget_form_period") {
+            Picker(
+                String(localized: "budget_form_period"),
+                selection: Binding(
+                    get: { store.period },
+                    set: { store.send(.periodChanged($0)) }
+                )
+            ) {
+                ForEach(BudgetPeriod.allCases, id: \.self) { period in
+                    Text(period.localizedName).tag(period)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+    }
+
+    private var startDateSection: some View {
+        FormSection("budget_form_start_date") {
+            HStack(spacing: 12) {
+                Text("budget_form_start_date")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.Design.textPrimary)
+                Spacer(minLength: 0)
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { store.startDate },
+                        set: { store.send(.startDateChanged($0)) }
+                    ),
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.compact)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+    }
+
+    private var categorySection: some View {
+        FormSection(
+            "budget_form_apply_category",
+            footerKey: "budget_form_all_expenses_hint"
+        ) {
+            BudgetCategoryListPicker(
+                categories: store.availableCategories,
+                selectedId: store.categoryId,
+                onSelect: { newId in
+                    store.send(.categoryChanged(newId))
+                }
+            )
         }
     }
 }

@@ -5,8 +5,9 @@ import SwiftUI
 /// 1×4 grid of compact KPI cards (支出 / 收入 / 結餘 / 存錢率).
 ///
 /// Each card renders an eyebrow + mono value + (optional) delta caption.
-/// Deltas are intentionally omitted whenever prior-period data is not yet wired
-/// through `AnalysisFeature.State` — we render the row without any fake values.
+/// TODO: prior-period delta caption (MoM, savings rank). Requires
+/// `AnalysisFeature.State` to expose a prior-period summary; currently
+/// omitted so we don't render fake values.
 struct KPIStrip: View {
     let summary: FinancialSummary?
 

@@ -416,16 +416,14 @@ public struct RecurringTransactionManagementView: View {
 
     // MARK: - Helpers
 
+    // TODO: design uses weekly=blue / yearly=purple hex literals because the
+    // Color.Design token set has no semantic colour for these two cases. Replace
+    // with semantic tokens once the design system adds them.
     private func frequencyColor(_ frequency: BudgetPeriod) -> Color {
         switch frequency {
-        case .weekly:
-            // weekly = iOS blue (#0A84FF) — design spec exception, no semantic token available
-            return Color(hex: "#0A84FF")
-        case .monthly:
-            return Color.Design.brandAccent
-        case .yearly:
-            // yearly = purple (#A66BF0) — design spec exception, no semantic token available
-            return Color(hex: "#A66BF0")
+        case .weekly:  return Color(hex: "#0A84FF")
+        case .monthly: return Color.Design.brandAccent
+        case .yearly:  return Color(hex: "#A66BF0")
         }
     }
 

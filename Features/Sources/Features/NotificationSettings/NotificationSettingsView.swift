@@ -334,6 +334,10 @@ private struct RecurringSectionView: View {
         .alert($store.scope(state: \.alert, action: \.alert))
     }
 
+    // TODO: design shows a per-item accent + glyph (e.g. Netflix → film, rent
+    // → house) and a "下次 5/25" due-date subtitle. `RecurringTransaction` has
+    // no icon/color fields, and we don't surface `nextDueDate` here yet —
+    // restore both once the domain model gains them.
     private func recurringRow(item: RecurringTransaction, isLast: Bool) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {

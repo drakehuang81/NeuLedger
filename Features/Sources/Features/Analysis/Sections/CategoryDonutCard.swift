@@ -5,7 +5,7 @@ import SwiftUI
 /// Glass card with a 108pt donut chart + top-3 category list + expandable
 /// row breakdown.
 ///
-/// Note: `CategoryProportion` only carries `id` / `name` / `amount`. Per-slice
+/// TODO: `CategoryProportion` only carries `id` / `name` / `amount`. Per-slice
 /// colors and icons come from a fallback palette + SF Symbol heuristic because
 /// the reducer/state is locked. When `Domain.CategoryProportion` is extended
 /// with color/icon, swap the helpers below.

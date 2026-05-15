@@ -22,6 +22,11 @@ public struct AddEditAccountView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
+                    // TODO: design includes Opening Balance, "Set as Primary"
+                    // toggle, and an AI suggestion footer. None are wired:
+                    // AddEditAccountFeature.State has no openingBalance /
+                    // isPrimary, and the Account domain model has no isPrimary
+                    // flag. Extend reducer + entity before adding sections.
                     VStack(spacing: 22) {
                         typeSection
                         nameSection

@@ -59,6 +59,10 @@ public struct AccountManagementView: View {
 
     // MARK: - Account List
 
+    // TODO: drag-to-reorder is intentionally dropped — `.onMove` requires
+    // SwiftUI `List` and we use ScrollView+GlassContainer here. Reintroduce
+    // via a long-press "Move up / Move down" context-menu action or a
+    // dedicated reorder mode that calls .accountMoved on the reducer.
     private var accountList: some View {
         ScrollView {
             VStack(spacing: 18) {
@@ -82,6 +86,9 @@ public struct AccountManagementView: View {
 
     // MARK: - Net Worth Hero
 
+    // TODO: design shows "↑ NT$ 12,450 比上月" delta line under the total.
+    // The reducer doesn't track a prior-period total today; surface it via
+    // AccountManagementFeature.State once we want to render the delta.
     private var netWorthHero: some View {
         GlassContainer(cornerRadius: 22, padding: 22) {
             VStack(alignment: .leading, spacing: 4) {
@@ -284,6 +291,9 @@ public struct AccountManagementView: View {
         store.balances.values.reduce(Decimal.zero, +)
     }
 
+    // TODO: design includes Invest + Crypto groups, but AccountType only
+    // defines .cash / .bank / .creditCard / .eWallet. Add the new cases to
+    // Domain.AccountType (and seed defaults) before rendering those groups.
     private var activeGroups: [AccountGroup] {
         let active = store.activeAccounts
         let buckets: [(id: String, label: LocalizedStringKey, types: [AccountType])] = [

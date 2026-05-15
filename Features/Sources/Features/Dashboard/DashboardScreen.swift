@@ -23,8 +23,7 @@ public struct DashboardScreen: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Slice 3 placeholder (header)
-                        Color.clear.frame(height: 56)
+                        DashboardTopBar(store: store)
 
                         // Slice 4 placeholder (account chip filter)
                         Color.clear.frame(height: 44)

@@ -26,6 +26,7 @@ public struct TransactionDetailFeature: Sendable {
         public var insight: TransactionInsight?
         public var detent: Detent = .medium
         public var pendingDelete: Bool = false
+        @Presents var deleteFailureAlert: AlertState<Action.Alert>?
 
         @Presents var editTransaction: AddTransactionFeature.State?
         var showDeleteConfirmation: Bool = false
@@ -57,11 +58,18 @@ public struct TransactionDetailFeature: Sendable {
         case deleteCancelled
         case undoTapped
         case deleteWindowExpired
+        case deleteFailed
         case dismiss
 
         case editTransaction(PresentationAction<AddTransactionFeature.Action>)
+        case deleteFailureAlert(PresentationAction<Alert>)
 
         case delegate(Delegate)
+
+        @CasePathable
+        public enum Alert: Sendable, Equatable {
+            case dismiss
+        }
 
         @CasePathable
         public enum Delegate: Sendable, Equatable {
@@ -162,10 +170,29 @@ public struct TransactionDetailFeature: Sendable {
                 state.pendingDelete = false
                 let id = state.transaction.id
                 return .run { send in
-                    try await transactionClient.delete(id)
-                    await send(.delegate(.deleted(id)))
-                    await dismiss()
+                    do {
+                        try await transactionClient.delete(id)
+                        await send(.delegate(.deleted(id)))
+                        await dismiss()
+                    } catch {
+                        await send(.deleteFailed)
+                    }
                 }
+
+            case .deleteFailed:
+                state.deleteFailureAlert = AlertState {
+                    TextState("transaction_detail_delete_failed_title")
+                } actions: {
+                    ButtonState(role: .cancel, action: .dismiss) {
+                        TextState("common_ok")
+                    }
+                } message: {
+                    TextState("transaction_detail_delete_failed_body")
+                }
+                return .none
+
+            case .deleteFailureAlert:
+                return .none
 
             case .dismiss:
                 return .run { _ in await dismiss() }
@@ -193,5 +220,6 @@ public struct TransactionDetailFeature: Sendable {
         .ifLet(\.$editTransaction, action: \.editTransaction) {
             AddTransactionFeature()
         }
+        .ifLet(\.$deleteFailureAlert, action: \.deleteFailureAlert)
     }
 }

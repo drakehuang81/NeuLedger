@@ -78,6 +78,7 @@ public struct TransactionDetailView: View {
             .sheet(item: $store.scope(state: \.editTransaction, action: \.editTransaction)) { editStore in
                 AddTransactionView(store: editStore)
             }
+            .alert($store.scope(state: \.deleteFailureAlert, action: \.deleteFailureAlert))
         }
         .presentationDetents(
             [.medium, .large],
@@ -123,3 +124,132 @@ public struct TransactionDetailView: View {
         .background(.ultraThinMaterial)
     }
 }
+
+// MARK: - Previews
+
+#if DEBUG
+private enum PreviewFixtures {
+    static let cashAccount = Account(
+        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000001")!,
+        name: "Cash 現金", type: .cash, icon: "banknote", color: "#8E8E93"
+    )
+    static let bankAccount = Account(
+        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000002")!,
+        name: "玉山銀行", type: .bank, icon: "building.columns.fill", color: "#0A84FF"
+    )
+    static let ewalletAccount = Account(
+        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000003")!,
+        name: "悠遊卡", type: .eWallet, icon: "iphone.gen3", color: "#5E5CE6"
+    )
+
+    static let foodCategory = Domain.Category(
+        id: UUID(uuidString: "BB000000-0000-0000-0000-000000000001")!,
+        name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
+    )
+    static let salaryCategory = Domain.Category(
+        id: UUID(uuidString: "BB000000-0000-0000-0000-000000000002")!,
+        name: "薪資", icon: "banknote.fill", color: "#34C759", type: .income
+    )
+
+    static let expenseTx = Transaction(
+        id: UUID(uuidString: "CC000000-0000-0000-0000-000000000001")!,
+        amount: 165,
+        date: Date(),
+        note: "鬍鬚張午餐 · 滷肉飯 + 排骨酥湯",
+        categoryId: foodCategory.id,
+        accountId: ewalletAccount.id,
+        type: .expense,
+        tags: [
+            Tag(id: UUID(), name: "lunch", color: "#FF9500"),
+            Tag(id: UUID(), name: "weekday", color: "#FF9500")
+        ],
+        aiSuggested: false
+    )
+
+    static let incomeTx = Transaction(
+        id: UUID(uuidString: "CC000000-0000-0000-0000-000000000002")!,
+        amount: 50_000,
+        date: Date(),
+        note: "4月薪資 — Acme Studio 月薪 + 績效",
+        categoryId: salaryCategory.id,
+        accountId: bankAccount.id,
+        type: .income,
+        tags: [Tag(id: UUID(), name: "salary", color: "#34C759")],
+        aiSuggested: true
+    )
+
+    static let transferTx = Transaction(
+        id: UUID(uuidString: "CC000000-0000-0000-0000-000000000003")!,
+        amount: 3000,
+        date: Date(),
+        note: "提領現金 · 週末用",
+        categoryId: nil,
+        accountId: bankAccount.id,
+        toAccountId: cashAccount.id,
+        type: .transfer,
+        tags: [],
+        aiSuggested: false
+    )
+
+    static func store(for tx: Domain.Transaction) -> StoreOf<TransactionDetailFeature> {
+        var state = TransactionDetailFeature.State(transaction: tx)
+        state.detent = .large
+        switch tx.type {
+        case .expense:
+            state.account = ewalletAccount
+            state.accountName = ewalletAccount.name
+            state.categoryName = foodCategory.name
+            state.insight = TransactionInsight(kind: .expenseVsCategoryAvg(
+                percentDelta: -9.3, avg: 182, monthlyCount: 12, monthTotal: 2_184
+            ))
+        case .income:
+            state.account = bankAccount
+            state.accountName = bankAccount.name
+            state.categoryName = salaryCategory.name
+            state.insight = TransactionInsight(kind: .incomeVsLast(
+                percentDelta: 4.2, lastAmount: 48_000, monthlyCount: 1, netMonth: 47_830
+            ))
+        case .transfer:
+            state.account = bankAccount
+            state.accountName = bankAccount.name
+            state.toAccount = cashAccount
+            state.toAccountName = cashAccount.name
+            state.insight = TransactionInsight(kind: .transfer(monthCount: 2, monthTotal: 5_500))
+        }
+        return Store(initialState: state) {
+            TransactionDetailFeature()
+        } withDependencies: {
+            $0.accountClient.fetchAll = { [bankAccount, cashAccount, ewalletAccount] }
+            $0.categoryClient.fetchAll = { [foodCategory, salaryCategory] }
+            $0.transactionClient.detailStats = { _ in
+                TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
+            }
+        }
+    }
+}
+
+#Preview("Expense · Large detent") {
+    Color.Design.background
+        .ignoresSafeArea()
+        .sheet(isPresented: .constant(true)) {
+            TransactionDetailView(store: PreviewFixtures.store(for: PreviewFixtures.expenseTx))
+        }
+}
+
+#Preview("Income · AI Filled") {
+    Color.Design.background
+        .ignoresSafeArea()
+        .sheet(isPresented: .constant(true)) {
+            TransactionDetailView(store: PreviewFixtures.store(for: PreviewFixtures.incomeTx))
+        }
+}
+
+#Preview("Transfer · From → To") {
+    Color.Design.background
+        .ignoresSafeArea()
+        .sheet(isPresented: .constant(true)) {
+            TransactionDetailView(store: PreviewFixtures.store(for: PreviewFixtures.transferTx))
+        }
+}
+#endif
+

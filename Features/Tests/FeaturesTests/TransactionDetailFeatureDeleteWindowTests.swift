@@ -71,4 +71,44 @@ struct TransactionDetailFeatureDeleteWindowTests {
         #expect(deletedId.value == Self.sample.id)
         #expect(dismissed.value == true)
     }
+
+    @Test("delete failure during window expiry surfaces alert and preserves transaction")
+    func testDeleteFailureShowsAlert() async {
+        struct DeleteFailed: Error {}
+        let dismissed: LockIsolated<Bool> = LockIsolated(false)
+        let clock = TestClock()
+
+        var initial = TransactionDetailFeature.State(transaction: Self.sample)
+        initial.showDeleteConfirmation = true
+
+        let store = await TestStore(initialState: initial) {
+            TransactionDetailFeature()
+        } withDependencies: {
+            $0.continuousClock = clock
+            $0.transactionClient.delete = { _ in throw DeleteFailed() }
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+
+        await store.send(.deleteConfirmed) {
+            $0.showDeleteConfirmation = false
+            $0.pendingDelete = true
+        }
+        await clock.advance(by: .seconds(5))
+        await store.receive(\.deleteWindowExpired) {
+            $0.pendingDelete = false
+        }
+        await store.receive(\.deleteFailed) {
+            $0.deleteFailureAlert = AlertState {
+                TextState("transaction_detail_delete_failed_title")
+            } actions: {
+                ButtonState(role: .cancel, action: .dismiss) {
+                    TextState("common_ok")
+                }
+            } message: {
+                TextState("transaction_detail_delete_failed_body")
+            }
+        }
+
+        #expect(dismissed.value == false)
+    }
 }

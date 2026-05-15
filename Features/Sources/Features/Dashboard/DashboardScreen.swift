@@ -22,20 +22,22 @@ public struct DashboardScreen: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 16) {
-                        DashboardTopBar(store: store)
+                    VStack(spacing: 24) {
+                        Group {
+                            DashboardTopBar(store: store)
 
-                        AccountChipsStrip(store: store)
+                            AccountChipsStrip(store: store)
 
-                        HeroBalanceCard(store: store)
+                            HeroBalanceCard(store: store)
+                            StatsRow(store: store)
 
-                        StatsRow(store: store)
+                        }.padding(.horizontal, 20)
 
                         InsightCarousel(store: store)
 
                         TransactionsSection(store: store)
+                            .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
                     .padding(.bottom, 120)
                 }
                 .refreshable {

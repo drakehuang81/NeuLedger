@@ -36,13 +36,18 @@ struct AccountChipsStrip: View {
                     store.send(.accountChipSelected(nil))
                 }
                 ForEach(store.topAccounts) { account in
+                    let isActive = store.selectedAccountID == account.id
                     chip(
                         label: Text(account.name),
-                        isActive: store.selectedAccountID == account.id,
+                        isActive: isActive,
                         color: Color(hex: account.color),
                         balance: store.accountBalances[account.id]
                     ) {
-                        store.send(.accountChipSelected(account.id))
+                        if isActive {
+                            store.send(.accountTapped(account.id))
+                        } else {
+                            store.send(.accountChipSelected(account.id))
+                        }
                     }
                 }
             }
@@ -74,7 +79,7 @@ struct AccountChipsStrip: View {
             .padding(.vertical, 8)
             .background {
                 if isActive {
-                    Capsule().fill(color.opacity(0.28))
+                    Capsule().fill(Color.Design.brandAccent.opacity(0.22))
                 } else {
                     Capsule().fill(Color.clear)
                         .glassEffect(Glass.clear.tint(Color.Design.surface), in: Capsule())
@@ -82,10 +87,10 @@ struct AccountChipsStrip: View {
             }
             .overlay {
                 if isActive {
-                    Capsule().strokeBorder(color.opacity(0.65), lineWidth: 1)
+                    Capsule().strokeBorder(Color.Design.brandAccent.opacity(0.65), lineWidth: 1)
                 }
             }
-            .foregroundStyle(isActive ? color : Color.primary)
+            .foregroundStyle(isActive ? Color.Design.brandAccent : Color.primary)
         }
         .buttonStyle(.plain)
     }

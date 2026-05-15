@@ -8,10 +8,16 @@ public struct MiniSparkline: View {
 
     public init(
         values: [Decimal],
+        minimumColumns: Int = 1,
         accentColor: Color = Color.Design.brandPrimary,
         baseColor: Color = Color.secondary.opacity(0.3)
     ) {
-        self.values = values
+        if values.count < minimumColumns {
+            let padCount = minimumColumns - values.count
+            self.values = Array(repeating: .zero, count: padCount) + values
+        } else {
+            self.values = values
+        }
         self.accentColor = accentColor
         self.baseColor = baseColor
     }

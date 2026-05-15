@@ -52,12 +52,113 @@ struct HeroBalanceCard: View {
                 .minimumScaleFactor(0.6)
 
             MiniSparkline(
-                values: store.weeklySpending.isEmpty
-                    ? Array(repeating: Decimal(0), count: 7)
-                    : store.weeklySpending
+                values: store.weeklySpending,
+                minimumColumns: 7
             )
             .frame(height: 40)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
+
+// MARK: - Previews
+
+private func heroPreviewState(
+    phase: DashboardFeature.SectionPhase,
+    balance: Decimal,
+    weekly: [Decimal] = []
+) -> DashboardFeature.State {
+    var state = DashboardFeature.State()
+    state.heroPhase = phase
+    state.filteredBalance = balance
+    state.weeklySpending = weekly
+    return state
+}
+
+@MainActor private func heroPreviewStore(
+    _ state: DashboardFeature.State
+) -> StoreOf<DashboardFeature> {
+    Store(initialState: state) { DashboardFeature() }
+}
+
+private struct HeroPreviewWrapper: View {
+    let title: String
+    let store: StoreOf<DashboardFeature>
+
+    var body: some View {
+        ZStack {
+            WarmGradientBackground(variant: .top)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .textCase(.uppercase)
+                    .tracking(1)
+                    .foregroundStyle(.secondary)
+                HeroBalanceCard(store: store)
+            }
+            .padding(20)
+        }
+    }
+}
+
+#Preview("Loaded — Positive") {
+    HeroPreviewWrapper(
+        title: "Loaded · Positive",
+        store: heroPreviewStore(
+            heroPreviewState(
+                phase: .loaded,
+                balance: Decimal(125_400),
+                weekly: [Decimal(320), 540, 280, 720, 410, 880, 510]
+            )
+        )
+    )
+}
+
+#Preview("Loaded — Negative") {
+    HeroPreviewWrapper(
+        title: "Loaded · Negative",
+        store: heroPreviewStore(
+            heroPreviewState(
+                phase: .loaded,
+                balance: Decimal(-8_750),
+                weekly: [Decimal(1_200), 980, 1_540, 870, 620, 1_320, 1_100]
+            )
+        )
+    )
+}
+
+#Preview("Loaded — Empty Sparkline") {
+    HeroPreviewWrapper(
+        title: "Loaded · No weekly data",
+        store: heroPreviewStore(
+            heroPreviewState(
+                phase: .loaded,
+                balance: Decimal(42_000)
+            )
+        )
+    )
+}
+
+#Preview("Loading Skeleton") {
+    HeroPreviewWrapper(
+        title: "Loading",
+        store: heroPreviewStore(
+            heroPreviewState(
+                phase: .loading,
+                balance: Decimal(0)
+            )
+        )
+    )
+}
+
+#Preview("Failed") {
+    HeroPreviewWrapper(
+        title: "Failed",
+        store: heroPreviewStore(
+            heroPreviewState(
+                phase: .failed("Unable to load balance"),
+                balance: Decimal(0)
+            )
+        )
+    )
 }

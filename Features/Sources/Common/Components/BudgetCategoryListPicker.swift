@@ -86,5 +86,6 @@ public struct BudgetCategoryListPicker: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(isAll ? "budget_form_category_all" : "budget_form_category_row")
     }
 }

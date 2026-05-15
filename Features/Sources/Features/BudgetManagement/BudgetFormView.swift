@@ -35,6 +35,7 @@ public struct BudgetFormView: View {
                     Button(String(localized: "common_cancel")) {
                         store.send(.cancelTapped)
                     }
+                    .accessibilityIdentifier("budget_form_cancel_button")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(String(localized: "common_save")) {
@@ -42,6 +43,7 @@ public struct BudgetFormView: View {
                     }
                     .fontWeight(.semibold)
                     .disabled(!isSaveEnabled)
+                    .accessibilityIdentifier("budget_form_save_button")
                 }
             }
             .task { await store.send(.task).finish() }

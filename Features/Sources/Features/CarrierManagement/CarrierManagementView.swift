@@ -15,24 +15,31 @@ public struct CarrierManagementView: View {
     }
 
     public var body: some View {
-        Group {
-            if store.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.carriers.isEmpty {
-                emptyState
-            } else {
-                carrierList
+        ZStack {
+            WarmGradientBackground(variant: .top)
+                .ignoresSafeArea()
+
+            Group {
+                if store.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if store.carriers.isEmpty {
+                    emptyState
+                } else {
+                    carrierList
+                }
             }
         }
         .navigationTitle(String(localized: "carrier_management_title"))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     store.send(.addTapped)
                 } label: {
                     Image(systemName: "plus")
+                        .font(.system(size: 17, weight: .semibold))
                 }
             }
         }
@@ -61,93 +68,212 @@ public struct CarrierManagementView: View {
     // MARK: - Carrier List
 
     private var carrierList: some View {
-        List {
-            ForEach(store.carriers) { carrier in
-                carrierSection(carrier)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            store.send(.deleteTapped(carrier.id))
-                        } label: {
-                            Label(String(localized: "common_delete"), systemImage: "trash")
-                        }
-                    }
+        ScrollView {
+            VStack(spacing: 10) {
+                hintCard
+                carriersSection
+                footerHint
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 120)
         }
-        .listStyle(.insetGrouped)
-        .padding(.bottom, 100)
     }
 
+    // MARK: - Hint Card
+
+    private var hintCard: some View {
+        GlassContainer(cornerRadius: 16, padding: 12) {
+            HStack(alignment: .top, spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.Design.accentOrange.opacity(0.13))
+                        .frame(width: 28, height: 28)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.Design.accentOrange)
+                }
+                .flexibleFrame(width: 28, height: 28, alignment: .center)
+
+                Text(String(localized: "carrier_management_hint"))
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Design.textSecondary)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // MARK: - Carriers Section
+
+    private var carriersSection: some View {
+        GlassContainer(cornerRadius: 18, padding: 4) {
+            VStack(spacing: 0) {
+                ForEach(Array(store.carriers.enumerated()), id: \.element.id) { index, carrier in
+                    carrierRow(carrier)
+                    if index < store.carriers.count - 1 && store.expandedCarrierId != carrier.id {
+                        Divider()
+                            .padding(.leading, 68)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Carrier Row
+
     @ViewBuilder
-    private func carrierSection(_ carrier: Carrier) -> some View {
+    private func carrierRow(_ carrier: Carrier) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Row header
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    _ = store.send(.carrierRowTapped(carrier.id))
+                let _ = withAnimation(.easeInOut(duration: 0.2)) {
+                    store.send(.carrierRowTapped(carrier.id))
                 }
             } label: {
-                HStack {
+                HStack(spacing: 12) {
+                    // Icon badge
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(carrierColor(carrier.type))
+                            .frame(width: 40, height: 40)
+                        Image(systemName: carrierIcon(carrier.type))
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .symbolRenderingMode(.hierarchical)
+                    }
+
                     VStack(alignment: .leading, spacing: 2) {
                         Text(carrier.name)
-                            .font(Font.Design.body)
+                            .font(Font.Design.body.weight(.semibold))
                             .foregroundStyle(Color.Design.textPrimary)
                         Text(carrier.type.defaultName)
-                            .font(Font.Design.caption)
+                            .font(.system(size: 12))
                             .foregroundStyle(Color.Design.textSecondary)
                     }
+
                     Spacer()
+
                     Image(systemName: store.expandedCarrierId == carrier.id
-                          ? "chevron.up" : "chevron.down")
-                        .symbolRenderingMode(.hierarchical)
+                          ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.Design.textTertiary)
-                        .font(.caption)
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.vertical, 4)
-
-            // Expanded barcode detail
-            if store.expandedCarrierId == carrier.id {
-                VStack(alignment: .leading, spacing: 12) {
-                    Divider()
-
-                    // Barcode text + copy + edit buttons
-                    HStack {
-                        Text(carrier.barcode)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(Color.Design.textPrimary)
-                        Spacer()
-                        Button {
-                            store.send(.editTapped(carrier))
-                        } label: {
-                            Image(systemName: "pencil")
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(Color.Design.brandPrimary)
-                        }
-                        .buttonStyle(.plain)
-                        Button {
-                            UIPasteboard.general.string = carrier.barcode
-                        } label: {
-                            Image(systemName: "doc.on.doc")
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(Color.Design.brandPrimary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // QR Code
-                    if let qrImage = generateQRCode(from: carrier.barcode) {
-                        Image(uiImage: qrImage)
-                            .interpolation(.none)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 160, height: 160)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 4)
-                    }
+            .contextMenu {
+                Button {
+                    store.send(.editTapped(carrier))
+                } label: {
+                    Label(String(localized: "common_edit"), systemImage: "pencil")
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                Button(role: .destructive) {
+                    store.send(.deleteTapped(carrier.id))
+                } label: {
+                    Label(String(localized: "common_delete"), systemImage: "trash")
+                }
             }
+
+            // Expanded barcode + QR detail
+            if store.expandedCarrierId == carrier.id {
+                expandedDetail(carrier)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    // MARK: - Expanded Detail
+
+    @ViewBuilder
+    private func expandedDetail(_ carrier: Carrier) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Divider()
+                .padding(.horizontal, 14)
+
+            // Barcode row with copy + edit buttons
+            HStack {
+                Text(carrier.barcode)
+                    .font(.system(.body, design: .monospaced).weight(.medium))
+                    .foregroundStyle(Color.Design.textPrimary)
+                    .tracking(0.5)
+
+                Spacer()
+
+                HStack(spacing: 8) {
+                    Button {
+                        store.send(.editTapped(carrier))
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(Color.Design.accentOrange.opacity(0.12))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.Design.accentOrange)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        UIPasteboard.general.string = carrier.barcode
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(Color.Design.accentOrange.opacity(0.12))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.Design.accentOrange)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 14)
+
+            // QR Code
+            if let qrImage = generateQRCode(from: carrier.barcode) {
+                Image(uiImage: qrImage)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 160, height: 160)
+                    .padding(12)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.bottom, 4)
+            }
+        }
+        .padding(.bottom, 14)
+    }
+
+    // MARK: - Footer Hint
+
+    private var footerHint: some View {
+        Text(String(localized: "carrier_management_swipe_hint"))
+            .font(.system(size: 11))
+            .foregroundStyle(Color.Design.textSecondary)
+            .padding(.horizontal, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Helpers
+
+    private func carrierIcon(_ type: CarrierType) -> String {
+        switch type {
+        case .phoneBarcodeCarrier: return "iphone"
+        case .citizenDigitalCertificate: return "creditcard"
+        }
+    }
+
+    private func carrierColor(_ type: CarrierType) -> Color {
+        switch type {
+        case .phoneBarcodeCarrier: return Color.Design.accentOrange
+        case .citizenDigitalCertificate: return Color(red: 0.37, green: 0.36, blue: 0.90)
         }
     }
 
@@ -163,5 +289,23 @@ public struct CarrierManagementView: View {
         let scaled = outputImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
         guard let cgImage = Self.ciContext.createCGImage(scaled, from: scaled.extent) else { return nil }
         return UIImage(cgImage: cgImage)
+    }
+}
+
+// MARK: - Flexible Frame Helper
+
+private extension View {
+    func flexibleFrame(width: CGFloat, height: CGFloat, alignment: Alignment = .center) -> some View {
+        self.frame(width: width, height: height, alignment: alignment)
+    }
+}
+
+#Preview {
+    NavigationStack {
+        CarrierManagementView(
+            store: Store(initialState: CarrierManagementFeature.State()) {
+                CarrierManagementFeature()
+            }
+        )
     }
 }

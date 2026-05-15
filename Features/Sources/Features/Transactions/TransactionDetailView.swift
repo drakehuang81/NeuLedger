@@ -104,6 +104,7 @@ public struct TransactionDetailView: View {
             }
             .buttonStyle(.glassProminent)
             .tint(Color.Design.accentOrange)
+            .accessibilityIdentifier("transaction_detail_edit_button")
 
             Button(role: .destructive) {
                 store.send(.deleteTapped)
@@ -115,6 +116,7 @@ public struct TransactionDetailView: View {
             .buttonStyle(.glass)
             .tint(Color.Design.expenseRed)
             .disabled(store.pendingDelete)
+            .accessibilityIdentifier("transaction_detail_delete_button")
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 12)

@@ -22,9 +22,11 @@ struct UndoBanner: View {
                     .padding(.vertical, 4)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("transaction_detail_undo_button")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .glassEffect(Glass.clear.tint(Color.Design.surface), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .accessibilityIdentifier("transaction_detail_undo_banner")
     }
 }

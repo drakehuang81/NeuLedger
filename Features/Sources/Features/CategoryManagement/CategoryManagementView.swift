@@ -11,40 +11,45 @@ public struct CategoryManagementView: View {
     }
 
     public var body: some View {
-        Group {
-            if store.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.filteredCategories.isEmpty {
-                EmptyStateView(
-                    icon: "tag.slash",
-                    title: String(localized: "category_management_empty_title"),
-                    description: String(localized: "category_management_empty_desc")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                categoriesList
+        ZStack {
+            WarmGradientBackground(variant: .top)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                typePicker
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+
+                Group {
+                    if store.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if store.filteredCategories.isEmpty {
+                        EmptyStateView(
+                            icon: "tag.slash",
+                            title: String(localized: "category_management_empty_title"),
+                            description: String(localized: "category_management_empty_desc")
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        categoriesList
+                    }
+                }
             }
         }
         .navigationTitle(String(localized: "category_management_title"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                EditButton()
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
+                        .font(.system(size: 17, weight: .semibold))
                 }
             }
-        }
-        .safeAreaInset(edge: .top) {
-            typePicker
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.Design.background)
         }
         .task {
             await store.send(.task).finish()
@@ -60,32 +65,66 @@ public struct CategoryManagementView: View {
     // MARK: - Type Picker
 
     private var typePicker: some View {
-        Picker(
-            String(localized: "common_type"),
-            selection: Binding(
-                get: { store.selectedType },
-                set: { store.send(.selectedTypeChanged($0)) }
-            )
-        ) {
-            Text("common_expense").tag(TransactionType.expense)
-            Text("common_income").tag(TransactionType.income)
+        HStack(spacing: 0) {
+            typePill(.expense, label: "common_expense")
+            typePill(.income, label: "common_income")
         }
-        .pickerStyle(.segmented)
+        .padding(3)
+        .background {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.Design.textPrimary.opacity(0.06))
+        }
+    }
+
+    private func typePill(_ type: TransactionType, label: LocalizedStringKey) -> some View {
+        let isActive = store.selectedType == type
+        return Button {
+            store.send(.selectedTypeChanged(type))
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(
+                    isActive ? Color.Design.textPrimary : Color.Design.textSecondary
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background {
+                    if isActive {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.Design.surface)
+                            .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Categories List
 
     private var categoriesList: some View {
-        List {
-            ForEach(store.filteredCategories) { category in
-                categoryRow(category)
+        ScrollView {
+            VStack(spacing: 10) {
+                GlassContainer(cornerRadius: 18, padding: 4) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(store.filteredCategories.enumerated()), id: \.element.id) { index, category in
+                            categoryRow(category)
+                            if index < store.filteredCategories.count - 1 {
+                                Divider()
+                                    .padding(.leading, 64)
+                            }
+                        }
+                    }
+                }
+
+                Text("category_management_default_hint")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .onMove { from, to in
-                store.send(.categoriesMoved(from, to))
-            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 120)
         }
-        .listStyle(.insetGrouped)
-//        .padding(.bottom, 100)
     }
 
     private func categoryRow(_ category: Domain.Category) -> some View {
@@ -93,31 +132,29 @@ public struct CategoryManagementView: View {
             store.send(.categoryTapped(category))
         } label: {
             HStack(spacing: 12) {
-                // Colored icon circle
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: category.color))
-                        .frame(width: 40, height: 40)
-                    Image(systemName: category.icon)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.Design.textInverse)
-                        .font(.system(size: 18, weight: .medium))
-                }
+                Circle()
+                    .fill(Color(hex: category.color))
+                    .frame(width: 40, height: 40)
+                    .overlay {
+                        Image(systemName: category.icon)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
 
-                // Name + default badge
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(category.localizedName)
-                        .font(Font.Design.body)
-                        .fontWeight(.semibold)
+                        .font(Font.Design.body.weight(.semibold))
                         .foregroundStyle(Color.Design.textPrimary)
 
                     if category.isDefault {
                         Text("category_management_default")
-                            .font(Font.Design.caption)
-                            .foregroundStyle(Color.Design.textSecondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.Design.surfaceSecondary, in: Capsule())
+                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 1)
+                            .background(Color.Design.textPrimary.opacity(0.05), in: Capsule())
                     }
                 }
 
@@ -125,16 +162,22 @@ public struct CategoryManagementView: View {
 
                 if !category.isDefault {
                     Image(systemName: "chevron.right")
-                        .symbolRenderingMode(.hierarchical)
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.Design.textTertiary)
-                        .font(.caption)
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+        .contextMenu {
             if !category.isDefault {
+                Button {
+                    store.send(.categoryTapped(category))
+                } label: {
+                    Label(String(localized: "common_edit"), systemImage: "pencil")
+                }
                 Button(role: .destructive) {
                     store.send(.deleteRequested(category.id))
                 } label: {
@@ -142,5 +185,15 @@ public struct CategoryManagementView: View {
                 }
             }
         }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        CategoryManagementView(
+            store: Store(initialState: CategoryManagementFeature.State()) {
+                CategoryManagementFeature()
+            }
+        )
     }
 }

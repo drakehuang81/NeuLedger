@@ -3163,6 +3163,23 @@
         }
       }
     },
+    "category_management_default_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default categories cannot be deleted."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統預設類別無法刪除。"
+          }
+        }
+      }
+    },
     "category_form_name_placeholder": {
       "extractionState": "manual",
       "localizations": {

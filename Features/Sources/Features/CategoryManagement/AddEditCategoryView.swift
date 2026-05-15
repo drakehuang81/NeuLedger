@@ -17,91 +17,29 @@ public struct AddEditCategoryView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                // MARK: 名稱
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField(
-                            String(localized: "category_form_name_placeholder"),
-                            text: Binding(
-                                get: { store.name },
-                                set: { store.send(.nameChanged($0)) }
-                            )
-                        )
-                        if let error = store.nameError {
-                            Text(error)
-                                .font(Font.Design.caption)
-                                .foregroundStyle(Color.Design.expenseRed)
-                        }
+            ZStack {
+                WarmGradientBackground(variant: .top)
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 22) {
+                        livePreviewHero
+                        typeSection
+                        nameSection
+                        iconSection
+                        colorSection
                     }
-                } header: {
-                    Text("common_name")
-                }
-
-                // MARK: 類型
-                Section {
-                    Picker(
-                        String(localized: "common_type"),
-                        selection: Binding(
-                            get: { store.type },
-                            set: { store.send(.typeChanged($0)) }
-                        )
-                    ) {
-                        Text("common_expense").tag(TransactionType.expense)
-                        Text("common_income").tag(TransactionType.income)
-                    }
-                    .pickerStyle(.segmented)
-                    .disabled(store.isDefault)
-                    .listRowInsets(.init(top: 12, leading: 16, bottom: 12, trailing: 16))
-                } header: {
-                    Text("common_type")
-                }
-
-                // MARK: 圖示
-                Section {
-                    IconPickerRow(
-                        icons: DesignConstants.categoryIconOptions,
-                        selectedIcon: store.icon,
-                        accentColor: Color(hex: store.colorHex),
-                        onSelect: { store.send(.iconChanged($0)) }
-                    )
-                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
-                } header: {
-                    Text("common_icon")
-                }
-
-                // MARK: 顏色
-                Section {
-                    ColorSwatchPicker(
-                        colors: DesignConstants.categoryColorOptions,
-                        selectedHex: store.colorHex,
-                        onSelect: { store.send(.colorHexChanged($0)) }
-                    )
-                    .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
-                } header: {
-                    Text("common_color")
-                }
-
-                // MARK: Preview
-                Section {
-                    HStack(spacing: 12) {
-                        IconBadge(systemImage: store.icon, color: Color(hex: store.colorHex))
-                        Text(store.name.isEmpty ? String(localized: "category_form_name_placeholder") : store.name)
-                            .font(Font.Design.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(
-                                store.name.isEmpty
-                                    ? Color.Design.textTertiary
-                                    : Color.Design.textPrimary
-                            )
-                    }
-                    .padding(.vertical, 4)
-                } header: {
-                    Text("common_preview")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 60)
                 }
             }
-            .navigationTitle(isEditMode ? String(localized: "category_form_edit_title") : String(localized: "category_form_add_title"))
+            .navigationTitle(isEditMode
+                ? String(localized: "category_form_edit_title")
+                : String(localized: "category_form_add_title")
+            )
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common_cancel")) {
@@ -118,4 +56,190 @@ public struct AddEditCategoryView: View {
         }
     }
 
+    // MARK: - Live Preview Hero
+
+    private var livePreviewHero: some View {
+        let color = Color(hex: store.colorHex)
+        return VStack(spacing: 10) {
+            Circle()
+                .fill(color)
+                .frame(width: 80, height: 80)
+                .overlay {
+                    Image(systemName: store.icon)
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+                .shadow(color: color.opacity(0.35), radius: 12, x: 0, y: 8)
+
+            Text(store.name.isEmpty
+                ? String(localized: "category_form_name_placeholder")
+                : store.name
+            )
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(
+                store.name.isEmpty
+                    ? Color.Design.textTertiary
+                    : Color.Design.textPrimary
+            )
+
+            Text(typeEyebrow)
+                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var typeEyebrow: String {
+        switch store.type {
+        case .expense: return String(localized: "common_expense")
+        case .income:  return String(localized: "common_income")
+        case .transfer: return ""
+        }
+    }
+
+    // MARK: - Type Section
+
+    private var typeSection: some View {
+        sectionGroup(label: "common_type") {
+            HStack(spacing: 0) {
+                typePill(.expense, label: "common_expense", activeColor: Color.Design.expenseRed)
+                typePill(.income, label: "common_income", activeColor: Color.Design.incomeGreen)
+            }
+            .padding(3)
+            .background {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.Design.textPrimary.opacity(0.06))
+            }
+            .opacity(store.isDefault ? 0.5 : 1)
+            .disabled(store.isDefault)
+        }
+    }
+
+    private func typePill(
+        _ type: TransactionType,
+        label: LocalizedStringKey,
+        activeColor: Color
+    ) -> some View {
+        let isActive = store.type == type
+        return Button {
+            store.send(.typeChanged(type))
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(
+                    isActive ? activeColor : Color.Design.textSecondary
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background {
+                    if isActive {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.Design.surface)
+                            .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Name Section
+
+    private var nameSection: some View {
+        sectionGroup(label: "common_name") {
+            VStack(alignment: .leading, spacing: 6) {
+                GlassContainer(cornerRadius: 12, padding: 14) {
+                    TextField(
+                        String(localized: "category_form_name_placeholder"),
+                        text: Binding(
+                            get: { store.name },
+                            set: { store.send(.nameChanged($0)) }
+                        )
+                    )
+                    .font(Font.Design.body)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                }
+                if let error = store.nameError {
+                    ErrorText(error)
+                        .padding(.horizontal, 4)
+                }
+            }
+        }
+    }
+
+    // MARK: - Icon Section
+
+    private var iconSection: some View {
+        sectionGroup(label: "common_icon") {
+            GlassContainer(cornerRadius: 14, padding: 12) {
+                IconPickerRow(
+                    icons: DesignConstants.categoryIconOptions,
+                    selectedIcon: store.icon,
+                    accentColor: Color(hex: store.colorHex),
+                    onSelect: { store.send(.iconChanged($0)) }
+                )
+            }
+        }
+    }
+
+    // MARK: - Color Section
+
+    private var colorSection: some View {
+        sectionGroup(label: "common_color") {
+            GlassContainer(cornerRadius: 14, padding: 14) {
+                ColorSwatchPicker(
+                    colors: DesignConstants.categoryColorOptions,
+                    selectedHex: store.colorHex,
+                    onSelect: { store.send(.colorHexChanged($0)) }
+                )
+            }
+        }
+    }
+
+    // MARK: - Section Group helper
+
+    @ViewBuilder
+    private func sectionGroup<Content: View>(
+        label: LocalizedStringKey,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+            content()
+        }
+    }
+}
+
+#Preview("Add — Expense") {
+    AddEditCategoryView(
+        store: Store(initialState: AddEditCategoryFeature.State(mode: .add(.expense))) {
+            AddEditCategoryFeature()
+        }
+    )
+}
+
+#Preview("Edit — Default") {
+    AddEditCategoryView(
+        store: Store(initialState: AddEditCategoryFeature.State(
+            mode: .edit(Domain.Category(
+                name: "餐飲",
+                icon: "fork.knife",
+                color: "#E8835A",
+                type: .expense,
+                sortOrder: 0,
+                isDefault: true
+            ))
+        )) {
+            AddEditCategoryFeature()
+        }
+    )
 }

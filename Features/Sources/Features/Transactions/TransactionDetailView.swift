@@ -17,10 +17,15 @@ public struct TransactionDetailView: View {
             ScrollView {
                 LazyVStack(spacing: 18) {
                     TxHero(transaction: transaction, categoryName: store.categoryName)
-                    placeholderInsight
-                    placeholderFields
+                    placeholderInsight // Task 7 fills this
+                    DetailFieldsCard(
+                        transaction: transaction,
+                        account: store.account,
+                        toAccount: store.toAccount
+                    )
                     if store.detent == .large {
-                        placeholderActivity
+                        TagsRow(tags: transaction.tags)
+                        ActivityCard(transaction: transaction)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -89,8 +94,6 @@ public struct TransactionDetailView: View {
     // MARK: - Placeholders filled in subsequent tasks
 
     private var placeholderInsight: some View { EmptyView() }
-    private var placeholderFields: some View { EmptyView() }
-    private var placeholderActivity: some View { EmptyView() }
 
     // MARK: - Action bar
 

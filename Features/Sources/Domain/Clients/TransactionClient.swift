@@ -54,9 +54,9 @@ public struct TransactionClient: Sendable {
     /// total, and the savings ratio over the same 7-day window.
     public var statsSnapshot: @Sendable () async throws -> StatsSnapshot
 
-    /// Returns a `TransactionInsight` summarizing this transaction's
-    /// context (same-category month aggregates, etc.). Used by
-    /// Transaction Detail to render the on-device AI insight card.
+    /// Returns a `TransactionInsight` aggregating same-category monthly
+    /// statistics for the given transaction. Computed locally; no
+    /// network call.
     public var detailStats: @Sendable (_ transaction: Transaction) async throws -> TransactionInsight
 }
 

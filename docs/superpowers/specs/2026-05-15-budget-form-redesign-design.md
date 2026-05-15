@@ -2,210 +2,211 @@
 
 **Date:** 2026-05-15
 **Branch:** `developer`
-**Design source:** `design/source/budget.jsx` —  function `NewBudgetSheet`
+**Design source:** `design/source/budget-form.jsx`（3 artboards：Add Default / Add Filled / Edit Error）
+**Design screen:** `design/screens/15-Budget-Form.html`
 
 ---
 
 ## 1. Goal
 
-把 `BudgetFormView` 從目前的「`NavigationStack` + `Form` sections」表單改造成設計稿 `NewBudgetSheet` 的「底部 sheet + center 大金額 + AI 建議 chip + 4 欄分類 grid + 快速金額 chips」呈現，並與既有的 WarmGradient 視覺語言對齊（Detail / Onboarding 已採用）。
+把 `BudgetFormView` 從目前的「`Form` + 系統 inset-grouped sections」表單升級成設計稿規範的「自訂 mono UPPERCASE section header + Glass section card + 大字 amount + per-period 換算 + radio-style category picker」呈現。
 
-整個 form 從 `.sheet` 開啟，內層用 `.presentationDetents([.medium, .large])` + `.presentationBackground { WarmGradientBackground(variant: .top) }`。
+**設計稿明確 anchor 在現有 `BudgetFormFeature` / `BudgetFormView` 結構：5 個 sections（Name / Amount / Period / StartDate / Category）全部保留，actions 不改。只是視覺重做。**
+
+進入點不動：`BudgetManagementView` 的 `+`（`.add`）與 row tap（`.edit(budget)`），都繼續走 sheet 呈現。
 
 ## 2. 範圍與非範圍
 
 **範圍：**
 
-- 重寫 `BudgetFormView` 全部 UI 結構
-- 擴展 `BudgetFormFeature` State / Action：suggestedAmount、auto-name 邏輯、quick-amount 套用
-- 新增 Common primitives：`AmountHeroBlock`（含 AI suggestion chip + quick chips）、`CategoryGridPicker`
-- 新增 Domain client 介面：`transactionClient.averageMonthly(categoryId:months:)` —— 算某 category 過去 N 個月每月平均花費
-- Core 對應實作：`DatabaseClient.averageMonthly(categoryId:months:)`
-- 既有的 2 種 Mode 全部支援（`.add` / `.edit(Budget)`）
-- i18n（en + zh-Hant）新增 keys
-- Swift Testing 覆蓋 reducer 新行為 + Core 計算
+- 重寫 `BudgetFormView` 的 5 個 sections 視覺
+- 新增 Common primitives：`FormSection`（mono header + Glass card + optional footer）、`BudgetCategoryListPicker`（radio list）
+- 新增 Domain helper：`BudgetPeriod.suffix`（「週 / 月 / 年」）、`Decimal.perPeriodBreakdown(_:)`（換算文字 `≈ NT$X / 天 · 約 NT$Y / 週`）
+- 補齊 i18n keys（en + zh-Hant）涵蓋 placeholder / period suffix / breakdown 字串
+- Swift Testing 覆蓋 `perPeriodBreakdown` helper
 
-**非範圍（明確點名）：**
+**非範圍：**
 
-- `BudgetMain` / `BudgetCategoryDetail` 的重設計 — **另外一個 spec**
-- Domain `Budget` schema 任何變更 — `name` / `period` / `startDate` 全部保留向後相容
-- 自製 NumPad — 沿用系統 `keyboardType(.numberPad)`
-- 設計稿固定 8 個分類 — V1 用真實 `categoryClient.fetchAll().filter { $0.type == .expense }`，4 欄 grid 自動換行（保有彈性）
-- 預算 alarm / 預警閥值 — 不在此次 form scope
+- `BudgetFormFeature` reducer 邏輯變動 — State / Action shape 不動，僅 view 用法調整
+- Domain `Budget` schema 任何變更
+- AI 建議金額 chip / Quick amount chips — **不在本次設計稿**（之前誤讀的 `budget.jsx` 才有這些）
+- WarmGradientBackground sheet — 設計稿背景是 `#ECE9E2` 系統淺灰，非暖橘漸層；保留 `.sheet` 但內部用 `Color.Design.background`，不套 WarmGradient
+- 自訂 NavBar — 沿用 SwiftUI `NavigationStack` toolbar（功能等價，且設計稿明確標註「Toolbar: Cancel · Save」）
+- BudgetMain / BudgetCategoryDetail 重設計
 
 ## 3. 進入點
 
-不動。以下 2 個進入點繼續使用：
+不動：
 
 1. **BudgetManagementView 的 `+` 按鈕** → `.add`
 2. **BudgetManagementView 點某既有 budget** → `.edit(budget)`
 
-UI 對 2 種 mode 的差別：
-
-- 標題：`.add` 顯示「新增預算」、`.edit` 顯示「編輯預算」
-- 初始 state：`.edit` 用既有 budget 預填欄位（amount / category / period / startDate 全保留）
-- 儲存：`.add` → `budgetClient.add(...)`；`.edit` → `budgetClient.update(...)`
+呈現方式不動 — 透過上層 `.sheet(item:)` present `BudgetFormView`。內層仍是 `NavigationStack`，toolbar 維持 leading Cancel + trailing Save。
 
 ## 4. 主要元件分解
 
 ```
-BudgetFormView (sheet content, .presentationDetents([.medium, .large]))
-├── (sheet) presentationBackground = WarmGradientBackground(variant: .top)
-│
-├── TopBar
-│   ├── 取消（左，textSecondary）
-│   ├── 「新增預算」/「編輯預算」（中央，semibold display）
-│   └── 儲存（右，accent；disabled 條件 = amountValue <= 0 || (.add 且 categoryId == nil 且 expense categories 非空)）
-│
-└── ScrollView
-    ├── AmountHeroBlock         ── 「每月金額」label + center NT$ 56pt mono 大字 + 可隱式 TextField 接收 .numberPad
-    │   └── AISuggestionChip    ── 條件顯示：當 categoryId 有值且 suggestedAmount > 0 時；tap 套用金額
-    ├── QuickAmountChipsRow    ── 5 個 preset chip [2000, 3000, 5000, 8000, 10000]；active 用 accent 填底
-    └── CategoryGridPicker     ── 4 欄 grid；active 用 category color 填底 + white icon/text；inactive 用 glass surface
+BudgetFormView
+└── NavigationStack
+    ├── toolbar
+    │   ├── ToolbarItem(.cancellationAction) — 取消
+    │   └── ToolbarItem(.confirmationAction)  — 儲存（accent semibold；disabled = invalid）
+    ├── navigationTitle: "新增預算" / "編輯預算"
+    └── ScrollView
+        ├── FormSection(header: "名稱")
+        │   └── NameField                    ── TextField + nameError
+        ├── FormSection(header: "預算金額")
+        │   └── AmountField                   ── NT$ prefix + 32pt mono TextField + " / <週期>" suffix + breakdown helper
+        ├── FormSection(header: "週期")
+        │   └── PeriodSegmented               ── Picker(.segmented) for BudgetPeriod.allCases
+        ├── FormSection(header: "起始日")
+        │   └── StartDatePill                 ── DatePicker(.compact)
+        └── FormSection(header: "套用分類", footer: "選擇分類後…")     // only when availableCategories non-empty
+            └── BudgetCategoryListPicker      ── radio list, 「全部支出」首項 + N expense categories
 ```
 
-### NumPad 處理
+## 5. 視覺規格
 
-不做自製 NumPad。`AmountHeroBlock` 中央用 SwiftUI `TextField(value:format:)` 配 `.keyboardType(.numberPad)`，TextField 本體無框線，由 hero 大字本體顯示金額。Caret 用系統預設即可。
-
-## 5. Data flow
-
-### 5.1 新增 / 修改 client
-
-```swift
-// Domain/Clients/TransactionClient.swift  — 新增
-public var averageMonthly: @Sendable (
-    _ categoryId: Domain.Category.ID,
-    _ months: Int
-) async throws -> Decimal
-```
-
-回傳：過去 `months` 個月內，同 categoryId 的 `.expense` 交易月平均花費（Decimal）。
-
-### 5.2 Core 實作
-
-`DatabaseClient.averageMonthly(categoryId:months:)`：
-
-- 計算當下日期前 `months` 個月區間（依 `Calendar.current`）
-- fetch `SDTransaction` where `type == "expense" && categoryId == ? && date >= rangeStart`
-- 加總後除以 `months`
-- 沒有資料回傳 0
-
-### 5.3 Reducer state 變動
-
-`BudgetFormFeature.State` 新增：
-
-```swift
-public var suggestedAmount: Decimal = 0
-public var isLoadingSuggestion: Bool = false
-```
-
-並 **不再使用 / 不渲染** `name` / `period` / `startDate` 對應的 UI；State 中三個欄位保留，邏輯：
-
-- `.add` mode：
-  - `name` 在 saveTapped 時自動推導：`"\(selectedCategory.name) 預算"`；無 categoryId 則用 fallback `"本月預算"`
-  - `period = .monthly`（不可從 UI 改）
-  - `startDate = Date()`（不可從 UI 改）
-- `.edit` mode：
-  - `name` / `period` / `startDate` 保留原值不動（不顯示也不重設）
-  - 編輯 amount + categoryId 為主
-
-### 5.4 Reducer actions 新增 / 改名
-
-```swift
-case suggestionLoaded(Decimal)
-case suggestionFailed
-case suggestionChipTapped              // 套用 suggestedAmount 到 amountText
-case quickAmountTapped(Decimal)        // 套用 preset chip
-```
-
-既有的 `nameChanged(String)` 與 `periodChanged(BudgetPeriod)` 與 `startDateChanged(Date)` **保留但變成 dead UI**（不從 View 觸發）—— 等之後其他 sub-screen 需要時可以復用。
-
-### 5.5 Suggestion 流程
-
-```
-.task
-  ↳ existing: load categories
-  ↳ new: if state.categoryId != nil, fire suggestion fetch
-          if .edit and categoryId != nil, fire immediately
-
-.categoryChanged(newId)
-  ↳ state.categoryId = newId
-  ↳ if newId != nil:
-      state.isLoadingSuggestion = true
-      return .run { send in
-          let avg = try await transactionClient.averageMonthly(newId, 3)
-          await send(.suggestionLoaded(avg))
-      } .cancellable(id: CancelID.suggestion, cancelInFlight: true)
-
-.suggestionLoaded(value)
-  ↳ state.suggestedAmount = value
-  ↳ state.isLoadingSuggestion = false
-
-.suggestionFailed
-  ↳ state.suggestedAmount = 0
-  ↳ state.isLoadingSuggestion = false
-
-.suggestionChipTapped
-  ↳ state.amountText = "\(NSDecimalNumber(decimal: suggestedAmount).intValue)"
-  ↳ state.amountError = nil
-
-.quickAmountTapped(value)
-  ↳ state.amountText = "\(NSDecimalNumber(decimal: value).intValue)"
-  ↳ state.amountError = nil
-```
-
-### 5.6 Save 流程（更新）
-
-```swift
-case .saveTapped:
-    let amount = Decimal(string: state.amountText) ?? 0
-    guard amount > 0 else {
-        state.amountError = String(localized: "error_amount_must_be_positive")
-        return .none
-    }
-
-    // Auto-name only for .add when name is empty (the View no longer touches `name`)
-    let resolvedName: String
-    switch state.mode {
-    case .add:
-        let suffix = String(localized: "budget_form_default_name_suffix")  // "預算"
-        if let cid = state.categoryId,
-           let cat = state.availableCategories.first(where: { $0.id == cid }) {
-            resolvedName = "\(cat.name)\(suffix)"
-        } else {
-            resolvedName = String(localized: "budget_form_default_name_all")  // "本月預算"
-        }
-    case let .edit(existing):
-        resolvedName = existing.name   // preserve
-    }
-
-    // period/startDate: untouched from current state
-    return .run { send in
-        switch state.mode {
-        case .add:
-            let budget = Budget(name: resolvedName, amount: amount, ...)
-            try await budgetClient.add(budget)
-        case let .edit(existing):
-            let updated = Budget(id: existing.id, name: resolvedName, amount: amount, ...)
-            try await budgetClient.update(updated)
-        }
-        await send(.savedSuccessfully)
-    }
-```
-
-## 6. 視覺規格
+### FormSection 容器
 
 | 元素 | 規格 |
 |---|---|
-| Sheet background | `presentationBackground { WarmGradientBackground(variant: .top) }` |
-| TopBar | 透明背景，取消（textSecondary 15pt regular）/ 標題（17pt semibold display）/ 儲存（accent 15pt semibold；`.disabled` 時 opacity 0.5） |
-| Amount Hero | label「每月金額」（mono 10pt UPPERCASE textSecondary）+ HStack center: `NT$`（28pt mono textSecondary）+ amount（56pt display semibold textPrimary）；TextField 隱形 overlay 接收 numberPad |
-| AI Suggestion chip | Capsule 28pt 高 padding 12px；`accentBlue.opacity(0.15)` 背景 + 0.5pt accent stroke + sparkles icon + `AI 建議 NT$ x,xxx (3 個月平均)` 字 |
-| Quick amount chips | 5 個 chip，capsule，未選 = glass surface；已選 = `accentOrange` 填底 + white text；mono 字體 |
-| CategoryGrid 4 欄 | 每格 14pt 圓角 padding 14×6；icon 20pt + name 11pt；inactive = glass surface；active = `category.color` 填底 + white icon/text + 顏色陰影 `0 8px 20px color.opacity(0.5)` |
-| ScrollView | 全部用同一 ScrollView，spacing 20pt；底部 padding 100pt 給安全區 |
-| Save button | 用 toolbar item；disabled 條件如 §4 所述；`.fontWeight(.semibold)` |
+| Section spacing（外） | 22pt 垂直間距 |
+| Section header | `Text(headerKey)` font system 11pt monospaced UPPERCASE tracking 1.2 textSecondary；padding `.horizontal 6 .bottom 8` |
+| Section content card | `glassEffect(Glass.clear.tint(Color.Design.surface), in: RoundedRectangle(cornerRadius: 14, style: .continuous))`；內容 padding 由各 field 自管 |
+| Section footer | `Text(footerKey)` 12pt textSecondary line-spacing 1.45；padding `.top 8 .horizontal 6` |
+| Container 對外 padding | horizontal 16pt，top 20pt，bottom 100pt（避免 keyboard 遮擋） |
+
+### NameField
+
+| 元素 | 規格 |
+|---|---|
+| 容器 padding | 12pt × 16pt |
+| TextField placeholder | `budget_form_name_placeholder` → en `e.g. Food, Transport…` / zh-Hant `例:餐飲、交通…` |
+| Font | 17pt body |
+| 文字 color | filled = textPrimary；placeholder 由 SwiftUI 自動 textSecondary |
+| Error | `ErrorText` 元件（紅 alert icon 12pt + 12.5pt expenseRed 文字）|
+
+### AmountField（核心升級）
+
+| 元素 | 規格 |
+|---|---|
+| 容器 padding | 14pt × 16pt |
+| 列布局 | HStack(alignment: `.lastTextBaseline`, spacing: 8)：`Text("NT$")` 15pt mono medium textSecondary → `TextField`（32pt mono medium tabularDigit textPrimary，輸入時 caret 系統樣式）→ `Text(" / \(period.suffix)")` 14pt textSecondary |
+| TextField keyboardType | `.numberPad` |
+| Breakdown helper | `perPeriodBreakdown(amount, period)` 不為 nil 且無 error 時，VStack 在 baseline 下方加一行 12pt mono textSecondary：例 `≈ NT$ 267 / 天 · 約 NT$ 1,848 / 週` |
+| Error | 同 NameField，error 顯示時 breakdown 不顯示 |
+
+### PeriodSegmented
+
+沿用 SwiftUI `Picker(.segmented)` for `BudgetPeriod.allCases`。
+
+| 元素 | 規格 |
+|---|---|
+| 容器 padding | 12pt × 16pt |
+| Picker style | `.segmented` |
+| Tag 文字 | 既有 `BudgetPeriod.localizedName` |
+
+### StartDatePill
+
+| 元素 | 規格 |
+|---|---|
+| 容器 padding | 14pt × 16pt |
+| 布局 | HStack：`Text("起始日") + Spacer() + DatePicker("", selection:, displayedComponents: .date).labelsHidden().datePickerStyle(.compact)` |
+| 沒有 label（label 由 HStack 左側手動 render） | DatePicker `.labelsHidden()` |
+
+### BudgetCategoryListPicker
+
+新元件，**radio-style list**，**不是** Picker / Grid。
+
+| 元素 | 規格 |
+|---|---|
+| 每列 padding | 12pt × 16pt |
+| 列布局 | HStack(spacing: 12)：色塊 32pt 圓 + 名稱 + Spacer + 已選 checkmark |
+| 色塊 | `Circle().fill(color.opacity(0.12))` 內含 emoji（24pt 字級，category 標的）或「∗」（display font，accent 色，作為「全部支出」標識）|
+| 名稱字級 | 15.5pt textPrimary |
+| Checkmark | `Image(systemName: "checkmark")` 18pt semibold `accentOrange`，只在 active 顯示 |
+| 列間分隔 | `Divider().padding(.leading, 60)`（縮排避開左側色塊） |
+| 第一列固定為「全部支出」 | item id == nil，emoji 「∗」，color = `accentOrange` |
+| 後續列 | 由 `availableCategories` 提供，順序維持原 sortOrder |
+
+當 `availableCategories.isEmpty`：整個 FormSection 不渲染（沿用既有 `BudgetFormView` 邏輯）。
+
+### ErrorText（新 Common primitive）
+
+```swift
+HStack(alignment: .firstTextBaseline, spacing: 6) {
+    Image(systemName: "exclamationmark.circle")
+        .font(.system(size: 12))
+        .foregroundStyle(Color.Design.expenseRed)
+    Text(messageKey)
+        .font(.system(size: 12.5))
+        .lineSpacing(1.4)
+        .foregroundStyle(Color.Design.expenseRed)
+}
+.padding(.top, 6)
+```
+
+### 整體 sheet 背景
+
+`Color.Design.background`（不套 WarmGradient — 設計稿是淺灰底）。`ScrollView.scrollContentBackground(.hidden)` 與 `Form` 系統樣式無關（不再用 Form）。
+
+## 6. Data flow
+
+State / Action 無變動。沿用既有 `BudgetFormFeature`：
+
+- `nameChanged(String)` — 已有
+- `amountChanged(String)` — 已有
+- `periodChanged(BudgetPeriod)` — 已有
+- `startDateChanged(Date)` — 已有
+- `categoryChanged(Domain.Category.ID?)` — 已有
+- `saveTapped` / `cancelTapped` / `savedSuccessfully` — 已有
+
+僅 **View 端** 處理 amount text 的格式化顯示：
+
+```swift
+// AmountField breakdown 仰賴 Decimal 解析
+let amountValue = Decimal(string: store.amountText) ?? 0
+let breakdown = amountValue.perPeriodBreakdown(store.period)   // String?
+```
+
+`Decimal.perPeriodBreakdown(_:)`：
+
+```swift
+extension Decimal {
+    func perPeriodBreakdown(_ period: BudgetPeriod) -> String? {
+        guard self > 0 else { return nil }
+        switch period {
+        case .weekly:
+            let perDay = (self / 7).rounded()
+            return String(format: String(localized: "budget_form_breakdown_weekly", bundle: .main), perDay.toIntString())
+        case .monthly:
+            let perDay  = (self / 30).rounded()
+            let perWeek = (self / Decimal(string: "4.33")!).rounded()
+            return String(format: String(localized: "budget_form_breakdown_monthly", bundle: .main), perDay.toIntString(), perWeek.toIntString())
+        case .yearly:
+            let perMonth = (self / 12).rounded()
+            return String(format: String(localized: "budget_form_breakdown_yearly", bundle: .main), perMonth.toIntString())
+        }
+    }
+}
+```
+
+（helper rounding 用 `NSDecimalRound` banker's mode，輸出整數字串。）
+
+`BudgetPeriod.suffix`：
+
+```swift
+public extension BudgetPeriod {
+    var suffix: LocalizedStringKey {
+        switch self {
+        case .weekly:  return "budget_period_suffix_weekly"   // 週
+        case .monthly: return "budget_period_suffix_monthly"  // 月
+        case .yearly:  return "budget_period_suffix_yearly"   // 年
+        }
+    }
+}
+```
 
 ## 7. Localization
 
@@ -213,64 +214,67 @@ case .saveTapped:
 
 | Key | en | zh-Hant |
 |---|---|---|
-| `budget_form_amount_label` | `Monthly amount` | `每月金額` |
-| `budget_form_category_label` | `Choose a category` | `選擇分類` |
-| `budget_form_quick_amount_label` | `Quick amount` | `快速金額` |
-| `budget_form_ai_suggestion_label` | `AI suggests NT$%@ (3-month avg)` | `AI 建議 NT$%@ (3 個月平均)` |
-| `budget_form_default_name_suffix` | ` Budget` | `預算` |
-| `budget_form_default_name_all` | `Monthly budget` | `本月預算` |
+| `budget_form_breakdown_weekly` | `≈ NT$%@ / day` | `≈ NT$%@ / 天` |
+| `budget_form_breakdown_monthly` | `≈ NT$%@ / day · about NT$%@ / week` | `≈ NT$%@ / 天 · 約 NT$%@ / 週` |
+| `budget_form_breakdown_yearly` | `≈ NT$%@ / month` | `≈ NT$%@ / 月` |
+| `budget_period_suffix_weekly` | `week` | `週` |
+| `budget_period_suffix_monthly` | `month` | `月` |
+| `budget_period_suffix_yearly` | `year` | `年` |
 
-既有的 `budget_form_add_title` / `budget_form_edit_title` / `common_cancel` / `common_save` / `error_amount_must_be_positive` 等保留沿用。
+既有 keys 沿用：`budget_form_add_title` / `budget_form_edit_title` / `budget_form_name_placeholder` / `budget_form_amount` / `budget_form_period` / `budget_form_start_date` / `budget_form_apply_category` / `budget_form_all_expenses` / `budget_form_all_expenses_hint` / `error_budget_name_empty` / `error_amount_must_be_positive` / `common_cancel` / `common_save`。
 
-既有但不再 View 顯示的：`budget_form_name_placeholder` / `budget_form_period` / `budget_form_start_date` / `budget_form_apply_category` / `budget_form_all_expenses` / `budget_form_all_expenses_hint` — **保留 i18n keys**，未來其他 form 復用。
+確認 `common_name` 已存在（既有 NameField section header `common_name`）。
 
 ## 8. 錯誤處理
 
-- `amountError`：inline 紅字顯示在 Amount Hero 下方
-- `suggestion` 載入失敗：suggested chip 不顯示（state.suggestedAmount = 0），不顯示錯誤提示 — 屬於 nice-to-have
-- save 失敗（`budgetClient.add/update` throws）：sheet 仍開啟，amount/category 保留；錯誤訊息由現有的 `AlertState` 機制處理（沿用 BudgetManagementFeature 接到 `delegate(.saveFailed)` 後彈 alert）—— 若目前沒有此路徑，新增 `.saveFailed(String)` action 與 inline error display
+- `nameError` / `amountError`：inline 紅字（`ErrorText` primitive）顯示在對應 field 下方
+- `categoryId` validation：當前無 validation rule（可選欄位，nil 代表「全部支出」）
+- save 失敗（`budgetClient.add/update` throws）：沿用既有 reducer 處理路徑 — 不在本次設計稿 scope
 
 ## 9. Testing
 
-Swift Testing。新增 / 修改 suites：
-
 | Suite | 涵蓋 |
 |---|---|
-| 既有 `BudgetFormFeatureTests` | 更新：移除 name/period/startDate 變更測試；新增 auto-name resolution（.add with category → "餐飲預算"、.add without category → "本月預算"、.edit 保留原 name）|
-| 新增 `BudgetFormFeatureSuggestionTests` | suggestion 載入：categoryChanged → suggestionLoaded；suggestionFailed → suggestedAmount = 0；suggestionChipTapped 套金額；quickAmountTapped 套金額 |
-| 新增 `TransactionClientAverageMonthlyTests` (CoreTests) | DatabaseClient.averageMonthly：3 筆同 category 3 個月 → 平均；空資料 → 0；跨 category 不計入 |
+| 新增 `BudgetPeriodSuffixTests`（DomainTests）| `.weekly.suffix` / `.monthly.suffix` / `.yearly.suffix` 各回傳對應 key（用 `LocalizedStringKey` 比較或字串解析）|
+| 新增 `DecimalPerPeriodBreakdownTests`（DomainTests）| 邊界 0 / 負值 / 正值；各 period 計算結果；rounding 對齊（30 / 4.33 / 7 / 12）|
+| 既有 `BudgetFormFeatureTests` | 不需動 — actions/state 沒變。可加一個 smoke test 確認 `availableCategories.isEmpty` 時 category section 不存在的 reducer-side 邏輯仍正確（既有 categoryClient stub） |
 
-## 10. 切片計畫（5 slice）
+## 10. 切片計畫（4 slice）
 
 | Slice | 內容 | Commit prefix |
 |---|---|---|
-| 0 | Common primitives — `AmountHeroBlock`（含 NT$ center 大字 + AI chip placeholder + quick chips row）、`CategoryGridPicker` | `feat(common):` |
-| 1 | Domain / Core — `transactionClient.averageMonthly` 介面 + `DatabaseClient.averageMonthly` 實作 + 對應 tests | `feat(core):` |
-| 2 | Reducer extension — `BudgetFormFeature` 加 suggestedAmount/isLoadingSuggestion/auto-name；既有測試適配 + 新 suggestion tests + i18n keys | `feat(budget-form):` |
-| 3 | View 重寫 — sheet + WarmGradient + TopBar + AmountHeroBlock 串接 + CategoryGridPicker + quick chips | `feat(budget-form):` |
-| 4 | Polish — accessibility、i18n 補完、舊 Form `Picker(.segmented)` / `DatePicker` 等程式碼移除、edit-mode 對 non-monthly budget 容錯 | `chore(budget-form):` |
+| 0 | Common primitives — `FormSection`、`ErrorText`、`BudgetCategoryListPicker` + i18n keys batch | `feat(common):` |
+| 1 | Domain helpers — `BudgetPeriod.suffix` + `Decimal.perPeriodBreakdown(_:)` + tests | `feat(domain):` |
+| 2 | View 重寫 — `BudgetFormView` 拆解 5 sections，整合 NameField / AmountField / PeriodSegmented / StartDatePill / BudgetCategoryListPicker | `feat(budget-form):` |
+| 3 | Polish — accessibility identifiers、舊 `Form { Section { } }` 結構徹底移除、edit-mode 預填驗證、視覺微調 | `chore(budget-form):` |
 
 ## 11. 風險與緩解
 
 | 風險 | 緩解 |
 |---|---|
-| `name` 改為 auto-derive 後若 user 想自訂 name 怎辦 | V1 不開放（YAGNI）；可在未來於 sheet 加入 "Customize name" disclosure |
-| edit 既有 weekly / yearly budget 在新 UI 看不到 period 提示 | edit mode 下，View 標題加副標 `"\(period.localizedName)"` 提示週期不變 |
-| `averageMonthly` 在使用者剛安裝（無資料）回傳 0 | View 自動隱藏 suggestion chip（state.suggestedAmount == 0 不顯示） |
-| Sheet 內巢狀的 categoryChanged → suggestion fetch 在快速切換時 race | `.cancellable(id: CancelID.suggestion, cancelInFlight: true)` |
-| Quick chips 與 AI chip 的 active state 衝突 | 分別判斷：amountText 等於 chip value 時顯示 active；點選後皆只設 amountText，不互相影響 |
+| `Picker(.segmented)` 在 iOS 26 Liquid Glass 下視覺與設計稿不完全一致 | 接受系統樣式；若需完全對齊，未來再做自訂 segmented |
+| `DatePicker(.compact)` 顯示樣式無法完全 customize 至 pill 風格 | 接受系統樣式；右側對齊 + labelsHidden 已是最接近寫法 |
+| Decimal rounding 在大金額時可能誤差（特別是 monthly `÷ 4.33`） | `NSDecimalRound` rule .plain，精度 0；測試覆蓋大金額（999999） |
+| Category list 過長時影響可滾動性 | 整個 BudgetFormView 在外層 ScrollView 內，自動繼承滾動 |
+| `availableCategories` 預設可能尚未載入即顯示空 list | 沿用既有 `.task` load 流程；section 因 `isEmpty` 不渲染 |
 
 ## 12. 完成定義
 
-- [ ] 從 BudgetManagementView 的 `+` 與 row tap 兩個進入點都正常開啟新版 form
-- [ ] Sheet 用 WarmGradient + drag indicator，medium / large 拖拽切換
-- [ ] Amount Hero 中央大字 + NT$ 前綴顯示正確；輸入透過 numberPad 鍵盤
-- [ ] AI 建議 chip 在有 categoryId 且 suggestedAmount > 0 時顯示；tap 套金額
-- [ ] Quick amount chips 5 個 tap 套金額；active 樣式正確
-- [ ] CategoryGrid 4 欄自動換行；active 用 category color 高亮
-- [ ] `.add` 模式儲存：auto-derive name 寫入正確；budget 寫入資料庫
-- [ ] `.edit` 模式儲存：原 name / period / startDate 保留；amount / categoryId 更新
-- [ ] 全部使用者可見字串走 i18n（en / zh-Hant）
-- [ ] 新增 reducer + Core helper 有對應 Swift Testing；`xcodebuild test -scheme FeaturesTests` 全綠
+- [ ] BudgetManagementView 的 `+` 與 row tap 兩個進入點都正常開啟新版 form
+- [ ] 5 個 sections 順序：名稱 → 預算金額 → 週期 → 起始日 → 套用分類
+- [ ] Section header 為 uppercase mono 11pt textSecondary
+- [ ] Section 內容包在 Glass card（14pt radius）
+- [ ] AmountField 顯示 NT$ prefix + 32pt mono 大字 + ` / 月（週/年）` suffix
+- [ ] Amount > 0 時顯示對應 period 的 breakdown helper 字串（en + zh-Hant 正確）
+- [ ] amountError 顯示時 breakdown 隱藏
+- [ ] PeriodSegmented 切換 → AmountField suffix + breakdown 跟著更新
+- [ ] StartDatePill 用 `.compact` 樣式右對齊
+- [ ] CategoryListPicker 首列固定為「全部支出 ∗」；後續為 availableCategories
+- [ ] 點某分類 → active checkmark 顯示；點「全部支出」→ categoryId = nil
+- [ ] `.add` 模式儲存：寫入 budget + delegate(.saved)；form 關閉
+- [ ] `.edit` 模式儲存：原 budget 更新；form 關閉
+- [ ] nameError / amountError 透過 `ErrorText` primitive 顯示
+- [ ] 全部使用者可見字串走 i18n（en / zh-Hant 兩語）
+- [ ] 新增的 Domain helpers 有對應 Swift Testing；`xcodebuild test -scheme FeaturesTests / DomainTests` 全綠
 - [ ] 無 hardcoded `#000000` / `#FFFFFF`；色彩走 `Color.Design.*`
 - [ ] Dark mode 對映正確

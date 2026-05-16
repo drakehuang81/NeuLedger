@@ -242,13 +242,13 @@ public struct CarrierManagementView: View {
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 96)
+                    .frame(height: 140)
                     .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, 6)
                     .padding(.bottom, 4)
             }
         }

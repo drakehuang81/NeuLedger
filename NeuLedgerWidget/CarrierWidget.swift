@@ -78,7 +78,7 @@ private func generateBarcode(from string: String) -> UIImage? {
     guard let outputImage = filter.outputImage else { return nil }
 
     let scaled = outputImage.transformed(
-        by: CGAffineTransform(scaleX: 3.0, y: 1.5)
+        by: CGAffineTransform(scaleX: 3.0, y: 3.0)
     )
 
     let context = CIContext()
@@ -125,7 +125,7 @@ struct CarrierWidgetView: View {
             return Date().timeIntervalSince(updatedAt) > Self.staleThreshold
         }()
 
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             // Header row
             HStack(spacing: 8) {
                 Image(systemName: "creditcard.fill")
@@ -161,33 +161,29 @@ struct CarrierWidgetView: View {
             }
 
             // Barcode area
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.white)
-
+            Group {
                 if isPlaceholder {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(.systemGray5))
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
+                        .fill(Color(.systemGray6))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
                         .unredacted()
                 } else if let barcodeImage = generateBarcode(from: carrier.barcode) {
                     Image(uiImage: barcodeImage)
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
                 } else {
                     Text(carrier.barcode)
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 12)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 64)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(12)
     }
 
     // MARK: Empty State

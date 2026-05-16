@@ -16,12 +16,16 @@ struct CarrierAppEntity: AppEntity {
 
     let id: String
     let name: String
-    let typeDisplayName: String
+    let barcode: String
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(
-            title: "\(name)",
-            subtitle: "\(typeDisplayName)"
+        // Title: user-entered name (falls back to barcode when name is empty)
+        // Subtitle: raw barcode string, for unique identification when multiple
+        // carriers share the same name.
+        let title = name.isEmpty ? barcode : name
+        return DisplayRepresentation(
+            title: "\(title)",
+            subtitle: "\(barcode)"
         )
     }
 }
@@ -41,7 +45,7 @@ struct CarrierEntityQuery: EntityQuery {
             return CarrierAppEntity(
                 id: entry.id,
                 name: entry.name,
-                typeDisplayName: entry.typeDisplayName
+                barcode: entry.barcode
             )
         }
     }
@@ -52,7 +56,7 @@ struct CarrierEntityQuery: EntityQuery {
             CarrierAppEntity(
                 id: entry.id,
                 name: entry.name,
-                typeDisplayName: entry.typeDisplayName
+                barcode: entry.barcode
             )
         }
     }

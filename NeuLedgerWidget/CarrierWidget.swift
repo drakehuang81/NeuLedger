@@ -55,7 +55,7 @@ struct CarrierTimelineProvider: AppIntentTimelineProvider {
             if let match = all.first(where: { $0.id == selected.id }) {
                 return .loaded(match)
             }
-            return .deleted(name: selected.name)
+            return .deleted(name: selected.name.isEmpty ? selected.barcode : selected.name)
         }
         // No explicit selection yet (fresh widget install) — fall back to the first
         // available carrier so the widget is useful out of the box. User can still

@@ -147,9 +147,11 @@ public struct CarrierManagementView: View {
                         Text(carrier.name)
                             .font(Font.Design.body.weight(.semibold))
                             .foregroundStyle(Color.Design.textPrimary)
-                        Text(carrier.type.defaultName)
-                            .font(.system(size: 12))
+                        Text(carrier.barcode)
+                            .font(.system(size: 12, design: .monospaced))
                             .foregroundStyle(Color.Design.textSecondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
 
                     Spacer()

@@ -52,6 +52,23 @@
         }
       }
     },
+    "a11y_accessory_switch_mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch input mode"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切換輸入模式"
+          }
+        }
+      }
+    },
     "a11y_navigate_back": {
       "extractionState": "manual",
       "localizations": {
@@ -201,6 +218,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "無法取得回答，請再試一次"
+          }
+        }
+      }
+    },
+    "ai_voice_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the mic and speak…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點麥克風開始說話…"
           }
         }
       }

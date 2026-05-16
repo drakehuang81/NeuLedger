@@ -104,7 +104,7 @@ struct MainTabFeature {
                     await withTaskGroup(of: Void.self) { group in
                         // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
                         group.addTask {
-                            let isAvailable = await aiServiceClient.isAvailable()
+                            let isAvailable = aiServiceClient.isAvailable()
                             await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
                             let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
                             await send(.accessoryBarVisibilityLoaded(showAccessoryBar))

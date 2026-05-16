@@ -173,8 +173,7 @@ struct CarrierWidgetView: View {
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                 } else {
                     Text(carrier.barcode)
                         .font(.system(.caption, design: .monospaced))

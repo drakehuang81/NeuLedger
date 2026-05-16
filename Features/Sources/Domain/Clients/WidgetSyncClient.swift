@@ -11,16 +11,17 @@ import DependenciesMacros
 public struct WidgetSyncClient: Sendable {
     /// Writes carrier data to the shared App Group container and triggers a
     /// WidgetKit timeline reload so the `CarrierWidget` reflects the latest carrier.
-    ///
-    /// - Parameters:
-    ///   - barcode: The carrier barcode string (e.g. `"/ABC1234"`).
-    ///   - type: The raw value of the carrier type (e.g. `"phoneBarcodeCarrier"`).
-    ///   - name: A human-readable display name for the carrier.
     public var syncCarrier: @Sendable (_ barcode: String, _ type: String, _ name: String) async -> Void
 
     /// Removes all carrier data from the shared App Group container and triggers
     /// a WidgetKit timeline reload so the `CarrierWidget` shows the empty state.
     public var clearCarrier: @Sendable () async -> Void
+
+    /// Writes the full list of carriers to the App Group as JSON and triggers
+    /// a CarrierWidget timeline reload. Called after every CRUD operation in
+    /// `CarrierManagementFeature` so configurable widgets can resolve their
+    /// bound carrier by ID.
+    public var syncAllCarriers: @Sendable (_ carriers: [Carrier]) async -> Void
 }
 
 extension WidgetSyncClient: TestDependencyKey {

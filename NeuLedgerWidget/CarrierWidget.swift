@@ -50,15 +50,20 @@ struct CarrierTimelineProvider: AppIntentTimelineProvider {
     }
 
     private func resolveState(for configuration: CarrierSelectionIntent) -> CarrierWidgetState {
-        guard let selected = configuration.carrier else {
-            // No selection yet → empty state (also covers fresh installs)
-            return .empty
-        }
         let all = WidgetAppGroup.readAllCarriers()
-        if let match = all.first(where: { $0.id == selected.id }) {
-            return .loaded(match)
+        if let selected = configuration.carrier {
+            if let match = all.first(where: { $0.id == selected.id }) {
+                return .loaded(match)
+            }
+            return .deleted(name: selected.name)
         }
-        return .deleted(name: selected.name)
+        // No explicit selection yet (fresh widget install) — fall back to the first
+        // available carrier so the widget is useful out of the box. User can still
+        // long-press → Edit Widget to choose a different one.
+        if let first = all.first {
+            return .loaded(first)
+        }
+        return .empty
     }
 }
 

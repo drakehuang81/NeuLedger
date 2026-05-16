@@ -103,6 +103,40 @@
         }
       }
     },
+    "widget_carrier_deleted_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” has been removed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」已從 app 移除"
+          }
+        }
+      }
+    },
+    "widget_carrier_deleted_cta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconfigure"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新設定"
+          }
+        }
+      }
+    },
     "widget_carrier_description" : {
       "extractionState" : "manual",
       "localizations" : {

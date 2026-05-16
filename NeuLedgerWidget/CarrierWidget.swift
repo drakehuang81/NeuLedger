@@ -3,41 +3,62 @@
 import WidgetKit
 import SwiftUI
 import UIKit
+import AppIntents
 import CoreImage.CIFilterBuiltins
+
+// MARK: - Widget State
+
+enum CarrierWidgetState: Equatable {
+    case loaded(CarrierEntry)
+    case empty
+    case deleted(name: String)
+}
 
 // MARK: - Timeline Entry
 
 struct CarrierTimelineEntry: TimelineEntry {
     let date: Date
-    let carrier: CarrierEntry?
+    let state: CarrierWidgetState
 }
 
 // MARK: - Timeline Provider
 
-struct CarrierTimelineProvider: TimelineProvider {
+struct CarrierTimelineProvider: AppIntentTimelineProvider {
+    typealias Entry = CarrierTimelineEntry
+    typealias Intent = CarrierSelectionIntent
+
     func placeholder(in context: Context) -> CarrierTimelineEntry {
         CarrierTimelineEntry(
             date: Date(),
-            carrier: CarrierEntry(
+            state: .loaded(CarrierEntry(
+                id: "placeholder",
                 barcode: "/ABC-12345678",
                 typeRawValue: "phoneBarcodeCarrier",
                 name: String(localized: "widget_carrier_placeholder_name"),
                 updatedAt: nil
-            )
+            ))
         )
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (CarrierTimelineEntry) -> Void) {
-        let carrier = WidgetAppGroup.readCarrier()
-        let entry = CarrierTimelineEntry(date: Date(), carrier: carrier)
-        completion(entry)
+    func snapshot(for configuration: CarrierSelectionIntent, in context: Context) async -> CarrierTimelineEntry {
+        CarrierTimelineEntry(date: Date(), state: resolveState(for: configuration))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<CarrierTimelineEntry>) -> Void) {
-        let carrier = WidgetAppGroup.readCarrier()
-        let entry = CarrierTimelineEntry(date: Date(), carrier: carrier)
-        let timeline = Timeline(entries: [entry], policy: .never)
-        completion(timeline)
+    func timeline(for configuration: CarrierSelectionIntent, in context: Context) async -> Timeline<CarrierTimelineEntry> {
+        let entry = CarrierTimelineEntry(date: Date(), state: resolveState(for: configuration))
+        return Timeline(entries: [entry], policy: .never)
+    }
+
+    private func resolveState(for configuration: CarrierSelectionIntent) -> CarrierWidgetState {
+        guard let selected = configuration.carrier else {
+            // No selection yet → empty state (also covers fresh installs)
+            return .empty
+        }
+        let all = WidgetAppGroup.readAllCarriers()
+        if let match = all.first(where: { $0.id == selected.id }) {
+            return .loaded(match)
+        }
+        return .deleted(name: selected.name)
     }
 }
 
@@ -73,17 +94,15 @@ struct CarrierWidgetView: View {
         redactionReasons.contains(.placeholder)
     }
 
-    private var isStale: Bool {
-        guard let updatedAt = entry.carrier?.updatedAt else { return false }
-        return Date().timeIntervalSince(updatedAt) > Self.staleThreshold
-    }
-
     var body: some View {
         Group {
-            if let carrier = entry.carrier {
+            switch entry.state {
+            case let .loaded(carrier):
                 carrierContent(carrier)
-            } else {
+            case .empty:
                 emptyState
+            case let .deleted(name):
+                deletedState(name: name)
             }
         }
         .widgetURL(URL(string: "neuledger://carrier-management"))
@@ -96,6 +115,11 @@ struct CarrierWidgetView: View {
 
     @ViewBuilder
     private func carrierContent(_ carrier: CarrierEntry) -> some View {
+        let isStale: Bool = {
+            guard let updatedAt = carrier.updatedAt else { return false }
+            return Date().timeIntervalSince(updatedAt) > Self.staleThreshold
+        }()
+
         VStack(alignment: .leading, spacing: 10) {
             // Header row
             HStack(spacing: 8) {
@@ -192,6 +216,38 @@ struct CarrierWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(12)
     }
+
+    // MARK: Deleted State
+
+    private func deletedState(name: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundStyle(.orange)
+                .symbolRenderingMode(.hierarchical)
+
+            Text(String(format: String(localized: "widget_carrier_deleted_body"), name))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+
+            Link(destination: URL(string: "neuledger://carrier-management")!) {
+                HStack(spacing: 4) {
+                    Text("widget_carrier_deleted_cta")
+                        .font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.orange)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(Color.orange.opacity(0.15)))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(12)
+    }
 }
 
 // MARK: - Widget Definition
@@ -200,7 +256,11 @@ struct CarrierWidget: Widget {
     let kind: String = "CarrierWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: CarrierTimelineProvider()) { entry in
+        AppIntentConfiguration(
+            kind: kind,
+            intent: CarrierSelectionIntent.self,
+            provider: CarrierTimelineProvider()
+        ) { entry in
             CarrierWidgetView(entry: entry)
         }
         .configurationDisplayName(Text("widget_carrier_display_name"))
@@ -211,24 +271,31 @@ struct CarrierWidget: Widget {
 
 // MARK: - Previews
 
-#Preview("With Carrier", as: .systemMedium) {
+#Preview("Loaded", as: .systemMedium) {
     CarrierWidget()
 } timeline: {
     CarrierTimelineEntry(
         date: .now,
-        carrier: CarrierEntry(
+        state: .loaded(CarrierEntry(
+            id: "preview-1",
             barcode: "/ABC-12345678",
             typeRawValue: "phoneBarcodeCarrier",
             name: "手機條碼載具",
             updatedAt: .now
-        )
+        ))
     )
 }
 
-#Preview("Empty State", as: .systemMedium) {
+#Preview("Empty", as: .systemMedium) {
     CarrierWidget()
 } timeline: {
-    CarrierTimelineEntry(date: .now, carrier: nil)
+    CarrierTimelineEntry(date: .now, state: .empty)
+}
+
+#Preview("Deleted", as: .systemMedium) {
+    CarrierWidget()
+} timeline: {
+    CarrierTimelineEntry(date: .now, state: .deleted(name: "我的舊載具"))
 }
 
 #Preview("Stale", as: .systemMedium) {
@@ -236,11 +303,12 @@ struct CarrierWidget: Widget {
 } timeline: {
     CarrierTimelineEntry(
         date: .now,
-        carrier: CarrierEntry(
+        state: .loaded(CarrierEntry(
+            id: "preview-stale",
             barcode: "/ABC-12345678",
             typeRawValue: "phoneBarcodeCarrier",
             name: "手機條碼載具",
             updatedAt: Calendar.current.date(byAdding: .day, value: -120, to: .now)
-        )
+        ))
     )
 }

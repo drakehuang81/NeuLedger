@@ -186,6 +186,7 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             $0.carrierClient.fetchAll = { carriers }
+            $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -265,6 +266,7 @@ struct CarrierManagementFeatureTests {
             $0.userSettingsClient.string = { _ in Self.carrierA.id.uuidString }
             $0.userSettingsClient.setString = { _, _ in }
             $0.widgetSyncClient.clearCarrier = { clearCarrierCalled.setValue(true) }
+            $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
         await store.send(.deleteTapped(Self.carrierA.id)) {
@@ -295,6 +297,7 @@ struct CarrierManagementFeatureTests {
             // carrierB is the widget carrier, not carrierA
             $0.userSettingsClient.string = { _ in Self.carrierB.id.uuidString }
             $0.widgetSyncClient.clearCarrier = { clearCarrierCalled.setValue(true) }
+            $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
         await store.send(.deleteTapped(Self.carrierA.id)) {
@@ -322,6 +325,7 @@ struct CarrierManagementFeatureTests {
             // carrierA is the current widget carrier
             $0.userSettingsClient.string = { _ in Self.carrierA.id.uuidString }
             $0.widgetSyncClient.syncCarrier = { barcode, _, _ in syncBarcode.setValue(barcode) }
+            $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -346,6 +350,7 @@ struct CarrierManagementFeatureTests {
             $0.userSettingsClient.string = { _ in "" }
             $0.userSettingsClient.setString = { _, _ in }
             $0.widgetSyncClient.syncCarrier = { _, _, _ in }
+            $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -379,6 +384,7 @@ struct CarrierManagementFeatureTests {
                 syncedType.setValue(type)
                 syncedName.setValue(name)
             }
+            $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -392,5 +398,100 @@ struct CarrierManagementFeatureTests {
         #expect(syncedBarcode.value == Self.carrierA.barcode)
         #expect(syncedType.value == Self.carrierA.type.rawValue)
         #expect(syncedName.value == Self.carrierA.name)
+    }
+
+    @Test("task triggers syncAllCarriers with fetched list")
+    func testTaskTriggersSyncAllCarriers() async {
+        let sample = Carrier(
+            id: UUID(uuidString: "40000000-0000-0000-0000-000000000001")!,
+            name: "Phone Carrier",
+            type: .phoneBarcodeCarrier,
+            barcode: "/ABC1234",
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+        let syncedCarriers = LockIsolated<[Carrier]?>(nil)
+        let store = await TestStore(
+            initialState: CarrierManagementFeature.State()
+        ) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.fetchAll = { [sample] }
+            $0.widgetSyncClient.syncAllCarriers = { carriers in
+                syncedCarriers.setValue(carriers)
+            }
+        }
+
+        await store.send(.task) {
+            $0.isLoading = true
+        }
+        await store.receive(\.carriersLoaded) {
+            $0.isLoading = false
+            $0.carriers = [sample]
+        }
+        #expect(syncedCarriers.value == [sample])
+    }
+
+    @Test("deleteTapped triggers syncAllCarriers with refreshed list")
+    func testDeleteTappedTriggersSyncAllCarriers() async {
+        let remaining = Carrier(
+            id: UUID(uuidString: "40000000-0000-0000-0000-000000000002")!,
+            name: "Cert Carrier",
+            type: .citizenDigitalCertificate,
+            barcode: "/PA1B2C3D4E5F6G7H8",
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+        let deletedId = UUID(uuidString: "40000000-0000-0000-0000-000000000003")!
+        let syncedCarriers = LockIsolated<[Carrier]?>(nil)
+        let store = await TestStore(
+            initialState: CarrierManagementFeature.State()
+        ) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.delete = { _ in }
+            $0.carrierClient.fetchAll = { [remaining] }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.widgetSyncClient.syncAllCarriers = { carriers in
+                syncedCarriers.setValue(carriers)
+            }
+        }
+
+        await store.send(.deleteTapped(deletedId))
+        await store.receive(\.carriersLoaded) {
+            $0.carriers = [remaining]
+        }
+        #expect(syncedCarriers.value == [remaining])
+    }
+
+    @Test("save delegate triggers syncAllCarriers with refreshed list")
+    func testSaveDelegateTriggersSyncAllCarriers() async {
+        let saved = Carrier(
+            id: UUID(uuidString: "40000000-0000-0000-0000-000000000004")!,
+            name: "New",
+            type: .phoneBarcodeCarrier,
+            barcode: "/ZZZ9999",
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+        let syncedCarriers = LockIsolated<[Carrier]?>(nil)
+        var initial = CarrierManagementFeature.State()
+        initial.addEdit = AddEditCarrierFeature.State(mode: .add)
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.fetchAll = { [saved] }
+            $0.userSettingsClient.string = { _ in "" }
+            $0.userSettingsClient.setString = { _, _ in }
+            $0.widgetSyncClient.syncCarrier = { _, _, _ in }
+            $0.widgetSyncClient.syncAllCarriers = { carriers in
+                syncedCarriers.setValue(carriers)
+            }
+        }
+
+        await store.send(\.addEdit.presented.delegate.saved) {
+            $0.addEdit = nil
+        }
+        await store.receive(\.carriersLoaded) {
+            $0.carriers = [saved]
+        }
+        #expect(syncedCarriers.value == [saved])
     }
 }

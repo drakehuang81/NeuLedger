@@ -45,8 +45,9 @@ public struct CarrierManagementFeature: Sendable {
             switch action {
             case .task:
                 state.isLoading = true
-                return .run { send in
+                return .run { [widgetSyncClient] send in
                     let carriers = try await carrierClient.fetchAll()
+                    await widgetSyncClient.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 }
                 .cancellable(id: CancelID.task)
@@ -83,6 +84,7 @@ public struct CarrierManagementFeature: Sendable {
                         userSettingsClient.setString("", .widgetCarrierId)
                         await widgetSyncClient.clearCarrier()
                     }
+                    await widgetSyncClient.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 } catch: { _, send in
                     let carriers = (try? await carrierClient.fetchAll()) ?? []
@@ -115,6 +117,7 @@ public struct CarrierManagementFeature: Sendable {
                         )
                     }
 
+                    await widgetSyncClient.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 }
 

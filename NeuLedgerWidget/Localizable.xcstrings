@@ -1,0 +1,151 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "carrier_type_citizen_cert" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Citizen Digital Certificate"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自然人憑證條碼"
+          }
+        }
+      }
+    },
+    "carrier_type_phone_barcode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone Barcode Carrier"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手機條碼載具"
+          }
+        }
+      }
+    },
+    "widget_carrier_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display carrier barcode for scanning"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示載具條碼供店員掃描"
+          }
+        }
+      }
+    },
+    "widget_carrier_display_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Carrier"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的載具"
+          }
+        }
+      }
+    },
+    "widget_carrier_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up a carrier in NeuLedger settings"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在 NeuLedger 設定 Widget 載具"
+          }
+        }
+      }
+    },
+    "widget_carrier_empty_cta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to set up"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點此設定"
+          }
+        }
+      }
+    },
+    "widget_carrier_placeholder_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone Barcode Carrier"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手機條碼載具"
+          }
+        }
+      }
+    },
+    "widget_carrier_stale_warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data may be outdated"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "資料可能已過期"
+          }
+        }
+      }
+    },
+    "widget_voice_description" : {
+
+    },
+    "widget_voice_display_name" : {
+
+    },
+    "widget_voice_title" : {
+
+    }
+  },
+  "version" : "1.0"
+}

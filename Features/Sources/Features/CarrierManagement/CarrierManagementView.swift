@@ -234,17 +234,19 @@ public struct CarrierManagementView: View {
             }
             .padding(.horizontal, 14)
 
-            // QR Code
-            if let qrImage = generateQRCode(from: carrier.barcode) {
-                Image(uiImage: qrImage)
+            // Barcode (Code 128)
+            if let barcodeImage = generateBarcode(from: carrier.barcode) {
+                Image(uiImage: barcodeImage)
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 160, height: 160)
-                    .padding(12)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 96)
                     .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 14)
                     .padding(.bottom, 4)
             }
         }
@@ -277,16 +279,17 @@ public struct CarrierManagementView: View {
         }
     }
 
-    // MARK: - QR Code Generation
+    // MARK: - Barcode Generation (Code 128)
 
     private static let ciContext = CIContext()
 
-    private func generateQRCode(from string: String) -> UIImage? {
-        let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(string.utf8)
-        filter.correctionLevel = "M"
+    private func generateBarcode(from string: String) -> UIImage? {
+        let filter = CIFilter.code128BarcodeGenerator()
+        guard let data = string.data(using: .ascii) else { return nil }
+        filter.message = data
+        filter.quietSpace = 10
         guard let outputImage = filter.outputImage else { return nil }
-        let scaled = outputImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+        let scaled = outputImage.transformed(by: CGAffineTransform(scaleX: 3.0, y: 3.0))
         guard let cgImage = Self.ciContext.createCGImage(scaled, from: scaled.extent) else { return nil }
         return UIImage(cgImage: cgImage)
     }

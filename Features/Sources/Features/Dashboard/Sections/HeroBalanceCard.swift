@@ -48,6 +48,7 @@ struct HeroBalanceCard: View {
                 .font(.system(size: 40, weight: .bold).monospacedDigit())
                 .foregroundStyle(.primary)
                 .contentTransition(.numericText())
+                .animation(.spring(duration: 0.5), value: store.filteredBalance)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
 

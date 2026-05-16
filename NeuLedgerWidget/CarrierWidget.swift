@@ -176,13 +176,18 @@ struct CarrierWidgetView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 12)
 
-            HStack(spacing: 4) {
-                Text("widget_carrier_empty_cta")
-                    .font(.system(size: 11, weight: .medium))
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+            Link(destination: URL(string: "neuledger://carrier-management")!) {
+                HStack(spacing: 4) {
+                    Text("widget_carrier_empty_cta")
+                        .font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.orange)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(Color.orange.opacity(0.15)))
             }
-            .foregroundStyle(.orange)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(12)

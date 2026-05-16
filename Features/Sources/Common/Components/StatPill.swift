@@ -13,22 +13,20 @@ public struct StatPill: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .textCase(.uppercase)
-                .tracking(1)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.system(size: 16, weight: .semibold).monospacedDigit())
-                .foregroundStyle(valueColor)
+        GlassContainer {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+                    .textCase(.uppercase)
+                    .tracking(1)
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.system(size: 16, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(valueColor)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .glassEffect(
-            Glass.clear.tint(Color.Design.surface),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
     }
 }
 

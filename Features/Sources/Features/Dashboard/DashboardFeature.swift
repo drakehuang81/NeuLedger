@@ -318,7 +318,6 @@ public struct DashboardFeature: Sendable {
                 } else {
                     state.filteredRecent = state.recentTransactions
                 }
-                state.heroPhase = .loading
                 return .run { [accountID] send in
                     do {
                         let v = try await transactionClient.weeklySpending(accountID, 7)
@@ -432,13 +431,25 @@ public struct DashboardFeature: Sendable {
             // MARK: Child features
             case .addTransaction(.presented(.delegate(.saved))),
                  .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
-                return .run { send in
-                    async let transactions = transactionClient.fetchRecent()
-                    async let accounts = accountClient.fetchActive()
-                    let (t, a) = try await (transactions, accounts)
-                    await send(.transactionsUpdated(t))
-                    await send(.accountsUpdated(a))
-                }
+                return .merge(
+                    .run { send in
+                        async let transactions = transactionClient.fetchRecent()
+                        async let accounts = accountClient.fetchActive()
+                        let (t, a) = try await (transactions, accounts)
+                        await send(.transactionsUpdated(t))
+                        await send(.accountsUpdated(a))
+                    },
+                    statsEffect(cancelInFlight: true),
+                    .run { [accountID = state.selectedAccountID] send in
+                        do {
+                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            await send(.weeklySpendingComputed(values))
+                        } catch {
+                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                        }
+                    }
+                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+                )
 
             case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
                 return .merge(
@@ -449,6 +460,16 @@ public struct DashboardFeature: Sendable {
                         await send(.transactionsUpdated(t))
                         await send(.accountsUpdated(a))
                     },
+                    statsEffect(cancelInFlight: true),
+                    .run { [accountID = state.selectedAccountID] send in
+                        do {
+                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            await send(.weeklySpendingComputed(values))
+                        } catch {
+                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                        }
+                    }
+                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true),
                     .send(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))
                 )
 
@@ -460,13 +481,25 @@ public struct DashboardFeature: Sendable {
 
             case .detail(.presented(.delegate(.deleted))),
                  .detail(.presented(.delegate(.updated))):
-                return .run { send in
-                    async let transactions = transactionClient.fetchRecent()
-                    async let accounts = accountClient.fetchActive()
-                    let (t, a) = try await (transactions, accounts)
-                    await send(.transactionsUpdated(t))
-                    await send(.accountsUpdated(a))
-                }
+                return .merge(
+                    .run { send in
+                        async let transactions = transactionClient.fetchRecent()
+                        async let accounts = accountClient.fetchActive()
+                        let (t, a) = try await (transactions, accounts)
+                        await send(.transactionsUpdated(t))
+                        await send(.accountsUpdated(a))
+                    },
+                    statsEffect(cancelInFlight: true),
+                    .run { [accountID = state.selectedAccountID] send in
+                        do {
+                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            await send(.weeklySpendingComputed(values))
+                        } catch {
+                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                        }
+                    }
+                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+                )
 
             case .detail:
                 return .none

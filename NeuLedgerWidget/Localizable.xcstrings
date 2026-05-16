@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@" : {
+
+    },
     "carrier_entity_type_name" : {
       "extractionState" : "manual",
       "localizations" : {

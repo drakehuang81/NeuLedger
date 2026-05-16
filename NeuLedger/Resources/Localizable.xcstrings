@@ -1310,6 +1310,23 @@
         }
       }
     },
+    "dashboard_sparkline_warmup_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track for %lld more day(s) to see your weekly trend"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再記錄 %lld 天就會出現週間趨勢"
+          }
+        }
+      }
+    },
     "common_expense": {
       "extractionState": "manual",
       "localizations": {

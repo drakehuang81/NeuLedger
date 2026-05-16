@@ -52,14 +52,43 @@ struct HeroBalanceCard: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
 
+            sparklineSlot
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var sparklineSlot: some View {
+        let daysRemaining = daysUntilSparklineReady(
+            earliest: store.earliestTransactionDate,
+            now: Date()
+        )
+        if daysRemaining == 0 {
             MiniSparkline(
                 values: store.weeklySpending,
                 minimumColumns: 7
             )
             .frame(height: 40)
+        } else {
+            Text(String(
+                format: String(localized: "dashboard_sparkline_warmup_hint", bundle: .main),
+                daysRemaining
+            ))
+            .font(.system(size: 13))
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: 40, alignment: .center)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
+
+func daysUntilSparklineReady(earliest: Date?, now: Date) -> Int {
+    guard let earliest else { return 7 }
+    let calendar = Calendar.current
+    let earliestDay = calendar.startOfDay(for: earliest)
+    let today = calendar.startOfDay(for: now)
+    let elapsed = calendar.dateComponents([.day], from: earliestDay, to: today).day ?? 0
+    return max(0, 7 - elapsed)
 }
 
 // MARK: - Previews
@@ -67,12 +96,14 @@ struct HeroBalanceCard: View {
 private func heroPreviewState(
     phase: DashboardFeature.SectionPhase,
     balance: Decimal,
-    weekly: [Decimal] = []
+    weekly: [Decimal] = [],
+    earliestTransactionDate: Date? = Calendar.current.date(byAdding: .day, value: -30, to: Date())
 ) -> DashboardFeature.State {
     var state = DashboardFeature.State()
     state.heroPhase = phase
     state.filteredBalance = balance
     state.weeklySpending = weekly
+    state.earliestTransactionDate = earliestTransactionDate
     return state
 }
 
@@ -128,13 +159,27 @@ private struct HeroPreviewWrapper: View {
     )
 }
 
-#Preview("Loaded — Empty Sparkline") {
+#Preview("Loaded — Warmup (new user)") {
     HeroPreviewWrapper(
-        title: "Loaded · No weekly data",
+        title: "Loaded · Warmup hint",
         store: heroPreviewStore(
             heroPreviewState(
                 phase: .loaded,
-                balance: Decimal(42_000)
+                balance: Decimal(42_000),
+                earliestTransactionDate: Calendar.current.date(byAdding: .day, value: -2, to: Date())
+            )
+        )
+    )
+}
+
+#Preview("Loaded — No transactions yet") {
+    HeroPreviewWrapper(
+        title: "Loaded · No transactions yet",
+        store: heroPreviewStore(
+            heroPreviewState(
+                phase: .loaded,
+                balance: Decimal(0),
+                earliestTransactionDate: nil
             )
         )
     )

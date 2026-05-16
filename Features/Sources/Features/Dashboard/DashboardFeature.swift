@@ -69,6 +69,7 @@ public struct DashboardFeature: Sendable {
         public var selectedAccountID: Account.ID? = nil
         public var filteredBalance: Decimal = 0
         public var weeklySpending: [Decimal] = []
+        public var earliestTransactionDate: Date? = nil
         public var filteredRecent: [Transaction] = []
 
         // Stats (populated by Slice 5)
@@ -237,6 +238,7 @@ public struct DashboardFeature: Sendable {
                 state.filteredRecent = state.selectedAccountID
                     .map { id in sorted.filter { $0.accountId == id } }
                     ?? sorted
+                state.earliestTransactionDate = transactions.map(\.date).min()
                 state.transactionsPhase = .loaded
                 state.isLoading = false
 

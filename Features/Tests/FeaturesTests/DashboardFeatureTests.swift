@@ -176,6 +176,7 @@ struct DashboardFeatureTests {
         await store.send(.transactionsUpdated(Self.sampleTransactions)) {
             $0.transactionsPhase = .loaded
             $0.filteredRecent = Self.sampleTransactions.sorted { $0.date > $1.date }
+            $0.earliestTransactionDate = Self.sampleTransactions.map(\.date).min()
         }
 
         // Cache invalidated — fetch triggered

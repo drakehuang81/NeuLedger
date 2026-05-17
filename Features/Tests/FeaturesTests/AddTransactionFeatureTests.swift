@@ -222,7 +222,7 @@ struct AddTransactionFeatureTests {
     func backgroundExtractionFillsOnlyEmptyFields() async {
         let store = await makeStore(aiAvailable: false)
         // Pre-set amountText so it should NOT be overwritten
-        await store.send(.amountTextChanged("999")) { $0.amountText = "999" }
+        await store.send(\.binding.amountText, "999") { $0.amountText = "999" }
         let extracted = ExtractedTransaction(amount: 150, suggestedCategory: nil, description: "午餐", type: "income")
         await store.send(.backgroundExtractionCompleted(extracted)) {
             $0.isBackgroundParsingNote = false

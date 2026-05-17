@@ -33,6 +33,7 @@ struct AccessoryView: View {
             }
         } label: {
             Image(systemName: store.accessoryMode == .ai ? "wand.and.sparkles" : "plus.circle.fill")
+                .font(.title)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(store.accessoryMode == .ai ? Color.accentColor : Color.primary)
         }
@@ -67,6 +68,7 @@ struct AccessoryView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: isAI ? "wand.and.sparkles" : "plus.circle.fill")
+                        .font(.title)
                         .symbolRenderingMode(.hierarchical)
                     Text(isAI
                          ? String(localized: "accessory_ai_record")
@@ -95,9 +97,9 @@ struct AccessoryView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.up.chevron.down")
+                        .font(.title)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color.Design.textSecondary)
-                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel(String(localized: "a11y_accessory_switch_mode"))
@@ -118,27 +120,13 @@ struct AccessoryView: View {
     @ViewBuilder
     private var expandedAIInputContent: some View {
         let hasTranscript = !store.aiInputText.isEmpty
-        VStack(spacing: 4) {
-            // Recording indicator — shown while mic is active
-            if store.isRecording {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.Design.expenseRed)
-                        .frame(width: 7, height: 7)
-                    Text(String(localized: "speech_recording_label"))
-                        .font(Font.Design.caption)
-                        .foregroundStyle(Color.Design.expenseRed)
-                }
-                .padding(.horizontal, 16)
-            }
-
-            HStack(alignment: .center, spacing: 4) {
+        VStack(spacing: 8) {
+            HStack(alignment: .center, spacing: 0) {
                 transcriptDisplay(hasTranscript: hasTranscript)
-
+                    .padding(.leading, 4)
                 if store.isAIInputLoading {
                     ProgressView()
                         .controlSize(.small)
-                        .frame(width: 44, height: 44)
                 } else {
                     micButton
                     if hasTranscript && !store.isRecording {
@@ -149,11 +137,6 @@ struct AccessoryView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .glassEffect(
-                Glass.clear.interactive().tint(Color.Design.surface),
-                in: RoundedRectangle(cornerRadius: 18)
-            )
-
             if let error = store.aiInputError {
                 Text(error)
                     .font(Font.Design.caption)
@@ -162,7 +145,6 @@ struct AccessoryView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -170,13 +152,24 @@ struct AccessoryView: View {
 
     @ViewBuilder
     private func transcriptDisplay(hasTranscript: Bool) -> some View {
-        Text(hasTranscript ? store.aiInputText : String(localized: "ai_voice_hint"))
-            .font(Font.Design.body)
-            .foregroundStyle(hasTranscript ? Color.Design.textPrimary : Color.Design.textTertiary)
-            .lineLimit(3)
-            .multilineTextAlignment(.leading)
+        if hasTranscript && !store.isRecording {
+            MarqueeText(
+                text: store.aiInputText,
+                font: Font.Design.body,
+                color: Color.Design.textPrimary,
+                velocity: 30,
+                gap: 32
+            )
             .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(.easeInOut(duration: 0.15), value: store.aiInputText)
+        } else {
+            Text(hasTranscript ? store.aiInputText : String(localized: "ai_voice_hint"))
+                .font(Font.Design.body)
+                .foregroundStyle(hasTranscript ? Color.Design.textPrimary : Color.Design.textTertiary)
+                .lineLimit(1)
+                .truncationMode(.head)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .animation(.easeInOut(duration: 0.15), value: store.aiInputText)
+        }
     }
 
     private var micButton: some View {
@@ -184,10 +177,9 @@ struct AccessoryView: View {
             store.send(.recordingTapped)
         } label: {
             Image(systemName: store.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                .font(.title2)
+                .font(.title)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(store.isRecording ? Color.Design.expenseRed : Color.accentColor)
-                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(store.isRecording
@@ -200,10 +192,9 @@ struct AccessoryView: View {
             store.send(.aiInputSubmitted)
         } label: {
             Image(systemName: "arrow.up.circle.fill")
-                .font(.title2)
+                .font(.title)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.accentColor)
-                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(String(localized: "a11y_ai_submit"))
@@ -214,10 +205,9 @@ struct AccessoryView: View {
             store.send(.aiInputDismissed)
         } label: {
             Image(systemName: "xmark.circle.fill")
-                .font(.title2)
+                .font(.title)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.Design.textTertiary)
-                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(String(localized: "a11y_ai_close"))
@@ -234,6 +224,71 @@ private extension View {
         } else {
             self
         }
+    }
+}
+
+// MARK: - MarqueeText
+
+private struct MarqueeText: View {
+    let text: String
+    let font: Font
+    let color: Color
+    let velocity: Double  // points per second
+    let gap: CGFloat      // gap between repeated copies
+
+    @State private var textSize: CGSize = .zero
+
+    var body: some View {
+        GeometryReader { geo in
+            let needsScroll = true// textSize.width > geo.size.width && geo.size.width > 0
+            ZStack(alignment: .leading) {
+                if needsScroll {
+                    TimelineView(.animation) { context in
+                        let total = textSize.width + gap
+                        let cycle = max(total / velocity, 0.5)
+                        let phase = context.date.timeIntervalSinceReferenceDate
+                            .truncatingRemainder(dividingBy: cycle) / cycle
+                        let offset = -CGFloat(phase) * total
+
+                        HStack(spacing: gap) {
+                            label
+                            label
+                        }
+                        .offset(x: offset)
+                    }
+                } else {
+                    label
+                }
+            }
+            .frame(width: geo.size.width, alignment: .leading)
+            .clipped()
+        }
+        .frame(height: textSize.height > 0 ? textSize.height : 22)
+        .background(
+            label
+                .fixedSize()
+                .hidden()
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: MarqueeTextSizeKey.self, value: proxy.size)
+                    }
+                )
+        )
+        .onPreferenceChange(MarqueeTextSizeKey.self) { textSize = $0 }
+    }
+
+    private var label: some View {
+        Text(text)
+            .font(font)
+            .foregroundStyle(color)
+            .fixedSize()
+    }
+}
+
+private struct MarqueeTextSizeKey: PreferenceKey {
+    static let defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        value = nextValue()
     }
 }
 

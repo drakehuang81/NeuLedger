@@ -201,10 +201,7 @@ public struct AddTransactionView: View {
                             .foregroundStyle(amountTint)
                     }
 
-                    TextField("0", text: Binding(
-                        get: { store.amountText },
-                        set: { store.send(.amountTextChanged($0)) }
-                    ))
+                    TextField("0", text: $store.amountText)
                     .keyboardType(.numberPad)
                     .focused($focusedField, equals: .amount)
                     .font(.system(size: 44, weight: .medium).monospacedDigit())
@@ -417,11 +414,12 @@ public struct AddTransactionView: View {
                     .foregroundStyle(Color.Design.textSecondary)
                     .frame(width: 56, alignment: .leading)
 
-                TextField("", text: Binding(
-                    get: { store.note },
-                    set: { store.send(.noteChanged($0)) }
-                ), prompt: Text(String(localized: "common_optional"))
-                    .foregroundStyle(Color.Design.textTertiary))
+                TextField(
+                    "",
+                    text: $store.note,
+                    prompt: Text(String(localized: "common_optional"))
+                        .foregroundStyle(Color.Design.textTertiary)
+                )
                 .focused($focusedField, equals: .note)
                 .font(.system(size: 14))
                 .foregroundStyle(Color.Design.textPrimary)
@@ -692,10 +690,7 @@ public struct AddTransactionView: View {
                 VStack {
                     DatePicker(
                         "",
-                        selection: Binding(
-                            get: { store.date },
-                            set: { store.send(.dateChanged($0)) }
-                        ),
+                        selection: $store.date,
                         displayedComponents: [.date, .hourAndMinute]
                     )
                     .datePickerStyle(.graphical)

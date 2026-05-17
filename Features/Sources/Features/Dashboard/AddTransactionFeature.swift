@@ -18,7 +18,7 @@ public struct AddTransactionFeature: Sendable {
     // MARK: - State
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State: Equatable, Sendable {
         public var mode: Mode
 
         // Form fields
@@ -106,17 +106,15 @@ public struct AddTransactionFeature: Sendable {
 
     // MARK: - Action
 
-    public enum Action: Sendable, Equatable {
+    public enum Action: Sendable, BindableAction, Equatable {
+        case binding(BindingAction<State>)
         case task
         case optionsLoaded(accounts: [Account], categories: [Domain.Category])
 
         case typeChanged(TransactionType)
-        case amountTextChanged(String)
         case accountSelected(Account.ID?)
         case toAccountSelected(Account.ID?)
         case categorySelected(Domain.Category.ID?)
-        case noteChanged(String)
-        case dateChanged(Date)
 
         case recurringToggled(Bool)
         case recurringFrequencyChanged(BudgetPeriod)
@@ -165,8 +163,32 @@ public struct AddTransactionFeature: Sendable {
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
+        BindingReducer()
         Reduce { state, action in
             switch action {
+            case .binding(\.amountText):
+                state.amountError = nil
+                return .none
+
+            case .binding(\.note):
+                state.isBackgroundParsingNote = !state.note.isEmpty
+                guard !state.note.isEmpty else {
+                    return .cancel(id: CancelID.noteDebounce)
+                }
+                let note = state.note
+                return .run { send in
+                    guard aiServiceClient.isAvailable() else {
+                        await send(.backgroundExtractionCompleted(nil))
+                        return
+                    }
+                    let result = try? await aiServiceClient.extractTransaction(note)
+                    await send(.backgroundExtractionCompleted(result))
+                }
+                .debounce(id: CancelID.noteDebounce, for: .milliseconds(500), scheduler: RunLoop.main)
+
+            case .binding:
+                return .none
+
             case .task:
                 state.isLoading = true
                 return .run { send in
@@ -197,11 +219,6 @@ public struct AddTransactionFeature: Sendable {
                 state.categoryId = nil
                 return .none
 
-            case let .amountTextChanged(text):
-                state.amountText = text
-                state.amountError = nil
-                return .none
-
             case let .accountSelected(id):
                 state.accountId = id
                 state.accountError = nil
@@ -216,30 +233,6 @@ public struct AddTransactionFeature: Sendable {
             case let .categorySelected(id):
                 state.categoryId = id
                 state.categoryError = nil
-                return .none
-
-            case let .noteChanged(note):
-                state.note = note
-                state.isBackgroundParsingNote = !note.isEmpty
-                guard !note.isEmpty else {
-                    // Cancel any pending debounce when field is cleared
-                    return .cancel(id: CancelID.noteDebounce)
-                }
-                // Debounce 500ms — consistent with RunLoop.main pattern used in TransactionsFeature.
-                // isAvailable() is checked inline (not via stored flag) because AddTransactionFeature
-                // has no .task lifecycle, and adding one just for this check would be over-engineering.
-                return .run { [note] send in
-                    guard aiServiceClient.isAvailable() else {
-                        await send(.backgroundExtractionCompleted(nil))
-                        return
-                    }
-                    let result = try? await aiServiceClient.extractTransaction(note)
-                    await send(.backgroundExtractionCompleted(result))
-                }
-                .debounce(id: CancelID.noteDebounce, for: .milliseconds(500), scheduler: RunLoop.main)
-
-            case let .dateChanged(date):
-                state.date = date
                 return .none
 
             case let .recurringToggled(isOn):

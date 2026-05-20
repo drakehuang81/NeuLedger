@@ -30,6 +30,15 @@ extension SDTag: PersistentDomainModel {
         return model
     }
 
+    func applyChanges(from domain: Tag, context: ModelContext) {
+        name = domain.name
+        color = domain.color
+    }
+
+    static func idPredicate(_ id: Tag.ID) -> Predicate<SDTag> {
+        #Predicate<SDTag> { $0.id == id }
+    }
+
     /// Resolves an existing `SDTag` by its identifier or creates a new one.
     ///
     /// - Parameters:

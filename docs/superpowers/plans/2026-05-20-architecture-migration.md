@@ -63,6 +63,11 @@
 
 下一階段：Phase 4（Ledger UseCase 抽出）— 引入 BudgetWarningPolicy、LedgerUseCase、BudgetUseCase.evaluateAfterTransaction，把 TransactionClient+Live 中的 checkBudgetWarnings 業務邏輯搬上層。Feature 改注入 `\\.ledger`。
 
+**Phase 4.1** ✅ `BudgetWarningPolicy` 抽出 `2f584a6`（3 files：Policy + tests + TransactionClient+Live 重構）。Phase 4.2/4.3 待辦：
+- 4.2 `BudgetUseCase.evaluateAfterTransaction(_:)`：包 `BudgetWarningPolicy.evaluate` + `NotificationAdapter.sendBudgetWarning` + `UserSettingsAdapter` 三者協調
+- 4.3 `LedgerUseCase.record / update / delete / fetch / listRecent / listAll / search`：`record` 內呼叫 `transactionRepository.add` + `budgetUseCase.evaluateAfterTransaction`（§3.1 Scenario B Invariant，必須帶 `// INVARIANT:` 註解）
+- 4.4 Features 改注入 `\\.ledger` 取代 `\\.transactionClient.add/update/delete`；最後從 `TransactionClient+Live` 移除 `checkBudgetWarnings` helper
+
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 
 - 第一次跑完整 `-scheme Features` 出現 9 個「An effect returned for this action is still running」失敗（SettingsFeatureTests 393/403/423/433 / TagManagementFeatureTests 53/81 / TransactionDetailFeatureTests:36 / CarrierManagementFeatureTests:246）。重跑變 4 個（位置不完全相同）— 明顯 flaky。

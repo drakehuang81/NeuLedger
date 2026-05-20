@@ -41,7 +41,17 @@
 - 2.3 `WidgetSyncClient` → `WidgetSyncAdapter` `46d3775`（6 files）
 - 2.4 `SpeechClient` → `SpeechAdapter` + `SpeechClientError` → `SpeechAdapterError` `5bef3fc`（7 files）
 
-下一階段：Phase 3（拆分誤命名 UseCase — `AIServiceClient` 與 `SyncClient`）。
+**Phase 3 範圍修訂（2026-05-21）**：原 plan 把 Phase 3 設計為「拆 Adapter + UseCase」，但 `AIServiceClient` 的 `answerFinancialQuestion` 已注入 `transactionClient/categoryClient`，純拆 Adapter 會引入跨層依賴或讓 Adapter 違反 architecture §3。為避免在 Phase 3 引入此設計爭議、控制範圍：
+
+- **Phase 3.1 改為純改名**：`AIServiceClient` → `AIUseCase`（沿 Phase 2 機械改名 pattern）。`AIAdapter` 切分留待 Phase 5「補完 AIUseCase 完整 spec」時處理（屆時也決定 `answerFinancialQuestion` 怎麼歸位）。
+- **Phase 3.2 改為純改名**：`SyncClient` → `CloudSyncUseCase`。`CloudKitSyncAdapter` 切分（含 §10 註記的 `SyncClient+Live:63` ModelContext 違規處理）也留待 Phase 5。
+
+理由：
+1. 跟 Phase 2 一致的「機械改名」流程已驗證安全可重複。
+2. 真正的 Adapter/UseCase 切分需要決定方法歸位，那是設計工作，不適合塞進「Phase 2 風格」的批次 rename 收尾。
+3. 結尾 Phase 1 收尾驗證 invariant 中那一個 `SyncClient+Live:63 ModelContext` 違規本來就 deferred 到 Phase 3 — 改成 Phase 5 不影響其他 invariant，且讓 Phase 3 變成 4-task→2-task 純 rename。
+
+下一階段：Phase 3.1（`AIServiceClient` → `AIUseCase` 純改名）。
 
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 

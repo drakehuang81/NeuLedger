@@ -53,6 +53,16 @@
 
 下一階段：Phase 3.1（`AIServiceClient` → `AIUseCase` 純改名）。
 
+**Phase 3（拆分誤命名 UseCase — rescoped 為純改名）** ✅ 全部完成（2 個 commit）
+- 3.1 `AIServiceClient` → `AIUseCase` `70faf8a`（17 files）
+- 3.2 `SyncClient` → `CloudSyncUseCase` `a3c61e2`（6 files）
+- **Phase 5 待辦遞延項**：
+  - 切 `AIAdapter`（從 AIUseCase 抽出 raw Foundation Models 包裝層）；`answerFinancialQuestion` 的 Repository 依賴重新歸位
+  - 切 `CloudKitSyncAdapter`（從 CloudSyncUseCase 抽出 NSPersistentCloudKitContainer lifecycle）；同時處理 `CloudSyncUseCase+Live:63` 的 `ModelContext(DatabaseClient.container)` 違規
+  - `UserSettingsAdapter.swift:101` 的 `SettingsKey rawValue "syncClient.lastSyncedAt"` 是 persisted UserDefaults key，**永遠不改**（會丟使用者既存資料）— 保留為已知歷史命名
+
+下一階段：Phase 4（Ledger UseCase 抽出）— 引入 BudgetWarningPolicy、LedgerUseCase、BudgetUseCase.evaluateAfterTransaction，把 TransactionClient+Live 中的 checkBudgetWarnings 業務邏輯搬上層。Feature 改注入 `\\.ledger`。
+
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 
 - 第一次跑完整 `-scheme Features` 出現 9 個「An effect returned for this action is still running」失敗（SettingsFeatureTests 393/403/423/433 / TagManagementFeatureTests 53/81 / TransactionDetailFeatureTests:36 / CarrierManagementFeatureTests:246）。重跑變 4 個（位置不完全相同）— 明顯 flaky。

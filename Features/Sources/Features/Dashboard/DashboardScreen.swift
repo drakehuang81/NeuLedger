@@ -24,7 +24,7 @@ public struct DashboardScreen: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         Group {
-                            DashboardTopBar(store: store)
+                            DashboardTopBar()
 
                             AccountChipsStrip(store: store)
 

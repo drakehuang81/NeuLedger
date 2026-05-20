@@ -1,10 +1,7 @@
 import SwiftUI
-import ComposableArchitecture
 import Common
 
 struct DashboardTopBar: View {
-    let store: StoreOf<DashboardFeature>
-
     private var greeting: LocalizedStringKey {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
@@ -34,24 +31,6 @@ struct DashboardTopBar: View {
                     .font(.system(size: 16, weight: .semibold))
             }
             Spacer()
-            iconButton(systemName: "sparkles") {
-                // TODO: (slice-followup): wire AI assistant entry point
-            }
-            iconButton(systemName: "magnifyingglass") {
-                // TODO: (slice-followup): wire global search entry point
-            }
         }
-    }
-
-    @ViewBuilder
-    private func iconButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.primary)
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(.ultraThinMaterial))
-        }
-        .buttonStyle(.plain)
     }
 }

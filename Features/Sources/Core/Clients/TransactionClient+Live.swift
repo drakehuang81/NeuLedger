@@ -127,8 +127,6 @@ private func checkBudgetWarnings(
 
     let today = Date()
     for budget in activeBudgets {
-        guard budget.amount > 0 else { continue }
-
         let cal = Calendar.current
         let component: Calendar.Component
         switch budget.period {
@@ -148,32 +146,29 @@ private func checkBudgetWarnings(
         }
         // DateInterval.end is exclusive — subtract 1ms so ClosedRange excludes the next period's start.
         let periodRange = interval.start...interval.end.addingTimeInterval(-0.001)
-        let inPeriodExpense = allTransactions.filter { txn in
-            txn.type == .expense
-                && periodRange.contains(txn.date)
-                && (budget.categoryId == nil ? true : txn.categoryId == budget.categoryId)
-        }
-
-        let totalSpent = inPeriodExpense.reduce(into: Decimal(0)) { $0 += $1.amount }
-        let ratio = (totalSpent / budget.amount * 100) as NSDecimalNumber
-        let usedPercent = ratio.intValue   // truncation is intentional (conservative)
+        let inPeriod = allTransactions.filter { periodRange.contains($0.date) }
 
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate]
         let pKey = formatter.string(from: interval.start)
-
         let bidStr = budget.id.uuidString
         let lastWarned = notificationAdapter.lastWarnedPercent(bidStr, pKey)
-        guard usedPercent >= threshold,
-              lastWarned == nil || lastWarned! < threshold else { continue }
+
+        let outcome = BudgetWarningPolicy.evaluate(
+            budget: budget,
+            transactionsInPeriod: inPeriod,
+            threshold: threshold,
+            lastWarnedPercent: lastWarned
+        )
+        guard outcome.shouldWarn else { continue }
 
         let title = String(localized: "notification_budget_warning_title", bundle: .main)
         let body = String(
             format: String(localized: "notification_budget_warning_body", bundle: .main),
             budget.name,
-            usedPercent
+            outcome.usedPercent
         )
         try? await notificationAdapter.sendBudgetWarning(bidStr, title, body)
-        notificationAdapter.setLastWarnedPercent(usedPercent, bidStr, pKey)
+        notificationAdapter.setLastWarnedPercent(outcome.usedPercent, bidStr, pKey)
     }
 }

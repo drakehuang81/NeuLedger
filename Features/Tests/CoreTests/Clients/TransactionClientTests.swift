@@ -29,6 +29,7 @@ struct TransactionClientTests {
         
         self.sut = withDependencies {
             $0.databaseClient = testDatabaseClient
+            $0.modelContainer = testDatabaseClient.modelContainer()
         } operation: {
             TransactionClient.liveValue
         }
@@ -220,6 +221,7 @@ struct TransactionClientTests {
 
         let client = withDependencies {
             $0.databaseClient = db
+            $0.modelContainer = db.modelContainer()
             $0.userSettingsClient.bool = { key in
                 key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
             }
@@ -262,6 +264,7 @@ struct TransactionClientTests {
 
         let client = withDependencies {
             $0.databaseClient = db
+            $0.modelContainer = db.modelContainer()
             $0.userSettingsClient.bool = { key in
                 key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
             }
@@ -303,6 +306,7 @@ struct TransactionClientTests {
 
         let client = withDependencies {
             $0.databaseClient = db
+            $0.modelContainer = db.modelContainer()
             $0.userSettingsClient.bool = { _ in false }   // all disabled
             $0.userSettingsClient.int = { $0.defaultValue }
             $0.budgetClient.fetchActive = { [] }
@@ -328,6 +332,7 @@ struct TransactionClientTests {
 
         let client = withDependencies {
             $0.databaseClient = db
+            $0.modelContainer = db.modelContainer()
             $0.userSettingsClient.bool = { key in
                 key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
             }

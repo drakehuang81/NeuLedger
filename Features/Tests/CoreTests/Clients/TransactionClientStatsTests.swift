@@ -56,6 +56,7 @@ struct TransactionClientStatsTests {
 
         let snap = try await withDependencies {
             $0.databaseClient = dbc
+            $0.modelContainer = dbc.modelContainer()
         } operation: {
             try await TransactionClient.liveValue.statsSnapshot()
         }
@@ -79,6 +80,7 @@ struct TransactionClientStatsTests {
 
         let snap = try await withDependencies {
             $0.databaseClient = dbc
+            $0.modelContainer = dbc.modelContainer()
         } operation: {
             try await TransactionClient.liveValue.statsSnapshot()
         }

@@ -62,6 +62,7 @@ struct TransactionClientWeeklyTests {
 
         let result = try await withDependencies {
             $0.databaseClient = dbc
+            $0.modelContainer = dbc.modelContainer()
         } operation: {
             try await TransactionClient.liveValue.weeklySpending(nil, 7)
         }
@@ -95,6 +96,7 @@ struct TransactionClientWeeklyTests {
 
         let result = try await withDependencies {
             $0.databaseClient = dbc
+            $0.modelContainer = dbc.modelContainer()
         } operation: {
             try await TransactionClient.liveValue.weeklySpending(a.id, 7)
         }
@@ -116,6 +118,7 @@ struct TransactionClientWeeklyTests {
         try ctx.save()
         let result = try await withDependencies {
             $0.databaseClient = dbc
+            $0.modelContainer = dbc.modelContainer()
         } operation: {
             try await TransactionClient.liveValue.weeklySpending(nil, 7)
         }

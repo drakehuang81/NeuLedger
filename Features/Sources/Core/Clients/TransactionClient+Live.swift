@@ -3,7 +3,13 @@ import SwiftData
 import Domain
 import Dependencies
 
-/// Live implementation of `TransactionClient` backed by SwiftData.
+/// Live implementation of `TransactionClient` backed by `SwiftDataStore`.
+///
+/// The `weeklySpending`, `statsSnapshot`, and `detailStats` endpoints
+/// still delegate to `DatabaseClient` helpers — those are analytics
+/// concerns that move to `AnalyticsUseCase` in Phase 5. Until then this
+/// file is the only Repository Live that retains a `databaseClient`
+/// dependency, and only for those three analytic endpoints.
 extension TransactionClient: DependencyKey {
     public static var liveValue: TransactionClient {
         @Dependency(\.databaseClient) var databaseClient
@@ -11,31 +17,22 @@ extension TransactionClient: DependencyKey {
         @Dependency(\.notificationClient) var notificationClient
         @Dependency(\.userSettingsClient) var userSettingsClient
 
+        let store = SwiftDataStore<Transaction, SDTransaction>()
+
         return TransactionClient(
             fetchRecent: {
-                var descriptor = FetchDescriptor<SDTransaction>(
+                let all = try await store.fetchAll(
                     sortBy: [SortDescriptor(\.date, order: .reverse)]
                 )
-                descriptor.fetchLimit = 20
-                return try databaseClient.fetch(descriptor)
+                return Array(all.prefix(20))
             },
             fetchAll: {
-                try databaseClient.fetch(
-                    FetchDescriptor<SDTransaction>(
-                        sortBy: [SortDescriptor(\.date, order: .reverse)]
-                    )
-                )
+                try await store.fetchAll(sortBy: [SortDescriptor(\.date, order: .reverse)])
             },
             fetch: { filter in
-                let context = databaseClient.makeContext()
-
-                // Build base descriptor and fetch all, then filter in-memory
-                // for complex multi-criteria filtering that SwiftData predicates
-                // don't easily compose.
-                let descriptor = FetchDescriptor<SDTransaction>(
+                var results = try await store.fetchAll(
                     sortBy: [SortDescriptor(\.date, order: .reverse)]
                 )
-                var results = try context.fetch(descriptor)
 
                 if let categoryIds = filter.categoryIds {
                     results = results.filter { txn in
@@ -48,12 +45,11 @@ extension TransactionClient: DependencyKey {
                 }
                 if let tagIds = filter.tagIds {
                     results = results.filter { txn in
-                        (txn.tags ?? []).contains { tagIds.contains($0.id) }
+                        txn.tags.contains { tagIds.contains($0.id) }
                     }
                 }
                 if let types = filter.types {
-                    let rawTypes = types.map(\.rawValue)
-                    results = results.filter { rawTypes.contains($0.type) }
+                    results = results.filter { types.contains($0.type) }
                 }
                 if let dateRange = filter.dateRange {
                     results = results.filter { dateRange.contains($0.date) }
@@ -64,61 +60,35 @@ extension TransactionClient: DependencyKey {
                         $0.note?.lowercased().contains(lowered) ?? false
                     }
                 }
-
-                return results.map { $0.toDomain() }
+                return results
             },
             search: { query in
-                let context = databaseClient.makeContext()
                 let lowered = query.lowercased()
-                let descriptor = FetchDescriptor<SDTransaction>(
+                let all = try await store.fetchAll(
                     sortBy: [SortDescriptor(\.date, order: .reverse)]
                 )
-                let all = try context.fetch(descriptor)
-                let filtered = all.filter {
-                    $0.note?.lowercased().contains(lowered) ?? false
-                }
-                return filtered.map { $0.toDomain() }
+                return all.filter { $0.note?.lowercased().contains(lowered) ?? false }
             },
             add: { transaction in
-                try databaseClient.add(transaction, as: SDTransaction.self)
+                try await store.add(transaction)
                 await checkBudgetWarnings(
                     budgetClient: budgetClient,
                     notificationClient: notificationClient,
                     userSettingsClient: userSettingsClient,
-                    databaseClient: databaseClient
+                    transactionStore: store
                 )
             },
             update: { transaction in
-                let txnId = transaction.id
-                try databaseClient.update(
-                    matching: FetchDescriptor<SDTransaction>(
-                        predicate: #Predicate { $0.id == txnId }
-                    )
-                ) { existing, context in
-                    existing.amount = transaction.amount
-                    existing.date = transaction.date
-                    existing.note = transaction.note
-                    existing.categoryId = transaction.categoryId
-                    existing.accountId = transaction.accountId
-                    existing.toAccountId = transaction.toAccountId
-                    existing.type = transaction.type.rawValue
-                    existing.aiSuggested = transaction.aiSuggested
-                    existing.updatedAt = transaction.updatedAt
-                    existing.tags = transaction.tags.map { SDTag.resolve($0, context: context) }
-                }
+                try await store.update(transaction)
                 await checkBudgetWarnings(
                     budgetClient: budgetClient,
                     notificationClient: notificationClient,
                     userSettingsClient: userSettingsClient,
-                    databaseClient: databaseClient
+                    transactionStore: store
                 )
             },
             delete: { id in
-                try databaseClient.deleteFirst(
-                    matching: FetchDescriptor<SDTransaction>(
-                        predicate: #Predicate { $0.id == id }
-                    )
-                )
+                try await store.delete(id: id)
             },
             weeklySpending: { accountID, days in
                 try databaseClient.weeklySpendingSums(accountID: accountID, days: days)
@@ -140,11 +110,16 @@ extension TransactionClient: DependencyKey {
 /// NOTE: localization keys are resolved from the app's main bundle because the
 /// `Localizable.xcstrings` catalog lives in the app target, not in the Core SPM package.
 /// Switching to `Bundle.module` would require moving or duplicating the catalog into Core.
+///
+/// This helper is the last Repository-layer site that mixes business logic
+/// with persistence. Phase 4 of the architecture migration extracts it into
+/// `LedgerUseCase.record` + `BudgetUseCase.evaluateAfterTransaction` per
+/// docs/architecture.md §3.1 Scenario B (post-condition invariant).
 private func checkBudgetWarnings(
     budgetClient: BudgetClient,
     notificationClient: NotificationClient,
     userSettingsClient: UserSettingsClient,
-    databaseClient: DatabaseClient
+    transactionStore: SwiftDataStore<Transaction, SDTransaction>
 ) async {
     guard userSettingsClient.bool(.budgetWarningEnabled) else { return }
     let threshold = userSettingsClient.int(.budgetWarningThreshold)
@@ -163,42 +138,23 @@ private func checkBudgetWarnings(
         }
         guard let interval = cal.dateInterval(of: component, for: today) else { continue }
 
-        // categoryId is UUID? — build Set<UUID>? accordingly
-        let categoryIds: Set<UUID>? = budget.categoryId.map { Set([$0]) }
-        let filter = TransactionFilter(
-            categoryIds: categoryIds,
-            types: Set([.expense]),
-            // DateInterval.end is exclusive — subtract 1ms so ClosedRange excludes the next period's start.
-            dateRange: interval.start...interval.end.addingTimeInterval(-0.001)
-        )
-
-        // Fetch transactions directly through databaseClient to avoid recursive dependency
-        let transactions: [Transaction]
+        // Fetch all transactions and filter in Swift — matches the pattern
+        // used everywhere else in this Live implementation.
+        let allTransactions: [Transaction]
         do {
-            let context = databaseClient.makeContext()
-            let descriptor = FetchDescriptor<SDTransaction>(
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            var results = try context.fetch(descriptor)
-            if let catIds = filter.categoryIds {
-                results = results.filter { txn in
-                    guard let catId = txn.categoryId else { return false }
-                    return catIds.contains(catId)
-                }
-            }
-            if let types = filter.types {
-                let rawTypes = types.map(\.rawValue)
-                results = results.filter { rawTypes.contains($0.type) }
-            }
-            if let dateRange = filter.dateRange {
-                results = results.filter { dateRange.contains($0.date) }
-            }
-            transactions = results.map { $0.toDomain() }
+            allTransactions = try await transactionStore.fetchAll()
         } catch {
             continue
         }
+        // DateInterval.end is exclusive — subtract 1ms so ClosedRange excludes the next period's start.
+        let periodRange = interval.start...interval.end.addingTimeInterval(-0.001)
+        let inPeriodExpense = allTransactions.filter { txn in
+            txn.type == .expense
+                && periodRange.contains(txn.date)
+                && (budget.categoryId == nil ? true : txn.categoryId == budget.categoryId)
+        }
 
-        let totalSpent = transactions.reduce(into: Decimal(0)) { $0 += $1.amount }
+        let totalSpent = inPeriodExpense.reduce(into: Decimal(0)) { $0 += $1.amount }
         let ratio = (totalSpent / budget.amount * 100) as NSDecimalNumber
         let usedPercent = ratio.intValue   // truncation is intentional (conservative)
 
@@ -206,7 +162,6 @@ private func checkBudgetWarnings(
         formatter.formatOptions = [.withFullDate]
         let pKey = formatter.string(from: interval.start)
 
-        // budget.id is UUID — use .uuidString as the String key
         let bidStr = budget.id.uuidString
         let lastWarned = notificationClient.lastWarnedPercent(bidStr, pKey)
         guard usedPercent >= threshold,

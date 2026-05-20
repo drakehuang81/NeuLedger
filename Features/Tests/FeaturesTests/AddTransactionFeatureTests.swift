@@ -168,10 +168,10 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiServiceClient.isAvailable = { aiAvailable }
+            $0.aiUseCase.isAvailable = { aiAvailable }
             if aiAvailable {
-                $0.aiServiceClient.extractTransaction = { _ in ExtractedTransaction() }
-                $0.aiServiceClient.suggestCategories = { _, _ in
+                $0.aiUseCase.extractTransaction = { _ in ExtractedTransaction() }
+                $0.aiUseCase.suggestCategories = { _, _ in
                     CategorySuggestions(suggestions: [], confidence: "low")
                 }
             }
@@ -198,7 +198,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [account] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
             $0.transactionClient.add = { saved.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
@@ -244,7 +244,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.backgroundExtractionCompleted(nil)) {
             $0.isBackgroundParsingNote = false
@@ -342,7 +342,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [Self.account1] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
             $0.transactionClient.update = { updatedCapture.setValue($0) }
         }
 
@@ -366,7 +366,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.requestPermission = { false }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         await store.send(.recordingTapped)
@@ -391,7 +391,7 @@ struct AddTransactionVoiceTests {
             $0.speechAdapter.requestPermission = { true }
             $0.speechAdapter.startRecording = { stream }
             $0.speechAdapter.stopRecording = { }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         await store.send(.recordingTapped)
@@ -416,7 +416,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.stopRecording = { }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         await store.send(.transcriptionUpdated("五十五元")) {
@@ -434,7 +434,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.stopRecording = { }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         await store.send(.transcriptionUpdated("午餐便當")) {
@@ -453,7 +453,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.stopRecording = { }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         // SpeechAdapter emits FULL transcript each time (not delta).
@@ -476,7 +476,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         await store.send(.transcriptionFailed) {
@@ -499,7 +499,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
 
         await store.send(.recordingTapped) {
@@ -521,7 +521,7 @@ struct AddTransactionVoiceTests {
             AddTransactionFeature()
         } withDependencies: {
             $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         store.exhaustivity = .off
 

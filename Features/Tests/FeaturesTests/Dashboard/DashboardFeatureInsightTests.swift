@@ -17,9 +17,9 @@ struct DashboardFeatureInsightTests {
         let store = TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.generateInsights = { _ in mock }
-            $0.aiServiceClient.generateInsight = { _ in "" }
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.generateInsights = { _ in mock }
+            $0.aiUseCase.generateInsight = { _ in "" }
             $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.transactionClient.statsSnapshot = { .zero }
             $0.transactionClient.fetchRecent = { [] }
@@ -68,7 +68,7 @@ struct DashboardFeatureInsightTests {
         let store = TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.aiServiceClient.generateInsights = { _ in mock }
+            $0.aiUseCase.generateInsights = { _ in mock }
         }
         await store.send(.retrySection(.insight)) {
             $0.insightPhase = .loading

@@ -155,7 +155,7 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.dismiss) var dismiss
-    @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.aiUseCase) var aiUseCase
     @Dependency(\.speechAdapter) var speechAdapter
 
     private enum CancelID { case task; case noteDebounce; case categorySuggest; case speechRecording }
@@ -177,11 +177,11 @@ public struct AddTransactionFeature: Sendable {
                 }
                 let note = state.note
                 return .run { send in
-                    guard aiServiceClient.isAvailable() else {
+                    guard aiUseCase.isAvailable() else {
                         await send(.backgroundExtractionCompleted(nil))
                         return
                     }
-                    let result = try? await aiServiceClient.extractTransaction(note)
+                    let result = try? await aiUseCase.extractTransaction(note)
                     await send(.backgroundExtractionCompleted(result))
                 }
                 .debounce(id: CancelID.noteDebounce, for: .milliseconds(500), scheduler: RunLoop.main)
@@ -436,7 +436,7 @@ public struct AddTransactionFeature: Sendable {
             case .suggestCategoryTapped:
                 // Guard in reducer — the View disables the button, but this prevents subtle bugs
                 // if isAvailable state drifts between the .task check and the tap.
-                guard aiServiceClient.isAvailable() else {
+                guard aiUseCase.isAvailable() else {
                     state.categorySuggestionError = String(localized: "add_transaction_ai_unavailable")
                     return .none
                 }
@@ -446,7 +446,7 @@ public struct AddTransactionFeature: Sendable {
                 let categoryNames = state.filteredCategories.map(\.name)
                 return .run { send in
                     await send(.categorySuggestionsReceived(
-                        TaskResult { try await aiServiceClient.suggestCategories(description, categoryNames) }
+                        TaskResult { try await aiUseCase.suggestCategories(description, categoryNames) }
                     ))
                 }
                 .cancellable(id: CancelID.categorySuggest, cancelInFlight: true)

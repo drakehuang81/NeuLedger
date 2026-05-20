@@ -160,7 +160,7 @@ public struct DashboardFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.aiUseCase) var aiUseCase
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.date.now) var now
 
@@ -361,7 +361,7 @@ public struct DashboardFeature: Sendable {
             // MARK: AI Insight
 
             case .fetchAIInsight:
-                guard aiServiceClient.isAvailable() else { return .none }
+                guard aiUseCase.isAvailable() else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
                     let totalExpense = transactions
@@ -377,7 +377,7 @@ public struct DashboardFeature: Sendable {
                         periodDescription: String(localized: "dashboard_period_recent", bundle: .main)
                     )
 
-                    let insight = try await aiServiceClient.generateInsight(summary)
+                    let insight = try await aiUseCase.generateInsight(summary)
                     await send(.aiInsightResponse(.success(insight)))
                 } catch: { error, send in
                     await send(.aiInsightResponse(.failure(error)))
@@ -587,7 +587,7 @@ public struct DashboardFeature: Sendable {
         .run { send in
             do {
                 let summary = SpendingSummary(monthTotal: 0, weekTotal: 0)
-                let list = try await aiServiceClient.generateInsights(summary)
+                let list = try await aiUseCase.generateInsights(summary)
                 await send(.insightsLoaded(list))
             } catch {
                 await send(.sectionFailed(.insight, String(localized: "dashboard_section_load_failed", bundle: .main)))

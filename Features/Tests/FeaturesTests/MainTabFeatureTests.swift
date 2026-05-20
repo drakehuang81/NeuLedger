@@ -13,7 +13,7 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
             $0.userSettingsAdapter.string = { _ in "add" }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
@@ -30,7 +30,7 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
             $0.userSettingsAdapter.string = { _ in "ai" }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
@@ -50,7 +50,7 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.aiInputButtonTapped) {
             $0.isAIInputExpanded = true
@@ -67,7 +67,7 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
             $0.speechAdapter.stopRecording = { }
         }
         await store.send(.aiInputDismissed) {
@@ -92,8 +92,8 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.extractTransaction = { _ in extracted }
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.extractTransaction = { _ in extracted }
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
@@ -119,7 +119,7 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.aiExtractionCompleted(.failure(FakeError()))) {
             $0.isAIInputLoading = false
@@ -144,7 +144,7 @@ struct MainTabRecurringConfirmationTests {
             MainTabFeature()
         } withDependencies: {
             $0.recurringTransactionClient.fetchAll = { [template] }
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
             $0.userSettingsAdapter.bool = { _ in false }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { continuation in
@@ -171,7 +171,7 @@ struct MainTabAccessoryBarTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
             $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
@@ -199,7 +199,7 @@ struct MainTabAccessoryModeTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
         }
         await store.send(.accessoryModeLoaded(.ai)) {
             $0.accessoryMode = .ai
@@ -213,7 +213,7 @@ struct MainTabAccessoryModeTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         // AI unavailable — reducer ignores the .ai value and keeps .add
         await store.send(.accessoryModeLoaded(.ai))
@@ -227,7 +227,7 @@ struct MainTabAccessoryModeTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
             $0.userSettingsAdapter.setString = { value, key in
                 savedKey.setValue(key.rawValue)
                 savedValue.setValue(value)
@@ -248,7 +248,7 @@ struct MainTabAccessoryModeTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
             $0.userSettingsAdapter.setString = { value, _ in savedValue.setValue(value) }
         }
         await store.send(.accessoryModeSwitched(.add)) {

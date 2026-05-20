@@ -4,10 +4,10 @@ import DependenciesMacros
 
 /// A client interface for interacting with AI-powered financial services.
 ///
-/// Use `AIServiceClient` to parse natural language into transactions, generate category suggestions,
+/// Use `AIUseCase` to parse natural language into transactions, generate category suggestions,
 /// and provide intelligent spending insights.
 @DependencyClient
-public struct AIServiceClient: Sendable {
+public struct AIUseCase: Sendable {
     /// Extracts structured transaction data from a natural language description.
     ///
     /// - Parameter text: The natural language string describing a transaction.
@@ -46,13 +46,13 @@ public struct AIServiceClient: Sendable {
     public var isAvailable: @Sendable () -> Bool = { false }
 }
 
-extension AIServiceClient: TestDependencyKey {
+extension AIUseCase: TestDependencyKey {
     public static let testValue = Self()
 }
 
 public extension DependencyValues {
-    var aiServiceClient: AIServiceClient {
-        get { self[AIServiceClient.self] }
-        set { self[AIServiceClient.self] = newValue }
+    var aiUseCase: AIUseCase {
+        get { self[AIUseCase.self] }
+        set { self[AIUseCase.self] = newValue }
     }
 }

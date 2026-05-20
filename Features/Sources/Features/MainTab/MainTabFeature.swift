@@ -79,7 +79,7 @@ struct MainTabFeature {
     }
 
     // MARK: - Dependencies
-    @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.aiUseCase) var aiUseCase
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
@@ -104,7 +104,7 @@ struct MainTabFeature {
                     await withTaskGroup(of: Void.self) { group in
                         // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
                         group.addTask {
-                            let isAvailable = aiServiceClient.isAvailable()
+                            let isAvailable = aiUseCase.isAvailable()
                             await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
                             let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
                             await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
@@ -160,7 +160,7 @@ struct MainTabFeature {
                 let text = state.aiInputText
                 return .run { send in
                     await send(.aiExtractionCompleted(
-                        TaskResult { try await aiServiceClient.extractTransaction(text) }
+                        TaskResult { try await aiUseCase.extractTransaction(text) }
                     ))
                 }
                 .cancellable(id: CancelID.aiExtraction, cancelInFlight: true)

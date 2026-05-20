@@ -215,7 +215,7 @@ private struct MessageBubble: View {
         store: Store(initialState: AIAssistantFeature.State()) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
         }
     )
     .padding()
@@ -232,7 +232,7 @@ private struct MessageBubble: View {
         store: Store(initialState: state) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
         }
     )
     .padding()

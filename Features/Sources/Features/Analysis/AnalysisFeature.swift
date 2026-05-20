@@ -88,7 +88,7 @@ public struct AnalysisFeature: Sendable {
     @Dependency(\.budgetClient) var budgetClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.aiServiceClient) var aiServiceClient
+    @Dependency(\.aiUseCase) var aiUseCase
 
     private enum CancelID { case budgets }
 
@@ -125,7 +125,7 @@ public struct AnalysisFeature: Sendable {
                 let period = state.selectedPeriod
                 let selectedAccountId = state.selectedAccountId
                 return .merge(
-                    .run { [transactionClient, categoryClient, aiServiceClient] send in
+                    .run { [transactionClient, categoryClient, aiUseCase] send in
                         do {
                         let dateRange = Self.dateRange(for: period)
                         let filter = TransactionFilter(
@@ -189,7 +189,7 @@ public struct AnalysisFeature: Sendable {
 
                         // AI insight
                         var insight: InsightDetail? = nil
-                        if aiServiceClient.isAvailable() {
+                        if aiUseCase.isAvailable() {
                             let breakdownByName = Dictionary(
                                 categoryTotals.values.map { ($0.name, $0.amount) },
                                 uniquingKeysWith: { lhs, rhs in lhs + rhs }
@@ -200,7 +200,7 @@ public struct AnalysisFeature: Sendable {
                                 categoryBreakdown: breakdownByName,
                                 periodDescription: period.displayName
                             )
-                            if let text = try? await aiServiceClient.generateInsight(spendingSummary) {
+                            if let text = try? await aiUseCase.generateInsight(spendingSummary) {
                                 insight = InsightDetail(
                                     title: String(localized: "analysis_ai_insight_title"),
                                     description: text

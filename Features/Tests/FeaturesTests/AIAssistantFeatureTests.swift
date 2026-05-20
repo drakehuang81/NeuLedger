@@ -12,7 +12,7 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: AIAssistantFeature.State()) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.expandTapped) { $0.isExpanded = true }
     }
@@ -24,7 +24,7 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: initial) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.expandTapped) { $0.isExpanded = false }
     }
@@ -36,7 +36,7 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: AIAssistantFeature.State()) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
+            $0.aiUseCase.isAvailable = { true }
         }
         await store.send(.task) { $0.isAvailable = true }
     }
@@ -46,7 +46,7 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: AIAssistantFeature.State()) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.task)
     }
@@ -58,7 +58,7 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: AIAssistantFeature.State()) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.inputChanged("上個月花了多少？")) { $0.inputText = "上個月花了多少？" }
     }
@@ -70,8 +70,8 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: AIAssistantFeature.State()) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
-            $0.aiServiceClient.answerFinancialQuestion = { _ in
+            $0.aiUseCase.isAvailable = { false }
+            $0.aiUseCase.answerFinancialQuestion = { _ in
                 Issue.record("should not be called"); return ""
             }
         }
@@ -89,8 +89,8 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: initial) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
-            $0.aiServiceClient.answerFinancialQuestion = { _ in
+            $0.aiUseCase.isAvailable = { false }
+            $0.aiUseCase.answerFinancialQuestion = { _ in
                 Issue.record("should not be called"); return ""
             }
         }
@@ -106,8 +106,8 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: initial) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
-            $0.aiServiceClient.answerFinancialQuestion = { _ in "NT$12,300" }
+            $0.aiUseCase.isAvailable = { false }
+            $0.aiUseCase.answerFinancialQuestion = { _ in "NT$12,300" }
         }
         store.exhaustivity = .off
 
@@ -137,8 +137,8 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: initial) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
-            $0.aiServiceClient.answerFinancialQuestion = { _ in
+            $0.aiUseCase.isAvailable = { false }
+            $0.aiUseCase.answerFinancialQuestion = { _ in
                 struct Err: Error {}
                 throw Err()
             }
@@ -165,7 +165,7 @@ struct AIAssistantFeatureTests {
         let store = await TestStore(initialState: initial) {
             AIAssistantFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { false }
+            $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.dismissError) { $0.errorMessage = nil }
     }

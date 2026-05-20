@@ -64,7 +64,7 @@ private struct QueryTransactionsTool: Tool {
     }
 }
 
-extension AIServiceClient: DependencyKey {
+extension AIUseCase: DependencyKey {
     // InsightCache is a static let so it is created once for the app session and shared
     // by all generateInsight calls — not reset each time liveValue is accessed.
     private static let insightCache = InsightCache()
@@ -73,7 +73,7 @@ extension AIServiceClient: DependencyKey {
         Locale.current.language.languageCode?.identifier.hasPrefix("zh") == true ? "、" : ", "
     }
 
-    public static let liveValue = AIServiceClient(
+    public static let liveValue = AIUseCase(
 
         // MARK: - extractTransaction
         // A fresh LanguageModelSession per call — no shared context needed for single-shot extraction.
@@ -92,7 +92,7 @@ extension AIServiceClient: DependencyKey {
         // preventing hallucinated categories that don't exist in the user's data.
         suggestCategories: { description, existingCategories in
             let session = LanguageModelSession()
-            let categoryList = existingCategories.joined(separator: AIServiceClient.listSeparator())
+            let categoryList = existingCategories.joined(separator: AIUseCase.listSeparator())
             let template = String(localized: "ai_prompt_suggest_categories", bundle: .main)
             let prompt = String(format: template, description, categoryList)
             return try await session.respond(to: prompt, generating: CategorySuggestions.self).content
@@ -102,7 +102,7 @@ extension AIServiceClient: DependencyKey {
         // Same SpendingSummary within a session hits the cache — no repeated inference for
         // the Analysis screen's period switcher (week/month/year all stay cached after first load).
         generateInsight: { summary in
-            if let cached = await AIServiceClient.insightCache.get(for: summary) { return cached }
+            if let cached = await AIUseCase.insightCache.get(for: summary) { return cached }
             let session = LanguageModelSession()
             let template = String(localized: "ai_prompt_generate_insight", bundle: .main)
             var prompt = String(format: template,
@@ -112,14 +112,14 @@ extension AIServiceClient: DependencyKey {
             if !summary.categoryBreakdown.isEmpty {
                 let categoryText = summary.categoryBreakdown
                     .map { "\($0.key): NT$\($0.value)" }
-                    .joined(separator: AIServiceClient.listSeparator())
+                    .joined(separator: AIUseCase.listSeparator())
                 let categoryLine = String(
                     format: String(localized: "ai_prompt_category_breakdown", bundle: .main),
                     categoryText)
                 prompt += "\n" + categoryLine
             }
             let result = try await session.respond(to: prompt).content
-            await AIServiceClient.insightCache.set(result, for: summary)
+            await AIUseCase.insightCache.set(result, for: summary)
             return result
         },
 

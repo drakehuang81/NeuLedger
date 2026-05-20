@@ -97,9 +97,9 @@ struct DashboardFeatureTests {
             $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.transactionClient.statsSnapshot = { .zero }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.generateInsight = { _ in "Test insight" }
-            $0.aiServiceClient.generateInsights = { _ in [] }
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.generateInsight = { _ in "Test insight" }
+            $0.aiUseCase.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
 
@@ -167,8 +167,8 @@ struct DashboardFeatureTests {
         ) {
             DashboardFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.generateInsight = { _ in "Updated insight" }
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.generateInsight = { _ in "Updated insight" }
         }
 
         // Simulate receiving an updated list with 4 transactions (different count).
@@ -221,9 +221,9 @@ struct DashboardFeatureTests {
             $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.transactionClient.statsSnapshot = { .zero }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.generateInsight = { _ in "" }
-            $0.aiServiceClient.generateInsights = { _ in [] }
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.generateInsight = { _ in "" }
+            $0.aiUseCase.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
 
@@ -263,9 +263,9 @@ struct DashboardFeatureTests {
             $0.transactionClient.weeklySpending = { _, _ in [] }
             $0.transactionClient.statsSnapshot = { .zero }
             $0.categoryClient.fetchAll = { Self.sampleCategories }
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.generateInsight = { _ in "Fresh insight" }
-            $0.aiServiceClient.generateInsights = { _ in [] }
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.generateInsight = { _ in "Fresh insight" }
+            $0.aiUseCase.generateInsights = { _ in [] }
         }
         store.exhaustivity = .off
 
@@ -411,8 +411,8 @@ struct DashboardFeatureTests {
             $0.accountClient.fetchActive = { [] }
             $0.accountClient.fetchAll = { [] }
             $0.transactionClient.fetchRecent = { [] }
-            $0.aiServiceClient.isAvailable = { false }
-            $0.aiServiceClient.generateInsight = { _ in "" }
+            $0.aiUseCase.isAvailable = { false }
+            $0.aiUseCase.generateInsight = { _ in "" }
             $0.date = .constant(fixedDate)
         }
         await store.send(.addTransactionWithPrefilledData(extracted)) {
@@ -479,8 +479,8 @@ struct DashboardFeatureTests {
         ) {
             DashboardFeature()
         } withDependencies: {
-            $0.aiServiceClient.isAvailable = { true }
-            $0.aiServiceClient.generateInsight = { _ in
+            $0.aiUseCase.isAvailable = { true }
+            $0.aiUseCase.generateInsight = { _ in
                 throw NSError(domain: "AI", code: -1)
             }
         }

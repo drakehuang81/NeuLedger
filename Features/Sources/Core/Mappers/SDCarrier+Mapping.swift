@@ -3,7 +3,7 @@ import SwiftData
 import Domain
 
 /// Bidirectional mapping between `SDCarrier` and `Carrier`.
-extension SDCarrier: DomainConvertible {
+extension SDCarrier: PersistentDomainModel {
     /// Converts this SwiftData model to a Domain `Carrier` value type.
     func toDomain() -> Carrier {
         Carrier(

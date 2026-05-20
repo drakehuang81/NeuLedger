@@ -3,7 +3,7 @@ import SwiftData
 import Domain
 
 /// Bidirectional mapping between `SDRecurringTransaction` and `RecurringTransaction`.
-extension SDRecurringTransaction: DomainConvertible {
+extension SDRecurringTransaction: PersistentDomainModel {
     /// Converts this SwiftData model to a Domain `RecurringTransaction` value type.
     ///
     /// Tags are not resolved in v1; `tagIds` are preserved in storage for future use.

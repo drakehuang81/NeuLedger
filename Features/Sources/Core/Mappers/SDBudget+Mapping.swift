@@ -3,7 +3,7 @@ import SwiftData
 import Domain
 
 /// Bidirectional mapping between `SDBudget` and `Budget`.
-extension SDBudget: DomainConvertible {
+extension SDBudget: PersistentDomainModel {
     /// Converts this SwiftData model to a Domain `Budget` value type.
     func toDomain() -> Budget {
         let resolvedPeriod: BudgetPeriod

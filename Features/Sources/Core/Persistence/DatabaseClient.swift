@@ -131,7 +131,7 @@ extension DatabaseClient {
     // MARK: Fetch
 
     /// Fetches persistence models matching the given descriptor and maps them to domain values.
-    func fetch<T: DomainConvertible>(
+    func fetch<T: PersistentDomainModel>(
         _ descriptor: FetchDescriptor<T>
     ) throws -> [T.DomainModel] {
         let context = makeContext()
@@ -141,7 +141,7 @@ extension DatabaseClient {
     // MARK: Add
 
     /// Inserts a new persistence model created from the given domain value and saves.
-    func add<T: DomainConvertible>(
+    func add<T: PersistentDomainModel>(
         _ domain: T.DomainModel,
         as type: T.Type
     ) throws {

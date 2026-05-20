@@ -3,7 +3,7 @@ import SwiftData
 import Domain
 
 /// Bidirectional mapping between `SDCategory` and `Category`.
-extension SDCategory: DomainConvertible {
+extension SDCategory: PersistentDomainModel {
     /// Converts this SwiftData model to a Domain `Category` value type.
     func toDomain() -> Domain.Category {
         let resolvedType: TransactionType

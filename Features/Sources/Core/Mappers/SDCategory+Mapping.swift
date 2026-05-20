@@ -44,4 +44,17 @@ extension SDCategory: PersistentDomainModel {
         context.insert(model)
         return model
     }
+
+    func applyChanges(from domain: Domain.Category, context: ModelContext) {
+        name = domain.name
+        icon = domain.icon
+        color = domain.color
+        type = domain.type.rawValue
+        sortOrder = domain.sortOrder
+        isDefault = domain.isDefault
+    }
+
+    static func idPredicate(_ id: Domain.Category.ID) -> Predicate<SDCategory> {
+        #Predicate<SDCategory> { $0.id == id }
+    }
 }

@@ -269,8 +269,25 @@ struct CarrierManagementFeatureTests {
             $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
+        // deleteTapped now shows a confirmation alert
         await store.send(.deleteTapped(Self.carrierA.id)) {
-            $0.expandedCarrierId = nil  // expanded row is collapsed immediately
+            $0.alert = AlertState {
+                TextState(String(localized: "alert_delete_carrier"))
+            } actions: {
+                ButtonState(role: .destructive, action: .deleteConfirmed(Self.carrierA.id)) {
+                    TextState(String(localized: "common_delete"))
+                }
+                ButtonState(role: .cancel) {
+                    TextState(String(localized: "common_cancel"))
+                }
+            } message: {
+                TextState(String(format: String(localized: "alert_delete_carrier_message"), Self.carrierA.name))
+            }
+        }
+        // Confirm deletion — this triggers the actual delete effect
+        await store.send(.alert(.presented(.deleteConfirmed(Self.carrierA.id)))) {
+            $0.alert = nil
+            $0.expandedCarrierId = nil  // expanded row is collapsed on confirm
         }
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
@@ -300,8 +317,25 @@ struct CarrierManagementFeatureTests {
             $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
 
+        // deleteTapped now shows a confirmation alert
         await store.send(.deleteTapped(Self.carrierA.id)) {
-            $0.expandedCarrierId = nil  // expanded row is collapsed immediately
+            $0.alert = AlertState {
+                TextState(String(localized: "alert_delete_carrier"))
+            } actions: {
+                ButtonState(role: .destructive, action: .deleteConfirmed(Self.carrierA.id)) {
+                    TextState(String(localized: "common_delete"))
+                }
+                ButtonState(role: .cancel) {
+                    TextState(String(localized: "common_cancel"))
+                }
+            } message: {
+                TextState(String(format: String(localized: "alert_delete_carrier_message"), Self.carrierA.name))
+            }
+        }
+        // Confirm deletion — this triggers the actual delete effect
+        await store.send(.alert(.presented(.deleteConfirmed(Self.carrierA.id)))) {
+            $0.alert = nil
+            $0.expandedCarrierId = nil  // expanded row is collapsed on confirm
         }
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
@@ -455,7 +489,25 @@ struct CarrierManagementFeatureTests {
             }
         }
 
-        await store.send(.deleteTapped(deletedId))
+        // deleteTapped now shows a confirmation alert
+        await store.send(.deleteTapped(deletedId)) {
+            $0.alert = AlertState {
+                TextState(String(localized: "alert_delete_carrier"))
+            } actions: {
+                ButtonState(role: .destructive, action: .deleteConfirmed(deletedId)) {
+                    TextState(String(localized: "common_delete"))
+                }
+                ButtonState(role: .cancel) {
+                    TextState(String(localized: "common_cancel"))
+                }
+            } message: {
+                TextState(String(format: String(localized: "alert_delete_carrier_message"), ""))
+            }
+        }
+        // Confirm deletion
+        await store.send(.alert(.presented(.deleteConfirmed(deletedId)))) {
+            $0.alert = nil
+        }
         await store.receive(\.carriersLoaded) {
             $0.carriers = [remaining]
         }

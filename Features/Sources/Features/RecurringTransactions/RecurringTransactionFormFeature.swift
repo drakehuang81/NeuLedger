@@ -86,7 +86,7 @@ public struct RecurringTransactionFormFeature: Sendable {
     @Dependency(\.recurringTransactionClient) var client
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.date.now) var now
     @Dependency(\.dismiss) var dismiss
 
@@ -232,7 +232,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                         } else {
                             try await client.add(template)
                         }
-                        try await notificationClient.scheduleRecurringReminder(
+                        try await notificationAdapter.scheduleRecurringReminder(
                             template.id,
                             template.nextDueDate,
                             String(localized: "recurring_transaction_notification_title"),

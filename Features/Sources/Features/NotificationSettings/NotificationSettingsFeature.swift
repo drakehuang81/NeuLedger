@@ -58,7 +58,7 @@ public struct NotificationSettingsFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.openURL) var openURL
 
@@ -87,7 +87,7 @@ public struct NotificationSettingsFeature: Sendable {
 
                 return .merge(
                     .run { send in
-                        let authorized = await notificationClient.isAuthorized()
+                        let authorized = await notificationAdapter.isAuthorized()
                         await send(.authorizationStatusLoaded(authorized))
                     }
                     .cancellable(id: CancelID.task),
@@ -105,7 +105,7 @@ public struct NotificationSettingsFeature: Sendable {
                 if !enabled {
                     state.dailyReminderEnabled = false
                     userSettingsClient.setBool(false, .dailyReminderEnabled)
-                    return .run { _ in await notificationClient.cancelDailyReminder() }
+                    return .run { _ in await notificationAdapter.cancelDailyReminder() }
                 }
                 // Enabling — request permission if needed
                 if state.isAuthorized {
@@ -113,10 +113,10 @@ public struct NotificationSettingsFeature: Sendable {
                     userSettingsClient.setBool(true, .dailyReminderEnabled)
                     let hour = Calendar.current.component(.hour, from: state.reminderDate)
                     let minute = Calendar.current.component(.minute, from: state.reminderDate)
-                    return .run { _ in try await notificationClient.scheduleDailyReminder(hour, minute) }
+                    return .run { _ in try await notificationAdapter.scheduleDailyReminder(hour, minute) }
                 } else {
                     return .run { send in
-                        let granted = await notificationClient.requestAuthorization()
+                        let granted = await notificationAdapter.requestAuthorization()
                         if granted {
                             await send(.authorizationStatusLoaded(true))
                             await send(.dailyReminderToggled(true))  // retry with auth
@@ -133,7 +133,7 @@ public struct NotificationSettingsFeature: Sendable {
                 userSettingsClient.setInt(hour, .dailyReminderHour)
                 userSettingsClient.setInt(minute, .dailyReminderMinute)
                 guard state.dailyReminderEnabled else { return .none }
-                return .run { _ in try await notificationClient.scheduleDailyReminder(hour, minute) }
+                return .run { _ in try await notificationAdapter.scheduleDailyReminder(hour, minute) }
 
             case let .budgetWarningToggled(enabled):
                 if !enabled {
@@ -147,7 +147,7 @@ public struct NotificationSettingsFeature: Sendable {
                     return .none
                 } else {
                     return .run { send in
-                        let granted = await notificationClient.requestAuthorization()
+                        let granted = await notificationAdapter.requestAuthorization()
                         if granted {
                             await send(.authorizationStatusLoaded(true))
                             await send(.budgetWarningToggled(true))

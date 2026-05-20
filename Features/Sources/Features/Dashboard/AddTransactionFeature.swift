@@ -152,7 +152,7 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-    @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.userSettingsClient) var userSettingsClient
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.aiServiceClient) var aiServiceClient
@@ -318,7 +318,7 @@ public struct AddTransactionFeature: Sendable {
                                 createdAt: date
                             )
                             try await recurringTransactionClient.add(template)
-                            try await notificationClient.scheduleRecurringReminder(
+                            try await notificationAdapter.scheduleRecurringReminder(
                                 template.id,
                                 template.nextDueDate,
                                 String(localized: "recurring_transaction_notification_title"),

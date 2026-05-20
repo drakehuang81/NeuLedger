@@ -238,9 +238,9 @@ struct TransactionClientTests {
                     isActive: true
                 )]
             }
-            $0.notificationClient.lastWarnedPercent = { _, _ in nil }
-            $0.notificationClient.setLastWarnedPercent = { percent, _, _ in storedPercent.setValue(percent) }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
+            $0.notificationAdapter.lastWarnedPercent = { _, _ in nil }
+            $0.notificationAdapter.setLastWarnedPercent = { percent, _, _ in storedPercent.setValue(percent) }
+            $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
             TransactionClient.liveValue
         }
@@ -282,9 +282,9 @@ struct TransactionClientTests {
                 )]
             }
             // Simulate already warned at 85%
-            $0.notificationClient.lastWarnedPercent = { _, _ in 85 }
-            $0.notificationClient.setLastWarnedPercent = { _, _, _ in }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warnCount.withValue { $0 += 1 } }
+            $0.notificationAdapter.lastWarnedPercent = { _, _ in 85 }
+            $0.notificationAdapter.setLastWarnedPercent = { _, _, _ in }
+            $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warnCount.withValue { $0 += 1 } }
         } operation: {
             TransactionClient.liveValue
         }
@@ -310,7 +310,7 @@ struct TransactionClientTests {
             $0.userSettingsClient.bool = { _ in false }   // all disabled
             $0.userSettingsClient.int = { $0.defaultValue }
             $0.budgetClient.fetchActive = { [] }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
+            $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
             TransactionClient.liveValue
         }
@@ -349,9 +349,9 @@ struct TransactionClientTests {
                     isActive: true
                 )]
             }
-            $0.notificationClient.lastWarnedPercent = { _, _ in nil }
-            $0.notificationClient.setLastWarnedPercent = { _, _, _ in }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
+            $0.notificationAdapter.lastWarnedPercent = { _, _ in nil }
+            $0.notificationAdapter.setLastWarnedPercent = { _, _, _ in }
+            $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
             TransactionClient.liveValue
         }

@@ -59,7 +59,7 @@ struct RecurringTransactionFormFeatureTests {
             $0.accountClient.fetchActive = { [Self.sampleAccount] }
             $0.categoryClient.fetchAll = { [] }
             $0.recurringTransactionClient.add = { added.setValue($0) }
-            $0.notificationClient.scheduleRecurringReminder = { _, _, _, _ in }
+            $0.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
             $0.dismiss = DismissEffect { }
         }
         store.exhaustivity = .off
@@ -137,7 +137,7 @@ struct RecurringTransactionFormFeatureTests {
             $0.accountClient.fetchActive = { [Self.sampleAccount] }
             $0.categoryClient.fetchAll = { [] }
             $0.recurringTransactionClient.add = { added.setValue($0) }
-            $0.notificationClient.scheduleRecurringReminder = { _, _, _, _ in }
+            $0.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
             $0.dismiss = DismissEffect { }
         }
         store.exhaustivity = .off

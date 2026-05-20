@@ -81,7 +81,7 @@ struct MainTabFeature {
     // MARK: - Dependencies
     @Dependency(\.aiServiceClient) var aiServiceClient
     @Dependency(\.userSettingsClient) var userSettingsClient
-    @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
     @Dependency(\.speechClient) var speechClient
     private enum CancelID { case aiExtraction; case task; case speechRecording }
@@ -115,7 +115,7 @@ struct MainTabFeature {
                         }
                         // Subscribe to recurring notification taps
                         group.addTask {
-                            for await recurringId in notificationClient.pendingConfirmations() {
+                            for await recurringId in notificationAdapter.pendingConfirmations() {
                                 await send(.pendingRecurringConfirmationReceived(recurringId))
                             }
                         }
@@ -283,7 +283,7 @@ struct MainTabFeature {
                         if var template = all.first(where: { $0.id == id }) {
                             template.nextDueDate = newNextDueDate
                             try await recurringTransactionClient.update(template)
-                            try await notificationClient.scheduleRecurringReminder(
+                            try await notificationAdapter.scheduleRecurringReminder(
                                 template.id,
                                 newNextDueDate,
                                 String(localized: "recurring_transaction_notification_title"),

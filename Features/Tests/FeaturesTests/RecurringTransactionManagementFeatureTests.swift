@@ -50,7 +50,7 @@ struct RecurringTransactionManagementFeatureTests {
             $0.date = .constant(Date())
             $0.recurringTransactionClient.update = { updated.setValue($0) }
             $0.recurringTransactionClient.fetchAll = { [deactivated.value] }
-            $0.notificationClient.cancelRecurringReminder = { _ in }
+            $0.notificationAdapter.cancelRecurringReminder = { _ in }
         }
 
         await store.send(.toggleActiveTapped(rt))
@@ -118,7 +118,7 @@ struct RecurringTransactionManagementFeatureTests {
         } withDependencies: {
             $0.recurringTransactionClient.delete = { deletedId.setValue($0) }
             $0.recurringTransactionClient.fetchAll = { [] }
-            $0.notificationClient.cancelRecurringReminder = { cancelledId.setValue($0) }
+            $0.notificationAdapter.cancelRecurringReminder = { cancelledId.setValue($0) }
         }
 
         await store.send(.alert(.presented(.deleteConfirmed(rt.id)))) {
@@ -149,7 +149,7 @@ struct RecurringTransactionManagementFeatureTests {
             $0.date = .constant(fixedNow)
             $0.recurringTransactionClient.update = { _ in }
             $0.recurringTransactionClient.fetchAll = { [reactivated] }
-            $0.notificationClient.scheduleRecurringReminder = { _, date, _, _ in
+            $0.notificationAdapter.scheduleRecurringReminder = { _, date, _, _ in
                 scheduledDate.setValue(date)
             }
         }

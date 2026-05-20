@@ -39,7 +39,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
     }
 
     @Dependency(\.recurringTransactionClient) var client
-    @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.date.now) var now
 
     private enum CancelID { case task }
@@ -75,7 +75,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
                 return .run { [updated, currentNow] send in
                     try? await client.update(updated)
                     if !updated.isActive {
-                        await notificationClient.cancelRecurringReminder(updated.id)
+                        await notificationAdapter.cancelRecurringReminder(updated.id)
                     } else {
                         // P0-4: If nextDueDate is in the past, rebase to next valid future date
                         let scheduledDate: Date
@@ -84,7 +84,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
                         } else {
                             scheduledDate = updated.nextDueDate
                         }
-                        try await notificationClient.scheduleRecurringReminder(
+                        try await notificationAdapter.scheduleRecurringReminder(
                             updated.id,
                             scheduledDate,
                             String(localized: "recurring_transaction_notification_title"),
@@ -119,7 +119,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
             case let .alert(.presented(.deleteConfirmed(id))):
                 return .run { send in
                     try? await client.delete(id)
-                    await notificationClient.cancelRecurringReminder(id)
+                    await notificationAdapter.cancelRecurringReminder(id)
                     let items = (try? await client.fetchAll()) ?? []
                     await send(.loaded(items))
                 }

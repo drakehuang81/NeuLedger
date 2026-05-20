@@ -14,7 +14,7 @@ extension TransactionClient: DependencyKey {
     public static var liveValue: TransactionClient {
         @Dependency(\.databaseClient) var databaseClient
         @Dependency(\.budgetClient) var budgetClient
-        @Dependency(\.notificationClient) var notificationClient
+        @Dependency(\.notificationAdapter) var notificationAdapter
         @Dependency(\.userSettingsClient) var userSettingsClient
 
         let store = SwiftDataStore<Transaction, SDTransaction>()
@@ -73,7 +73,7 @@ extension TransactionClient: DependencyKey {
                 try await store.add(transaction)
                 await checkBudgetWarnings(
                     budgetClient: budgetClient,
-                    notificationClient: notificationClient,
+                    notificationAdapter: notificationAdapter,
                     userSettingsClient: userSettingsClient,
                     transactionStore: store
                 )
@@ -82,7 +82,7 @@ extension TransactionClient: DependencyKey {
                 try await store.update(transaction)
                 await checkBudgetWarnings(
                     budgetClient: budgetClient,
-                    notificationClient: notificationClient,
+                    notificationAdapter: notificationAdapter,
                     userSettingsClient: userSettingsClient,
                     transactionStore: store
                 )
@@ -117,7 +117,7 @@ extension TransactionClient: DependencyKey {
 /// docs/architecture.md §3.1 Scenario B (post-condition invariant).
 private func checkBudgetWarnings(
     budgetClient: BudgetClient,
-    notificationClient: NotificationClient,
+    notificationAdapter: NotificationAdapter,
     userSettingsClient: UserSettingsClient,
     transactionStore: SwiftDataStore<Transaction, SDTransaction>
 ) async {
@@ -163,7 +163,7 @@ private func checkBudgetWarnings(
         let pKey = formatter.string(from: interval.start)
 
         let bidStr = budget.id.uuidString
-        let lastWarned = notificationClient.lastWarnedPercent(bidStr, pKey)
+        let lastWarned = notificationAdapter.lastWarnedPercent(bidStr, pKey)
         guard usedPercent >= threshold,
               lastWarned == nil || lastWarned! < threshold else { continue }
 
@@ -173,7 +173,7 @@ private func checkBudgetWarnings(
             budget.name,
             usedPercent
         )
-        try? await notificationClient.sendBudgetWarning(bidStr, title, body)
-        notificationClient.setLastWarnedPercent(usedPercent, bidStr, pKey)
+        try? await notificationAdapter.sendBudgetWarning(bidStr, title, body)
+        notificationAdapter.setLastWarnedPercent(usedPercent, bidStr, pKey)
     }
 }

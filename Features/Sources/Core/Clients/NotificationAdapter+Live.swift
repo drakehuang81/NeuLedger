@@ -3,8 +3,8 @@ import UserNotifications
 import Domain
 import Dependencies
 
-extension NotificationClient: DependencyKey {
-    public static let liveValue = NotificationClient(
+extension NotificationAdapter: DependencyKey {
+    public static let liveValue = NotificationAdapter(
 
         requestAuthorization: {
             do {

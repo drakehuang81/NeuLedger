@@ -2,14 +2,14 @@ import Foundation
 import Dependencies
 import DependenciesMacros
 
-// MARK: - NotificationClient
+// MARK: - NotificationAdapter
 
 /// A client interface for scheduling and managing local notifications.
 ///
 /// All UNUserNotificationCenter operations are abstracted here so that
 /// feature reducers can be tested without a real notification system.
 @DependencyClient
-public struct NotificationClient: Sendable {
+public struct NotificationAdapter: Sendable {
     /// Request UNUserNotificationCenter authorization. Returns true if granted.
     public var requestAuthorization: @Sendable () async -> Bool = { false }
 
@@ -62,15 +62,15 @@ public struct NotificationClient: Sendable {
 
 // MARK: - TestDependencyKey
 
-extension NotificationClient: TestDependencyKey {
+extension NotificationAdapter: TestDependencyKey {
     public static let testValue = Self()
 }
 
 // MARK: - DependencyValues
 
 public extension DependencyValues {
-    var notificationClient: NotificationClient {
-        get { self[NotificationClient.self] }
-        set { self[NotificationClient.self] = newValue }
+    var notificationAdapter: NotificationAdapter {
+        get { self[NotificationAdapter.self] }
+        set { self[NotificationAdapter.self] = newValue }
     }
 }

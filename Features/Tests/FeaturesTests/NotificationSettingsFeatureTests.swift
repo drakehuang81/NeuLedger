@@ -20,7 +20,7 @@ struct NotificationSettingsFeatureTests {
             $0.userSettingsClient.int = { key in
                 key.rawValue == SettingsKey<Int>.dailyReminderHour.rawValue ? 8 : key.defaultValue
             }
-            $0.notificationClient.isAuthorized = { true }
+            $0.notificationAdapter.isAuthorized = { true }
             $0.recurringTransactionClient.fetchAll = { [] }
         }
         store.exhaustivity = .off
@@ -48,7 +48,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.scheduleDailyReminder = { h, m in
+            $0.notificationAdapter.scheduleDailyReminder = { h, m in
                 scheduledHour.setValue(h)
                 scheduledMinute.setValue(m)
             }
@@ -77,7 +77,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.cancelDailyReminder = { cancelCalled.setValue(true) }
+            $0.notificationAdapter.cancelDailyReminder = { cancelCalled.setValue(true) }
             $0.userSettingsClient.setBool = { _, _ in }
         }
 
@@ -99,8 +99,8 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.requestAuthorization = { false }  // denied
-            $0.notificationClient.scheduleDailyReminder = { _, _ in }
+            $0.notificationAdapter.requestAuthorization = { false }  // denied
+            $0.notificationAdapter.scheduleDailyReminder = { _, _ in }
             $0.userSettingsClient.setBool = { _, _ in setBoolCalled.setValue(true) }
             $0.userSettingsClient.setInt = { _, _ in }
         }
@@ -125,7 +125,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.isAuthorized = { true }  // user granted permission in Settings
+            $0.notificationAdapter.isAuthorized = { true }  // user granted permission in Settings
             $0.userSettingsClient.bool = { $0.defaultValue }
             $0.userSettingsClient.int = { $0.defaultValue }
             $0.recurringTransactionClient.fetchAll = { [] }
@@ -154,7 +154,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.scheduleDailyReminder = { h, m in
+            $0.notificationAdapter.scheduleDailyReminder = { h, m in
                 savedHour.setValue(h)
                 savedMinute.setValue(m)
             }
@@ -182,7 +182,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.requestAuthorization = { false }
+            $0.notificationAdapter.requestAuthorization = { false }
             $0.userSettingsClient.setBool = { _, _ in }
             $0.userSettingsClient.setInt = { _, _ in }
         }
@@ -200,7 +200,7 @@ struct NotificationSettingsFeatureTests {
         let store = await TestStore(initialState: NotificationSettingsFeature.State()) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationClient.isAuthorized = { false }
+            $0.notificationAdapter.isAuthorized = { false }
             $0.userSettingsClient.bool = { $0.defaultValue }
             $0.userSettingsClient.int = { $0.defaultValue }
             $0.recurringTransactionClient.fetchAll = { [] }
@@ -230,7 +230,7 @@ struct NotificationSettingsFeatureTests {
             $0.userSettingsClient.setInt = { val, key in
                 if key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue { persistedThreshold.setValue(val) }
             }
-            $0.notificationClient.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
+            $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         }
 
         await store.send(.warningThresholdChanged(70)) {

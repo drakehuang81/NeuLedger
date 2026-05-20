@@ -15,7 +15,7 @@ struct MainTabFeatureTests {
         } withDependencies: {
             $0.aiServiceClient.isAvailable = { true }
             $0.userSettingsClient.string = { _ in "add" }
-            $0.notificationClient.pendingConfirmations = {
+            $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
             }
         }
@@ -32,7 +32,7 @@ struct MainTabFeatureTests {
         } withDependencies: {
             $0.aiServiceClient.isAvailable = { false }
             $0.userSettingsClient.string = { _ in "ai" }
-            $0.notificationClient.pendingConfirmations = {
+            $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
             }
         }
@@ -146,7 +146,7 @@ struct MainTabRecurringConfirmationTests {
             $0.recurringTransactionClient.fetchAll = { [template] }
             $0.aiServiceClient.isAvailable = { false }
             $0.userSettingsClient.bool = { _ in false }
-            $0.notificationClient.pendingConfirmations = {
+            $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { continuation in
                     continuation.finish()
                 }
@@ -176,7 +176,7 @@ struct MainTabAccessoryBarTests {
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
             $0.userSettingsClient.string = { _ in "add" }
-            $0.notificationClient.pendingConfirmations = {
+            $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
             }
         }

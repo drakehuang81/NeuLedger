@@ -33,4 +33,14 @@ extension SDCarrier: PersistentDomainModel {
         context.insert(model)
         return model
     }
+
+    func applyChanges(from domain: Carrier, context: ModelContext) {
+        name = domain.name
+        typeRaw = domain.type.rawValue
+        barcode = domain.barcode
+    }
+
+    static func idPredicate(_ id: Carrier.ID) -> Predicate<SDCarrier> {
+        #Predicate<SDCarrier> { $0.id == id }
+    }
 }

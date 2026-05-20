@@ -4,10 +4,10 @@ import Foundation
 
 /// A client interface for speech recognition and audio recording.
 ///
-/// Use `SpeechClient` to request microphone and speech permissions, stream real-time
+/// Use `SpeechAdapter` to request microphone and speech permissions, stream real-time
 /// transcription results, and stop the active recording session.
 @DependencyClient
-public struct SpeechClient: Sendable {
+public struct SpeechAdapter: Sendable {
     /// Requests both microphone and speech recognition permissions.
     /// Returns true only if both are granted.
     public var requestPermission: @Sendable () async -> Bool = { false }
@@ -21,22 +21,22 @@ public struct SpeechClient: Sendable {
     public var stopRecording: @Sendable () -> Void = { }
 }
 
-extension SpeechClient: TestDependencyKey {
+extension SpeechAdapter: TestDependencyKey {
     public static let testValue = Self()
 }
 
 public extension DependencyValues {
-    var speechClient: SpeechClient {
-        get { self[SpeechClient.self] }
-        set { self[SpeechClient.self] = newValue }
+    var speechAdapter: SpeechAdapter {
+        get { self[SpeechAdapter.self] }
+        set { self[SpeechAdapter.self] = newValue }
     }
 }
 
-// MARK: - SpeechClientError
+// MARK: - SpeechAdapterError
 
-/// Errors thrown by `SpeechClient.startRecording()`.
+/// Errors thrown by `SpeechAdapter.startRecording()`.
 /// Defined in Domain so the Features layer can pattern-match without a Core dependency.
-public enum SpeechClientError: Error {
+public enum SpeechAdapterError: Error {
     /// The speech recognizer is not available on this device or locale.
     case recognizerUnavailable
 }

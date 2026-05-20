@@ -156,7 +156,7 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.aiServiceClient) var aiServiceClient
-    @Dependency(\.speechClient) var speechClient
+    @Dependency(\.speechAdapter) var speechAdapter
 
     private enum CancelID { case task; case noteDebounce; case categorySuggest; case speechRecording }
 
@@ -391,7 +391,7 @@ public struct AddTransactionFeature: Sendable {
             case .dismiss:
                 if state.isRecording {
                     state.isRecording = false
-                    speechClient.stopRecording()
+                    speechAdapter.stopRecording()
                 }
                 return .concatenate(
                     .cancel(id: CancelID.speechRecording),
@@ -470,12 +470,12 @@ public struct AddTransactionFeature: Sendable {
                 guard !state.isRecording else {
                     // Stop branch
                     state.isRecording = false
-                    speechClient.stopRecording()
+                    speechAdapter.stopRecording()
                     return .cancel(id: CancelID.speechRecording)
                 }
                 // Start branch — check permission asynchronously
                 return .run { send in
-                    let granted = await speechClient.requestPermission()
+                    let granted = await speechAdapter.requestPermission()
                     await send(.recordingPermissionResult(granted))
                 }
 
@@ -490,7 +490,7 @@ public struct AddTransactionFeature: Sendable {
                 state.isRecording = true
                 state.speechError = nil
                 return .run { send in
-                    for try await text in speechClient.startRecording() {
+                    for try await text in speechAdapter.startRecording() {
                         await send(.transcriptionUpdated(text))
                     }
                 } catch: { _, send in
@@ -508,7 +508,7 @@ public struct AddTransactionFeature: Sendable {
                 state.speechError = String(localized: "speech_recognition_failed_error")
                 // stream.finish(throwing:) does not release AVAudioEngine/AVAudioSession —
                 // explicit stopRecording() is required for hardware teardown.
-                speechClient.stopRecording()
+                speechAdapter.stopRecording()
                 return .cancel(id: CancelID.speechRecording)
             }
         }

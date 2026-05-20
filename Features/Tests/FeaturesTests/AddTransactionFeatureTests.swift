@@ -365,7 +365,7 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: AddTransactionFeature.State()) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.requestPermission = { false }
+            $0.speechAdapter.requestPermission = { false }
             $0.aiServiceClient.isAvailable = { false }
         }
 
@@ -388,9 +388,9 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.requestPermission = { true }
-            $0.speechClient.startRecording = { stream }
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.requestPermission = { true }
+            $0.speechAdapter.startRecording = { stream }
+            $0.speechAdapter.stopRecording = { }
             $0.aiServiceClient.isAvailable = { false }
         }
 
@@ -415,7 +415,7 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
             $0.aiServiceClient.isAvailable = { false }
         }
 
@@ -433,7 +433,7 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
             $0.aiServiceClient.isAvailable = { false }
         }
 
@@ -452,11 +452,11 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
             $0.aiServiceClient.isAvailable = { false }
         }
 
-        // SpeechClient emits FULL transcript each time (not delta).
+        // SpeechAdapter emits FULL transcript each time (not delta).
         // Second emission should replace the note from the original prefix, not stack.
         await store.send(.transcriptionUpdated("六十元")) {
             $0.note = "早餐 六十元"
@@ -475,7 +475,7 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
             $0.aiServiceClient.isAvailable = { false }
         }
 
@@ -498,7 +498,7 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
             $0.aiServiceClient.isAvailable = { false }
         }
 
@@ -520,7 +520,7 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
             $0.aiServiceClient.isAvailable = { false }
         }
         store.exhaustivity = .off

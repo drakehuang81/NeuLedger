@@ -83,7 +83,7 @@ struct MainTabFeature {
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-    @Dependency(\.speechClient) var speechClient
+    @Dependency(\.speechAdapter) var speechAdapter
     private enum CancelID { case aiExtraction; case task; case speechRecording }
 
     // MARK: - Body
@@ -148,7 +148,7 @@ struct MainTabFeature {
                 if wasRecording {
                     return .merge(
                         .cancel(id: CancelID.speechRecording),
-                        .run { _ in speechClient.stopRecording() }
+                        .run { _ in speechAdapter.stopRecording() }
                     )
                 }
                 return .none
@@ -188,18 +188,18 @@ struct MainTabFeature {
                     state.isRecording = false
                     return .merge(
                         .cancel(id: CancelID.speechRecording),
-                        .run { _ in speechClient.stopRecording() }
+                        .run { _ in speechAdapter.stopRecording() }
                     )
                 } else {
                     return .run { send in
-                        let granted = await speechClient.requestPermission()
+                        let granted = await speechAdapter.requestPermission()
                         guard granted else {
                             await send(.permissionDenied)
                             return
                         }
                         await send(.recordingStarted)
                         do {
-                            for try await text in speechClient.startRecording() {
+                            for try await text in speechAdapter.startRecording() {
                                 await send(.transcriptionUpdated(text))
                             }
                         } catch {

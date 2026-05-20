@@ -3,10 +3,10 @@ import Dependencies
 import Domain
 import Speech
 
-extension SpeechClient: DependencyKey {
-    public static var liveValue: SpeechClient {
+extension SpeechAdapter: DependencyKey {
+    public static var liveValue: SpeechAdapter {
         let actor = SpeechRecordingActor()
-        return SpeechClient(
+        return SpeechAdapter(
             requestPermission: { await actor.requestPermission() },
             startRecording: { actor.startRecording() },
             stopRecording: {
@@ -64,7 +64,7 @@ private actor SpeechRecordingActor {
             guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-TW"))
                     ?? SFSpeechRecognizer(locale: .current),
                   recognizer.isAvailable else {
-                continuation.finish(throwing: SpeechClientError.recognizerUnavailable)
+                continuation.finish(throwing: SpeechAdapterError.recognizerUnavailable)
                 self.streamContinuation = nil
                 return
             }

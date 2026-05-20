@@ -68,7 +68,7 @@ struct MainTabFeatureTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiServiceClient.isAvailable = { false }
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
         }
         await store.send(.aiInputDismissed) {
             $0.isAIInputExpanded = false
@@ -269,9 +269,9 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.requestPermission = { true }
-            $0.speechClient.startRecording = { stream }
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.requestPermission = { true }
+            $0.speechAdapter.startRecording = { stream }
+            $0.speechAdapter.stopRecording = { }
         }
 
         await store.send(.recordingTapped)
@@ -291,7 +291,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
         }
 
         await store.send(.recordingTapped) {
@@ -305,7 +305,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.requestPermission = { false }
+            $0.speechAdapter.requestPermission = { false }
         }
 
         await store.send(.recordingTapped)
@@ -322,7 +322,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
         }
 
         await store.send(.transcriptionUpdated("早餐五十五元")) {
@@ -339,7 +339,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
         }
 
         await store.send(.transcriptionUpdated("早餐五十五元")) {
@@ -355,7 +355,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
         }
 
         await store.send(.transcriptionFailed) {
@@ -373,7 +373,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { }
+            $0.speechAdapter.stopRecording = { }
         }
 
         // Should be a no-op — isRecording guard prevents extraction
@@ -392,7 +392,7 @@ struct MainTabRecordingTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.speechClient.stopRecording = { stopCalled.setValue(true) }
+            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
         }
 
         await store.send(.aiInputDismissed) {

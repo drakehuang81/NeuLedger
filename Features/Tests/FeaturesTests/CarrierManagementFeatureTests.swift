@@ -263,8 +263,8 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.delete = { id in deletedId.setValue(id) }
             $0.carrierClient.fetchAll = { [Self.carrierB] }
             // carrierA is the current widget carrier
-            $0.userSettingsClient.string = { _ in Self.carrierA.id.uuidString }
-            $0.userSettingsClient.setString = { _, _ in }
+            $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.widgetSyncClient.clearCarrier = { clearCarrierCalled.setValue(true) }
             $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
@@ -312,7 +312,7 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.delete = { id in deletedId.setValue(id) }
             $0.carrierClient.fetchAll = { [Self.carrierB] }
             // carrierB is the widget carrier, not carrierA
-            $0.userSettingsClient.string = { _ in Self.carrierB.id.uuidString }
+            $0.userSettingsAdapter.string = { _ in Self.carrierB.id.uuidString }
             $0.widgetSyncClient.clearCarrier = { clearCarrierCalled.setValue(true) }
             $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
@@ -357,7 +357,7 @@ struct CarrierManagementFeatureTests {
         } withDependencies: {
             $0.carrierClient.fetchAll = { [Self.carrierA, Self.carrierB] }
             // carrierA is the current widget carrier
-            $0.userSettingsClient.string = { _ in Self.carrierA.id.uuidString }
+            $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
             $0.widgetSyncClient.syncCarrier = { barcode, _, _ in syncBarcode.setValue(barcode) }
             $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
@@ -381,8 +381,8 @@ struct CarrierManagementFeatureTests {
         } withDependencies: {
             $0.carrierClient.fetchAll = { [Self.carrierA] }
             // No widget carrier set yet — empty string triggers auto-assign path
-            $0.userSettingsClient.string = { _ in "" }
-            $0.userSettingsClient.setString = { _, _ in }
+            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.widgetSyncClient.syncCarrier = { _, _, _ in }
             $0.widgetSyncClient.syncAllCarriers = { _ in }
         }
@@ -411,8 +411,8 @@ struct CarrierManagementFeatureTests {
             // carrierA is returned as the first-ever carrier
             $0.carrierClient.fetchAll = { [Self.carrierA] }
             // No widget carrier set yet
-            $0.userSettingsClient.string = { _ in "" }
-            $0.userSettingsClient.setString = { value, _ in savedId.setValue(value) }
+            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsAdapter.setString = { value, _ in savedId.setValue(value) }
             $0.widgetSyncClient.syncCarrier = { barcode, type, name in
                 syncedBarcode.setValue(barcode)
                 syncedType.setValue(type)
@@ -483,7 +483,7 @@ struct CarrierManagementFeatureTests {
         } withDependencies: {
             $0.carrierClient.delete = { _ in }
             $0.carrierClient.fetchAll = { [remaining] }
-            $0.userSettingsClient.string = { _ in "" }
+            $0.userSettingsAdapter.string = { _ in "" }
             $0.widgetSyncClient.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)
             }
@@ -530,8 +530,8 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             $0.carrierClient.fetchAll = { [saved] }
-            $0.userSettingsClient.string = { _ in "" }
-            $0.userSettingsClient.setString = { _, _ in }
+            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.widgetSyncClient.syncCarrier = { _, _, _ in }
             $0.widgetSyncClient.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)

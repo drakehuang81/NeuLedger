@@ -15,7 +15,7 @@ extension TransactionClient: DependencyKey {
         @Dependency(\.databaseClient) var databaseClient
         @Dependency(\.budgetClient) var budgetClient
         @Dependency(\.notificationAdapter) var notificationAdapter
-        @Dependency(\.userSettingsClient) var userSettingsClient
+        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         let store = SwiftDataStore<Transaction, SDTransaction>()
 
@@ -74,7 +74,7 @@ extension TransactionClient: DependencyKey {
                 await checkBudgetWarnings(
                     budgetClient: budgetClient,
                     notificationAdapter: notificationAdapter,
-                    userSettingsClient: userSettingsClient,
+                    userSettingsAdapter: userSettingsAdapter,
                     transactionStore: store
                 )
             },
@@ -83,7 +83,7 @@ extension TransactionClient: DependencyKey {
                 await checkBudgetWarnings(
                     budgetClient: budgetClient,
                     notificationAdapter: notificationAdapter,
-                    userSettingsClient: userSettingsClient,
+                    userSettingsAdapter: userSettingsAdapter,
                     transactionStore: store
                 )
             },
@@ -118,11 +118,11 @@ extension TransactionClient: DependencyKey {
 private func checkBudgetWarnings(
     budgetClient: BudgetClient,
     notificationAdapter: NotificationAdapter,
-    userSettingsClient: UserSettingsClient,
+    userSettingsAdapter: UserSettingsAdapter,
     transactionStore: SwiftDataStore<Transaction, SDTransaction>
 ) async {
-    guard userSettingsClient.bool(.budgetWarningEnabled) else { return }
-    let threshold = userSettingsClient.int(.budgetWarningThreshold)
+    guard userSettingsAdapter.bool(.budgetWarningEnabled) else { return }
+    let threshold = userSettingsAdapter.int(.budgetWarningThreshold)
     guard let activeBudgets = try? await budgetClient.fetchActive() else { return }
 
     let today = Date()

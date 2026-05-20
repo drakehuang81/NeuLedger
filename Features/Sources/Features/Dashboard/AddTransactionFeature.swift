@@ -153,7 +153,7 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
     @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.aiServiceClient) var aiServiceClient
     @Dependency(\.speechClient) var speechClient
@@ -204,7 +204,7 @@ public struct AddTransactionFeature: Sendable {
                 state.accounts = accounts
                 state.categories = categories
                 if case .add = state.mode, state.accountId == nil {
-                    let defaultId = userSettingsClient.string(.defaultAccountId)
+                    let defaultId = userSettingsAdapter.string(.defaultAccountId)
                     if !defaultId.isEmpty,
                        let match = accounts.first(where: { $0.id.uuidString == defaultId }) {
                         state.accountId = match.id

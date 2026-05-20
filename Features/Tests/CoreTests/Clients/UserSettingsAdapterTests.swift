@@ -2,8 +2,8 @@ import Testing
 import Dependencies
 @testable import Domain
 
-@Suite("UserSettingsClient Tests")
-struct UserSettingsClientTests {
+@Suite("UserSettingsAdapter Tests")
+struct UserSettingsAdapterTests {
 
     // MARK: - SettingsKey
 
@@ -23,7 +23,7 @@ struct UserSettingsClientTests {
 
     @Test("testValue bool returns defaultValue for any key")
     func testTestValueBoolReturnsDefault() {
-        let client = UserSettingsClient.testValue
+        let client = UserSettingsAdapter.testValue
         let result = client.bool(.hasCompletedOnboarding)
         #expect(result == SettingsKey.hasCompletedOnboarding.defaultValue)
     }
@@ -53,7 +53,7 @@ struct UserSettingsClientTests {
 
     @Test("testValue int returns defaultValue")
     func testTestValueIntReturnsDefault() {
-        let client = UserSettingsClient.testValue
+        let client = UserSettingsAdapter.testValue
         let result = client.int(.dailyReminderHour)
         #expect(result == SettingsKey.dailyReminderHour.defaultValue)
     }

@@ -222,10 +222,10 @@ struct TransactionClientTests {
         let client = withDependencies {
             $0.databaseClient = db
             $0.modelContainer = db.modelContainer()
-            $0.userSettingsClient.bool = { key in
+            $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
             }
-            $0.userSettingsClient.int = { key in
+            $0.userSettingsAdapter.int = { key in
                 key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue ? 80 : key.defaultValue
             }
             $0.budgetClient.fetchActive = {
@@ -265,10 +265,10 @@ struct TransactionClientTests {
         let client = withDependencies {
             $0.databaseClient = db
             $0.modelContainer = db.modelContainer()
-            $0.userSettingsClient.bool = { key in
+            $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
             }
-            $0.userSettingsClient.int = { key in
+            $0.userSettingsAdapter.int = { key in
                 key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue ? 80 : key.defaultValue
             }
             $0.budgetClient.fetchActive = {
@@ -307,8 +307,8 @@ struct TransactionClientTests {
         let client = withDependencies {
             $0.databaseClient = db
             $0.modelContainer = db.modelContainer()
-            $0.userSettingsClient.bool = { _ in false }   // all disabled
-            $0.userSettingsClient.int = { $0.defaultValue }
+            $0.userSettingsAdapter.bool = { _ in false }   // all disabled
+            $0.userSettingsAdapter.int = { $0.defaultValue }
             $0.budgetClient.fetchActive = { [] }
             $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         } operation: {
@@ -333,10 +333,10 @@ struct TransactionClientTests {
         let client = withDependencies {
             $0.databaseClient = db
             $0.modelContainer = db.modelContainer()
-            $0.userSettingsClient.bool = { key in
+            $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue ? true : key.defaultValue
             }
-            $0.userSettingsClient.int = { key in
+            $0.userSettingsAdapter.int = { key in
                 key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue ? 80 : key.defaultValue
             }
             $0.budgetClient.fetchActive = {

@@ -49,9 +49,9 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.bool = { _ in false }
-            $0.userSettingsClient.string = { _ in "" }
-            $0.userSettingsClient.setString = { _, _ in }
+            $0.userSettingsAdapter.bool = { _ in false }
+            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
             $0.carrierClient.fetchAll = { [] }
         }
@@ -85,9 +85,9 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.bool = { _ in true }
-            $0.userSettingsClient.string = { _ in "" }
-            $0.userSettingsClient.setString = { _, _ in }
+            $0.userSettingsAdapter.bool = { _ in true }
+            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { [] }
             $0.carrierClient.fetchAll = { [] }
         }
@@ -153,7 +153,7 @@ struct SettingsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.setString = { value, _ in
+            $0.userSettingsAdapter.setString = { value, _ in
                 savedValues.withValue { $0.append(value) }
             }
         }
@@ -340,10 +340,10 @@ struct SettingsAccessoryBarTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.bool = { key in
+            $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
-            $0.userSettingsClient.string = { $0.defaultValue }
+            $0.userSettingsAdapter.string = { $0.defaultValue }
             $0.accountClient.fetchActive = { [] }
             $0.carrierClient.fetchAll = { [] }
         }
@@ -371,7 +371,7 @@ struct SettingsAccessoryBarTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.setBool = { value, key in
+            $0.userSettingsAdapter.setBool = { value, key in
                 if key.rawValue == SettingsKey.showAccessoryBar.rawValue { persisted.setValue(value) }
             }
         }
@@ -460,14 +460,14 @@ struct SettingsWidgetCarrierTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.bool = { _ in false }
-            $0.userSettingsClient.string = { key in
+            $0.userSettingsAdapter.bool = { _ in false }
+            $0.userSettingsAdapter.string = { key in
                 if key.rawValue == "widgetCarrierId" {
                     return carrier.id.uuidString
                 }
                 return ""
             }
-            $0.userSettingsClient.setString = { _, _ in }
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
             $0.carrierClient.fetchAll = { Self.sampleCarriers }
         }
@@ -508,7 +508,7 @@ struct SettingsWidgetCarrierTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsClient.setString = { value, key in
+            $0.userSettingsAdapter.setString = { value, key in
                 if key.rawValue == "widgetCarrierId" { savedId.setValue(value) }
             }
             $0.widgetSyncClient.syncCarrier = { barcode, type, name in

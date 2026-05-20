@@ -44,7 +44,7 @@ struct OnboardingFeature {
         }
     }
 
-    @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.continuousClock) var clock
 
@@ -93,7 +93,7 @@ struct OnboardingFeature {
                 state.isCreatingAccounts = true
                 let types = state.selectedTypes
                 let customs = state.customAccounts
-                return .run { [accountClient, userSettingsClient] send in
+                return .run { [accountClient, userSettingsAdapter] send in
                     if types.isEmpty && customs.isEmpty {
                         let acc = Account(
                             name: AccountType.cash.displayLabel,
@@ -122,7 +122,7 @@ struct OnboardingFeature {
                             try await accountClient.add(acc)
                         }
                     }
-                    userSettingsClient.setBool(true, .hasCompletedOnboarding)
+                    userSettingsAdapter.setBool(true, .hasCompletedOnboarding)
                     await send(.accountsCreated)
                 }
                 .cancellable(id: CancelID.create)

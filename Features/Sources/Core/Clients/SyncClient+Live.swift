@@ -5,8 +5,8 @@ import SwiftData
 
 extension SyncClient: DependencyKey {
     public static var liveValue: SyncClient {
-        @Dependency(\.userSettingsClient) var userSettingsClient
-        let capturedUserSettingsClient = userSettingsClient
+        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+        let capturedUserSettingsAdapter = userSettingsAdapter
 
         return SyncClient(
             isCloudKitAvailable: {
@@ -34,9 +34,9 @@ extension SyncClient: DependencyKey {
                             continuation.yield(0.8)
 
                             DatabaseClient.container = cloudContainer
-                            capturedUserSettingsClient.setBool(true, .isSyncEnabled)
+                            capturedUserSettingsAdapter.setBool(true, .isSyncEnabled)
 
-                            capturedUserSettingsClient.setDate(Date(), .lastSyncedAt)
+                            capturedUserSettingsAdapter.setDate(Date(), .lastSyncedAt)
 
                             continuation.yield(1.0)
                             continuation.finish()
@@ -48,7 +48,7 @@ extension SyncClient: DependencyKey {
                 }
             },
             lastSyncedAt: {
-                capturedUserSettingsClient.date(.lastSyncedAt)
+                capturedUserSettingsAdapter.date(.lastSyncedAt)
             },
             requestSyncNow: {
                 // CloudKit Mirroring (NSPersistentCloudKitContainer) has no
@@ -65,7 +65,7 @@ extension SyncClient: DependencyKey {
                         try? context.save()
                     }
                 }
-                capturedUserSettingsClient.setDate(Date(), .lastSyncedAt)
+                capturedUserSettingsAdapter.setDate(Date(), .lastSyncedAt)
             }
         )
     }

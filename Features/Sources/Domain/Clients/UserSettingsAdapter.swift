@@ -101,20 +101,20 @@ public extension SettingsKey where Value == Date? {
     static let lastSyncedAt = SettingsKey<Date?>(rawValue: "syncClient.lastSyncedAt", defaultValue: nil)
 }
 
-// MARK: - UserSettingsClient
+// MARK: - UserSettingsAdapter
 
 /// A client interface for type-safe UserDefaults access.
 ///
-/// Use `UserSettingsClient` with `SettingsKey` to read and write
+/// Use `UserSettingsAdapter` with `SettingsKey` to read and write
 /// UserDefaults values in a testable, dependency-injectable way.
 ///
 /// ```swift
-/// @Dependency(\.userSettingsClient) var userSettingsClient
-/// let completed = userSettingsClient.bool(.hasCompletedOnboarding)
-/// userSettingsClient.setBool(true, .hasCompletedOnboarding)
+/// @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+/// let completed = userSettingsAdapter.bool(.hasCompletedOnboarding)
+/// userSettingsAdapter.setBool(true, .hasCompletedOnboarding)
 /// ```
 @DependencyClient
-public struct UserSettingsClient: Sendable {
+public struct UserSettingsAdapter: Sendable {
     /// Reads a Bool value for the given key, returning `defaultValue` if unset.
     public var bool: @Sendable (_ key: SettingsKey<Bool>) -> Bool = { $0.defaultValue }
 
@@ -142,7 +142,7 @@ public struct UserSettingsClient: Sendable {
 
 // MARK: - TestDependencyKey
 
-extension UserSettingsClient: TestDependencyKey {
+extension UserSettingsAdapter: TestDependencyKey {
     public static let testValue = Self(
         bool: { $0.defaultValue },
         setBool: { _, _ in },
@@ -158,8 +158,8 @@ extension UserSettingsClient: TestDependencyKey {
 // MARK: - DependencyValues
 
 public extension DependencyValues {
-    var userSettingsClient: UserSettingsClient {
-        get { self[UserSettingsClient.self] }
-        set { self[UserSettingsClient.self] = newValue }
+    var userSettingsAdapter: UserSettingsAdapter {
+        get { self[UserSettingsAdapter.self] }
+        set { self[UserSettingsAdapter.self] = newValue }
     }
 }

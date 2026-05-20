@@ -96,7 +96,7 @@ public struct SettingsFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
@@ -146,8 +146,8 @@ public struct SettingsFeature: Sendable {
             case .task:
                 return .run { send in
                     async let accounts = accountClient.fetchActive()
-                    let defaultId = userSettingsClient.string(.defaultAccountId)
-                    let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
+                    let defaultId = userSettingsAdapter.string(.defaultAccountId)
+                    let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
                     let fetched = try await accounts
                     await send(.accountsLoaded(fetched))
                     await send(.defaultAccountSelected(defaultId))
@@ -171,7 +171,7 @@ public struct SettingsFeature: Sendable {
 
             case let .defaultAccountSelected(id):
                 state.selectedDefaultAccountId = id
-                userSettingsClient.setString(id, .defaultAccountId)
+                userSettingsAdapter.setString(id, .defaultAccountId)
                 if let account = state.accounts.first(where: { $0.id.uuidString == id }) {
                     state.defaultAccountName = account.name
                 }
@@ -271,7 +271,7 @@ public struct SettingsFeature: Sendable {
 
             case let .accessoryBarToggleChanged(value):
                 state.showAccessoryBar = value
-                userSettingsClient.setBool(value, .showAccessoryBar)
+                userSettingsAdapter.setBool(value, .showAccessoryBar)
                 return .none
 
             case .privacyPolicyTapped:
@@ -281,7 +281,7 @@ public struct SettingsFeature: Sendable {
 
             case let .widgetCarriersLoaded(carriers):
                 state.carriers = carriers
-                let savedId = userSettingsClient.string(.widgetCarrierId)
+                let savedId = userSettingsAdapter.string(.widgetCarrierId)
                 state.widgetCarrierId = savedId
                 if let carrier = carriers.first(where: { $0.id.uuidString == savedId }) {
                     state.widgetCarrierName = carrier.name
@@ -292,7 +292,7 @@ public struct SettingsFeature: Sendable {
 
             case let .widgetCarrierSelected(id):
                 state.widgetCarrierId = id.uuidString
-                userSettingsClient.setString(id.uuidString, .widgetCarrierId)
+                userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name
                     return .run { [widgetSyncClient] _ in

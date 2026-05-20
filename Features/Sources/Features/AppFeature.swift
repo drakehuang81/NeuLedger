@@ -41,7 +41,7 @@ struct AppFeature {
         case main(MainTabFeature.Action)
     }
     
-    @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     
     // MARK: - Body
     
@@ -49,7 +49,7 @@ struct AppFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.destination = userSettingsClient.bool(.hasCompletedOnboarding)
+                state.destination = userSettingsAdapter.bool(.hasCompletedOnboarding)
                     ? .main(MainTabFeature.State())
                     : .onboarding(OnboardingFeature.State())
                 return .none

@@ -80,7 +80,7 @@ struct MainTabFeature {
 
     // MARK: - Dependencies
     @Dependency(\.aiServiceClient) var aiServiceClient
-    @Dependency(\.userSettingsClient) var userSettingsClient
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
     @Dependency(\.speechClient) var speechClient
@@ -106,9 +106,9 @@ struct MainTabFeature {
                         group.addTask {
                             let isAvailable = aiServiceClient.isAvailable()
                             await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
-                            let showAccessoryBar = userSettingsClient.bool(.showAccessoryBar)
+                            let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
                             await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
-                            let rawMode = userSettingsClient.string(.accessoryMode)
+                            let rawMode = userSettingsAdapter.string(.accessoryMode)
                             let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
                             let resolvedMode = isAvailable ? savedMode : .add
                             await send(.accessoryModeLoaded(resolvedMode))
@@ -237,7 +237,7 @@ struct MainTabFeature {
 
             case let .accessoryModeSwitched(mode):
                 state.accessoryMode = mode
-                userSettingsClient.setString(mode.rawValue, .accessoryMode)
+                userSettingsAdapter.setString(mode.rawValue, .accessoryMode)
                 return .none
 
             case let .tabSelected(tab):

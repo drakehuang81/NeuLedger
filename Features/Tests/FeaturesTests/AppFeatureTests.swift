@@ -12,7 +12,7 @@ struct AppFeatureTests {
         ) {
             AppFeature()
         } withDependencies: {
-            $0.userSettingsClient.bool = { _ in true }
+            $0.userSettingsAdapter.bool = { _ in true }
         }
         
         await store.send(\.onAppear) {
@@ -27,7 +27,7 @@ struct AppFeatureTests {
         ) {
             AppFeature()
         } withDependencies: {
-            $0.userSettingsClient.bool = { _ in false }
+            $0.userSettingsAdapter.bool = { _ in false }
         }
         
         await store.send(\.onAppear) {

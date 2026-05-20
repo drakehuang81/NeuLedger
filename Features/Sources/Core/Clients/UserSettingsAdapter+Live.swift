@@ -2,10 +2,10 @@ import Foundation
 import Domain
 import Dependencies
 
-/// Live implementation of `UserSettingsClient` backed by `UserDefaults.standard`.
-extension UserSettingsClient: DependencyKey {
-    public static var liveValue: UserSettingsClient {
-        UserSettingsClient(
+/// Live implementation of `UserSettingsAdapter` backed by `UserDefaults.standard`.
+extension UserSettingsAdapter: DependencyKey {
+    public static var liveValue: UserSettingsAdapter {
+        UserSettingsAdapter(
             bool: { key in
                 if UserDefaults.standard.object(forKey: key.rawValue) != nil {
                     return UserDefaults.standard.bool(forKey: key.rawValue)

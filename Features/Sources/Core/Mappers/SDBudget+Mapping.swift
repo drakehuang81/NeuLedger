@@ -44,4 +44,17 @@ extension SDBudget: PersistentDomainModel {
         context.insert(model)
         return model
     }
+
+    func applyChanges(from domain: Budget, context: ModelContext) {
+        name = domain.name
+        amount = domain.amount
+        categoryId = domain.categoryId
+        period = domain.period.rawValue
+        startDate = domain.startDate
+        isActive = domain.isActive
+    }
+
+    static func idPredicate(_ id: Budget.ID) -> Predicate<SDBudget> {
+        #Predicate<SDBudget> { $0.id == id }
+    }
 }

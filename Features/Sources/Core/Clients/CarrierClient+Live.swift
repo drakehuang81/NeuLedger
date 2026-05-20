@@ -3,37 +3,23 @@ import SwiftData
 import Domain
 import Dependencies
 
+/// Live implementation of `CarrierClient` backed by `SwiftDataStore`.
 extension CarrierClient: DependencyKey {
     public static var liveValue: CarrierClient {
-        @Dependency(\.databaseClient) var databaseClient
+        let store = SwiftDataStore<Carrier, SDCarrier>()
 
         return CarrierClient(
             fetchAll: {
-                try databaseClient.fetch(
-                    FetchDescriptor<SDCarrier>(sortBy: [SortDescriptor(\.createdAt)])
-                )
+                try await store.fetchAll(sortBy: [SortDescriptor(\.createdAt)])
             },
             add: { carrier in
-                try databaseClient.add(carrier, as: SDCarrier.self)
+                try await store.add(carrier)
             },
             update: { carrier in
-                let carrierId = carrier.id
-                try databaseClient.update(
-                    matching: FetchDescriptor<SDCarrier>(
-                        predicate: #Predicate { $0.id == carrierId }
-                    )
-                ) { existing, _ in
-                    existing.name = carrier.name
-                    existing.typeRaw = carrier.type.rawValue
-                    existing.barcode = carrier.barcode
-                }
+                try await store.update(carrier)
             },
             delete: { id in
-                try databaseClient.deleteFirst(
-                    matching: FetchDescriptor<SDCarrier>(
-                        predicate: #Predicate { $0.id == id }
-                    )
-                )
+                try await store.delete(id: id)
             }
         )
     }

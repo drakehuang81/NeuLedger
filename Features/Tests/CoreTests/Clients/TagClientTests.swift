@@ -27,12 +27,14 @@ struct TagClientTests {
 
         self.sut = withDependencies {
             $0.databaseClient = testDatabaseClient
+            $0.modelContainer = _container
         } operation: {
             TagClient.liveValue
         }
 
         self.transactionClient = withDependencies {
             $0.databaseClient = testDatabaseClient
+            $0.modelContainer = _container
         } operation: {
             TransactionClient.liveValue
         }

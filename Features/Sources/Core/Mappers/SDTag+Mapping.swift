@@ -39,6 +39,13 @@ extension SDTag: PersistentDomainModel {
         #Predicate<SDTag> { $0.id == id }
     }
 
+    /// Clears the inverse relationship so any linked transaction's `tags`
+    /// array no longer references this tag. Called by `SwiftDataStore.delete`
+    /// before the SD instance is removed.
+    func prepareForDelete() {
+        transactions?.removeAll()
+    }
+
     /// Resolves an existing `SDTag` by its identifier or creates a new one.
     ///
     /// - Parameters:

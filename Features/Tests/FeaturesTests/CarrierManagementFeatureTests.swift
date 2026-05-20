@@ -186,7 +186,7 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             $0.carrierClient.fetchAll = { carriers }
-            $0.widgetSyncClient.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -265,8 +265,8 @@ struct CarrierManagementFeatureTests {
             // carrierA is the current widget carrier
             $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
             $0.userSettingsAdapter.setString = { _, _ in }
-            $0.widgetSyncClient.clearCarrier = { clearCarrierCalled.setValue(true) }
-            $0.widgetSyncClient.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.clearCarrier = { clearCarrierCalled.setValue(true) }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
         // deleteTapped now shows a confirmation alert
@@ -313,8 +313,8 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.fetchAll = { [Self.carrierB] }
             // carrierB is the widget carrier, not carrierA
             $0.userSettingsAdapter.string = { _ in Self.carrierB.id.uuidString }
-            $0.widgetSyncClient.clearCarrier = { clearCarrierCalled.setValue(true) }
-            $0.widgetSyncClient.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.clearCarrier = { clearCarrierCalled.setValue(true) }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
         // deleteTapped now shows a confirmation alert
@@ -358,8 +358,8 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.fetchAll = { [Self.carrierA, Self.carrierB] }
             // carrierA is the current widget carrier
             $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
-            $0.widgetSyncClient.syncCarrier = { barcode, _, _ in syncBarcode.setValue(barcode) }
-            $0.widgetSyncClient.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.syncCarrier = { barcode, _, _ in syncBarcode.setValue(barcode) }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -383,8 +383,8 @@ struct CarrierManagementFeatureTests {
             // No widget carrier set yet — empty string triggers auto-assign path
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
-            $0.widgetSyncClient.syncCarrier = { _, _, _ in }
-            $0.widgetSyncClient.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.syncCarrier = { _, _, _ in }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -413,12 +413,12 @@ struct CarrierManagementFeatureTests {
             // No widget carrier set yet
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { value, _ in savedId.setValue(value) }
-            $0.widgetSyncClient.syncCarrier = { barcode, type, name in
+            $0.widgetSyncAdapter.syncCarrier = { barcode, type, name in
                 syncedBarcode.setValue(barcode)
                 syncedType.setValue(type)
                 syncedName.setValue(name)
             }
-            $0.widgetSyncClient.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -450,7 +450,7 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             $0.carrierClient.fetchAll = { [sample] }
-            $0.widgetSyncClient.syncAllCarriers = { carriers in
+            $0.widgetSyncAdapter.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)
             }
         }
@@ -484,7 +484,7 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.delete = { _ in }
             $0.carrierClient.fetchAll = { [remaining] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.widgetSyncClient.syncAllCarriers = { carriers in
+            $0.widgetSyncAdapter.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)
             }
         }
@@ -532,8 +532,8 @@ struct CarrierManagementFeatureTests {
             $0.carrierClient.fetchAll = { [saved] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
-            $0.widgetSyncClient.syncCarrier = { _, _, _ in }
-            $0.widgetSyncClient.syncAllCarriers = { carriers in
+            $0.widgetSyncAdapter.syncCarrier = { _, _, _ in }
+            $0.widgetSyncAdapter.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)
             }
         }

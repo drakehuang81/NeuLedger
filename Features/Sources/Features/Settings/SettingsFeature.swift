@@ -101,7 +101,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.carrierClient) var carrierClient
-    @Dependency(\.widgetSyncClient) var widgetSyncClient
+    @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
     @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task }
@@ -295,8 +295,8 @@ public struct SettingsFeature: Sendable {
                 userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name
-                    return .run { [widgetSyncClient] _ in
-                        await widgetSyncClient.syncCarrier(
+                    return .run { [widgetSyncAdapter] _ in
+                        await widgetSyncAdapter.syncCarrier(
                             carrier.barcode,
                             carrier.type.rawValue,
                             carrier.name

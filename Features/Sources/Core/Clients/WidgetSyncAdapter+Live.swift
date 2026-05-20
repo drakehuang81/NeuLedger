@@ -5,7 +5,7 @@ import WidgetKit
 import Dependencies
 import Domain
 
-extension WidgetSyncClient: DependencyKey {
+extension WidgetSyncAdapter: DependencyKey {
     // MARK: - App Group constants
     //
     // Keep in sync with Shared/WidgetAppGroup.swift:

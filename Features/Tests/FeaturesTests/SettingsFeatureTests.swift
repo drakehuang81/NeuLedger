@@ -494,7 +494,7 @@ struct SettingsWidgetCarrierTests {
         }
     }
 
-    @Test("widgetCarrierSelected writes to UserSettings and calls widgetSyncClient.syncCarrier")
+    @Test("widgetCarrierSelected writes to UserSettings and calls widgetSyncAdapter.syncCarrier")
     func testWidgetCarrierSelected() async throws {
         let carriers = Self.sampleCarriers
         let target = carriers[1]
@@ -511,7 +511,7 @@ struct SettingsWidgetCarrierTests {
             $0.userSettingsAdapter.setString = { value, key in
                 if key.rawValue == "widgetCarrierId" { savedId.setValue(value) }
             }
-            $0.widgetSyncClient.syncCarrier = { barcode, type, name in
+            $0.widgetSyncAdapter.syncCarrier = { barcode, type, name in
                 syncedBarcode.setValue(barcode)
                 syncedType.setValue(type)
                 syncedName.setValue(name)

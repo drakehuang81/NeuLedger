@@ -41,7 +41,7 @@ public struct CarrierManagementFeature: Sendable {
 
     @Dependency(\.carrierClient) var carrierClient
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.widgetSyncClient) var widgetSyncClient
+    @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
 
     private enum CancelID { case task }
 
@@ -52,9 +52,9 @@ public struct CarrierManagementFeature: Sendable {
             switch action {
             case .task:
                 state.isLoading = true
-                return .run { [widgetSyncClient] send in
+                return .run { [widgetSyncAdapter] send in
                     let carriers = try await carrierClient.fetchAll()
-                    await widgetSyncClient.syncAllCarriers(carriers)
+                    await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 }
                 .cancellable(id: CancelID.task)
@@ -98,16 +98,16 @@ public struct CarrierManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 state.expandedCarrierId = nil
-                return .run { [userSettingsAdapter, widgetSyncClient] send in
+                return .run { [userSettingsAdapter, widgetSyncAdapter] send in
                     try await carrierClient.delete(id)
                     let carriers = try await carrierClient.fetchAll()
                     // If the deleted carrier was the active widget carrier, clear App Group
                     let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
                     if widgetCarrierId == id.uuidString {
                         userSettingsAdapter.setString("", .widgetCarrierId)
-                        await widgetSyncClient.clearCarrier()
+                        await widgetSyncAdapter.clearCarrier()
                     }
-                    await widgetSyncClient.syncAllCarriers(carriers)
+                    await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 } catch: { _, send in
                     let carriers = (try? await carrierClient.fetchAll()) ?? []
@@ -119,14 +119,14 @@ public struct CarrierManagementFeature: Sendable {
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { [userSettingsAdapter, widgetSyncClient] send in
+                return .run { [userSettingsAdapter, widgetSyncAdapter] send in
                     let carriers = try await carrierClient.fetchAll()
                     let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
 
                     if widgetCarrierId.isEmpty, let first = carriers.first {
                         // P0: Auto-assign the first ever carrier as the widget carrier
                         userSettingsAdapter.setString(first.id.uuidString, .widgetCarrierId)
-                        await widgetSyncClient.syncCarrier(
+                        await widgetSyncAdapter.syncCarrier(
                             first.barcode,
                             first.type.rawValue,
                             first.name
@@ -136,14 +136,14 @@ public struct CarrierManagementFeature: Sendable {
                                   $0.id.uuidString == widgetCarrierId
                               }) {
                         // If the widget carrier was edited, update App Group
-                        await widgetSyncClient.syncCarrier(
+                        await widgetSyncAdapter.syncCarrier(
                             carrier.barcode,
                             carrier.type.rawValue,
                             carrier.name
                         )
                     }
 
-                    await widgetSyncClient.syncAllCarriers(carriers)
+                    await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 }
 

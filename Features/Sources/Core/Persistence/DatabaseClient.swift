@@ -95,24 +95,27 @@ extension DatabaseClient: DependencyKey {
         modelContainer: { DatabaseClient.container }
     )
 
-    /// An in-memory `ModelContainer` suitable for unit tests.
-    public static let testValue: DatabaseClient = {
+    /// In-memory `ModelContainer` shared by `DatabaseClient.testValue` and
+    /// `\.modelContainer`'s testValue. Created once per process so tests
+    /// running in the same target share seeded default data.
+    nonisolated(unsafe) public static let testContainer: ModelContainer = {
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: true
         )
-        let container: ModelContainer
         do {
-            container = try ModelContainer(for: schema, configurations: [configuration])
-            let context = ModelContext(container)
-            seedIfNeeded(in: context)
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            seedIfNeeded(in: ModelContext(container))
+            return container
         } catch {
             fatalError("Failed to create test ModelContainer: \(error)")
         }
-        return DatabaseClient(
-            modelContainer: { container }
-        )
     }()
+
+    /// An in-memory `DatabaseClient` suitable for unit tests.
+    public static let testValue = DatabaseClient(
+        modelContainer: { DatabaseClient.testContainer }
+    )
 }
 
 // MARK: - DatabaseClient Helpers

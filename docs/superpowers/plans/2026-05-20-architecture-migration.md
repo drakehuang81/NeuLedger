@@ -35,9 +35,22 @@
 - 1.5a–g 7 個 Repository Live 遷移 `eb3b8dc..d23d98b`
 - 1.6 退役 `DatabaseClient` CRUD helpers `a43d7ed`
 
-**Phase 1 收尾驗證觀察（待 Phase 2 之前處理）**：
-- 完整 `-scheme Features` **時而紅燈**，失敗點隨 run 不同（SettingsFeatureTests 393/403/423/433 / TagManagementFeatureTests / TransactionDetailFeatureTests 等），錯誤訊息都是「An effect returned for this action is still running」。判定：**TCA TestStore + Swift Testing 並行排程的 race**，跟我把 `DatabaseClient.testContainer` 改成 process-wide `static let` 共用 in-memory container 有關（多個並行 test 共用同一 container 造成 reducer effect 完成時序漂移）。
-- 處理方向（未做）：把 `DatabaseClient.testContainer` 改回「每次取用都建新 container」，或在受影響 features test 加 `store.exhaustivity = .off` / `await store.finish()`。
+**Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
+
+- 第一次跑完整 `-scheme Features` 出現 9 個「An effect returned for this action is still running」失敗（SettingsFeatureTests 393/403/423/433 / TagManagementFeatureTests 53/81 / TransactionDetailFeatureTests:36 / CarrierManagementFeatureTests:246）。重跑變 4 個（位置不完全相同）— 明顯 flaky。
+- 隔離測試：4 個 flaky suite 用 `-only-testing` 單跑 = **37/37 全綠**。
+- **根因隔離**：`git stash --include-untracked` 把所有未提交本地改動 stash 後跑完整 `-scheme Features` = **全綠 273/40 + 87/21 + 112/32，0 failures**。Stash 內容只有兩個既存修改檔（Phase 1 之前就在本地未提交），與我的 Phase 1 改動完全無關。
+- **結論：flaky 失敗不是 Phase 1 引入**。Phase 1 commit 流程中每個 PR 級節點都跑過完整綠燈，最終 commit `a5b5141` 後再次跑也是全綠（前提：stash 那 2 個既有本地改動）。
+- **誤判點**：之前 plan 寫「testContainer process-wide static let 是 root cause」是錯的 — 隔離跑時 testContainer 一樣 process-wide static let，仍綠燈。
+
+**需要在另一台機器處理的兩個未提交本地改動（不在任何 commit 內）**：
+
+跨機器銜接時這兩個檔不會出現（git 不帶未提交改動）。它們是這台機器的本地 work-in-progress，疑似在 Phase 1 之前的 session 留下的，與 architecture migration 無關但會打破完整 scheme 測試：
+
+1. **`Features/Sources/Core/Clients/WidgetSyncClient+Live.swift`** — 三處 `await WidgetCenter.shared.reloadTimelines(ofKind:)` 被改成同步呼叫（移除 `await`）。Interface 仍是 `async`，但 closure 內部移除 await 改變了 actor hop 排程。建議：要嘛 revert（保留 `await`）讓全綠；要嘛在 WidgetSyncClient interface 把 `async` 改為 `sync` 並更新所有 callsite。
+2. **`Features/Sources/Features/Transactions/TransactionDetailView.swift`** — `PreviewFixtures.store` 加 `@MainActor`。看起來無害，但跟 WidgetSyncClient 改動的組合造成完整 scheme race。如果 WidgetSync 改動 revert，這個保留無妨。
+
+下次接續直接 `git status -s` 看是否有 dirty file；如果該機器沒有那 2 個改動，跑完整 scheme 就是綠的，可直接進 Phase 2。
 
 **Phase 1 邊界外已知 ModelContext 違規**：
 - `Core/Clients/SyncClient+Live.swift:63` 直接用 `ModelContext(DatabaseClient.container)` flush CloudKit pending changes。屬於 Adapter 範疇，Phase 3（`SyncClient` → `CloudKitSyncAdapter`）處理。

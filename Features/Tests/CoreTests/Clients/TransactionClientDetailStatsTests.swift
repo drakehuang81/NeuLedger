@@ -1,5 +1,6 @@
 import Dependencies
 import Foundation
+import SwiftData
 import Testing
 import Domain
 @testable import Core
@@ -9,6 +10,15 @@ struct TransactionClientDetailStatsTests {
 
     private static func freshClient() -> DatabaseClient {
         return DatabaseClient.testValue
+    }
+
+    /// Inserts a Domain `Transaction` into the client's container without going
+    /// through DatabaseClient.add (which is being retired in Phase 1.6 of the
+    /// architecture migration). Uses the SD mapper directly.
+    private static func insert(_ transaction: Transaction, into client: DatabaseClient) throws {
+        let ctx = ModelContext(client.modelContainer())
+        SDTransaction.from(transaction, context: ctx)
+        try ctx.save()
     }
 
     private static let accountID = UUID(uuidString: "11000000-0000-0000-0000-000000000001")!
@@ -21,8 +31,8 @@ struct TransactionClientDetailStatsTests {
         let now = Date()
         let subject = Transaction(amount: 250, date: now, categoryId: Self.categoryFood, accountId: Self.accountID, type: .expense)
         let other = Transaction(amount: 150, date: now, categoryId: Self.categoryFood, accountId: Self.accountID, type: .expense)
-        try client.add(subject, as: SDTransaction.self)
-        try client.add(other, as: SDTransaction.self)
+        try Self.insert(subject, into: client)
+        try Self.insert(other, into: client)
 
         let insight = try client.detailStats(for: subject)
 
@@ -41,8 +51,8 @@ struct TransactionClientDetailStatsTests {
         let now = Date()
         let prior = Transaction(amount: 48_000, date: Calendar.current.date(byAdding: .day, value: -2, to: now)!, categoryId: Self.categorySalary, accountId: Self.accountID, type: .income)
         let subject = Transaction(amount: 50_000, date: now, categoryId: Self.categorySalary, accountId: Self.accountID, type: .income)
-        try client.add(prior, as: SDTransaction.self)
-        try client.add(subject, as: SDTransaction.self)
+        try Self.insert(prior, into: client)
+        try Self.insert(subject, into: client)
 
         let insight = try client.detailStats(for: subject)
         guard case let .incomeVsLast(percentDelta, lastAmount, monthlyCount, _) = insight.kind else {
@@ -60,8 +70,8 @@ struct TransactionClientDetailStatsTests {
         let now = Date()
         let other = Transaction(amount: 2500, date: now, accountId: Self.accountID, toAccountId: UUID(), type: .transfer)
         let subject = Transaction(amount: 3000, date: now, accountId: Self.accountID, toAccountId: UUID(), type: .transfer)
-        try client.add(other, as: SDTransaction.self)
-        try client.add(subject, as: SDTransaction.self)
+        try Self.insert(other, into: client)
+        try Self.insert(subject, into: client)
 
         let insight = try client.detailStats(for: subject)
         guard case let .transfer(count, total) = insight.kind else {
@@ -76,7 +86,7 @@ struct TransactionClientDetailStatsTests {
     func testExpenseFallbackNoCategory() async throws {
         let client = Self.freshClient()
         let subject = Transaction(amount: 100, date: .now, categoryId: nil, accountId: Self.accountID, type: .expense)
-        try client.add(subject, as: SDTransaction.self)
+        try Self.insert(subject, into: client)
 
         let insight = try client.detailStats(for: subject)
         guard case let .fallback(count) = insight.kind else {

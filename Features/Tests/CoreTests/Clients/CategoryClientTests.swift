@@ -31,6 +31,7 @@ struct CategoryClientTests {
         // Inject test DatabaseClient into CategoryClient
         self.sut = withDependencies {
             $0.databaseClient = testDatabaseClient
+            $0.modelContainer = _container
         } operation: {
             CategoryClient.liveValue
         }

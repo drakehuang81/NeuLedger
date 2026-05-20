@@ -3,50 +3,26 @@ import SwiftData
 import Domain
 import Dependencies
 
-/// Live implementation of `RecurringTransactionClient` backed by SwiftData.
+/// Live implementation of `RecurringTransactionClient` backed by `SwiftDataStore`.
 extension RecurringTransactionClient: DependencyKey {
     public static var liveValue: RecurringTransactionClient {
-        @Dependency(\.databaseClient) var databaseClient
+        let store = SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
 
         return RecurringTransactionClient(
             fetchAll: {
-                try databaseClient.fetch(FetchDescriptor<SDRecurringTransaction>())
+                try await store.fetchAll()
             },
             fetchDue: { on in
-                try databaseClient.fetch(
-                    FetchDescriptor<SDRecurringTransaction>(
-                        predicate: #Predicate { $0.nextDueDate <= on && $0.isActive }
-                    )
-                )
+                try await store.fetchAll().filter { $0.nextDueDate <= on && $0.isActive }
             },
             add: { rt in
-                try databaseClient.add(rt, as: SDRecurringTransaction.self)
+                try await store.add(rt)
             },
             update: { rt in
-                let rtId = rt.id
-                try databaseClient.update(
-                    matching: FetchDescriptor<SDRecurringTransaction>(
-                        predicate: #Predicate { $0.id == rtId }
-                    )
-                ) { existing, _ in
-                    existing.amount = rt.amount
-                    existing.note = rt.note
-                    existing.categoryId = rt.categoryId
-                    existing.accountId = rt.accountId
-                    existing.toAccountId = rt.toAccountId
-                    existing.typeRaw = rt.type.rawValue
-                    existing.tagIds = rt.tags.map(\.id)
-                    existing.frequencyRaw = rt.frequency.rawValue
-                    existing.nextDueDate = rt.nextDueDate
-                    existing.isActive = rt.isActive
-                }
+                try await store.update(rt)
             },
             delete: { id in
-                try databaseClient.deleteFirst(
-                    matching: FetchDescriptor<SDRecurringTransaction>(
-                        predicate: #Predicate { $0.id == id }
-                    )
-                )
+                try await store.delete(id: id)
             }
         )
     }

@@ -3,38 +3,25 @@ import SwiftData
 import Domain
 import Dependencies
 
-/// Live implementation of `AccountClient` backed by SwiftData.
+/// Live implementation of `AccountClient` backed by `SwiftDataStore`.
 extension AccountClient: DependencyKey {
     public static var liveValue: AccountClient {
-        @Dependency(\.databaseClient) var databaseClient
+        let accountStore = SwiftDataStore<Account, SDAccount>()
+        let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
 
         return AccountClient(
             fetchAll: {
-                try databaseClient.fetch(
-                    FetchDescriptor<SDAccount>(sortBy: [SortDescriptor(\.sortOrder)])
-                )
+                try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
             },
             fetchActive: {
-                try databaseClient.fetch(
-                    FetchDescriptor<SDAccount>(
-                        predicate: #Predicate { $0.isArchived == false },
-                        sortBy: [SortDescriptor(\.sortOrder)]
-                    )
-                )
+                try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
+                    .filter { !$0.isArchived }
             },
             computeBalance: { accountId in
-                let context = databaseClient.makeContext()
-                let descriptor = FetchDescriptor<SDTransaction>(
-                    predicate: #Predicate {
-                        $0.accountId == accountId || $0.toAccountId == accountId
-                    }
-                )
-                let transactions = try context.fetch(descriptor)
-
+                let transactions = try await transactionStore.fetchAll()
                 var balance: Decimal = 0
                 for txn in transactions {
-                    let txnType = TransactionType(rawValue: txn.type) ?? .expense
-                    switch txnType {
+                    switch txn.type {
                     case .income:
                         if txn.accountId == accountId { balance += txn.amount }
                     case .expense:
@@ -47,53 +34,28 @@ extension AccountClient: DependencyKey {
                 return balance
             },
             add: { account in
-                try databaseClient.add(account, as: SDAccount.self)
+                try await accountStore.add(account)
             },
             update: { account in
-                let accountId = account.id
-                try databaseClient.update(
-                    matching: FetchDescriptor<SDAccount>(
-                        predicate: #Predicate { $0.id == accountId }
-                    )
-                ) { existing, _ in
-                    existing.name = account.name
-                    existing.type = account.type.rawValue
-                    existing.icon = account.icon
-                    existing.color = account.color
-                    existing.sortOrder = account.sortOrder
-                    existing.isArchived = account.isArchived
-                }
+                try await accountStore.update(account)
             },
             archive: { id in
-                try databaseClient.update(
-                    matching: FetchDescriptor<SDAccount>(
-                        predicate: #Predicate { $0.id == id }
-                    )
-                ) { existing, _ in
-                    existing.isArchived = true
+                guard var existing = try await accountStore.fetch(id: id) else {
+                    throw CoreError.notFound("SDAccount")
                 }
+                existing.isArchived = true
+                try await accountStore.update(existing)
             },
             delete: { id in
-                try databaseClient.deleteFirst(
-                    matching: FetchDescriptor<SDAccount>(
-                        predicate: #Predicate { $0.id == id }
-                    ),
-                    validation: { _ in
-                        let context = databaseClient.makeContext()
-                        var txnDescriptor = FetchDescriptor<SDTransaction>(
-                            predicate: #Predicate {
-                                $0.accountId == id || $0.toAccountId == id
-                            }
-                        )
-                        txnDescriptor.fetchLimit = 1
-                        let linked = try context.fetch(txnDescriptor)
-                        guard linked.isEmpty else {
-                            throw CoreError.operationDenied(
-                                "Cannot delete account with associated transactions; archive it instead."
-                            )
-                        }
-                    }
-                )
+                let hasLinkedTransactions = try await transactionStore.fetchAll().contains {
+                    $0.accountId == id || $0.toAccountId == id
+                }
+                guard !hasLinkedTransactions else {
+                    throw CoreError.operationDenied(
+                        "Cannot delete account with associated transactions; archive it instead."
+                    )
+                }
+                try await accountStore.delete(id: id)
             }
         )
     }

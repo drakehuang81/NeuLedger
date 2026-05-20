@@ -32,12 +32,14 @@ struct AccountClientTests {
         // Inject test DatabaseClient into the clients
         self.sut = withDependencies {
             $0.databaseClient = testDatabaseClient
+            $0.modelContainer = _container
         } operation: {
             AccountClient.liveValue
         }
-        
+
         self.transactionClient = withDependencies {
             $0.databaseClient = testDatabaseClient
+            $0.modelContainer = _container
         } operation: {
             TransactionClient.liveValue
         }

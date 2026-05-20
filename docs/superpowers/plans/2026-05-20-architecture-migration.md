@@ -22,7 +22,7 @@
 
 ---
 
-## 進度狀態（2026-05-20 暫停點）
+## 進度狀態（2026-05-21 更新）
 
 **Phase 0（baseline broken tests 修復）** ✅ 全部完成
 - 0a SyncSettingsFeatureTests / 0b DashboardFeatureChipTests / 0c CarrierManagementFeatureTests / 0d CategoryManagementFeatureTests
@@ -34,6 +34,14 @@
 - 1.4 `SwiftDataStore<Domain, SD>` 泛型 `c7a2992`
 - 1.5a–g 7 個 Repository Live 遷移 `eb3b8dc..d23d98b`
 - 1.6 退役 `DatabaseClient` CRUD helpers `a43d7ed`
+
+**Phase 2（Adapter 改名）** ✅ 全部完成（4 個 commit）
+- 2.1 `NotificationClient` → `NotificationAdapter` `b131ee2`（15 files）
+- 2.2 `UserSettingsClient` → `UserSettingsAdapter` `3ec5cfd`（24 files）
+- 2.3 `WidgetSyncClient` → `WidgetSyncAdapter` `46d3775`（6 files）
+- 2.4 `SpeechClient` → `SpeechAdapter` + `SpeechClientError` → `SpeechAdapterError` `5bef3fc`（7 files）
+
+下一階段：Phase 3（拆分誤命名 UseCase — `AIServiceClient` 與 `SyncClient`）。
 
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 

@@ -46,4 +46,17 @@ extension SDAccount: PersistentDomainModel {
         context.insert(model)
         return model
     }
+
+    func applyChanges(from domain: Account, context: ModelContext) {
+        name = domain.name
+        type = domain.type.rawValue
+        icon = domain.icon
+        color = domain.color
+        sortOrder = domain.sortOrder
+        isArchived = domain.isArchived
+    }
+
+    static func idPredicate(_ id: Account.ID) -> Predicate<SDAccount> {
+        #Predicate<SDAccount> { $0.id == id }
+    }
 }

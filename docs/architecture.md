@@ -74,7 +74,7 @@ To avoid collisions with state field names like `accounts: [Account]` or
 | Layer | May depend on | May NOT depend on |
 |---|---|---|
 | **Feature** | UseCase (always) | Repository, Adapter, Database, system APIs (except in `View` body for layout) |
-| **UseCase** | Repository, Adapter, other UseCase, Policy, Domain types | Reducer, View, SwiftData, UIKit |
+| **UseCase** | Repository, Adapter, Policy, Domain types, Foundation primitives, **other UseCase only under §3.1 whitelist** | Reducer, View, SwiftData, UIKit, WidgetKit, CloudKit, UserDefaults, UNUserNotificationCenter, Foundation Models — all of these go through Adapters |
 | **Repository** | DatabaseClient, Domain types | Other Repository (rare exceptions for joins — comment why), any Adapter, any UseCase |
 | **Adapter** | System APIs, Domain types | Other Adapter, Repository, UseCase |
 | **Policy** | Pure Swift only (Foundation OK) | Anything async / throws IO |
@@ -94,6 +94,67 @@ UseCase**.
 
 ---
 
+## 3.1 UseCase → UseCase: Whitelist Only
+
+**Default rule: a UseCase does NOT call another UseCase.** UseCases are
+peers, not stacked. Coordination across UseCases belongs in the caller
+(usually the Reducer). This keeps each UseCase independently testable,
+prevents hidden side-effect chains, and avoids accidental cycles.
+
+Cross-UseCase calls are allowed only in two named scenarios. Any such call
+must carry a comment tagging which scenario it is.
+
+### Scenario A: Saga — a business flow spans bounded contexts
+
+Use when one UseCase's job is, by definition, to drive a flow that includes
+another UseCase's full chain of effects.
+
+```swift
+// SAGA: Recurring tick must trigger the full transaction-record flow
+// (including budget evaluation), so we call LedgerUseCase rather than
+// touching transactionRepository directly.
+RecurringUseCase.tick() {
+    for rt in due {
+        try await ledgerUseCase.record(Transaction(from: rt))
+        try await recurringRepository.markFired(rt.id)
+    }
+}
+```
+
+### Scenario B: Post-condition invariant — A must always be followed by B
+
+Use when the second action is an invariant of the first — never optional,
+never something a caller could legitimately skip.
+
+```swift
+// INVARIANT: every recorded transaction must be evaluated for budget
+// warnings. Cannot rely on individual callers to remember.
+LedgerUseCase.record(_ tx: Transaction) async throws {
+    try await transactionRepository.add(tx)
+    await budgetUseCase.evaluateAfterTransaction(tx)
+}
+```
+
+### Everything else: refuse and refactor
+
+| If you're tempted to call... | Do this instead |
+|---|---|
+| Another UseCase to read entity data | Call the underlying Repository directly |
+| Another UseCase to read a setting | Call `AppEnvironmentUseCase` (the one wrapper UseCase exception) or its Adapter directly |
+| Another UseCase to reuse a calculation | Extract the calculation to a Policy |
+| Another UseCase to coordinate two steps for one screen | Let the Reducer coordinate via two `.run` Effects |
+
+### Why AppEnvironmentUseCase is an exception
+
+`AppEnvironmentUseCase` is a **wrapper UseCase** — its job is to give other
+UseCases / Reducers a typed concept-shaped surface over UserDefaults
+Adapter, Notification Adapter, and System Adapter. Other UseCases reading
+preferences through it is fine; it's the difference between
+`userSettingsAdapter.bool(.budgetWarningEnabled)` (leaks UserDefaults
+knowledge) and `appEnvironmentUseCase.budgetWarningEnabled()` (concept-shaped).
+
+---
+
 ## 4. Repository / Adapter Distinction
 
 > **The data's schema is yours = Repository. Someone else's schema = Adapter.**
@@ -104,6 +165,170 @@ UseCase**.
 | Returns | Domain entities (`Transaction`, `Account`, ...) | Domain types translated from system response |
 | Examples | `TransactionRepository`, `AccountRepository` | `NotificationAdapter`, `UserSettingsAdapter`, `WidgetSyncAdapter`, `CloudKitSyncAdapter`, `AIAdapter` |
 | Implementation | `Core/Repositories/` SwiftData | `Core/Adapters/` system frameworks |
+
+---
+
+## 4.2 Repository Implementation Pattern
+
+Repository **interfaces** stay as TCA `@DependencyClient` structs of closures.
+Repository **implementations** (Live) must not touch SwiftData primitives
+directly. Both rules are enforced by the design below.
+
+### Three building blocks
+
+1. **`\.modelContainer`** — the `ModelContainer` itself, exposed as a TCA
+   dependency. This is the only place `ModelContainer` is registered.
+   `SwiftDataStore` may depend on it; **no one else may**.
+
+2. **`PersistentDomainModel`** — protocol that every SwiftData model adopts,
+   absorbing all mapping + relationship + lifecycle concerns. This is where
+   `ModelContext` is allowed to surface, because mapping fundamentally needs it.
+
+3. **`SwiftDataStore<Domain, SD>`** — generic CRUD struct. Resolves the
+   container itself via `@Dependency`; Repositories instantiate it with zero
+   arguments. All `ModelContext` usage stays inside this struct's five methods.
+
+### `\.modelContainer` dependency
+
+```swift
+// Core/Persistence/ModelContainerKey.swift
+import SwiftData
+import Dependencies
+
+extension DependencyValues {
+    var modelContainer: ModelContainer {
+        get { self[ModelContainerKey.self] }
+        set { self[ModelContainerKey.self] = newValue }
+    }
+}
+
+private enum ModelContainerKey: DependencyKey {
+    static var liveValue: ModelContainer { makeLiveContainer() }   // current logic from DatabaseClient
+    static var testValue: ModelContainer { makeInMemoryContainer() }
+}
+```
+
+**Rule:** only `SwiftDataStore` may `@Dependency(\.modelContainer)`.
+Repository Live, UseCase, Feature, anyone else — forbidden.
+
+### `PersistentDomainModel` protocol
+
+```swift
+// Domain layer — zero SwiftData
+public protocol DomainConvertible {
+    associatedtype DomainModel: Identifiable & Sendable
+    func toDomain() -> DomainModel
+}
+
+// Core layer — SwiftData OK here, this is the boundary
+public protocol PersistentDomainModel: PersistentModel, DomainConvertible
+where DomainModel.ID: Sendable & Equatable {
+
+    /// Create a new SD instance and insert into context.
+    /// Internally resolves any relationships using the context.
+    @discardableResult
+    static func from(_ domain: DomainModel, context: ModelContext) -> Self
+
+    /// Apply Domain changes to this SD instance.
+    /// Internally resolves any relationship updates using the context.
+    func applyChanges(from domain: DomainModel, context: ModelContext)
+
+    /// Cleanup before delete (e.g. clearing inverse relationships).
+    /// Default implementation does nothing.
+    func prepareForDelete()
+
+    /// Build a predicate that finds this SD by domain id.
+    static func idPredicate(_ id: DomainModel.ID) -> Predicate<Self>
+}
+
+public extension PersistentDomainModel {
+    func prepareForDelete() {}
+}
+```
+
+`ModelContext` only appears in `from(_:context:)` and `applyChanges(_:context:)`
+inside the mapper. It does not escape into Repository or above.
+
+### `SwiftDataStore`
+
+```swift
+// Core/Persistence/SwiftDataStore.swift
+public struct SwiftDataStore<Domain: Identifiable & Sendable,
+                              SD: PersistentDomainModel>: Sendable
+    where SD.DomainModel == Domain
+{
+    @Dependency(\.modelContainer) private var container
+
+    public init() {}
+
+    public func fetchAll(sortBy: [SortDescriptor<SD>] = []) async throws -> [Domain]
+    public func fetch(id: Domain.ID) async throws -> Domain?
+    public func add(_ domain: Domain) async throws
+    public func update(_ domain: Domain) async throws
+    public func delete(id: Domain.ID) async throws
+}
+```
+
+Five methods, generic over any `(Domain, SD)` pair. No escape hatch. No
+context exposed.
+
+### Repository Live — zero infrastructure awareness
+
+```swift
+extension TransactionRepository: DependencyKey {
+    public static var liveValue: TransactionRepository {
+        let store = SwiftDataStore<Transaction, SDTransaction>()   // zero args
+
+        return TransactionRepository(
+            fetchAll: { try await store.fetchAll(sortBy: [SortDescriptor(\.date, order: .reverse)]) },
+            fetch: { try await store.fetch(id: $0) },
+            add: { try await store.add($0) },             // mapper handles tag resolution
+            update: { try await store.update($0) },       // mapper handles tag resolution
+            delete: { try await store.delete(id: $0) },
+            search: { query in
+                // No ModelContext access. Fetch + filter in Swift.
+                let lowered = query.lowercased()
+                let all = try await store.fetchAll()
+                return all.filter { $0.note?.lowercased().contains(lowered) == true }
+            },
+            weeklySpending: { accountId, days in
+                let all = try await store.fetchAll()
+                // ... aggregate in Swift
+            }
+        )
+    }
+}
+```
+
+Repository Live mentions neither `ModelContainer` nor `ModelContext`.
+
+### Evolution path for custom queries
+
+`search` and `weeklySpending` currently use `store.fetchAll()` + Swift-side
+filtering / aggregation. For NeuLedger's scale (hundreds to a few thousand
+transactions) this is fine. If profiling later shows it's a bottleneck,
+add a specialized method on `SwiftDataStore` via constrained extension:
+
+```swift
+extension SwiftDataStore where SD == SDTransaction {
+    public func search(_ query: String) async throws -> [Transaction] {
+        // Uses predicate directly, still hides ModelContext.
+    }
+}
+```
+
+Repository switches from `store.fetchAll() + filter` to `store.search(query)`;
+its public surface is unchanged. No call-site changes anywhere.
+
+### What this design forbids
+
+| Anti-pattern | Why it's banned |
+|---|---|
+| `@Dependency(\.modelContainer)` in Repository Live | Defeats the whole point — Repository would touch infrastructure |
+| `ModelContext(...)` outside `SwiftDataStore` or `PersistentDomainModel` mappers | Same |
+| `FetchDescriptor<SD>` returned from a Repository | Leaks SwiftData type upward |
+| Repository Live opens a context for "just one custom query" | Add a `SwiftDataStore where SD == X` extension instead |
+| Mapper performs business logic (not just translation) | Mappers translate shape only; business rules go in Policy / UseCase |
 
 ---
 
@@ -217,7 +442,9 @@ System:
 
 **`OnboardingUseCase`** — single-shot onboarding flow
 - `complete(firstAccount: Account) async throws -> Void`
-  > Internally combines `AccountUseCase.create` + `AppEnvironmentUseCase.markOnboardingComplete`.
+  > Internally calls `accountRepository.add` directly (no §3.1 whitelist
+  > reason to route through `AccountUseCase`), then
+  > `appEnvironmentUseCase.markOnboardingComplete()`.
 
 **`ExportUseCase`**
 - `exportTransactionsCSV() async throws -> URL`
@@ -271,8 +498,9 @@ Features/Sources/
 │   └── UseCases/                      # LedgerUseCase.swift (interface)
 │
 ├── Core/                              # Infrastructure implementations
-│   ├── Persistence/                   # DatabaseClient
-│   ├── Repositories/                  # *Repository+Live.swift (SwiftData)
+│   ├── Persistence/                   # ModelContainerKey, SwiftDataStore
+│   ├── Mappers/                       # SD*+Mapping.swift (PersistentDomainModel conformances)
+│   ├── Repositories/                  # *Repository+Live.swift (uses SwiftDataStore)
 │   └── Adapters/                      # *Adapter+Live.swift (system APIs)
 │
 ├── Application/                       # UseCase implementations
@@ -305,7 +533,9 @@ Current state vs target:
 
 | Current | Target |
 |---|---|
-| `Core/Clients/TransactionClient+Live` (Repository + UseCase mix) | Split → `Core/Repositories/TransactionRepository+Live` (pure) + `Application/Ledger/LedgerUseCase+Live` (orchestration) |
+| `Core/Persistence/DatabaseClient` (struct wrapping ModelContainer + 4 CRUD helpers) | Replace → `\.modelContainer` dependency + `SwiftDataStore<Domain, SD>` generic. CRUD helpers removed; mapping logic moves into `PersistentDomainModel` mappers. |
+| `DomainConvertible` only has `toDomain` / `from` | Promote SD-side conformance to `PersistentDomainModel` (adds `applyChanges`, `prepareForDelete`, `idPredicate`) |
+| `Core/Clients/TransactionClient+Live` (Repository + UseCase mix) | Split → `Core/Repositories/TransactionRepository+Live` (uses `SwiftDataStore`) + `Application/Ledger/LedgerUseCase+Live` (orchestration) |
 | `Core/Clients/AIServiceClient+Live` (already a UseCase but mis-named) | Rename → `Application/AI/AIUseCase+Live` |
 | `Core/Clients/SyncClient+Live` | Rename → `Application/CloudSync/CloudSyncUseCase+Live` |
 | `Core/Clients/NotificationClient+Live` | Rename → `Core/Adapters/NotificationAdapter+Live` |
@@ -316,13 +546,20 @@ Current state vs target:
 
 This is a multi-PR refactor. Suggested ordering:
 
-1. **Rename only** (no behavior change): Adapters and AIService/Sync renames.
-   Low risk, makes the rest readable.
-2. **Extract Ledger UseCase**: pull `checkBudgetWarnings` out of
+1. **Persistence foundation** (no behavior change, biggest blast radius):
+   introduce `\.modelContainer` + `SwiftDataStore` + `PersistentDomainModel`;
+   migrate every existing `*Client+Live` to use it; retire `DatabaseClient`.
+   Do this first because every Repository depends on it.
+2. **Adapter renames** (low risk): `NotificationClient` → `NotificationAdapter`,
+   `UserSettingsClient` → `UserSettingsAdapter`, `WidgetSyncClient` → `WidgetSyncAdapter`.
+3. **Promote misnamed UseCases**: `AIServiceClient` → `AIUseCase` (+ split out
+   `AIAdapter` for raw Foundation Models calls), `SyncClient` → `CloudSyncUseCase`
+   (+ split out `CloudKitSyncAdapter`).
+4. **Extract Ledger UseCase**: pull `checkBudgetWarnings` out of
    `TransactionRepository`, create `LedgerUseCase` + `BudgetUseCase`. Update
    Features that record transactions to call `LedgerUseCase.record`.
-3. **Introduce remaining UseCases incrementally**, one bounded context per PR.
-4. **Folder restructure** (Domain split, new Application folder) — best done
+5. **Introduce remaining UseCases incrementally**, one bounded context per PR.
+6. **Folder restructure** (Domain split, new Application folder) — best done
    in the same PR as introducing the new UseCase implementations.
 
 Until migration is complete, the codebase will have both `*Client` and
@@ -343,6 +580,10 @@ the target, the code follows.
 | Policy is `async throws` | It's a UseCase, not a Policy |
 | 30-method UseCase | Split by sub-context; don't let it grow past ~15 methods |
 | New `XxxClient` file | Decide: Repository, Adapter, or UseCase — never the ambiguous "Client" |
+| UseCase A calls UseCase B without a §3.1 saga/invariant comment | Refactor: call Repository / Adapter directly, or extract to Policy, or let Reducer coordinate |
+| Repository Live has `@Dependency(\.modelContainer)` | Only `SwiftDataStore` may. Repository instantiates `SwiftDataStore<Domain, SD>()` with zero args. |
+| `ModelContext` referenced outside `SwiftDataStore` / `PersistentDomainModel` mapper | Move the work to a Store method (or a constrained extension on Store) |
+| `FetchDescriptor<SD>` returned from a Repository | Return Domain types only |
 
 ---
 

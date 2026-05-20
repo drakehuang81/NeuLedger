@@ -325,6 +325,7 @@ public struct DashboardFeature: Sendable {
                 } else {
                     state.filteredRecent = state.recentTransactions
                 }
+                state.heroPhase = .loading
                 return .run { [accountID] send in
                     do {
                         let v = try await transactionClient.weeklySpending(accountID, 7)

@@ -3,46 +3,26 @@ import SwiftData
 import Domain
 import Dependencies
 
-/// Live implementation of `BudgetClient` backed by SwiftData.
+/// Live implementation of `BudgetClient` backed by `SwiftDataStore`.
 extension BudgetClient: DependencyKey {
     public static var liveValue: BudgetClient {
-        @Dependency(\.databaseClient) var databaseClient
+        let store = SwiftDataStore<Budget, SDBudget>()
 
         return BudgetClient(
             fetchAll: {
-                try databaseClient.fetch(FetchDescriptor<SDBudget>())
+                try await store.fetchAll()
             },
             fetchActive: {
-                try databaseClient.fetch(
-                    FetchDescriptor<SDBudget>(
-                        predicate: #Predicate { $0.isActive == true }
-                    )
-                )
+                try await store.fetchAll().filter { $0.isActive }
             },
             add: { budget in
-                try databaseClient.add(budget, as: SDBudget.self)
+                try await store.add(budget)
             },
             update: { budget in
-                let budgetId = budget.id
-                try databaseClient.update(
-                    matching: FetchDescriptor<SDBudget>(
-                        predicate: #Predicate { $0.id == budgetId }
-                    )
-                ) { existing, _ in
-                    existing.name = budget.name
-                    existing.amount = budget.amount
-                    existing.categoryId = budget.categoryId
-                    existing.period = budget.period.rawValue
-                    existing.startDate = budget.startDate
-                    existing.isActive = budget.isActive
-                }
+                try await store.update(budget)
             },
             delete: { id in
-                try databaseClient.deleteFirst(
-                    matching: FetchDescriptor<SDBudget>(
-                        predicate: #Predicate { $0.id == id }
-                    )
-                )
+                try await store.delete(id: id)
             }
         )
     }

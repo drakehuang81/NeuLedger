@@ -18,6 +18,7 @@ struct SyncSettingsFeatureTests {
                 }
             }
             $0.syncClient.isCloudKitAvailable = { true }
+            $0.syncClient.lastSyncedAt = { nil }
         }
         await store.send(.task)
     }
@@ -38,6 +39,7 @@ struct SyncSettingsFeatureTests {
             }
             $0.userSettingsClient.bool = { _ in false }
             $0.userSettingsClient.setBool = { _, _ in }
+            $0.syncClient.lastSyncedAt = { nil }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {

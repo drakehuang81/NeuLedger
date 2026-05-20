@@ -57,4 +57,21 @@ extension SDTransaction: PersistentDomainModel {
         context.insert(model)
         return model
     }
+
+    func applyChanges(from domain: Transaction, context: ModelContext) {
+        amount = domain.amount
+        date = domain.date
+        note = domain.note
+        categoryId = domain.categoryId
+        accountId = domain.accountId
+        toAccountId = domain.toAccountId
+        type = domain.type.rawValue
+        aiSuggested = domain.aiSuggested
+        updatedAt = domain.updatedAt
+        tags = domain.tags.map { SDTag.resolve($0, context: context) }
+    }
+
+    static func idPredicate(_ id: Transaction.ID) -> Predicate<SDTransaction> {
+        #Predicate<SDTransaction> { $0.id == id }
+    }
 }

@@ -100,7 +100,7 @@ public struct SyncSettingsView: View {
     // MARK: - Migrating
 
     // TODO: design shows "X / Y items · ~ Ns 剩餘" inside the progress block.
-    // We only get a 0–1 progress float from SyncClient.enableSync(); plumb the
+    // We only get a 0–1 progress float from CloudSyncUseCase.enableSync(); plumb the
     // item counts and ETA through SyncSettingsFeature.State to display them.
     private func migratingCard(progress: Double) -> some View {
         GlassContainer(cornerRadius: 22, padding: 22) {

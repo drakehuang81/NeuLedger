@@ -70,7 +70,7 @@ extension DatabaseClient: DependencyKey {
     )
 
     /// Shared live container. On launch, restores the CloudKit-backed container if sync was
-    /// previously enabled. Replaced at runtime by SyncClient during the migration flow.
+    /// previously enabled. Replaced at runtime by CloudSyncUseCase during the migration flow.
     nonisolated(unsafe) public static var container: ModelContainer = {
         do {
             // Read raw UserDefaults directly here (rather than via UserSettingsAdapter)

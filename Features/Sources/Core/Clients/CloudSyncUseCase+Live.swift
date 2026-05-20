@@ -3,12 +3,12 @@ import Domain
 import Foundation
 import SwiftData
 
-extension SyncClient: DependencyKey {
-    public static var liveValue: SyncClient {
+extension CloudSyncUseCase: DependencyKey {
+    public static var liveValue: CloudSyncUseCase {
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
         let capturedUserSettingsAdapter = userSettingsAdapter
 
-        return SyncClient(
+        return CloudSyncUseCase(
             isCloudKitAvailable: {
                 FileManager.default.ubiquityIdentityToken != nil
             },

@@ -17,8 +17,8 @@ struct SyncSettingsFeatureTests {
                 default: return key.defaultValue
                 }
             }
-            $0.syncClient.isCloudKitAvailable = { true }
-            $0.syncClient.lastSyncedAt = { nil }
+            $0.cloudSyncUseCase.isCloudKitAvailable = { true }
+            $0.cloudSyncUseCase.lastSyncedAt = { nil }
         }
         await store.send(.task)
     }
@@ -30,7 +30,7 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.syncClient.enableSync = {
+            $0.cloudSyncUseCase.enableSync = {
                 AsyncThrowingStream { continuation in
                     continuation.yield(0.5)
                     continuation.yield(1.0)
@@ -39,7 +39,7 @@ struct SyncSettingsFeatureTests {
             }
             $0.userSettingsAdapter.bool = { _ in false }
             $0.userSettingsAdapter.setBool = { _, _ in }
-            $0.syncClient.lastSyncedAt = { nil }
+            $0.cloudSyncUseCase.lastSyncedAt = { nil }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {
@@ -67,7 +67,7 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.syncClient.enableSync = {
+            $0.cloudSyncUseCase.enableSync = {
                 AsyncThrowingStream { continuation in
                     continuation.finish(throwing: SyncError())
                 }

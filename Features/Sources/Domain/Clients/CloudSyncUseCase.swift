@@ -4,7 +4,7 @@ import Foundation
 
 /// Manages iCloud sync state and drives the one-time local → CloudKit migration.
 @DependencyClient
-public struct SyncClient: Sendable {
+public struct CloudSyncUseCase: Sendable {
     /// Returns true if the device has an active iCloud account.
     public var isCloudKitAvailable: @Sendable () -> Bool = { false }
 
@@ -23,13 +23,13 @@ public struct SyncClient: Sendable {
     public var requestSyncNow: @Sendable () async throws -> Void = {}
 }
 
-extension SyncClient: TestDependencyKey {
-    public static let testValue = SyncClient()
+extension CloudSyncUseCase: TestDependencyKey {
+    public static let testValue = CloudSyncUseCase()
 }
 
 public extension DependencyValues {
-    var syncClient: SyncClient {
-        get { self[SyncClient.self] }
-        set { self[SyncClient.self] = newValue }
+    var cloudSyncUseCase: CloudSyncUseCase {
+        get { self[CloudSyncUseCase.self] }
+        set { self[CloudSyncUseCase.self] = newValue }
     }
 }

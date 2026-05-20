@@ -34,21 +34,49 @@ extension DatabaseClient: DependencyKey {
         SDCarrier.self,
     ])
 
+    /// App Group identifier shared between the main app and widget extension.
+    /// Both local and CloudKit-backed configurations point their store at the
+    /// same URL inside this container so toggling sync never moves the file.
+    private static let appGroupID = "group.com.drake.NeuLedger"
+
+    /// Shared SwiftData store URL inside the app group container.
+    /// Falling back to the per-app Application Support directory keeps the
+    /// app runnable even if the entitlement is misconfigured (the data won't
+    /// be reachable by the widget in that case, but the main app still works).
+    private static let storeURL: URL = {
+        let filename = "default.store"
+        if let groupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupID
+        ) {
+            let dir = groupURL.appending(path: "Library/Application Support", directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir.appending(path: filename, directoryHint: .notDirectory)
+        }
+        let fallback = URL.applicationSupportDirectory
+        try? FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
+        return fallback.appending(path: filename, directoryHint: .notDirectory)
+    }()
+
     private static let localConfiguration = ModelConfiguration(
         schema: schema,
+        url: storeURL,
         cloudKitDatabase: .none
     )
 
     public static let cloudConfiguration = ModelConfiguration(
         schema: schema,
-        cloudKitDatabase: .private("iCloud.com.drakehuang.NeuLedger")
+        url: storeURL,
+        cloudKitDatabase: .private("iCloud.com.drake.NeuLedger")
     )
 
     /// Shared live container. On launch, restores the CloudKit-backed container if sync was
     /// previously enabled. Replaced at runtime by SyncClient during the migration flow.
     nonisolated(unsafe) public static var container: ModelContainer = {
         do {
-            let isSyncEnabled = UserDefaults.standard.bool(forKey: "isSyncEnabled")
+            // Read raw UserDefaults directly here (rather than via UserSettingsClient)
+            // because this static initializer runs before TCA dependencies resolve.
+            // Use SettingsKey.rawValue as the single source of truth for the key.
+            let isSyncEnabled = UserDefaults.standard.bool(forKey: SettingsKey<Bool>.isSyncEnabled.rawValue)
             let isCloudKitAvailable = FileManager.default.ubiquityIdentityToken != nil
 
             if isSyncEnabled && isCloudKitAvailable {

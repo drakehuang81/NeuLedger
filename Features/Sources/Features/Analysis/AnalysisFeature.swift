@@ -154,7 +154,8 @@ public struct AnalysisFeature: Sendable {
                         // Category proportions (expenses only)
                         let categories = try await categoryClient.fetchAll()
                         let categoryMap = Dictionary(
-                            uniqueKeysWithValues: categories.map { ($0.id, $0.name) }
+                            categories.map { ($0.id, $0.name) },
+                            uniquingKeysWith: { first, _ in first }
                         )
                         // Key: categoryId string (or "uncategorized"), Value: (name, amount)
                         var categoryTotals: [String: (name: String, amount: Decimal)] = [:]
@@ -190,7 +191,8 @@ public struct AnalysisFeature: Sendable {
                         var insight: InsightDetail? = nil
                         if aiServiceClient.isAvailable() {
                             let breakdownByName = Dictionary(
-                                uniqueKeysWithValues: categoryTotals.values.map { ($0.name, $0.amount) }
+                                categoryTotals.values.map { ($0.name, $0.amount) },
+                                uniquingKeysWith: { lhs, rhs in lhs + rhs }
                             )
                             let spendingSummary = SpendingSummary(
                                 totalIncome: totalIncome,
@@ -319,7 +321,7 @@ public struct AnalysisFeature: Sendable {
             }
 
             let categories = try await categoryClient.fetchAll()
-            let categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+            let categoryMap = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
 
             var metrics: [BudgetGaugeMetrics] = []
 

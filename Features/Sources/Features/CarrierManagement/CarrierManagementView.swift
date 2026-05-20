@@ -49,6 +49,7 @@ public struct CarrierManagementView: View {
         .sheet(item: $store.scope(state: \.addEdit, action: \.addEdit)) { addEditStore in
             AddEditCarrierView(store: addEditStore)
         }
+        .alert($store.scope(state: \.alert, action: \.alert))
     }
 
     // MARK: - Empty State

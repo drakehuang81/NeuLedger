@@ -249,7 +249,12 @@ public struct DashboardFeature: Sendable {
                 return .none
 
             case let .categoriesLoaded(categories):
-                state.categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
+                // Use `uniquingKeysWith` to tolerate transient duplicates that may
+                // appear during a CloudKit sync window (server copies + local seed).
+                state.categoryMap = Dictionary(
+                    categories.map { ($0.id, $0) },
+                    uniquingKeysWith: { first, _ in first }
+                )
                 return .none
 
             // MARK: B1 Warm Redesign — section actions

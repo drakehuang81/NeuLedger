@@ -38,6 +38,7 @@ struct SyncSettingsFeatureTests {
             }
             $0.userSettingsClient.bool = { _ in false }
             $0.userSettingsClient.setBool = { _, _ in }
+            $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {
             $0.migrationState = .migrating(progress: 0)
@@ -70,6 +71,7 @@ struct SyncSettingsFeatureTests {
                 }
             }
             $0.userSettingsClient.bool = { _ in false }
+            $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {
             $0.migrationState = .migrating(progress: 0)

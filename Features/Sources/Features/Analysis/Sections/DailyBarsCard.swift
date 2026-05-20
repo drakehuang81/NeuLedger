@@ -21,7 +21,8 @@ struct DailyBarsCard: View {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let trendMap: [Date: Decimal] = Dictionary(
-            uniqueKeysWithValues: trends.map { (cal.startOfDay(for: $0.date), $0.amount) }
+            trends.map { (cal.startOfDay(for: $0.date), $0.amount) },
+            uniquingKeysWith: { lhs, rhs in lhs + rhs }
         )
         // Always render today as the last bar — that anchors the "weekday" labels.
         return (0..<7).reversed().compactMap { offset -> DailyPoint? in

@@ -17,8 +17,9 @@ final class SDTag {
     var color: String?
 
     /// The transactions associated with this tag (inverse of ``SDTransaction/tags``).
+    /// Optional because CloudKit integration requires all relationships to be optional.
     @Relationship(inverse: \SDTransaction.tags)
-    var transactions: [SDTransaction] = []
+    var transactions: [SDTransaction]? = []
 
     init(
         id: UUID = UUID(),

@@ -29,6 +29,16 @@ extension UserSettingsClient: DependencyKey {
             },
             setInt: { value, key in
                 UserDefaults.standard.set(value, forKey: key.rawValue)
+            },
+            date: { key in
+                UserDefaults.standard.object(forKey: key.rawValue) as? Date ?? key.defaultValue
+            },
+            setDate: { value, key in
+                if let value {
+                    UserDefaults.standard.set(value, forKey: key.rawValue)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: key.rawValue)
+                }
             }
         )
     }

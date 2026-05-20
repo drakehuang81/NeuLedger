@@ -78,6 +78,8 @@ public struct SyncSettingsView: View {
 
                 featureHighlights
 
+                storageNote
+
                 if let failureMessage {
                     failureBanner(failureMessage)
                 }
@@ -193,6 +195,10 @@ public struct SyncSettingsView: View {
                 }
 
                 statusRowsCard
+
+                lastSyncedRow
+
+                syncNowButton
             }
             .frame(maxWidth: .infinity)
         }
@@ -254,6 +260,81 @@ public struct SyncSettingsView: View {
     }
 
     // MARK: - Helpers — Sections
+
+    private var storageNote: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "internaldrive")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 1)
+            Text("sync_storage_note")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .lineSpacing(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var lastSyncedRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.arrow.2.circlepath")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text("sync_last_synced_label")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(lastSyncedDisplay)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.Design.textPrimary)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var lastSyncedDisplay: String {
+        guard let date = store.lastSyncedAt else {
+            return String(localized: "sync_last_synced_never")
+        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.locale = .current
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private var syncNowButton: some View {
+        Button {
+            store.send(.syncNowTapped)
+        } label: {
+            HStack(spacing: 8) {
+                if store.isManualSyncing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(Color.Design.brandAccent)
+                    Text("sync_now_in_progress")
+                } else {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("sync_now_button")
+                }
+            }
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.Design.brandAccent)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.Design.brandAccent.opacity(0.10))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.Design.brandAccent.opacity(0.30), lineWidth: 0.5)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(store.isManualSyncing)
+    }
 
     private var featureHighlights: some View {
         GlassContainer(cornerRadius: 14, padding: 0) {

@@ -22,7 +22,7 @@ extension SDTransaction: DomainConvertible {
             accountId: accountId,
             toAccountId: toAccountId,
             type: resolvedType,
-            tags: tags.map { $0.toDomain() },
+            tags: (tags ?? []).map { $0.toDomain() },
             aiSuggested: aiSuggested,
             createdAt: createdAt,
             updatedAt: updatedAt

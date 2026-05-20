@@ -9,13 +9,13 @@ extension WidgetSyncClient: DependencyKey {
     // MARK: - App Group constants
     //
     // Keep in sync with Shared/WidgetAppGroup.swift:
-    //   static let suiteName = "group.com.drakehuang.NeuLedger"
+    //   static let suiteName = "group.com.drake.NeuLedger"
     //   enum Key: String { case carrierBarcode, carrierType, carrierName, carrierUpdatedAt, carrierList }
     //
     // Widget kind keeps in sync with NeuLedgerWidget/CarrierWidget.swift:
     //   let kind: String = "CarrierWidget"
 
-    private static let appGroupSuiteName = "group.com.drakehuang.NeuLedger"
+    private static let appGroupSuiteName = "group.com.drake.NeuLedger"
     private static let keyBarcode        = "carrierBarcode"
     private static let keyType           = "carrierType"
     private static let keyName           = "carrierName"

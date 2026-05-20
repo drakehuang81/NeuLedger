@@ -48,7 +48,7 @@ extension TransactionClient: DependencyKey {
                 }
                 if let tagIds = filter.tagIds {
                     results = results.filter { txn in
-                        txn.tags.contains { tagIds.contains($0.id) }
+                        (txn.tags ?? []).contains { tagIds.contains($0.id) }
                     }
                 }
                 if let types = filter.types {

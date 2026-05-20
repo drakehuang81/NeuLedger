@@ -93,6 +93,14 @@ public extension SettingsKey where Value == Int {
     static let budgetWarningThreshold = SettingsKey(rawValue: "budgetWarningThreshold", defaultValue: 80)
 }
 
+// MARK: - Date? Keys
+
+public extension SettingsKey where Value == Date? {
+    /// Timestamp of the most recent CloudKit sync attempt (manual or migration-triggered).
+    /// `nil` means sync has never been triggered.
+    static let lastSyncedAt = SettingsKey<Date?>(rawValue: "syncClient.lastSyncedAt", defaultValue: nil)
+}
+
 // MARK: - UserSettingsClient
 
 /// A client interface for type-safe UserDefaults access.
@@ -124,6 +132,12 @@ public struct UserSettingsClient: Sendable {
 
     /// Writes an Int value for the given key.
     public var setInt: @Sendable (_ value: Int, _ key: SettingsKey<Int>) -> Void
+
+    /// Reads an optional Date value for the given key, returning `nil` if unset.
+    public var date: @Sendable (_ key: SettingsKey<Date?>) -> Date? = { $0.defaultValue }
+
+    /// Writes an optional Date value for the given key. Passing `nil` removes the entry.
+    public var setDate: @Sendable (_ value: Date?, _ key: SettingsKey<Date?>) -> Void
 }
 
 // MARK: - TestDependencyKey
@@ -135,7 +149,9 @@ extension UserSettingsClient: TestDependencyKey {
         string: { $0.defaultValue },
         setString: { _, _ in },
         int: { $0.defaultValue },
-        setInt: { _, _ in }
+        setInt: { _, _ in },
+        date: { $0.defaultValue },
+        setDate: { _, _ in }
     )
 }
 

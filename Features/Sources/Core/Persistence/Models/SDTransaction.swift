@@ -41,7 +41,8 @@ final class SDTransaction {
     var updatedAt: Date = Date()
 
     /// The tags associated with this transaction (many-to-many).
-    @Relationship var tags: [SDTag] = []
+    /// Optional because CloudKit integration requires all relationships to be optional.
+    @Relationship var tags: [SDTag]? = []
 
     init(
         id: UUID = UUID(),

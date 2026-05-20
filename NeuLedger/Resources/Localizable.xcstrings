@@ -4897,6 +4897,40 @@
         }
       }
     },
+    "alert_delete_carrier": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Carrier"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除載具"
+          }
+        }
+      }
+    },
+    "alert_delete_carrier_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete \"%@\"? This action cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定要刪除「%@」嗎？此動作無法復原。"
+          }
+        }
+      }
+    },
     "alert_delete_category": {
       "extractionState": "manual",
       "localizations": {

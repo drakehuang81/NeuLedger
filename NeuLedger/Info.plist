@@ -30,7 +30,7 @@
 				<string>neuledger</string>
 			</array>
 			<key>CFBundleURLName</key>
-			<string>com.drakehuang.NeuLedger</string>
+			<string>com.drake.NeuLedger</string>
 		</dict>
 	</array>
 	<key>UILaunchScreen</key>

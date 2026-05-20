@@ -21,8 +21,8 @@ struct DashboardTopBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // TODO: (slice-followup): pull user initial from userSettingsClient when available
-            AvatarBadge(initials: "D")
+            // Placeholder: shows the app icon until a user profile / avatar source exists.
+            AppIconBadge(size: 36)
             VStack(alignment: .leading, spacing: 2) {
                 Text(greeting)
                     .font(.system(size: 13))

@@ -14,6 +14,7 @@ public struct CarrierManagementFeature: Sendable {
         public var isLoading: Bool = false
         public var expandedCarrierId: Carrier.ID? = nil
         @Presents public var addEdit: AddEditCarrierFeature.State?
+        @Presents public var alert: AlertState<Action.Alert>?
 
         public init() {}
     }
@@ -28,6 +29,12 @@ public struct CarrierManagementFeature: Sendable {
         case editTapped(Carrier)
         case deleteTapped(Carrier.ID)
         case addEdit(PresentationAction<AddEditCarrierFeature.Action>)
+        case alert(PresentationAction<Alert>)
+
+        @CasePathable
+        public enum Alert: Sendable, Equatable {
+            case deleteConfirmed(Carrier.ID)
+        }
     }
 
     // MARK: - Dependencies
@@ -74,6 +81,22 @@ public struct CarrierManagementFeature: Sendable {
                 return .none
 
             case let .deleteTapped(id):
+                let name = state.carriers.first(where: { $0.id == id })?.name ?? ""
+                state.alert = AlertState {
+                    TextState(String(localized: "alert_delete_carrier"))
+                } actions: {
+                    ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
+                        TextState(String(localized: "common_delete"))
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState(String(localized: "common_cancel"))
+                    }
+                } message: {
+                    TextState(String(format: String(localized: "alert_delete_carrier_message"), name))
+                }
+                return .none
+
+            case let .alert(.presented(.deleteConfirmed(id))):
                 state.expandedCarrierId = nil
                 return .run { [userSettingsClient, widgetSyncClient] send in
                     try await carrierClient.delete(id)
@@ -90,6 +113,9 @@ public struct CarrierManagementFeature: Sendable {
                     let carriers = (try? await carrierClient.fetchAll()) ?? []
                     await send(.carriersLoaded(carriers))
                 }
+
+            case .alert:
+                return .none
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
@@ -132,5 +158,6 @@ public struct CarrierManagementFeature: Sendable {
         .ifLet(\.$addEdit, action: \.addEdit) {
             AddEditCarrierFeature()
         }
+        .ifLet(\.$alert, action: \.alert)
     }
 }

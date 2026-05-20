@@ -40,7 +40,7 @@ extension TagClient: DependencyKey {
                 // Explicitly dissociate from linked transactions before delete, so the
                 // inverse relationship is cleared even if SwiftData's nullify rule is
                 // delayed until the next context flush.
-                existing.transactions.removeAll()
+                existing.transactions?.removeAll()
                 try context.save()
                 context.delete(existing)
                 try context.save()

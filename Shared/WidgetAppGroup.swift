@@ -6,7 +6,7 @@ import Foundation
 ///
 /// The main app is the sole writer; the Widget Extension is read-only.
 enum WidgetAppGroup {
-    static let suiteName = "group.com.drakehuang.NeuLedger"
+    static let suiteName = "group.com.drake.NeuLedger"
 
     private static var defaults: UserDefaults? {
         UserDefaults(suiteName: suiteName)

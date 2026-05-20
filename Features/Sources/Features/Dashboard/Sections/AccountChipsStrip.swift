@@ -5,9 +5,9 @@ import SwiftUI
 
 /// Horizontal strip of account-filter chips for the Dashboard B1 Warm Redesign.
 ///
-/// Tapping a chip filters the Hero balance and recent transactions to the
-/// selected account. The `All` chip resets the filter. Skeleton + retry
-/// states are driven by `accountsPhase`.
+/// Tap a chip to filter the Hero balance and recent transactions. The active
+/// account chip reveals a trailing arrow button that navigates to the account
+/// analysis screen — a long-press context menu offers the same shortcut.
 struct AccountChipsStrip: View {
     let store: StoreOf<DashboardFeature>
 
@@ -26,60 +26,126 @@ struct AccountChipsStrip: View {
 
     private var content: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                chip(
-                    label: Text("dashboard_chip_all"),
-                    isActive: store.selectedAccountID == nil,
-                    color: .secondary,
-                    balance: nil
-                ) {
-                    store.send(.accountChipSelected(nil))
-                }
+            HStack(spacing: 10) {
+                allChip
                 ForEach(store.topAccounts) { account in
-                    let isActive = store.selectedAccountID == account.id
-                    chip(
-                        label: Text(account.name),
-                        isActive: isActive,
-                        color: Color(hex: account.color),
-                        balance: store.accountBalances[account.id]
-                    ) {
-                        if isActive {
-                            store.send(.accountTapped(account.id))
-                        } else {
-                            store.send(.accountChipSelected(account.id))
-                        }
-                    }
+                    accountChip(account)
                 }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    // MARK: - All chip
+
+    private var allChip: some View {
+        let isActive = store.selectedAccountID == nil
+        return Button {
+            store.send(.accountChipSelected(nil))
+        } label: {
+            HStack(spacing: 8) {
+                iconBadge(systemName: "square.grid.2x2.fill", tint: .secondary)
+                Text("dashboard_chip_all")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .modifier(ChipBackground(isActive: isActive))
+            .foregroundStyle(isActive ? Color.Design.brandAccent : Color.primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Account chip
+
+    private func accountChip(_ account: Account) -> some View {
+        let isActive = store.selectedAccountID == account.id
+        let tint = Color(hex: account.color)
+
+        return HStack(spacing: 0) {
+            // Primary tap area: select / filter
+            Button {
+                store.send(.accountChipSelected(account.id))
+            } label: {
+                HStack(spacing: 8) {
+                    iconBadge(systemName: account.icon, tint: tint)
+                    Text(account.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .lineLimit(1)
+                }
+                .padding(.leading, 10)
+                .padding(.trailing, isActive ? 6 : 12)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(isActive ? Color.Design.brandAccent : Color.primary)
+
+            // Secondary action: explicit "view analysis" button, only when active.
+            if isActive {
+                Button {
+                    store.send(.accountTapped(account.id))
+                } label: {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Color.Design.brandAccent, in: Circle())
+                        .padding(.trailing, 4)
+                        .padding(.leading, 2)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("dashboard_chip_view_analysis"))
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .modifier(ChipBackground(isActive: isActive))
+        .animation(.snappy(duration: 0.2), value: isActive)
+        .contextMenu {
+            Button {
+                store.send(.accountChipSelected(account.id))
+            } label: {
+                Label("dashboard_chip_filter_here", systemImage: "line.3.horizontal.decrease.circle")
+            }
+            Button {
+                store.send(.accountTapped(account.id))
+            } label: {
+                Label("dashboard_chip_view_analysis", systemImage: "chart.line.uptrend.xyaxis")
             }
         }
     }
 
-    @ViewBuilder
-    private func chip(
-        label: Text,
-        isActive: Bool,
-        color: Color,
-        balance: Decimal?,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 6, height: 6)
-                label
-                    .font(.system(size: 13, weight: .medium))
-                if let balance {
-                    Text(balance.twdFormatted)
-                        .font(.system(size: 11).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
+    // MARK: - Building blocks
+
+    private func iconBadge(systemName: String, tint: Color) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 24, height: 24)
+            .background(tint.opacity(0.18), in: Circle())
+    }
+
+    private var placeholder: some View {
+        HStack(spacing: 10) {
+            ForEach(0 ..< 3, id: \.self) { _ in
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 96, height: 40)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+        }
+    }
+}
+
+// MARK: - Chip background
+
+private struct ChipBackground: ViewModifier {
+    let isActive: Bool
+
+    func body(content: Content) -> some View {
+        content
             .background {
                 if isActive {
-                    Capsule().fill(Color.Design.brandAccent.opacity(0.22))
+                    Capsule().fill(Color.Design.brandAccent.opacity(0.18))
                 } else {
                     Capsule().fill(Color.clear)
                         .glassEffect(Glass.clear.tint(Color.Design.surface), in: Capsule())
@@ -87,21 +153,8 @@ struct AccountChipsStrip: View {
             }
             .overlay {
                 if isActive {
-                    Capsule().strokeBorder(Color.Design.brandAccent.opacity(0.65), lineWidth: 1)
+                    Capsule().strokeBorder(Color.Design.brandAccent.opacity(0.55), lineWidth: 1)
                 }
             }
-            .foregroundStyle(isActive ? Color.Design.brandAccent : Color.primary)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var placeholder: some View {
-        HStack(spacing: 8) {
-            ForEach(0 ..< 3, id: \.self) { _ in
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 80, height: 32)
-            }
-        }
     }
 }

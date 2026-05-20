@@ -197,8 +197,8 @@ public struct SettingsFeature: Sendable {
                         let categories = try await categoryClient.fetchAll()
                         let accounts = try await accountClient.fetchAll()
 
-                        let categoryMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
-                        let accountMap = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0) })
+                        let categoryMap = Dictionary(categories.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+                        let accountMap = Dictionary(accounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
                         let csvHeader = [
                             String(localized: "settings_export_csv_header_date"),

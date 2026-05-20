@@ -49,4 +49,21 @@ extension SDRecurringTransaction: PersistentDomainModel {
         context.insert(model)
         return model
     }
+
+    func applyChanges(from domain: RecurringTransaction, context: ModelContext) {
+        amount = domain.amount
+        note = domain.note
+        categoryId = domain.categoryId
+        accountId = domain.accountId
+        toAccountId = domain.toAccountId
+        typeRaw = domain.type.rawValue
+        tagIds = domain.tags.map(\.id)
+        frequencyRaw = domain.frequency.rawValue
+        nextDueDate = domain.nextDueDate
+        isActive = domain.isActive
+    }
+
+    static func idPredicate(_ id: RecurringTransaction.ID) -> Predicate<SDRecurringTransaction> {
+        #Predicate<SDRecurringTransaction> { $0.id == id }
+    }
 }

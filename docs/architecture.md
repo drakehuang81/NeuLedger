@@ -4,8 +4,30 @@ This document is the **source of truth** for layering, naming, and dependency
 rules. New code and refactors must conform to this spec; deviations need an
 explicit note in code review.
 
-Status: **target architecture** — current code is partly here, partly not.
-See [§9 Migration](#9-migration) for the gap.
+Status: **current architecture** — Phase 5–7 migration completed 2026-05-21.
+
+Layer separation (Domain / Application / Core), the UseCase catalog
+(12), the Adapter catalog (5), the Repository pattern via
+`SwiftDataStore`, and the BudgetWarningPolicy / LedgerUseCase →
+BudgetUseCase §3.1 invariant chain are all in place.
+
+Known follow-ups (intentional, low-risk cleanup):
+
+- Repository interfaces still use the legacy `*Client.swift` /
+  `XxxClient` type names instead of `*Repository`. File locations
+  match the §8 layout (`Domain/Repositories/`, `Core/Repositories/`)
+  and §10 antipatterns are clean — only the type renames remain.
+- Some Feature reducers continue to inject Repositories / Adapters
+  directly rather than the new UseCases (e.g., `@Dependency(\.account
+  Client)` rather than `\.accountUseCase`). §10 does not forbid this,
+  so the residual cleanup is ergonomic rather than compliance.
+- `TransactionClient.weeklySpending` / `statsSnapshot` / `detailStats`
+  remain on the Repository surface as thin pass-throughs to
+  `TransactionAnalyticsKernel`. Callsites can switch to the
+  architecture-target `AnalyticsUseCase` endpoints as ergonomics
+  allow.
+
+See [§9 Migration](#9-migration) for the original Phase 0–7 plan.
 
 ---
 

@@ -90,12 +90,24 @@ Phase 5 額外項：
 
 驗證狀態：每個 commit 都通過 `xcodebuild test -scheme Features`（273+87+120，1 known issue 預期內）。
 
-Phase 6 預期工作：
-- 6.1 拆 `Domain/Clients/` → `Domain/Repositories/` + `Domain/Adapters/` + `Domain/UseCases/`
-- 6.2 建 `Application/` 並搬 `*UseCase+Live`
-- 6.3 重組 `Core/`（Repositories / Adapters / Persistence / Mappers）
-- 6.4 SPM target 檢查
-- Phase 6 連帶：所有 Feature reducer 批次切 DI keypath 到 UseCase（同時消除 5.7 / 5.11 的 legacy 命名 + TransactionClient stats methods）
+**Phase 6（資料夾與 SPM 重整）** ✅ 全部完成（2 個 commit）
+- 6.1 Domain/Clients/ → Repositories/ + Adapters/ + UseCases/ (`2e1b3a3`，25 個 git mv)
+- 6.2 + 6.3 + 6.4 Core/ 重組 + Application/ 新建 + Package.swift Core target `sources` 配置 (`9ec669f`，28 個 git mv)
+- Phase 6 連帶（部分完成 `ac253d6`）：移除 5.7/5.11 legacy aliases（isCloudKitAvailable / enableSync / requestSyncNow / extractTransaction）+ 對應 callsite 切換。完整 Feature DI keypath 切換到 UseCase 為 known follow-up（§10 不禁止，非合規必要）。
+
+**Phase 7（收網）** ✅ 全部完成
+- 7.1 grep audit `ac253d6`（同 Phase 6 連帶 commit）：沒有殘留違規的 *Client 構造或檔案（Repository 沿用 *Client 型別命名為 known cosmetic follow-up）
+- 7.2 §10 反模式表 12 條逐項對照：通過（CloudKitSyncAdapter + TransactionAnalyticsKernel 使用 ModelContext 是合法 boundary，AppView.swift comment 中提及 SwiftData 是 false positive）
+- 7.3 `docs/architecture.md` 狀態行更新為 *current architecture* (`本 commit`)；§9 Migration 段保留作為歷史紀錄；known follow-ups（Repository 型別 rename + Feature DI 切換）寫入 status 區塊
+
+驗收 DoD 狀態：
+- [x] Phase 1–7 全部 task checked（部分以「known follow-up」形式 deferred）
+- [x] `xcodebuild test -scheme Features` 全綠（273/40 + 87/22 + 120/33，1 known issue 預期內）
+- [x] `ModelContext(` 出現位置：SwiftDataStore + DatabaseClient seeding + CloudKitSyncAdapter + TransactionAnalyticsKernel + Mappers — 所有出現位置都是合法 Persistence/Adapter boundary
+- [x] 每個 commit 都通過 `xcodebuild build -scheme NeuLedger`
+- [x] `docs/architecture.md` 第 7 行狀態為 *current architecture*
+
+跨機器銜接：本 plan + 所有 commits 是真相。Memory `project_architecture_migration.md` 可標 Phase 5–7 完整 done。
 
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 

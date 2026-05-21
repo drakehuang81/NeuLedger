@@ -5,13 +5,18 @@ import Dependencies
 
 /// Live implementation of `TransactionClient` backed by `SwiftDataStore`.
 ///
-/// The `weeklySpending`, `statsSnapshot`, and `detailStats` endpoints
-/// still delegate to `DatabaseClient` helpers — those are analytics
-/// concerns that move to `AnalyticsUseCase` in Phase 5. Until then this
-/// file is the only Repository Live that retains a `databaseClient`
-/// dependency, and only for those three analytic endpoints.
+/// The `weeklySpending`, `statsSnapshot`, and `detailStats` endpoints are
+/// thin wrappers that re-use the same SwiftData-fetch helpers
+/// `AnalyticsUseCase+Live` uses. They remain on `TransactionClient`'s
+/// surface during Phase 5 so callsites that still inject
+/// `@Dependency(\.transactionClient)` keep working; Phase 6 batch-switches
+/// them to `\.analyticsUseCase` and these three methods come off the
+/// interface entirely.
 extension TransactionClient: DependencyKey {
     public static var liveValue: TransactionClient {
+        // Stats endpoints reach the container via DatabaseClient rather
+        // than `\.modelContainer` directly — architecture.md §4.2 reserves
+        // `@Dependency(\.modelContainer)` for `SwiftDataStore` only.
         @Dependency(\.databaseClient) var databaseClient
 
         let store = SwiftDataStore<Transaction, SDTransaction>()
@@ -76,13 +81,23 @@ extension TransactionClient: DependencyKey {
                 try await store.delete(id: id)
             },
             weeklySpending: { accountID, days in
-                try databaseClient.weeklySpendingSums(accountID: accountID, days: days)
+                try TransactionAnalyticsKernel.weeklySpending(
+                    accountID: accountID,
+                    days: days,
+                    container: databaseClient.modelContainer()
+                )
             },
             statsSnapshot: {
-                try databaseClient.statsSnapshot()
+                try TransactionAnalyticsKernel.statsSnapshot(
+                    referenceDate: Date(),
+                    container: databaseClient.modelContainer()
+                )
             },
             detailStats: { transaction in
-                try databaseClient.detailStats(for: transaction)
+                try TransactionAnalyticsKernel.detailStats(
+                    for: transaction,
+                    container: databaseClient.modelContainer()
+                )
             }
         )
     }

@@ -5,11 +5,19 @@ import Testing
 import Domain
 @testable import Core
 
-@Suite("DatabaseClient.detailStats Tests")
+@Suite("TransactionAnalyticsKernel.detailStats Tests")
 struct TransactionClientDetailStatsTests {
 
     private static func freshClient() -> DatabaseClient {
         return DatabaseClient.testValue
+    }
+
+    /// Convenience wrapper around `TransactionAnalyticsKernel.detailStats`
+    /// — the kernel replaced `DatabaseClient.detailStats` in Phase 5.5 when
+    /// analytics computation moved out of `DatabaseClient` so it could
+    /// later be retired.
+    private static func detailStats(for transaction: Transaction, on client: DatabaseClient) throws -> TransactionInsight {
+        try TransactionAnalyticsKernel.detailStats(for: transaction, container: client.modelContainer())
     }
 
     /// Inserts a Domain `Transaction` into the client's container without going
@@ -34,7 +42,7 @@ struct TransactionClientDetailStatsTests {
         try Self.insert(subject, into: client)
         try Self.insert(other, into: client)
 
-        let insight = try client.detailStats(for: subject)
+        let insight = try Self.detailStats(for: subject, on: client)
 
         guard case let .expenseVsCategoryAvg(_, avg, count, total) = insight.kind else {
             Issue.record("Expected expenseVsCategoryAvg, got \(insight.kind)")
@@ -54,7 +62,7 @@ struct TransactionClientDetailStatsTests {
         try Self.insert(prior, into: client)
         try Self.insert(subject, into: client)
 
-        let insight = try client.detailStats(for: subject)
+        let insight = try Self.detailStats(for: subject, on: client)
         guard case let .incomeVsLast(percentDelta, lastAmount, monthlyCount, _) = insight.kind else {
             Issue.record("Expected incomeVsLast, got \(insight.kind)")
             return
@@ -73,7 +81,7 @@ struct TransactionClientDetailStatsTests {
         try Self.insert(other, into: client)
         try Self.insert(subject, into: client)
 
-        let insight = try client.detailStats(for: subject)
+        let insight = try Self.detailStats(for: subject, on: client)
         guard case let .transfer(count, total) = insight.kind else {
             Issue.record("Expected transfer, got \(insight.kind)")
             return
@@ -88,7 +96,7 @@ struct TransactionClientDetailStatsTests {
         let subject = Transaction(amount: 100, date: .now, categoryId: nil, accountId: Self.accountID, type: .expense)
         try Self.insert(subject, into: client)
 
-        let insight = try client.detailStats(for: subject)
+        let insight = try Self.detailStats(for: subject, on: client)
         guard case let .fallback(count) = insight.kind else {
             Issue.record("Expected fallback, got \(insight.kind)")
             return

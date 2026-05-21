@@ -69,10 +69,16 @@
 - 4.3 `LedgerUseCase`（record/update/delete 三方法）`3572286`（含 §3.1 Scenario B INVARIANT 註解；read 方法含 `EnrichedTransaction` 留 Phase 5）
 - 4.4 Features 改注入 `\\.ledger` + 移除 `TransactionClient+Live.checkBudgetWarnings` `ac35a85`（3 個 Feature + 4 個 Test 檔；TransactionClient+Live 變回純 Repository surface）
 
-下一階段：Phase 5（引入其餘 11 個 UseCase + Adapter 切分）— 含 Phase 3/4 中遞延的：
+**Phase 5（引入其餘 11 個 UseCase + Adapter 切分）** ⏳ 進行中
+
+已完成：
+- 5.1 `AccountUseCase` thin wrapper `52b0568`（8 methods，delegate `AccountClient`；`unarchive` 用 fetchAll+filter+update 合成；`balances` iterate `fetchActive` + `computeBalance`）— Feature 注入暫不切換，Phase 6 統一
+- 5.2 `MetadataUseCase`（Category + Tag combined）thin wrapper `fbdbf36`（8 methods，delegate `CategoryClient` + `TagClient`；`listCategories(type:)` nil → fetchAll，否則 fetchByType）
+
+剩餘待辦（含 Phase 3/4 中遞延的）：
 - LedgerUseCase 補 read 方法（`fetch`、`listRecent`、`listAll(filter:)`、`search`）含新 ValueObject `EnrichedTransaction`
 - BudgetUseCase 補 CRUD + `currentStatus(of:)` + `listActive`
-- AccountUseCase / MetadataUseCase / RecurringUseCase / AnalyticsUseCase / CarrierUseCase / AppEnvironmentUseCase / OnboardingUseCase / ExportUseCase / AIUseCase 補完
+- RecurringUseCase / AnalyticsUseCase / CarrierUseCase / AppEnvironmentUseCase / OnboardingUseCase / ExportUseCase / AIUseCase 補完
 - AIAdapter / CloudKitSyncAdapter 切分（含 `CloudSyncUseCase+Live:63` ModelContext cleanup）
 - `DatabaseClient` 三個 analytics helper 搬到 AnalyticsUseCase（之後 DatabaseClient 整檔刪除）
 - LedgerUseCase + BudgetUseCase 的 integration tests（替代 Phase 4.4 刪除的 4 個 budget warning tests）

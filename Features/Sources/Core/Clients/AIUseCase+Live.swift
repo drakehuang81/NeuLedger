@@ -5,6 +5,12 @@ import Dependencies
 
 // MARK: - QueryTransactionsTool
 
+/// Foundation Models `Tool` exposed during `answerFinancialQuestion`
+/// so the model can fetch real transaction rows instead of
+/// hallucinating amounts. Implementation crosses two Repositories
+/// (transactions + categories), so it stays inside `AIUseCase+Live`
+/// rather than `AIAdapter+Live` — the Adapter layer doesn't know
+/// about other Repositories per architecture.md §10.
 private struct QueryTransactionsTool: Tool {
     let description = "Query the user's transaction history by category name and/or date range"
 
@@ -24,7 +30,6 @@ private struct QueryTransactionsTool: Tool {
     func call(arguments: Arguments) async throws -> String {
         let allCategories = try await categoryClient.fetchAll()
 
-        // Resolve category name to ID (case-insensitive match)
         var categoryIds: [Domain.Category.ID]? = nil
         if let name = arguments.category {
             let matched = allCategories.filter {
@@ -35,7 +40,6 @@ private struct QueryTransactionsTool: Tool {
             }
         }
 
-        // Parse date range
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withFullDate]
         let start = arguments.startDate.flatMap { iso.date(from: $0) }
@@ -65,113 +69,113 @@ private struct QueryTransactionsTool: Tool {
 }
 
 extension AIUseCase: DependencyKey {
-    // InsightCache is a static let so it is created once for the app session and shared
-    // by all generateInsight calls — not reset each time liveValue is accessed.
+    // InsightCache is a static let so it is created once for the app
+    // session and shared by all generateInsight calls — not reset each
+    // time liveValue is accessed.
     private static let insightCache = InsightCache()
 
     private static func listSeparator() -> String {
         Locale.current.language.languageCode?.identifier.hasPrefix("zh") == true ? "、" : ", "
     }
 
-    public static let liveValue = AIUseCase(
+    public static var liveValue: AIUseCase {
+        @Dependency(\.aiAdapter) var aiAdapter
 
-        // MARK: - extractTransaction
-        // A fresh LanguageModelSession per call — no shared context needed for single-shot extraction.
-        // Throws on failure so the caller (Feature layer) decides: show error or silently ignore.
-        extractTransaction: { input in
-            let session = LanguageModelSession()
+        // MARK: - extract* implementations
+        // extractFromText / extractFromVoice / extractTransaction share
+        // identical implementation today. Keeping them as separate
+        // closures lets future voice-specific prompt tuning land in
+        // extractFromVoice alone.
+        let extract: @Sendable (String) async throws -> ExtractedTransaction = { input in
             let template = String(localized: "ai_prompt_extract_transaction", bundle: .main)
             let prompt = String(format: template, input)
-            // respond(to:generating:) returns LanguageModelSession.Response<ExtractedTransaction>.
-            // Access .content to unwrap the actual ExtractedTransaction value.
-            return try await session.respond(to: prompt, generating: ExtractedTransaction.self).content
-        },
-
-        // MARK: - suggestCategories
-        // Passing the full existing category list constrains the model to known names,
-        // preventing hallucinated categories that don't exist in the user's data.
-        suggestCategories: { description, existingCategories in
-            let session = LanguageModelSession()
-            let categoryList = existingCategories.joined(separator: AIUseCase.listSeparator())
-            let template = String(localized: "ai_prompt_suggest_categories", bundle: .main)
-            let prompt = String(format: template, description, categoryList)
-            return try await session.respond(to: prompt, generating: CategorySuggestions.self).content
-        },
-
-        // MARK: - generateInsight
-        // Same SpendingSummary within a session hits the cache — no repeated inference for
-        // the Analysis screen's period switcher (week/month/year all stay cached after first load).
-        generateInsight: { summary in
-            if let cached = await AIUseCase.insightCache.get(for: summary) { return cached }
-            let session = LanguageModelSession()
-            let template = String(localized: "ai_prompt_generate_insight", bundle: .main)
-            var prompt = String(format: template,
-                summary.periodDescription,
-                "\(summary.totalIncome)",
-                "\(summary.totalExpense)")
-            if !summary.categoryBreakdown.isEmpty {
-                let categoryText = summary.categoryBreakdown
-                    .map { "\($0.key): NT$\($0.value)" }
-                    .joined(separator: AIUseCase.listSeparator())
-                let categoryLine = String(
-                    format: String(localized: "ai_prompt_category_breakdown", bundle: .main),
-                    categoryText)
-                prompt += "\n" + categoryLine
-            }
-            let result = try await session.respond(to: prompt).content
-            await AIUseCase.insightCache.set(result, for: summary)
-            return result
-        },
-
-        // MARK: - generateInsights
-        // TODO: replace with FoundationModels output — currently returns 3 hard-coded
-        // entries matching the designer-supplied B1 Warm Redesign copy. Schema is
-        // stable so swapping in a real LLM call requires no reducer change.
-        generateInsights: { _ in
-            [
-                InsightData(
-                    title: "本週支出減少 12%",
-                    body: "你比上週省下 NT$ 3,200，可以考慮加碼儲蓄",
-                    metric: "-12%",
-                    metricColor: .income,
-                    cta: "查看分析"
-                ),
-                InsightData(
-                    title: "餐飲花費偏高",
-                    body: "本月已花 NT$ 8,400，佔總支出 42%",
-                    metric: "42%",
-                    metricColor: .expense,
-                    cta: "設定預算"
-                ),
-                InsightData(
-                    title: "儲蓄率達標",
-                    body: "本月儲蓄率 28%，超出目標 5%",
-                    metric: "28%",
-                    metricColor: .accent,
-                    cta: "查看詳情"
-                )
-            ]
-        },
-
-        // MARK: - answerFinancialQuestion
-        // Uses Foundation Models Tool Calling: the model decides when to invoke QueryTransactionsTool
-        // to fetch real transaction data, then synthesises a natural language answer in the language of the question.
-        answerFinancialQuestion: { question in
-            @Dependency(\.transactionClient) var transactionClient
-            @Dependency(\.categoryClient) var categoryClient
-            let tool = QueryTransactionsTool(
-                transactionClient: transactionClient,
-                categoryClient: categoryClient
-            )
-            let session = LanguageModelSession(tools: [tool])
-            return try await session.respond(to: question).content
-        },
-
-        // MARK: - isAvailable
-        // Synchronous — safe to call on any thread without await.
-        // Returns false if the device doesn't support Foundation Models or the model isn't downloaded.
-        isAvailable: {
-            SystemLanguageModel.default.isAvailable
+            return try await aiAdapter.extractTransaction(prompt)
         }
-    )
+
+        return AIUseCase(
+            extractFromText: extract,
+            extractFromVoice: extract,
+            extractTransaction: extract,
+
+            suggestCategories: { description, existingCategories in
+                let categoryList = existingCategories.joined(separator: listSeparator())
+                let template = String(localized: "ai_prompt_suggest_categories", bundle: .main)
+                let prompt = String(format: template, description, categoryList)
+                return try await aiAdapter.suggestCategories(prompt)
+            },
+
+            // Same SpendingSummary within a session hits the cache —
+            // no repeated inference for the Analysis screen's period
+            // switcher (week/month/year all stay cached after first
+            // load).
+            generateInsight: { summary in
+                if let cached = await insightCache.get(for: summary) { return cached }
+                let template = String(localized: "ai_prompt_generate_insight", bundle: .main)
+                var prompt = String(format: template,
+                    summary.periodDescription,
+                    "\(summary.totalIncome)",
+                    "\(summary.totalExpense)")
+                if !summary.categoryBreakdown.isEmpty {
+                    let categoryText = summary.categoryBreakdown
+                        .map { "\($0.key): NT$\($0.value)" }
+                        .joined(separator: listSeparator())
+                    let categoryLine = String(
+                        format: String(localized: "ai_prompt_category_breakdown", bundle: .main),
+                        categoryText)
+                    prompt += "\n" + categoryLine
+                }
+                let result = try await aiAdapter.generateText(prompt)
+                await insightCache.set(result, for: summary)
+                return result
+            },
+
+            // TODO: replace with FoundationModels output — currently
+            // returns 3 hard-coded entries matching the designer-
+            // supplied B1 Warm Redesign copy. Schema is stable so
+            // swapping in a real LLM call requires no reducer change.
+            generateInsights: { _ in
+                [
+                    InsightData(
+                        title: "本週支出減少 12%",
+                        body: "你比上週省下 NT$ 3,200，可以考慮加碼儲蓄",
+                        metric: "-12%",
+                        metricColor: .income,
+                        cta: "查看分析"
+                    ),
+                    InsightData(
+                        title: "餐飲花費偏高",
+                        body: "本月已花 NT$ 8,400，佔總支出 42%",
+                        metric: "42%",
+                        metricColor: .expense,
+                        cta: "設定預算"
+                    ),
+                    InsightData(
+                        title: "儲蓄率達標",
+                        body: "本月儲蓄率 28%，超出目標 5%",
+                        metric: "28%",
+                        metricColor: .accent,
+                        cta: "查看詳情"
+                    )
+                ]
+            },
+
+            // Tool-calling stays in the UseCase (not the Adapter)
+            // because the tool implementation crosses multiple
+            // Repositories — that's UseCase territory.
+            answerFinancialQuestion: { question in
+                @Dependency(\.transactionClient) var transactionClient
+                @Dependency(\.categoryClient) var categoryClient
+                let tool = QueryTransactionsTool(
+                    transactionClient: transactionClient,
+                    categoryClient: categoryClient
+                )
+                let session = LanguageModelSession(tools: [tool])
+                return try await session.respond(to: question).content
+            },
+
+            isAvailable: {
+                aiAdapter.isAvailable()
+            }
+        )
+    }
 }

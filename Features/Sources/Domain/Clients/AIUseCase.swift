@@ -2,47 +2,59 @@ import Foundation
 import Dependencies
 import DependenciesMacros
 
-/// A client interface for interacting with AI-powered financial services.
+/// A use case for active AI features — extracting structured data
+/// from natural language and suggesting categorisations.
 ///
-/// Use `AIUseCase` to parse natural language into transactions, generate category suggestions,
-/// and provide intelligent spending insights.
+/// Surface follows `docs/architecture.md` §5 Intelligence Context.
+/// Live implementation delegates the raw `LanguageModelSession` /
+/// `@Generable` plumbing to `AIAdapter` (Adapter layer); prompt
+/// templating and orchestration stay in this UseCase.
+///
+/// Read-side narrative AI (`generateInsight`) belongs to
+/// `AnalyticsUseCase` per §5 — it's a summary of existing data
+/// rather than a creation action — but is exposed here in transitional
+/// form for callsites that haven't migrated yet.
 @DependencyClient
 public struct AIUseCase: Sendable {
-    /// Extracts structured transaction data from a natural language description.
-    ///
-    /// - Parameter text: The natural language string describing a transaction.
-    /// - Returns: An `ExtractedTransaction` containing the parsed data.
+    /// Architecture-target name. Extracts a structured
+    /// `ExtractedTransaction` from a natural-language description
+    /// authored by the user.
+    public var extractFromText: @Sendable (_ text: String) async throws -> ExtractedTransaction
+
+    /// Architecture-target name. Extracts a structured
+    /// `ExtractedTransaction` from a voice transcript. Voice is
+    /// transcribed elsewhere (`SpeechAdapter`); this entry point only
+    /// receives the resulting text, but exists as a separate method
+    /// so future voice-specific prompt tuning can plug in without
+    /// touching `extractFromText`.
+    public var extractFromVoice: @Sendable (_ transcript: String) async throws -> ExtractedTransaction
+
+    /// Legacy alias of `extractFromText`. Kept during Phase 5 for
+    /// existing callsites; removed in Phase 6 once reducers migrate
+    /// to the architecture-target names.
     public var extractTransaction: @Sendable (String) async throws -> ExtractedTransaction
-    
-    /// Suggests the most appropriate categories for a given transaction description.
-    ///
-    /// - Parameters:
-    ///   - description: The text describing the transaction.
-    ///   - availableCategories: An array of existing category names to choose from.
-    /// - Returns: A `CategorySuggestions` value detailing the recommended categories and confidence.
-    public var suggestCategories: @Sendable (String, [String]) async throws -> CategorySuggestions
-    
-    /// Generates personalized insights and advice based on recent spending data.
-    ///
-    /// - Parameter summary: The `SpendingSummary` containing aggregated financial data.
-    /// - Returns: A localized string containing the generated insights.
+
+    /// Suggests the most appropriate categories for a given
+    /// transaction description.
+    public var suggestCategories: @Sendable (_ text: String, _ existing: [String]) async throws -> CategorySuggestions
+
+    /// Narrative insight from a `SpendingSummary`. Lives on
+    /// `AnalyticsUseCase` per §5 (`generateAIInsight`); kept here for
+    /// backwards compatibility during the migration.
     public var generateInsight: @Sendable (SpendingSummary) async throws -> String
 
-    /// Generates a list of carousel insights for the Dashboard B1 Warm Redesign.
-    ///
-    /// - Parameter summary: The `SpendingSummary` containing aggregated financial data.
-    /// - Returns: An array of `InsightData` items to show in the swipe-able carousel.
+    /// Carousel-style list of insights for the Dashboard B1 redesign.
+    /// Currently returns hand-authored copy; will be promoted to a
+    /// real adapter call when the design ships.
     public var generateInsights: @Sendable (_ summary: SpendingSummary) async throws -> [InsightData] = { _ in [] }
 
-    /// Answers a natural language financial question by querying transaction history via Tool Calling.
-    ///
-    /// - Parameter question: The user's question in natural language (e.g., "上個月餐費花了多少？").
-    /// - Returns: A natural language answer generated on-device.
+    /// Tool-calling QA over the user's transaction history. Stays on
+    /// `AIUseCase` because the tool implementation crosses multiple
+    /// Repositories (transactions + categories) and that orchestration
+    /// is part of the UseCase, not the Adapter.
     public var answerFinancialQuestion: @Sendable (String) async throws -> String
 
-    /// Checks the availability of the underlying AI service.
-    ///
-    /// - Returns: `true` if the AI service is properly configured and reachable; otherwise, `false`.
+    /// Whether the on-device language model is available.
     public var isAvailable: @Sendable () -> Bool = { false }
 }
 

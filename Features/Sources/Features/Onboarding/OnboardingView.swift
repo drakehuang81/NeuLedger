@@ -176,14 +176,7 @@ struct OnboardingView: View {
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 14) {
-            (
-                Text("onboarding_welcome_title_lead")
-                    .font(.system(size: 44, weight: .bold))
-                + Text(" ")
-                + Text("onboarding_welcome_title_emphasis")
-                    .font(.system(size: 44, weight: .semibold).italic())
-                    .foregroundColor(Color.Design.brandPrimary)
-            )
+            Text("\(Text("onboarding_welcome_title_lead").font(.system(size: 44, weight: .bold))) \(Text("onboarding_welcome_title_emphasis").font(.system(size: 44, weight: .semibold).italic()).foregroundColor(Color.Design.brandPrimary))")
             .lineSpacing(-2)
 
             Text("onboarding_welcome_subtitle")

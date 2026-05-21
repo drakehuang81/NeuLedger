@@ -17,7 +17,7 @@ public struct SettingsFeature: Sendable {
 
     // MARK: - Destination
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     public enum Destination {
         case accountManagement(AccountManagementFeature)
         case categoryManagement(CategoryManagementFeature)
@@ -319,3 +319,6 @@ public struct SettingsFeature: Sendable {
         return value
     }
 }
+
+extension SettingsFeature.Destination.State: Equatable {}
+extension SettingsFeature.Destination.Action: Equatable {}

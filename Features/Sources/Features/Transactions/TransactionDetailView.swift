@@ -196,6 +196,7 @@ private enum PreviewFixtures {
         aiSuggested: false
     )
 
+    @MainActor
     static func store(for tx: Domain.Transaction) -> StoreOf<TransactionDetailFeature> {
         var state = TransactionDetailFeature.State(transaction: tx)
         state.detent = .large

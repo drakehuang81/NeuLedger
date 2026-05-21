@@ -30,14 +30,14 @@ extension WidgetSyncAdapter: DependencyKey {
             defaults.set(type,    forKey: keyType)
             defaults.set(name,    forKey: keyName)
             defaults.set(Date(),  forKey: keyUpdatedAt)
-            await WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+            WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
         },
         clearCarrier: {
             guard let defaults = UserDefaults(suiteName: appGroupSuiteName) else { return }
             for key in [keyBarcode, keyType, keyName, keyUpdatedAt] {
                 defaults.removeObject(forKey: key)
             }
-            await WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+            WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
         },
         syncAllCarriers: { carriers in
             guard let defaults = UserDefaults(suiteName: appGroupSuiteName) else { return }
@@ -60,7 +60,7 @@ extension WidgetSyncAdapter: DependencyKey {
             }
             guard let data = try? JSONEncoder().encode(dtos) else { return }
             defaults.set(data, forKey: keyList)
-            await WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+            WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
         }
     )
 }

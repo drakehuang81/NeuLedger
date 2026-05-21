@@ -27,7 +27,7 @@ public struct DashboardFeature: Sendable {
 
     // MARK: - Destination
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     public enum Destination {
         case analysis(AnalysisFeature)
     }
@@ -614,3 +614,6 @@ public struct DashboardFeature: Sendable {
         .cancellable(id: CancelID.stats, cancelInFlight: cancelInFlight)
     }
 }
+
+extension DashboardFeature.Destination.State: Equatable {}
+extension DashboardFeature.Destination.Action: Equatable {}

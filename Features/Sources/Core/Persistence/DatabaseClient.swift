@@ -98,7 +98,7 @@ extension DatabaseClient: DependencyKey {
     /// In-memory `ModelContainer` shared by `DatabaseClient.testValue` and
     /// `\.modelContainer`'s testValue. Created once per process so tests
     /// running in the same target share seeded default data.
-    nonisolated(unsafe) public static let testContainer: ModelContainer = {
+    public static let testContainer: ModelContainer = {
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: true

@@ -72,26 +72,6 @@ let package = Package(
             sources: ["Core", "Application"]
         ),
         .target(name: "Common", dependencies: ["Domain"]),
-        .testTarget(
-            name: "FeaturesTests",
-            dependencies: ["Features", .tca],
-            path: "Tests/FeaturesTests",
-        ),
-        .testTarget(
-            name: "CommonTests",
-            dependencies: ["Common"],
-            path: "Tests/CommonTests"
-        ),
-        .testTarget(
-            name: "CoreTests",
-            dependencies: ["Core", "Domain"],
-            path: "Tests/CoreTests"
-        ),
-        .testTarget(
-            name: "DomainTests",
-            dependencies: ["Domain"],
-            path: "Tests/DomainTests"
-        ),
     ]
 )
 

@@ -151,6 +151,7 @@ public struct AddTransactionFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.ledger) var ledger
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
@@ -294,7 +295,7 @@ public struct AddTransactionFeature: Sendable {
                             toAccountId: toAccountId,
                             type: type_
                         )
-                        try await transactionClient.add(transaction)
+                        try await ledger.record(transaction)
                         if let frequency = recurringFrequency_ {
                             let templateId = UUID()
                             let nextDue: Date
@@ -341,7 +342,7 @@ public struct AddTransactionFeature: Sendable {
                             createdAt: existing.createdAt,
                             updatedAt: Date()
                         )
-                        try await transactionClient.update(transaction)
+                        try await ledger.update(transaction)
                         await send(.savedSuccessfullyWithTransaction(transaction))
                         return
 
@@ -356,7 +357,7 @@ public struct AddTransactionFeature: Sendable {
                             toAccountId: toAccountId,
                             type: type_
                         )
-                        try await transactionClient.add(transaction)
+                        try await ledger.record(transaction)
 
                     case let .addRecurringConfirmation(template):
                         let transaction = Transaction(
@@ -368,7 +369,7 @@ public struct AddTransactionFeature: Sendable {
                             toAccountId: toAccountId,
                             type: type_
                         )
-                        try await transactionClient.add(transaction)
+                        try await ledger.record(transaction)
                         let newNextDue = template.nextDate(after: template.nextDueDate)
                         await send(.delegate(.savedRecurringConfirmation(template.id, newNextDue)))
                         return

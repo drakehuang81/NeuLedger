@@ -157,7 +157,7 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.delete = { _ in }
+            $0.ledger.delete = { _ in }
             $0.transactionClient.fetchAll = { [Self.sampleTransaction] }
         }
 

@@ -160,7 +160,7 @@ struct TransactionDetailFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.transactionClient.delete = { deletedId.setValue($0) }
+            $0.ledger.delete = { deletedId.setValue($0) }
             $0.continuousClock = clock
             $0.dismiss = DismissEffect { }
         }

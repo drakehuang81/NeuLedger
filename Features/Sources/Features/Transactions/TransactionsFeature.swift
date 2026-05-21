@@ -69,6 +69,7 @@ public struct TransactionsFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.ledger) var ledger
 
     private enum CancelID {
         case task
@@ -157,7 +158,7 @@ public struct TransactionsFeature: Sendable {
                 guard let id = state.deleteConfirmationId else { return .none }
                 state.deleteConfirmationId = nil
                 return .run { send in
-                    try await transactionClient.delete(id)
+                    try await ledger.delete(id)
                     await send(.transactionDeleted(id))
                 }
 

@@ -81,6 +81,7 @@ public struct TransactionDetailFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.ledger) var ledger
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.continuousClock) var clock
@@ -171,7 +172,7 @@ public struct TransactionDetailFeature: Sendable {
                 let id = state.transaction.id
                 return .run { send in
                     do {
-                        try await transactionClient.delete(id)
+                        try await ledger.delete(id)
                         await send(.delegate(.deleted(id)))
                         await dismiss()
                     } catch {

@@ -13,9 +13,6 @@ import Dependencies
 extension TransactionClient: DependencyKey {
     public static var liveValue: TransactionClient {
         @Dependency(\.databaseClient) var databaseClient
-        @Dependency(\.budgetClient) var budgetClient
-        @Dependency(\.notificationAdapter) var notificationAdapter
-        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         let store = SwiftDataStore<Transaction, SDTransaction>()
 
@@ -71,21 +68,9 @@ extension TransactionClient: DependencyKey {
             },
             add: { transaction in
                 try await store.add(transaction)
-                await checkBudgetWarnings(
-                    budgetClient: budgetClient,
-                    notificationAdapter: notificationAdapter,
-                    userSettingsAdapter: userSettingsAdapter,
-                    transactionStore: store
-                )
             },
             update: { transaction in
                 try await store.update(transaction)
-                await checkBudgetWarnings(
-                    budgetClient: budgetClient,
-                    notificationAdapter: notificationAdapter,
-                    userSettingsAdapter: userSettingsAdapter,
-                    transactionStore: store
-                )
             },
             delete: { id in
                 try await store.delete(id: id)
@@ -103,72 +88,7 @@ extension TransactionClient: DependencyKey {
     }
 }
 
-// MARK: - Budget Warning Helper
-
-/// Checks all active budgets and fires a notification if any crosses the user-defined threshold.
-/// Called after add/update only — NOT after delete (intentional simplification).
-/// NOTE: localization keys are resolved from the app's main bundle because the
-/// `Localizable.xcstrings` catalog lives in the app target, not in the Core SPM package.
-/// Switching to `Bundle.module` would require moving or duplicating the catalog into Core.
-///
-/// This helper is the last Repository-layer site that mixes business logic
-/// with persistence. Phase 4 of the architecture migration extracts it into
-/// `LedgerUseCase.record` + `BudgetUseCase.evaluateAfterTransaction` per
-/// docs/architecture.md §3.1 Scenario B (post-condition invariant).
-private func checkBudgetWarnings(
-    budgetClient: BudgetClient,
-    notificationAdapter: NotificationAdapter,
-    userSettingsAdapter: UserSettingsAdapter,
-    transactionStore: SwiftDataStore<Transaction, SDTransaction>
-) async {
-    guard userSettingsAdapter.bool(.budgetWarningEnabled) else { return }
-    let threshold = userSettingsAdapter.int(.budgetWarningThreshold)
-    guard let activeBudgets = try? await budgetClient.fetchActive() else { return }
-
-    let today = Date()
-    for budget in activeBudgets {
-        let cal = Calendar.current
-        let component: Calendar.Component
-        switch budget.period {
-        case .weekly:  component = .weekOfYear
-        case .monthly: component = .month
-        case .yearly:  component = .year
-        }
-        guard let interval = cal.dateInterval(of: component, for: today) else { continue }
-
-        // Fetch all transactions and filter in Swift — matches the pattern
-        // used everywhere else in this Live implementation.
-        let allTransactions: [Transaction]
-        do {
-            allTransactions = try await transactionStore.fetchAll()
-        } catch {
-            continue
-        }
-        // DateInterval.end is exclusive — subtract 1ms so ClosedRange excludes the next period's start.
-        let periodRange = interval.start...interval.end.addingTimeInterval(-0.001)
-        let inPeriod = allTransactions.filter { periodRange.contains($0.date) }
-
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
-        let pKey = formatter.string(from: interval.start)
-        let bidStr = budget.id.uuidString
-        let lastWarned = notificationAdapter.lastWarnedPercent(bidStr, pKey)
-
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: budget,
-            transactionsInPeriod: inPeriod,
-            threshold: threshold,
-            lastWarnedPercent: lastWarned
-        )
-        guard outcome.shouldWarn else { continue }
-
-        let title = String(localized: "notification_budget_warning_title", bundle: .main)
-        let body = String(
-            format: String(localized: "notification_budget_warning_body", bundle: .main),
-            budget.name,
-            outcome.usedPercent
-        )
-        try? await notificationAdapter.sendBudgetWarning(bidStr, title, body)
-        notificationAdapter.setLastWarnedPercent(outcome.usedPercent, bidStr, pKey)
-    }
-}
+// Budget-warning evaluation now lives in BudgetUseCase.evaluateAfterTransaction,
+// invoked by LedgerUseCase.record/update under architecture.md §3.1 Scenario B
+// (post-condition invariant). TransactionClient+Live is back to a pure
+// Repository surface — every mutation goes straight to SwiftDataStore.

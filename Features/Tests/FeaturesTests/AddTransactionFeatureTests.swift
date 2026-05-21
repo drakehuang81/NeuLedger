@@ -106,7 +106,7 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: state) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.transactionClient.add = { _ in }
+            $0.ledger.record = { _ in }
         }
 
         await store.send(.saveTapped)
@@ -199,7 +199,7 @@ struct AddTransactionFeatureTests {
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.aiUseCase.isAvailable = { false }
-            $0.transactionClient.add = { saved.setValue($0) }
+            $0.ledger.record = { saved.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -308,7 +308,7 @@ struct AddTransactionFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.transactionClient.add = { addedTransaction.setValue($0) }
+            $0.ledger.record = { addedTransaction.setValue($0) }
         }
         store.exhaustivity = .off
 
@@ -343,7 +343,7 @@ struct AddTransactionFeatureTests {
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.aiUseCase.isAvailable = { false }
-            $0.transactionClient.update = { updatedCapture.setValue($0) }
+            $0.ledger.update = { updatedCapture.setValue($0) }
         }
 
         await store.send(.saveTapped)

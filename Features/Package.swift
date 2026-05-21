@@ -62,7 +62,14 @@ let package = Package(
             dependencies: [
                 "Domain",
                 .dependencies,
-            ]
+            ],
+            path: "Sources",
+            // Sources/Application holds the UseCase+Live orchestrators
+            // per docs/architecture.md §8. Kept inside the Core target
+            // for now (Phase 6.4 decision) to avoid a target-explosion
+            // refactor; a future split can convert Application into its
+            // own target depending on Core.
+            sources: ["Core", "Application"]
         ),
         .target(name: "Common", dependencies: ["Domain"]),
         .testTarget(

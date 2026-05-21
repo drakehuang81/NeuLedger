@@ -15,7 +15,11 @@ extension OnboardingUseCase: DependencyKey {
                 // through AccountUseCase.
                 try await accountClient.add(firstAccount)
 
-                // Single source of truth for "user is onboarded".
+                // UseCase→UseCase composition allowed per architecture.md
+                // §5 OnboardingUseCase spec. Not a §3.1 invariant chain —
+                // single source of truth for "user is onboarded" lives in
+                // AppEnvironmentUseCase, and Onboarding's atomic flow is
+                // the only caller that flips it on completion.
                 appEnvironmentUseCase.markOnboardingComplete()
             }
         )

@@ -64,10 +64,11 @@ extension AnalyticsUseCase: DependencyKey {
                 )
             },
             generateAIInsight: { summary in
-                // Active AI text generation goes through the
-                // Intelligence Context — AnalyticsUseCase owns the
-                // semantic boundary ("this is a derived read"); the
-                // Foundation Models call lives in AIUseCase.
+                // UseCase→UseCase composition allowed per architecture.md
+                // §5 (Insights Context owns the semantic boundary "this is
+                // a derived read"; the FoundationModels call lives in
+                // AIUseCase). Not a §3.1 invariant — caller is free to
+                // skip AI insight without breaking the analytics flow.
                 try await aiUseCase.generateInsight(summary)
             }
         )

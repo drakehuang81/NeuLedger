@@ -10,6 +10,26 @@ extension BudgetUseCase: DependencyKey {
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         return BudgetUseCase(
+            listActive: { try await budgetClient.fetchActive() },
+            create: { try await budgetClient.add($0) },
+            update: { try await budgetClient.update($0) },
+            delete: { try await budgetClient.delete($0) },
+            currentStatus: { budget in
+                let (start, end) = currentPeriodBounds(for: budget.period, today: Date())
+                let filter = TransactionFilter(
+                    categoryIds: budget.categoryId.map { Set([$0]) },
+                    types: [.expense],
+                    dateRange: start...end
+                )
+                let inPeriod = try await transactionClient.fetch(filter)
+                let spent = inPeriod.reduce(Decimal.zero) { $0 + $1.amount }
+                return BudgetStatus(
+                    budget: budget,
+                    periodStart: start,
+                    periodEnd: end,
+                    spent: spent
+                )
+            },
             evaluateAfterTransaction: { _ in
                 // The transaction parameter is currently unused — evaluation
                 // re-fetches all in-period transactions (same as the previous
@@ -24,24 +44,13 @@ extension BudgetUseCase: DependencyKey {
 
                 let today = Date()
                 for budget in activeBudgets {
-                    let cal = Calendar.current
-                    let component: Calendar.Component
-                    switch budget.period {
-                    case .weekly:  component = .weekOfYear
-                    case .monthly: component = .month
-                    case .yearly:  component = .year
-                    }
-                    guard let interval = cal.dateInterval(of: component, for: today) else { continue }
-
-                    // DateInterval.end is exclusive — subtract 1ms so the
-                    // ClosedRange excludes the next period's start.
-                    let periodRange = interval.start...interval.end.addingTimeInterval(-0.001)
-                    let filter = TransactionFilter(dateRange: periodRange)
+                    let (start, end) = currentPeriodBounds(for: budget.period, today: today)
+                    let filter = TransactionFilter(dateRange: start...end)
                     guard let inPeriod = try? await transactionClient.fetch(filter) else { continue }
 
                     let formatter = ISO8601DateFormatter()
                     formatter.formatOptions = [.withFullDate]
-                    let pKey = formatter.string(from: interval.start)
+                    let pKey = formatter.string(from: start)
                     let bidStr = budget.id.uuidString
                     let lastWarned = notificationAdapter.lastWarnedPercent(bidStr, pKey)
 
@@ -65,4 +74,20 @@ extension BudgetUseCase: DependencyKey {
             }
         )
     }
+}
+
+/// Compute the calendar-aligned period bounds for the given `BudgetPeriod`
+/// containing `today`. Returns a closed range — `end` is the last
+/// representable instant of the period (DateInterval.end minus 1 ms) so
+/// the resulting `ClosedRange<Date>` excludes the next period's start.
+private func currentPeriodBounds(for period: BudgetPeriod, today: Date) -> (start: Date, end: Date) {
+    let cal = Calendar.current
+    let component: Calendar.Component
+    switch period {
+    case .weekly:  component = .weekOfYear
+    case .monthly: component = .month
+    case .yearly:  component = .year
+    }
+    let interval = cal.dateInterval(of: component, for: today) ?? DateInterval(start: today, duration: 0)
+    return (interval.start, interval.end.addingTimeInterval(-0.001))
 }

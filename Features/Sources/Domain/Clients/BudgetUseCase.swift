@@ -4,12 +4,29 @@ import DependenciesMacros
 
 /// Application-layer use case for budget concerns.
 ///
-/// Currently exposes only the post-transaction evaluation hook — the
-/// full CRUD surface (`listActive`, `create`, `update`, `delete`,
-/// `currentStatus(of:)`) defined in `docs/architecture.md` §5 Planning
-/// Context lands in Phase 5.
+/// Surface follows `docs/architecture.md` §5 Planning Context. Wraps
+/// `BudgetClient` (Repository) for CRUD + composes
+/// `BudgetWarningPolicy` + `TransactionClient` for read-side queries
+/// (`currentStatus`) and the post-transaction evaluation side effect
+/// (`evaluateAfterTransaction`).
 @DependencyClient
 public struct BudgetUseCase: Sendable {
+    /// Active budgets — those flagged `isActive` and within their
+    /// configured period.
+    public var listActive: @Sendable () async throws -> [Budget]
+
+    public var create: @Sendable (_ budget: Budget) async throws -> Void
+    public var update: @Sendable (_ budget: Budget) async throws -> Void
+    public var delete: @Sendable (_ id: Budget.ID) async throws -> Void
+
+    /// Computes the current-period spending status for a single
+    /// budget. Period boundaries follow the calendar (`weekOfYear`,
+    /// `month`, `year`). Throws if the underlying transaction fetch
+    /// fails.
+    public var currentStatus: @Sendable (_ budget: Budget) async throws -> BudgetStatus = { budget in
+        BudgetStatus(budget: budget, periodStart: .distantPast, periodEnd: .distantPast, spent: 0)
+    }
+
     /// Run the budget-warning evaluation after a transaction is recorded
     /// or modified. Reads active budgets, computes spent-in-period via
     /// `BudgetWarningPolicy`, and fires a notification if a threshold

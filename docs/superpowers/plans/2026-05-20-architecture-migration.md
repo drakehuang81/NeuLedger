@@ -69,19 +69,33 @@
 - 4.3 `LedgerUseCase`（record/update/delete 三方法）`3572286`（含 §3.1 Scenario B INVARIANT 註解；read 方法含 `EnrichedTransaction` 留 Phase 5）
 - 4.4 Features 改注入 `\\.ledger` + 移除 `TransactionClient+Live.checkBudgetWarnings` `ac35a85`（3 個 Feature + 4 個 Test 檔；TransactionClient+Live 變回純 Repository surface）
 
-**Phase 5（引入其餘 11 個 UseCase + Adapter 切分）** ⏳ 進行中
+**Phase 5（引入其餘 11 個 UseCase + Adapter 切分）** ✅ 全部完成（16 個 commit）
 
-已完成：
-- 5.1 `AccountUseCase` thin wrapper `52b0568`（8 methods，delegate `AccountClient`；`unarchive` 用 fetchAll+filter+update 合成；`balances` iterate `fetchActive` + `computeBalance`）— Feature 注入暫不切換，Phase 6 統一
+UseCase scaffolding（thin wrappers + composite reads）：
+- 5.1 `AccountUseCase` thin wrapper `52b0568`（8 methods，delegate `AccountClient`；`unarchive` 用 fetchAll+filter+update 合成；`balances` iterate `fetchActive` + `computeBalance`）
 - 5.2 `MetadataUseCase`（Category + Tag combined）thin wrapper `fbdbf36`（8 methods，delegate `CategoryClient` + `TagClient`；`listCategories(type:)` nil → fetchAll，否則 fetchByType）
+- 5.3 `BudgetUseCase` 補完 CRUD + `currentStatus(of:)` + `listActive` `0c6104d`（新 ValueObject `BudgetStatus`；period bounds helper 共用 evaluateAfterTransaction）
+- 5.4 `RecurringUseCase` + `tick()` saga `1f0d41a`（含 §3.1 Scenario A INVARIANT 註解；template → tx via ledger.record；advance nextDueDate）
+- 5.5 `AnalyticsUseCase` + `TransactionAnalyticsKernel` `71cfa29`（6 methods，aggregate logic 集中 internal kernel；`DatabaseClient` analytics extension 整段刪除；TransactionClient stats 三個 method 改 inline kernel）
+- 5.6 `CarrierUseCase` thin wrapper `f3c48ad`（CRUD + setActiveForWidget/activeForWidget via UserSettingsAdapter）
+- 5.7 `CloudSyncUseCase` 補完 + 切 `CloudKitSyncAdapter` `faa1345`（isAvailable/isEnabled/enable/requestNow target names；legacy 命名保留；ModelContext :63 違規搬入 Adapter）
+- 5.8 `AppEnvironmentUseCase` `3315b9c`（包 UserSettingsAdapter + NotificationAdapter + System wrappers；`AccessoryMode` 從 internal 搬到 Domain public + 新 `ReminderTime` ValueObject）
+- 5.9 `OnboardingUseCase` `dea768a`（single-shot complete(firstAccount:) 直呼 accountClient.add + markOnboardingComplete）
+- 5.10 `ExportUseCase` `3b978f1`（exportTransactionsCSV 完整 inline CSV 邏輯 + csvField escaping）
+- 5.11 `AIUseCase` 補完 + 切 `AIAdapter` `abdd48e`（AIAdapter wraps raw Foundation Models；AIUseCase 變 thin orchestrator；新增 extractFromText/Voice target 命名；answerFinancialQuestion 留 UseCase 含 QueryTransactionsTool）
 
-剩餘待辦（含 Phase 3/4 中遞延的）：
-- LedgerUseCase 補 read 方法（`fetch`、`listRecent`、`listAll(filter:)`、`search`）含新 ValueObject `EnrichedTransaction`
-- BudgetUseCase 補 CRUD + `currentStatus(of:)` + `listActive`
-- RecurringUseCase / AnalyticsUseCase / CarrierUseCase / AppEnvironmentUseCase / OnboardingUseCase / ExportUseCase / AIUseCase 補完
-- AIAdapter / CloudKitSyncAdapter 切分（含 `CloudSyncUseCase+Live:63` ModelContext cleanup）
-- `DatabaseClient` 三個 analytics helper 搬到 AnalyticsUseCase（之後 DatabaseClient 整檔刪除）
-- LedgerUseCase + BudgetUseCase 的 integration tests（替代 Phase 4.4 刪除的 4 個 budget warning tests）
+Phase 5 額外項：
+- LedgerUseCase 補 read（fetch / listRecent / listAll / search）+ 新 `EnrichedTransaction` ValueObject `7d39409`
+- BudgetUseCase.evaluateAfterTransaction integration tests `f5b213a`（4 cases，actor-backed spy；替代 Phase 4.4 刪除的 budget warning tests）
+
+驗證狀態：每個 commit 都通過 `xcodebuild test -scheme Features`（273+87+120，1 known issue 預期內）。
+
+Phase 6 預期工作：
+- 6.1 拆 `Domain/Clients/` → `Domain/Repositories/` + `Domain/Adapters/` + `Domain/UseCases/`
+- 6.2 建 `Application/` 並搬 `*UseCase+Live`
+- 6.3 重組 `Core/`（Repositories / Adapters / Persistence / Mappers）
+- 6.4 SPM target 檢查
+- Phase 6 連帶：所有 Feature reducer 批次切 DI keypath 到 UseCase（同時消除 5.7 / 5.11 的 legacy 命名 + TransactionClient stats methods）
 
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 

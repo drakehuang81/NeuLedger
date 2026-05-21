@@ -2,11 +2,6 @@ import Foundation
 import ComposableArchitecture
 import Domain
 
-enum AccessoryMode: String, Equatable, Sendable {
-    case add
-    case ai
-}
-
 @Reducer
 struct MainTabFeature {
     // MARK: - State

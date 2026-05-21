@@ -63,10 +63,19 @@
 
 下一階段：Phase 4（Ledger UseCase 抽出）— 引入 BudgetWarningPolicy、LedgerUseCase、BudgetUseCase.evaluateAfterTransaction，把 TransactionClient+Live 中的 checkBudgetWarnings 業務邏輯搬上層。Feature 改注入 `\\.ledger`。
 
-**Phase 4.1** ✅ `BudgetWarningPolicy` 抽出 `2f584a6`（3 files：Policy + tests + TransactionClient+Live 重構）。Phase 4.2/4.3 待辦：
-- 4.2 `BudgetUseCase.evaluateAfterTransaction(_:)`：包 `BudgetWarningPolicy.evaluate` + `NotificationAdapter.sendBudgetWarning` + `UserSettingsAdapter` 三者協調
-- 4.3 `LedgerUseCase.record / update / delete / fetch / listRecent / listAll / search`：`record` 內呼叫 `transactionRepository.add` + `budgetUseCase.evaluateAfterTransaction`（§3.1 Scenario B Invariant，必須帶 `// INVARIANT:` 註解）
-- 4.4 Features 改注入 `\\.ledger` 取代 `\\.transactionClient.add/update/delete`；最後從 `TransactionClient+Live` 移除 `checkBudgetWarnings` helper
+**Phase 4（Ledger UseCase 抽出）** ✅ 全部完成（4 個 commit）
+- 4.1 `BudgetWarningPolicy` 抽出 `2f584a6`（Policy + 8 tests + TransactionClient+Live 重構成呼叫 Policy）
+- 4.2 `BudgetUseCase.evaluateAfterTransaction(_:)` `21f6739`（新建 BudgetUseCase 單方法 UseCase；完整 CRUD 留 Phase 5）
+- 4.3 `LedgerUseCase`（record/update/delete 三方法）`3572286`（含 §3.1 Scenario B INVARIANT 註解；read 方法含 `EnrichedTransaction` 留 Phase 5）
+- 4.4 Features 改注入 `\\.ledger` + 移除 `TransactionClient+Live.checkBudgetWarnings` `ac35a85`（3 個 Feature + 4 個 Test 檔；TransactionClient+Live 變回純 Repository surface）
+
+下一階段：Phase 5（引入其餘 11 個 UseCase + Adapter 切分）— 含 Phase 3/4 中遞延的：
+- LedgerUseCase 補 read 方法（`fetch`、`listRecent`、`listAll(filter:)`、`search`）含新 ValueObject `EnrichedTransaction`
+- BudgetUseCase 補 CRUD + `currentStatus(of:)` + `listActive`
+- AccountUseCase / MetadataUseCase / RecurringUseCase / AnalyticsUseCase / CarrierUseCase / AppEnvironmentUseCase / OnboardingUseCase / ExportUseCase / AIUseCase 補完
+- AIAdapter / CloudKitSyncAdapter 切分（含 `CloudSyncUseCase+Live:63` ModelContext cleanup）
+- `DatabaseClient` 三個 analytics helper 搬到 AnalyticsUseCase（之後 DatabaseClient 整檔刪除）
+- LedgerUseCase + BudgetUseCase 的 integration tests（替代 Phase 4.4 刪除的 4 個 budget warning tests）
 
 **Phase 1 收尾驗證 — flaky test 根因確認（已診斷）**：
 

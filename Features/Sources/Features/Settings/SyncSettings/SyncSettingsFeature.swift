@@ -55,7 +55,7 @@ public struct SyncSettingsFeature: Sendable {
             switch action {
             case .task:
                 state.isSyncEnabled = userSettingsAdapter.bool(.isSyncEnabled)
-                state.isCloudKitAvailable = cloudSyncUseCase.isCloudKitAvailable()
+                state.isCloudKitAvailable = cloudSyncUseCase.isAvailable()
                 state.lastSyncedAt = cloudSyncUseCase.lastSyncedAt()
                 return .none
 
@@ -71,7 +71,7 @@ public struct SyncSettingsFeature: Sendable {
                         }
                     }
                     do {
-                        for try await progress in cloudSyncUseCase.enableSync() {
+                        for try await progress in cloudSyncUseCase.enable() {
                             await send(.migrationProgressUpdated(progress))
                         }
                         await padIfNeeded()
@@ -101,7 +101,7 @@ public struct SyncSettingsFeature: Sendable {
                 state.isManualSyncing = true
                 return .run { [clock] send in
                     let start = Date()
-                    try? await cloudSyncUseCase.requestSyncNow()
+                    try? await cloudSyncUseCase.requestNow()
                     let remaining = 1.0 - Date().timeIntervalSince(start)
                     if remaining > 0 {
                         try? await clock.sleep(for: .seconds(remaining))

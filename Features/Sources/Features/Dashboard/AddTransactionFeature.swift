@@ -182,7 +182,7 @@ public struct AddTransactionFeature: Sendable {
                         await send(.backgroundExtractionCompleted(nil))
                         return
                     }
-                    let result = try? await aiUseCase.extractTransaction(note)
+                    let result = try? await aiUseCase.extractFromText(note)
                     await send(.backgroundExtractionCompleted(result))
                 }
                 .debounce(id: CancelID.noteDebounce, for: .milliseconds(500), scheduler: RunLoop.main)

@@ -16,23 +16,16 @@ import DependenciesMacros
 /// form for callsites that haven't migrated yet.
 @DependencyClient
 public struct AIUseCase: Sendable {
-    /// Architecture-target name. Extracts a structured
-    /// `ExtractedTransaction` from a natural-language description
-    /// authored by the user.
+    /// Extracts a structured `ExtractedTransaction` from a
+    /// natural-language description authored by the user.
     public var extractFromText: @Sendable (_ text: String) async throws -> ExtractedTransaction
 
-    /// Architecture-target name. Extracts a structured
-    /// `ExtractedTransaction` from a voice transcript. Voice is
-    /// transcribed elsewhere (`SpeechAdapter`); this entry point only
-    /// receives the resulting text, but exists as a separate method
-    /// so future voice-specific prompt tuning can plug in without
-    /// touching `extractFromText`.
+    /// Extracts a structured `ExtractedTransaction` from a voice
+    /// transcript. Voice is transcribed elsewhere (`SpeechAdapter`);
+    /// this entry point only receives the resulting text, but exists
+    /// as a separate method so future voice-specific prompt tuning
+    /// can plug in without touching `extractFromText`.
     public var extractFromVoice: @Sendable (_ transcript: String) async throws -> ExtractedTransaction
-
-    /// Legacy alias of `extractFromText`. Kept during Phase 5 for
-    /// existing callsites; removed in Phase 6 once reducers migrate
-    /// to the architecture-target names.
-    public var extractTransaction: @Sendable (String) async throws -> ExtractedTransaction
 
     /// Suggests the most appropriate categories for a given
     /// transaction description.

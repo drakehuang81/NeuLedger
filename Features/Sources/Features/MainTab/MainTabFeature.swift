@@ -155,7 +155,7 @@ struct MainTabFeature {
                 let text = state.aiInputText
                 return .run { send in
                     await send(.aiExtractionCompleted(
-                        TaskResult { try await aiUseCase.extractTransaction(text) }
+                        TaskResult { try await aiUseCase.extractFromText(text) }
                     ))
                 }
                 .cancellable(id: CancelID.aiExtraction, cancelInFlight: true)

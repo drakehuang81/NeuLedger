@@ -11,18 +11,18 @@ struct AIServiceClientTests {
         #expect(true, "AIServiceClient injected successfully")
     }
 
-    @Test("AIServiceClient extractTransaction mock override")
+    @Test("AIServiceClient extractFromText mock override")
     func testExtractTransactionMock() async throws {
         let expected = ExtractedTransaction(amount: 150, suggestedCategory: "Food", description: "lunch", type: "expense")
 
         try await withDependencies {
-            $0.aiUseCase.extractTransaction = { input in
+            $0.aiUseCase.extractFromText = { input in
                 #expect(input == "lunch 150")
                 return expected
             }
         } operation: {
             @Dependency(\.aiUseCase) var client
-            let result = try await client.extractTransaction("lunch 150")
+            let result = try await client.extractFromText("lunch 150")
             #expect(result == expected)
         }
     }

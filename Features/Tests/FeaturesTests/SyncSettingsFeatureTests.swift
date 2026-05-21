@@ -17,7 +17,7 @@ struct SyncSettingsFeatureTests {
                 default: return key.defaultValue
                 }
             }
-            $0.cloudSyncUseCase.isCloudKitAvailable = { true }
+            $0.cloudSyncUseCase.isAvailable = { true }
             $0.cloudSyncUseCase.lastSyncedAt = { nil }
         }
         await store.send(.task)
@@ -30,7 +30,7 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.cloudSyncUseCase.enableSync = {
+            $0.cloudSyncUseCase.enable = {
                 AsyncThrowingStream { continuation in
                     continuation.yield(0.5)
                     continuation.yield(1.0)
@@ -67,7 +67,7 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.cloudSyncUseCase.enableSync = {
+            $0.cloudSyncUseCase.enable = {
                 AsyncThrowingStream { continuation in
                     continuation.finish(throwing: SyncError())
                 }

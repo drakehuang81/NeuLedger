@@ -82,9 +82,9 @@ extension AIUseCase: DependencyKey {
         @Dependency(\.aiAdapter) var aiAdapter
 
         // MARK: - extract* implementations
-        // extractFromText / extractFromVoice / extractTransaction share
-        // identical implementation today. Keeping them as separate
-        // closures lets future voice-specific prompt tuning land in
+        // extractFromText and extractFromVoice share identical
+        // implementation today. Keeping them as separate closures
+        // lets future voice-specific prompt tuning land in
         // extractFromVoice alone.
         let extract: @Sendable (String) async throws -> ExtractedTransaction = { input in
             let template = String(localized: "ai_prompt_extract_transaction", bundle: .main)
@@ -95,7 +95,6 @@ extension AIUseCase: DependencyKey {
         return AIUseCase(
             extractFromText: extract,
             extractFromVoice: extract,
-            extractTransaction: extract,
 
             suggestCategories: { description, existingCategories in
                 let categoryList = existingCategories.joined(separator: listSeparator())

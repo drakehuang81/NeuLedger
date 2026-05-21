@@ -93,7 +93,7 @@ struct MainTabFeatureTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.extractTransaction = { _ in extracted }
+            $0.aiUseCase.extractFromText = { _ in extracted }
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }

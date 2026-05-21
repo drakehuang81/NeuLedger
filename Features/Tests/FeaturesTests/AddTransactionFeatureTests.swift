@@ -170,7 +170,7 @@ struct AddTransactionFeatureTests {
             $0.userSettingsAdapter.string = { _ in "" }
             $0.aiUseCase.isAvailable = { aiAvailable }
             if aiAvailable {
-                $0.aiUseCase.extractTransaction = { _ in ExtractedTransaction() }
+                $0.aiUseCase.extractFromText = { _ in ExtractedTransaction() }
                 $0.aiUseCase.suggestCategories = { _, _ in
                     CategorySuggestions(suggestions: [], confidence: "low")
                 }

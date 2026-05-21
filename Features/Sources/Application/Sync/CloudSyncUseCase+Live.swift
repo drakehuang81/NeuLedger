@@ -49,16 +49,11 @@ extension CloudSyncUseCase: DependencyKey {
         }
 
         return CloudSyncUseCase(
-            // Architecture-target names
             isAvailable: isAvailable,
             isEnabled: isEnabled,
             lastSyncedAt: lastSyncedAt,
             enable: enable,
-            requestNow: requestNow,
-            // Legacy aliases — kept until Phase 6 callsite migration
-            isCloudKitAvailable: isAvailable,
-            enableSync: enable,
-            requestSyncNow: requestNow
+            requestNow: requestNow
         )
     }
 }

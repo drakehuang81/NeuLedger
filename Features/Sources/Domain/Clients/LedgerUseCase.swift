@@ -2,31 +2,31 @@ import Foundation
 import Dependencies
 import DependenciesMacros
 
-/// Application-layer use case for transaction mutations.
+/// Application-layer use case for transaction CRUD + enriched reads.
 ///
-/// Currently exposes only the mutation surface — `record`, `update`,
-/// `delete`. The read surface (`fetch`, `listRecent`, `listAll(filter:)`,
-/// `search`) returning `EnrichedTransaction` defined in
-/// `docs/architecture.md` §5 Ledger Context lands in Phase 5.
+/// Surface follows `docs/architecture.md` §5 Ledger Context. Mutation
+/// endpoints (`record`, `update`, `delete`) preserve the architecture.md
+/// §3.1 Scenario B invariant by routing `BudgetUseCase.evaluateAfter
+/// Transaction` after each write — callers must NEVER call
+/// `TransactionClient.add/update` directly.
 ///
-/// Per architecture.md §3.1 Scenario B (post-condition invariant),
-/// `record` and `update` invoke `BudgetUseCase.evaluateAfterTransaction`
-/// after the write succeeds. Callers must NEVER call
-/// `TransactionClient.add/update` directly — every transaction mutation
-/// goes through `LedgerUseCase` so the budget-warning side-effect cannot
-/// be skipped.
+/// Read endpoints (`fetch`, `listRecent`, `listAll(filter:)`, `search`)
+/// return `EnrichedTransaction` so the UI does not have to re-join
+/// against categories / accounts on every render.
 @DependencyClient
 public struct LedgerUseCase: Sendable {
-    /// Persist a new transaction and run the budget-warning invariant.
+    // MARK: - Mutations
+
     public var record: @Sendable (_ transaction: Transaction) async throws -> Void
-
-    /// Update an existing transaction and run the budget-warning invariant.
     public var update: @Sendable (_ transaction: Transaction) async throws -> Void
-
-    /// Delete a transaction by id. No budget-warning invariant — the warning
-    /// is intentionally a 'crossing detector' for income/expense growth, not
-    /// for deletions, matching the pre-LedgerUseCase behavior.
     public var delete: @Sendable (_ id: Transaction.ID) async throws -> Void
+
+    // MARK: - Reads
+
+    public var fetch: @Sendable (_ id: Transaction.ID) async throws -> EnrichedTransaction?
+    public var listRecent: @Sendable (_ limit: Int) async throws -> [EnrichedTransaction] = { _ in [] }
+    public var listAll: @Sendable (_ filter: TransactionFilter) async throws -> [EnrichedTransaction] = { _ in [] }
+    public var search: @Sendable (_ query: String) async throws -> [EnrichedTransaction] = { _ in [] }
 }
 
 extension LedgerUseCase: TestDependencyKey {

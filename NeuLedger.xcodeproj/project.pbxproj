@@ -15,6 +15,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		5DF9923F2FBFE28D00299067 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A24BD4712F3B34480046D6A4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A24BD4782F3B34480046D6A4;
+			remoteInfo = NeuLedger;
+		};
 		A226633F2F8376A500F95069 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A24BD4712F3B34480046D6A4 /* Project object */;
@@ -46,6 +53,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5DF992392FBFE28D00299067 /* NeuLedgerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuLedgerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A22663322F8376A300F95069 /* NeuLedgerWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NeuLedgerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A22663332F8376A300F95069 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A22663352F8376A300F95069 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -73,6 +81,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		5DF9923A2FBFE28D00299067 /* NeuLedgerUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NeuLedgerUITests;
+			sourceTree = "<group>";
+		};
 		A22663372F8376A300F95069 /* NeuLedgerWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -102,6 +115,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5DF992362FBFE28D00299067 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A226632F2F8376A300F95069 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -148,6 +168,7 @@
 				A24BD47B2F3B34480046D6A4 /* NeuLedger */,
 				A22663372F8376A300F95069 /* NeuLedgerWidget */,
 				A2B0F3AC2FBF39D80001B1C0 /* NeuLedgerTests */,
+				5DF9923A2FBFE28D00299067 /* NeuLedgerUITests */,
 				A249D8A92F418C2000CBA03D /* Frameworks */,
 				A24BD47A2F3B34480046D6A4 /* Products */,
 			);
@@ -159,6 +180,7 @@
 				A24BD4792F3B34480046D6A4 /* NeuLedger.app */,
 				A22663322F8376A300F95069 /* NeuLedgerWidget.appex */,
 				A2B0F3AB2FBF39D80001B1C0 /* NeuLedgerTests.xctest */,
+				5DF992392FBFE28D00299067 /* NeuLedgerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -166,6 +188,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5DF992382FBFE28D00299067 /* NeuLedgerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5DF992432FBFE28D00299067 /* Build configuration list for PBXNativeTarget "NeuLedgerUITests" */;
+			buildPhases = (
+				5DF992352FBFE28D00299067 /* Sources */,
+				5DF992362FBFE28D00299067 /* Frameworks */,
+				5DF992372FBFE28D00299067 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5DF992402FBFE28D00299067 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5DF9923A2FBFE28D00299067 /* NeuLedgerUITests */,
+			);
+			name = NeuLedgerUITests;
+			packageProductDependencies = (
+			);
+			productName = NeuLedgerUITests;
+			productReference = 5DF992392FBFE28D00299067 /* NeuLedgerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		A22663312F8376A300F95069 /* NeuLedgerWidget */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A22663452F8376A500F95069 /* Build configuration list for PBXNativeTarget "NeuLedgerWidget" */;
@@ -249,6 +294,10 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					5DF992382FBFE28D00299067 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = A24BD4782F3B34480046D6A4;
+					};
 					A22663312F8376A300F95069 = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -283,11 +332,19 @@
 				A24BD4782F3B34480046D6A4 /* NeuLedger */,
 				A22663312F8376A300F95069 /* NeuLedgerWidget */,
 				A2B0F3AA2FBF39D80001B1C0 /* NeuLedgerTests */,
+				5DF992382FBFE28D00299067 /* NeuLedgerUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5DF992372FBFE28D00299067 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A22663302F8376A300F95069 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -312,6 +369,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5DF992352FBFE28D00299067 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A226632E2F8376A300F95069 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -336,6 +400,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5DF992402FBFE28D00299067 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A24BD4782F3B34480046D6A4 /* NeuLedger */;
+			targetProxy = 5DF9923F2FBFE28D00299067 /* PBXContainerItemProxy */;
+		};
 		A22663402F8376A500F95069 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A22663312F8376A300F95069 /* NeuLedgerWidget */;
@@ -349,6 +418,46 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		5DF992412FBFE28D00299067 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GVHFFWK64F;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedgerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NeuLedger;
+			};
+			name = Debug;
+		};
+		5DF992422FBFE28D00299067 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GVHFFWK64F;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.drake.NeuLedgerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NeuLedger;
+			};
+			name = Release;
+		};
 		A22663432F8376A500F95069 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -658,6 +767,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5DF992432FBFE28D00299067 /* Build configuration list for PBXNativeTarget "NeuLedgerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5DF992412FBFE28D00299067 /* Debug */,
+				5DF992422FBFE28D00299067 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A22663452F8376A500F95069 /* Build configuration list for PBXNativeTarget "NeuLedgerWidget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

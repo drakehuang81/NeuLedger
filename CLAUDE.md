@@ -22,17 +22,18 @@ All code lives in the local SPM package at `Features/`. The app target (`NeuLedg
 xcodebuild build -project NeuLedger.xcodeproj -scheme NeuLedger \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
-# Run all tests (only -scheme Features is configured for testing)
-xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
+# Run all tests (NeuLedgerTests target lives in the xcodeproj)
+xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
 # Run a single test suite
-xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
+xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:FeaturesTests/DashboardFeatureTests
+  -only-testing:NeuLedgerTests/DashboardFeatureTests
 
-# Available schemes: NeuLedger (build only), Features (all tests)
-# Common / Core / Domain / NeuLedger are NOT configured for the test action
+# Available schemes:
+#   NeuLedger (build + tests via NeuLedgerTests/NeuLedgerUITests) — shared in xcodeproj
+#   Features / Core / Domain / Common (build only) — shared SPM library schemes
 ```
 
 > `swift test` does NOT work — iOS 26-only APIs (Liquid Glass, Foundation Models, etc.) cause compile errors on macOS.
@@ -167,14 +168,14 @@ This project uses the **superpowers** plugin. Skills override default Claude beh
 **TDD test commands** (from `test-driven-development` skill) — use xcodebuild, NOT `swift test`:
 
 ```bash
-# Run all feature tests
-xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
+# Run all tests
+xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
 # Run a single suite
-xcodebuild test -project NeuLedger.xcodeproj -scheme Features \
+xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:FeaturesTests/<SuiteName>
+  -only-testing:NeuLedgerTests/<SuiteName>
 ```
 
 Tests use **Swift Testing** (`@Suite`, `@Test`) — not XCTest. TDD cycle applies the same: write failing test → watch it fail → implement minimally → pass.

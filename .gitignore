@@ -70,6 +70,11 @@ Package.resolved
 # Xcode Cloud requires the workspace-level Package.resolved to be committed
 !NeuLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 !Features/Package.resolved
+# Keep shared schemes for the local SPM package (for CI / Xcode Cloud)
+!Features/.swiftpm/
+!Features/.swiftpm/xcode/
+!Features/.swiftpm/xcode/xcshareddata/
+!Features/.swiftpm/xcode/xcshareddata/**
 
 # CocoaPods
 #

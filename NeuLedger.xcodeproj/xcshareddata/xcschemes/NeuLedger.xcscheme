@@ -46,7 +46,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A24BD4932F3B344A0046D6A4"
+               BlueprintIdentifier = "5DF992382FBFE28D00299067"
                BuildableName = "NeuLedgerUITests.xctest"
                BlueprintName = "NeuLedgerUITests"
                ReferencedContainer = "container:NeuLedger.xcodeproj">

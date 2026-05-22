@@ -42,14 +42,9 @@ xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
 
 **All changes go through Pull Requests** — `developer` and `main` are protected (no direct push, no force push, no deletions). Even single-line fixes flow through a `feature/*` branch + PR.
 
-**Merge policy: fast-forward only.**
-
-- Do **NOT** use squash merge or merge commits — both lose the PR's individual commit history and squash also rewrites authorship.
-- Before merging, rebase the PR branch onto the target so the PR is strictly ahead of the target (linear history is enforced on `developer` and `main`).
-- In the GitHub PR UI, use **"Rebase and merge"** (the closest GitHub offers to FF when the branch is already ahead).
-- Tooling: prefer `commit-commands:commit-push-pr` for opening PRs; use `git pull --rebase` (never plain `git pull`) when syncing the PR branch with target.
-
 **Branch naming:** `feature/<short-description>` for new work, `fix/<short-description>` for bug fixes, `release/x.y.z` for App Store cuts.
+
+Use `git pull --rebase` (not plain `git pull`) when syncing a PR branch with target. Prefer `commit-commands:commit-push-pr` for opening PRs.
 
 ## Architecture
 

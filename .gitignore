@@ -67,6 +67,9 @@ playground.xcworkspace
 Packages
 Package.pins
 Package.resolved
+# Xcode Cloud requires the workspace-level Package.resolved to be committed
+!NeuLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+!Features/Package.resolved
 
 # CocoaPods
 #

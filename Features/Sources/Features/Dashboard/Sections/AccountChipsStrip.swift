@@ -46,7 +46,7 @@ struct AccountChipsStrip: View {
             HStack(spacing: 8) {
                 iconBadge(systemName: "square.grid.2x2.fill", tint: .secondary)
                 Text("dashboard_chip_all")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(Font.Design.size14Semibold)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -70,7 +70,7 @@ struct AccountChipsStrip: View {
                 HStack(spacing: 8) {
                     iconBadge(systemName: account.icon, tint: tint)
                     Text(account.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Font.Design.size14Semibold)
                         .lineLimit(1)
                 }
                 .padding(.leading, 10)
@@ -87,7 +87,7 @@ struct AccountChipsStrip: View {
                     store.send(.accountTapped(account.id))
                 } label: {
                     Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(Font.Design.size12Bold)
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                         .background(Color.Design.brandAccent, in: Circle())
@@ -119,7 +119,7 @@ struct AccountChipsStrip: View {
 
     private func iconBadge(systemName: String, tint: Color) -> some View {
         Image(systemName: systemName)
-            .font(.system(size: 12, weight: .semibold))
+            .font(Font.Design.size12Semibold)
             .foregroundStyle(tint)
             .frame(width: 24, height: 24)
             .background(tint.opacity(0.18), in: Circle())

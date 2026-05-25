@@ -184,7 +184,7 @@ public struct AddTransactionView: View {
         GlassContainer(cornerRadius: 22, padding: EdgeInsets(top: 18, leading: 22, bottom: 18, trailing: 22)) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(String(localized: "add_transaction_amount"))
-                    .font(.system(size: 10, weight: .medium))
+                    .font(Font.Design.size10Medium)
                     .monospaced()
                     .tracking(1.2)
                     .textCase(.uppercase)
@@ -274,7 +274,7 @@ public struct AddTransactionView: View {
                     activeSheet = .date
                 } content: {
                     Text(store.date.formatted(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Font.Design.size14Medium)
                         .foregroundStyle(Color.Design.textPrimary)
                 }
 
@@ -303,7 +303,7 @@ public struct AddTransactionView: View {
         } label: {
             HStack(spacing: 10) {
                 Text(label)
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.textSecondary)
                     .frame(width: 56, alignment: .leading)
 
@@ -314,7 +314,7 @@ public struct AddTransactionView: View {
 
                 if showChevron {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(Font.Design.size11Semibold)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
             }
@@ -352,13 +352,13 @@ public struct AddTransactionView: View {
                 ZStack {
                     Circle().fill(tint.opacity(0.18))
                     Image(systemName: category.icon)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Font.Design.size12Medium)
                         .foregroundStyle(tint)
                 }
                 .frame(width: 26, height: 26)
 
                 Text(category.localizedName)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.textPrimary)
 
                 if store.isSuggestingCategory {
@@ -368,7 +368,7 @@ public struct AddTransactionView: View {
         } else {
             HStack(spacing: 8) {
                 Text(String(localized: "common_please_select"))
-                    .font(.system(size: 14))
+                    .font(Font.Design.size14)
                     .foregroundStyle(Color.Design.textTertiary)
                 if store.isSuggestingCategory {
                     ProgressView().controlSize(.mini)
@@ -383,12 +383,12 @@ public struct AddTransactionView: View {
             HStack(spacing: 8) {
                 Circle().fill(Color.Design.fromHex(account.color)).frame(width: 8, height: 8)
                 Text(account.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.textPrimary)
             }
         } else {
             Text(String(localized: "common_please_select"))
-                .font(.system(size: 14))
+                .font(Font.Design.size14)
                 .foregroundStyle(Color.Design.textTertiary)
         }
     }
@@ -410,7 +410,7 @@ public struct AddTransactionView: View {
 
             HStack(spacing: 10) {
                 Text(String(localized: "add_transaction_note_placeholder"))
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.textSecondary)
                     .frame(width: 56, alignment: .leading)
 
@@ -421,7 +421,7 @@ public struct AddTransactionView: View {
                         .foregroundStyle(Color.Design.textTertiary)
                 )
                 .focused($focusedField, equals: .note)
-                .font(.system(size: 14))
+                .font(Font.Design.size14)
                 .foregroundStyle(Color.Design.textPrimary)
                 .submitLabel(.done)
                 .onSubmit { focusedField = nil }
@@ -468,7 +468,7 @@ public struct AddTransactionView: View {
                             set: { store.send(.recurringToggled($0)) }
                         )
                     )
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
 
@@ -487,7 +487,7 @@ public struct AddTransactionView: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        .font(.system(size: 14))
+                        .font(Font.Design.size14)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                     }
@@ -657,7 +657,7 @@ public struct AddTransactionView: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(account.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Font.Design.size15Medium)
                     .foregroundStyle(Color.Design.textPrimary)
             }
 

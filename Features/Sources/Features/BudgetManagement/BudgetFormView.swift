@@ -110,7 +110,7 @@ public struct BudgetFormView: View {
                     .keyboardType(.numberPad)
 
                     Text("/ \(store.period.localizedSuffix)")
-                        .font(.system(size: 14))
+                        .font(Font.Design.size14)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
                 .padding(.horizontal, 16)

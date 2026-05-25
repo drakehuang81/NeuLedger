@@ -27,17 +27,17 @@ struct AIDock: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center, spacing: 8) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Font.Design.size14Medium)
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(Color.Design.accentOrange)
                     Text(headlineText(for: insight))
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Font.Design.size13Medium)
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 8)
                     Image(systemName: isOpen ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(Font.Design.size11Semibold)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
 

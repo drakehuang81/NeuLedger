@@ -57,7 +57,7 @@ struct DailyBarsCard: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "analysis_daily_eyebrow"))
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
+                    .font(Font.Design.size9Medium.monospacedDigit())
                     .textCase(.uppercase)
                     .tracking(1.2)
                     .foregroundStyle(Color.Design.textSecondary)
@@ -67,7 +67,7 @@ struct DailyBarsCard: View {
                             .font(.system(size: 9).monospacedDigit())
                             .foregroundStyle(Color.Design.textSecondary)
                         Text(totalBodyText)
-                            .font(.system(size: 14, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size14Medium.monospacedDigit())
                             .foregroundStyle(Color.Design.textPrimary)
                     }
                     Text(
@@ -76,7 +76,7 @@ struct DailyBarsCard: View {
                             average.twdFormatted.replacingOccurrences(of: "NT$", with: "")
                         )
                     )
-                    .font(.system(size: 10).monospacedDigit())
+                    .font(Font.Design.size10.monospacedDigit())
                     .foregroundStyle(Color.Design.textSecondary)
                 }
             }

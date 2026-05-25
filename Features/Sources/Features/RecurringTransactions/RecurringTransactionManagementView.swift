@@ -35,7 +35,7 @@ public struct RecurringTransactionManagementView: View {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.size17Semibold)
                 }
             }
         }
@@ -90,9 +90,9 @@ public struct RecurringTransactionManagementView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "plus")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(Font.Design.size15Semibold)
                             Text(String(localized: "recurring_transaction_add_button"))
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(Font.Design.size15Semibold)
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 28)
@@ -133,7 +133,7 @@ public struct RecurringTransactionManagementView: View {
                                     activeItems.count
                                 )
                             )
-                            .font(.system(size: 11, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size11Medium.monospacedDigit())
                             .textCase(.uppercase)
                             .tracking(1.2)
                             .foregroundStyle(Color.Design.textSecondary)
@@ -141,7 +141,7 @@ public struct RecurringTransactionManagementView: View {
                             Spacer()
 
                             Text(String(localized: "recurring_sort_hint"))
-                                .font(.system(size: 11, weight: .medium).monospacedDigit())
+                                .font(Font.Design.size11Medium.monospacedDigit())
                                 .tracking(0.5)
                                 .foregroundStyle(Color.Design.textSecondary)
                         }
@@ -170,7 +170,7 @@ public struct RecurringTransactionManagementView: View {
                                 pausedItems.count
                             )
                         )
-                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                        .font(Font.Design.size11Medium.monospacedDigit())
                         .textCase(.uppercase)
                         .tracking(1.2)
                         .foregroundStyle(Color.Design.textSecondary)
@@ -193,7 +193,7 @@ public struct RecurringTransactionManagementView: View {
 
                 // Footer hint
                 Text(String(localized: "recurring_list_hint"))
-                    .font(.system(size: 11))
+                    .font(Font.Design.size11)
                     .foregroundStyle(Color.Design.textSecondary)
                     .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -224,10 +224,10 @@ public struct RecurringTransactionManagementView: View {
                 // Eyebrow
                 HStack(spacing: 6) {
                     Image(systemName: "sparkle")
-                        .font(.system(size: 11))
+                        .font(Font.Design.size11)
                         .foregroundStyle(Color.Design.brandAccent)
                     Text(String(localized: "recurring_summary_eyebrow"))
-                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                        .font(Font.Design.size11Medium.monospacedDigit())
                         .textCase(.uppercase)
                         .tracking(1.2)
                         .foregroundStyle(Color.Design.textSecondary)
@@ -236,7 +236,7 @@ public struct RecurringTransactionManagementView: View {
                 // Net amount
                 HStack(alignment: .lastTextBaseline, spacing: 6) {
                     Text(String(localized: "recurring_summary_net_label"))
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .font(Font.Design.size12Medium.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                     Text(netAmountText(net))
                         .font(.system(size: 34, weight: .semibold, design: .rounded).monospacedDigit())
@@ -253,16 +253,16 @@ public struct RecurringTransactionManagementView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.down.left")
-                                .font(.system(size: 10))
+                                .font(Font.Design.size10)
                                 .foregroundStyle(Color.Design.incomeGreen)
                             Text(String(localized: "recurring_summary_in_label"))
-                                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                .font(Font.Design.size10Medium.monospacedDigit())
                                 .textCase(.uppercase)
                                 .tracking(0.8)
                                 .foregroundStyle(Color.Design.textSecondary)
                         }
                         Text("+\(monthlyIn.twdFormatted)")
-                            .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                            .font(Font.Design.size15Semibold.monospacedDigit())
                             .foregroundStyle(Color.Design.incomeGreen)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -275,16 +275,16 @@ public struct RecurringTransactionManagementView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.right")
-                                .font(.system(size: 10))
+                                .font(Font.Design.size10)
                                 .foregroundStyle(Color.Design.textSecondary)
                             Text(String(localized: "recurring_summary_out_label"))
-                                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                .font(Font.Design.size10Medium.monospacedDigit())
                                 .textCase(.uppercase)
                                 .tracking(0.8)
                                 .foregroundStyle(Color.Design.textSecondary)
                         }
                         Text("−\(monthlyOut.twdFormatted)")
-                            .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                            .font(Font.Design.size15Semibold.monospacedDigit())
                             .foregroundStyle(Color.Design.textPrimary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -296,16 +296,16 @@ public struct RecurringTransactionManagementView: View {
                     // Items count
                     VStack(alignment: .leading, spacing: 2) {
                         Text(String(localized: "recurring_summary_items_label"))
-                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size10Medium.monospacedDigit())
                             .textCase(.uppercase)
                             .tracking(0.8)
                             .foregroundStyle(Color.Design.textSecondary)
                         HStack(alignment: .lastTextBaseline, spacing: 2) {
                             Text("\(activeCount)")
-                                .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                                .font(Font.Design.size15Semibold.monospacedDigit())
                                 .foregroundStyle(Color.Design.textPrimary)
                             Text("/ \(totalCount)")
-                                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                .font(Font.Design.size10Medium.monospacedDigit())
                                 .foregroundStyle(Color.Design.textSecondary)
                         }
                     }
@@ -354,7 +354,7 @@ public struct RecurringTransactionManagementView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(item.note ?? "")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(Font.Design.size15Semibold)
                             .foregroundStyle(Color.Design.textPrimary)
                             .lineLimit(1)
 
@@ -373,7 +373,7 @@ public struct RecurringTransactionManagementView: View {
                                 .foregroundStyle(dueColor)
                         } else {
                             Text(String(localized: "recurring_paused_inline"))
-                                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                .font(Font.Design.size10Medium.monospacedDigit())
                                 .textCase(.uppercase)
                                 .tracking(0.5)
                                 .foregroundStyle(Color.Design.textSecondary)
@@ -388,7 +388,7 @@ public struct RecurringTransactionManagementView: View {
                     let isIncome = item.type == .income
                     let prefix = isIncome ? "+" : "−"
                     Text("\(prefix)\(item.amount.twdFormatted)")
-                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                        .font(Font.Design.size14Semibold.monospacedDigit())
                         .foregroundStyle(isIncome ? Color.Design.incomeGreen : Color.Design.textPrimary)
                         .lineLimit(1)
 

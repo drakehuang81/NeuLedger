@@ -57,13 +57,13 @@ struct CategoryDonutCard: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(String(localized: "analysis_donut_eyebrow"))
-                .font(.system(size: 9, weight: .medium).monospacedDigit())
+                .font(Font.Design.size9Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(Color.Design.textSecondary)
             Spacer()
             Text(String(localized: "analysis_donut_tap_hint"))
-                .font(.system(size: 9, weight: .medium).monospacedDigit())
+                .font(Font.Design.size9Medium.monospacedDigit())
                 .foregroundStyle(Color.Design.accentOrange)
         }
     }
@@ -80,12 +80,12 @@ struct CategoryDonutCard: View {
                             .fill(color(for: entry.index))
                             .frame(width: 8, height: 8)
                         Text(entry.item.name)
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(Color.Design.textPrimary)
                             .lineLimit(1)
                         Spacer(minLength: 0)
                         Text(percentText(for: entry.item))
-                            .font(.system(size: 11).monospacedDigit())
+                            .font(Font.Design.size11.monospacedDigit())
                             .foregroundStyle(Color.Design.textSecondary)
                     }
                 }
@@ -96,7 +96,7 @@ struct CategoryDonutCard: View {
                             proportions.count - 3
                         )
                     )
-                    .font(.system(size: 10).monospacedDigit())
+                    .font(Font.Design.size10.monospacedDigit())
                     .foregroundStyle(Color.Design.textSecondary)
                     .padding(.top, 2)
                 }
@@ -143,7 +143,7 @@ struct CategoryDonutCard: View {
                         .font(.system(size: 8).monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                     Text(totalAmount.twdFormatted.replacingOccurrences(of: "NT$", with: ""))
-                        .font(.system(size: 13, weight: .medium).monospacedDigit())
+                        .font(Font.Design.size13Medium.monospacedDigit())
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
@@ -188,7 +188,7 @@ struct CategoryDonutCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(proportion.name)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Font.Design.size13Medium)
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(1)
                     Spacer(minLength: 8)
@@ -197,7 +197,7 @@ struct CategoryDonutCard: View {
                             .font(.system(size: 8).monospacedDigit())
                             .foregroundStyle(Color.Design.textSecondary)
                         Text(proportion.amount.twdFormatted.replacingOccurrences(of: "NT$", with: ""))
-                            .font(.system(size: 12).monospacedDigit())
+                            .font(Font.Design.size12.monospacedDigit())
                             .foregroundStyle(Color.Design.textPrimary)
                     }
                 }

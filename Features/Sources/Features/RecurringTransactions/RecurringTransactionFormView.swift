@@ -89,7 +89,7 @@ public struct RecurringTransactionFormView: View {
             store.send(.typeChanged(type))
         } label: {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(Font.Design.size13Semibold)
                 .foregroundStyle(
                     isActive ? activeColor : Color.Design.textSecondary
                 )
@@ -178,7 +178,7 @@ public struct RecurringTransactionFormView: View {
                                         .frame(width: 20, height: 20)
                                         .overlay {
                                             Image(systemName: cat.icon)
-                                                .font(.system(size: 11, weight: .semibold))
+                                                .font(Font.Design.size11Semibold)
                                                 .foregroundStyle(.white)
                                         }
                                     Text(cat.name)
@@ -191,7 +191,7 @@ public struct RecurringTransactionFormView: View {
                                     .foregroundStyle(Color.Design.textTertiary)
                             }
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(Font.Design.size12Medium)
                                 .foregroundStyle(Color.Design.textTertiary)
                         }
                     }
@@ -221,7 +221,7 @@ public struct RecurringTransactionFormView: View {
                                             .frame(width: 20, height: 20)
                                             .overlay {
                                                 Image(systemName: acc.icon)
-                                                    .font(.system(size: 11, weight: .semibold))
+                                                    .font(Font.Design.size11Semibold)
                                                     .foregroundStyle(.white)
                                             }
                                         Text(acc.name)
@@ -234,7 +234,7 @@ public struct RecurringTransactionFormView: View {
                                         .foregroundStyle(Color.Design.textTertiary)
                                 }
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(Font.Design.size12Medium)
                                     .foregroundStyle(Color.Design.textTertiary)
                             }
                         }
@@ -281,7 +281,7 @@ public struct RecurringTransactionFormView: View {
             store.send(.frequencyChanged(period))
         } label: {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(Font.Design.size13Semibold)
                 .foregroundStyle(
                     isActive ? Color.Design.textPrimary : Color.Design.textSecondary
                 )
@@ -327,7 +327,7 @@ public struct RecurringTransactionFormView: View {
                     HStack {
                         HStack(spacing: 6) {
                             Image(systemName: "bell.fill")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(Font.Design.size13Medium)
                                 .foregroundStyle(Color.accentColor)
                             Text(String(localized: "recurring_transaction_notification_time"))
                                 .font(Font.Design.body)
@@ -354,7 +354,7 @@ public struct RecurringTransactionFormView: View {
     private var nextDueDateFooter: some View {
         HStack(spacing: 4) {
             Image(systemName: "arrow.clockwise")
-                .font(.system(size: 10, weight: .medium))
+                .font(Font.Design.size10Medium)
                 .foregroundStyle(Color.Design.textTertiary)
             Text(nextDueDateLabel)
                 .font(.system(size: 11, weight: .regular))
@@ -387,10 +387,10 @@ public struct RecurringTransactionFormView: View {
         GlassContainer(cornerRadius: 12, padding: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.expenseRed)
                 Text(message)
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.expenseRed)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -433,7 +433,7 @@ public struct RecurringTransactionFormView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

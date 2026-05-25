@@ -49,10 +49,10 @@ public struct FilterView: View {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 6) {
                         Text(String(localized: "filter_title"))
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(Font.Design.size17Semibold)
                         if store.activeFilterCount > 0 {
                             Text("\(store.activeFilterCount)")
-                                .font(.system(size: 12, weight: .bold).monospacedDigit())
+                                .font(Font.Design.size12Bold.monospacedDigit())
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
@@ -103,9 +103,9 @@ public struct FilterView: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: type.systemImageName)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(Font.Design.size13Semibold)
                 Text(type.displayName)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
@@ -157,7 +157,7 @@ public struct FilterView: View {
                             .foregroundStyle(.white)
                     }
                 Text(category.localizedName)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
@@ -201,9 +201,9 @@ public struct FilterView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: account.icon)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                 Text(account.name)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
@@ -247,7 +247,7 @@ public struct FilterView: View {
         } label: {
             HStack(spacing: 5) {
                 Text("#\(tag.name)")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
@@ -283,7 +283,7 @@ public struct FilterView: View {
                         store.send(.startDateChanged(nil))
                         store.send(.endDateChanged(nil))
                     }
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(Font.Design.size11Semibold)
                     .foregroundStyle(Color.Design.expenseRed)
                 )
                 : nil
@@ -351,7 +351,7 @@ public struct FilterView: View {
             store.send(.endDateChanged(end))
         } label: {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
+                .font(Font.Design.size12Semibold)
                 .foregroundStyle(isActive ? Color.Design.brandAccent : Color.Design.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 7)
@@ -379,7 +379,7 @@ public struct FilterView: View {
             store.send(.clearAllTapped)
         } label: {
             Text(String(localized: "transactions_filter_reset"))
-                .font(.system(size: 15, weight: .medium))
+                .font(Font.Design.size15Medium)
                 .foregroundStyle(Color.Design.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -402,7 +402,7 @@ public struct FilterView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(label)
-                    .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    .font(Font.Design.size11Medium.monospacedDigit())
                     .textCase(.uppercase)
                     .tracking(1.2)
                     .foregroundStyle(Color.Design.textSecondary)

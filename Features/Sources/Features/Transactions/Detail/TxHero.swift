@@ -19,16 +19,16 @@ struct TxHero: View {
         HStack(spacing: 8) {
             if let icon = transaction.type.heroSymbol {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .foregroundStyle(transaction.type.amountDisplayColor)
             }
             if let name = categoryName {
                 Text(name)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .foregroundStyle(Color.Design.textPrimary)
             } else {
                 Text(Self.fallbackCategoryKey(for: transaction.type))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .foregroundStyle(Color.Design.textPrimary)
             }
         }

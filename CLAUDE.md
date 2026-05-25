@@ -119,6 +119,10 @@ Features/Sources/
 ### Design System (Common Layer)
 
 - **Fonts:** `--font-display` → Bricolage Grotesque (screen headings), `--font-body` → DM Sans (general content), `--font-mono` → DM Mono (monetary amounts, always `.monospacedDigit()`)
+- **Typography tokens:** All `.font(...)` calls should funnel through `Font.Design` (`Common/DesignSystem/Font+extension.swift`). Two scales:
+  - **Dynamic Type** — `Font.Design.body` / `.caption` / `.headline` / `.callout` / `.amount`. Use for body text, form labels, readable content that should follow the user's text-size preference.
+  - **Fixed pixel** — `Font.Design.size{N}{Weight?}` (e.g. `size11Medium`, `size13Semibold`, `size14`). Use for chrome (tags, pills, badges, metric labels, row meta, navigation strips) where the design specifies an exact pixel size that must not Dynamic-Type-scale.
+  - **Convergence rule:** if the same `(size, weight)` combination appears **≥ 5 times** across files, add a `Font.Design.size{N}{Weight?}` token rather than repeating `.system(size: N, weight: .W)`. New code should prefer tokens over `.system(size:...)`.
 - **Brand colors** (Asset Catalog with Light/Dark variants): `accentColor` (#FF9500 / #FF9F0A), `incomeGreen` (#34C759 / #30D158), `expenseRed` (#FF3B30 / #FF453A), `surfaceInverse`, `textInverse`
 - **Liquid Glass:** Use `.glassEffect()` for cards, action bars, and floating elements. `.buttonStyle(.glass)` / `.buttonStyle(.glassProminent)` for buttons. Wrap related glass elements in `GlassEffectContainer`. Use `@Namespace` + `.glassEffectID` for morphing transitions.
 - **Reusable components:** `TransactionRow`, `AccountChip`, `TagPill`, `InsightCard`, `BudgetGauge`, `EmptyStateView`, `LoadingView`, `LedgerCutIcon`, `AppIconBadge`, `AvatarBadge`, `GlassContainer`, `GlassCard`, `WarmGradientBackground`, `ColorSwatchPicker`, `BudgetCategoryListPicker`, `IconPickerRow`, `FormSection`, `DetailField`, `PrimaryButton`, `ErrorText`, `SectionFailureView`, `MetricBadge`, `StatPill`, `MiniSparkline`, `PageDots`, `FlowLayout`

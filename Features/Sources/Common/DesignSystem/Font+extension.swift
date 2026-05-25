@@ -2,15 +2,38 @@ import SwiftUI
 
 public extension Font {
     enum Design {
-        public static let largeTitle = Font.largeTitle
-        public static let title2 = Font.title2
+
+        // MARK: - Dynamic Type Scale
+        //
+        // Wraps SwiftUI's Dynamic Type tokens. Use these for body text,
+        // form labels, readable content — anywhere the user's text-size
+        // preference should govern rendering.
         public static let headline = Font.headline
         public static let body = Font.body
         public static let callout = Font.callout
-        public static let subheadline = Font.subheadline
         public static let caption = Font.caption
-        
-        /// Monospaced digit body font for financial amounts
+
+        /// Monospaced digit body font for financial amounts (Dynamic Type).
         public static let amount = Font.body.monospacedDigit()
+
+        // MARK: - Fixed Pixel Scale
+        //
+        // Absolute-pixel sizes for chrome: tags, pills, badges, metric
+        // labels, row meta, navigation strips — anywhere the design
+        // specifies an exact px size that should NOT scale with Dynamic
+        // Type. Covers the top combinations observed across the codebase;
+        // extend as new shared sizes emerge (≥ 5 uses guideline).
+        public static let size10Medium     = Font.system(size: 10, weight: .medium)
+        public static let size11           = Font.system(size: 11)
+        public static let size11Medium     = Font.system(size: 11, weight: .medium)
+        public static let size12           = Font.system(size: 12)
+        public static let size12Medium     = Font.system(size: 12, weight: .medium)
+        public static let size12Semibold   = Font.system(size: 12, weight: .semibold)
+        public static let size13           = Font.system(size: 13)
+        public static let size13Medium     = Font.system(size: 13, weight: .medium)
+        public static let size13Semibold   = Font.system(size: 13, weight: .semibold)
+        public static let size14           = Font.system(size: 14)
+        public static let size14Medium     = Font.system(size: 14, weight: .medium)
+        public static let size14Semibold   = Font.system(size: 14, weight: .semibold)
     }
 }

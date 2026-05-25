@@ -69,7 +69,7 @@ public struct RecurringTransactionFormView: View {
                          activeColor: Color.Design.incomeGreen)
                 typePill(.transfer,
                          label: "common_transfer",
-                         activeColor: Color(hex: "#5E5CE6"))
+                         activeColor: Color.Design.transferPurple)
             }
             .padding(3)
             .background {
@@ -174,7 +174,7 @@ public struct RecurringTransactionFormView: View {
                                let cat = store.categories.first(where: { $0.id == catId }) {
                                 HStack(spacing: 6) {
                                     RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                        .fill(Color(hex: cat.color))
+                                        .fill(Color.Design.fromHex(cat.color))
                                         .frame(width: 20, height: 20)
                                         .overlay {
                                             Image(systemName: cat.icon)
@@ -217,7 +217,7 @@ public struct RecurringTransactionFormView: View {
                                    let acc = store.accounts.first(where: { $0.id == accId }) {
                                     HStack(spacing: 6) {
                                         RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                            .fill(Color(hex: acc.color))
+                                            .fill(Color.Design.fromHex(acc.color))
                                             .frame(width: 20, height: 20)
                                             .overlay {
                                                 Image(systemName: acc.icon)

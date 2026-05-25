@@ -267,10 +267,10 @@ struct OnboardingView: View {
                 HStack(alignment: .top) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .fill(Color(hex: type.defaultColor).opacity(0.12))
+                            .fill(Color.Design.fromHex(type.defaultColor).opacity(0.12))
                         Image(systemName: type.defaultIcon)
                             .font(.system(size: 20))
-                            .foregroundStyle(Color(hex: type.defaultColor))
+                            .foregroundStyle(Color.Design.fromHex(type.defaultColor))
                     }
                     .frame(width: 36, height: 36)
                     Spacer()
@@ -336,7 +336,7 @@ struct OnboardingView: View {
     private func customAccountRow(_ draft: CustomAccountDraft) -> some View {
         HStack {
             Image(systemName: draft.type.defaultIcon)
-                .foregroundStyle(Color(hex: draft.color))
+                .foregroundStyle(Color.Design.fromHex(draft.color))
             Text(draft.name)
                 .font(.system(size: 15, weight: .medium))
             Spacer()

@@ -143,7 +143,7 @@ public struct FilterView: View {
 
     private func categoryChip(_ category: Domain.Category) -> some View {
         let isActive = store.selectedCategoryIds.contains(category.id)
-        let color = Color(hex: category.color)
+        let color = Color.Design.fromHex(category.color)
         return Button {
             store.send(.categoryToggled(category.id))
         } label: {
@@ -195,7 +195,7 @@ public struct FilterView: View {
 
     private func accountChip(_ account: Account) -> some View {
         let isActive = store.selectedAccountIds.contains(account.id)
-        let color = Color(hex: account.color)
+        let color = Color.Design.fromHex(account.color)
         return Button {
             store.send(.accountToggled(account.id))
         } label: {
@@ -241,7 +241,7 @@ public struct FilterView: View {
 
     private func tagChip(_ tag: Tag) -> some View {
         let isActive = store.selectedTagIds.contains(tag.id)
-        let color = Color(hex: tag.color ?? "#FF9500")
+        let color = Color.Design.fromHex(tag.color ?? "#FF9500")
         return Button {
             store.send(.tagToggled(tag.id))
         } label: {

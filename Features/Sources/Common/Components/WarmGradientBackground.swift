@@ -27,8 +27,8 @@ public struct WarmGradientBackground: View {
 
     private var radialGradient: some View {
         let stops: [Color] = colorScheme == .dark
-            ? [Color(warmHex: "#4A2A0E"), Color(warmHex: "#1A0F08"), Color(warmHex: "#050505")]
-            : [Color(warmHex: "#FFE4B8"), Color(warmHex: "#FFF6E8"), Color(warmHex: "#FAFAF7")]
+            ? [Color.Design.warmBgInnerDeepDark, Color.Design.warmBgMidDeepDark, Color.Design.warmBgOuterDeepDark]
+            : [Color.Design.warmBgInnerLight, Color.Design.warmBgMidLight, Color.Design.warmBgOuterLight]
         return RadialGradient(
             gradient: Gradient(colors: stops),
             center: gradientCenter,
@@ -70,17 +70,6 @@ public struct WarmGradientBackground: View {
     }
 }
 
-private extension Color {
-    init(warmHex: String) {
-        let cleaned = warmHex.replacingOccurrences(of: "#", with: "")
-        var rgb: UInt64 = 0
-        Scanner(string: cleaned).scanHexInt64(&rgb)
-        let r = Double((rgb >> 16) & 0xFF) / 255.0
-        let g = Double((rgb >>  8) & 0xFF) / 255.0
-        let b = Double( rgb        & 0xFF) / 255.0
-        self.init(red: r, green: g, blue: b)
-    }
-}
 
 #Preview("Top · Light") {
     ZStack {

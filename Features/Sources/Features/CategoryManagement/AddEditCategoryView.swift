@@ -59,7 +59,7 @@ public struct AddEditCategoryView: View {
     // MARK: - Live Preview Hero
 
     private var livePreviewHero: some View {
-        let color = Color(hex: store.colorHex)
+        let color = Color.Design.fromHex(store.colorHex)
         return VStack(spacing: 10) {
             Circle()
                 .fill(color)
@@ -179,7 +179,7 @@ public struct AddEditCategoryView: View {
                 IconPickerRow(
                     icons: DesignConstants.categoryIconOptions,
                     selectedIcon: store.icon,
-                    accentColor: Color(hex: store.colorHex),
+                    accentColor: Color.Design.fromHex(store.colorHex),
                     onSelect: { store.send(.iconChanged($0)) }
                 )
             }

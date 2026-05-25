@@ -6,7 +6,7 @@ public enum ColorSwatchLayout {
 }
 
 /// A picker showing colored circle swatches with a checkmark on selection.
-/// Accepts hex color strings; converts internally using Color(hex:).
+/// Accepts hex color strings; converts internally using Color.Design.fromHex(_:).
 public struct ColorSwatchPicker: View {
     let colors: [String]
     let selectedHex: String
@@ -52,7 +52,7 @@ public struct ColorSwatchPicker: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(Color(hex: hex))
+                    .fill(Color.Design.fromHex(hex))
                     .frame(width: 36, height: 36)
                 if isSelected {
                     Circle()
@@ -69,7 +69,7 @@ public struct ColorSwatchPicker: View {
         .overlay {
             if isSelected {
                 Circle()
-                    .strokeBorder(Color(hex: hex), lineWidth: 2)
+                    .strokeBorder(Color.Design.fromHex(hex), lineWidth: 2)
                     .frame(width: 42, height: 42)
             }
         }

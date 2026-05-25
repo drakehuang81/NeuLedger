@@ -97,7 +97,7 @@ public struct TagManagementView: View {
     }
 
     private func tagChip(_ tag: Tag) -> some View {
-        let color = tag.color.map { Color(hex: $0) } ?? Color.Design.accentOrange
+        let color = tag.color.map { Color.Design.fromHex($0) } ?? Color.Design.accentOrange
         return HStack(spacing: 6) {
             Circle()
                 .fill(color)
@@ -146,7 +146,7 @@ public struct TagManagementView: View {
     }
 
     private func tagDetailRow(_ tag: Tag) -> some View {
-        let color = tag.color.map { Color(hex: $0) } ?? Color.Design.accentOrange
+        let color = tag.color.map { Color.Design.fromHex($0) } ?? Color.Design.accentOrange
         return Button {
             store.send(.tagTapped(tag))
         } label: {

@@ -12,7 +12,7 @@ public struct AvatarBadge: View {
         Circle()
             .fill(
                 LinearGradient(
-                    colors: [Color.Design.brandPrimary, Color(hex: "#FF2D55")],
+                    colors: [Color.Design.brandPrimary, Color.Design.brandPink],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )

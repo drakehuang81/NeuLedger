@@ -6,22 +6,22 @@ public enum LedgerCutPalette {
 
     var bgGradient: [Color] {
         switch self {
-        case .noir:  return [Color(hex: "#1A1410"), Color(hex: "#0A0806"), Color(hex: "#000000")]
-        case .chalk: return [Color(hex: "#FAF7F2"), Color(hex: "#F2EDE3"), Color(hex: "#E8DFD0")]
+        case .noir:  return [.Design.ledgerCutNoirGradient1, .Design.ledgerCutNoirGradient2, .Design.ledgerCutNoirGradient3]
+        case .chalk: return [.Design.ledgerCutChalkGradient1, .Design.ledgerCutChalkGradient2, .Design.ledgerCutChalkGradient3]
         }
     }
 
     var fg: Color {
         switch self {
-        case .noir:  return Color(hex: "#F4E4C8")
-        case .chalk: return Color(hex: "#1A1410")
+        case .noir:  return .Design.ledgerCutNoirFg
+        case .chalk: return .Design.ledgerCutChalkFg
         }
     }
 
     var accent: Color {
         switch self {
-        case .noir:  return Color(hex: "#FFB880")
-        case .chalk: return Color(hex: "#A55530")
+        case .noir:  return .Design.ledgerCutNoirAccent
+        case .chalk: return .Design.ledgerCutChalkAccent
         }
     }
 

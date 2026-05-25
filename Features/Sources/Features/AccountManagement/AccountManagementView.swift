@@ -250,7 +250,7 @@ public struct AccountManagementView: View {
 
     private func accountIcon(_ account: Account) -> some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color(hex: account.color))
+            .fill(Color.Design.fromHex(account.color))
             .frame(width: 40, height: 40)
             .overlay {
                 Image(systemName: account.icon)

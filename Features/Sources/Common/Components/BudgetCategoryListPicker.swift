@@ -39,7 +39,7 @@ public struct BudgetCategoryListPicker: View {
 
                 row(
                     symbol: cat.icon,
-                    color: Color(hex: cat.color),
+                    color: Color.Design.fromHex(cat.color),
                     title: Text(cat.localizedName),
                     isAll: false,
                     isSelected: selectedId == cat.id,

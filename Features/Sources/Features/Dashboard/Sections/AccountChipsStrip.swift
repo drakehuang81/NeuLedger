@@ -60,7 +60,7 @@ struct AccountChipsStrip: View {
 
     private func accountChip(_ account: Account) -> some View {
         let isActive = store.selectedAccountID == account.id
-        let tint = Color(hex: account.color)
+        let tint = Color.Design.fromHex(account.color)
 
         return HStack(spacing: 0) {
             // Primary tap area: select / filter

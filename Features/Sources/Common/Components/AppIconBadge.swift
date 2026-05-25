@@ -23,7 +23,7 @@ public struct AppIconBadge: View {
             } else {
                 ZStack {
                     LinearGradient(
-                        colors: [Color.Design.brandPrimary, Color(hex: "#FF2D55")],
+                        colors: [Color.Design.brandPrimary, Color.Design.brandPink],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )

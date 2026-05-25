@@ -17,25 +17,26 @@ public struct LoadingView: View {
     private var backgroundStops: [Gradient.Stop] {
         if isDark {
             return [
-                .init(color: Color(hex: "#2A1F18"), location: 0.0),
-                .init(color: Color(hex: "#1A1410"), location: 0.45),
-                .init(color: Color(hex: "#0A0806"), location: 0.90),
+                .init(color: .Design.splashBgInnerDark, location: 0.0),
+                .init(color: .Design.splashBgMidDark, location: 0.45),
+                .init(color: .Design.splashBgOuterDark, location: 0.90),
             ]
         } else {
             return [
-                .init(color: Color(hex: "#FFE4B8"), location: 0.0),
-                .init(color: Color(hex: "#FFF6E8"), location: 0.45),
-                .init(color: Color(hex: "#FAFAF7"), location: 0.90),
+                .init(color: .Design.warmBgInnerLight, location: 0.0),
+                .init(color: .Design.warmBgMidLight, location: 0.45),
+                .init(color: .Design.warmBgOuterLight, location: 0.90),
             ]
         }
     }
 
     private var primaryTextColor: Color {
-        isDark ? Color(hex: "#F4E4C8") : Color(hex: "#0A0A0A")
+        isDark ? .Design.splashTextPrimaryDark : .Design.splashTextPrimaryLight
     }
 
     private var secondaryTextColor: Color {
-        isDark ? Color(hex: "#F4E4C8").opacity(0.55) : Color(hex: "#3C3C43").opacity(0.65)
+        isDark ? Color.Design.splashTextPrimaryDark.opacity(0.55)
+               : Color.Design.splashTextSecondaryLight.opacity(0.65)
     }
 
     private var progressTrackColor: Color {
@@ -75,7 +76,7 @@ public struct LoadingView: View {
                         .fill(
                             RadialGradient(
                                 gradient: Gradient(colors: [
-                                    Color(hex: "#FF9500").opacity(glowVisible ? 0.18 : 0),
+                                    Color.Design.splashOrbOrange.opacity(glowVisible ? 0.18 : 0),
                                     .clear,
                                 ]),
                                 center: .center,
@@ -136,7 +137,7 @@ public struct LoadingView: View {
     private var orbs: some View {
         ZStack {
             Circle()
-                .fill(Color(hex: "#FF9500"))
+                .fill(Color.Design.splashOrbOrange)
                 .frame(width: 260, height: 260)
                 .blur(radius: 70)
                 .opacity(orbsVisible ? 0.40 : 0)
@@ -145,7 +146,7 @@ public struct LoadingView: View {
                 .animation(.easeOut(duration: 0.9), value: orbsVisible)
 
             Circle()
-                .fill(Color(hex: "#34C759"))
+                .fill(Color.Design.splashOrbGreen)
                 .frame(width: 230, height: 230)
                 .blur(radius: 80)
                 .opacity(orbsVisible ? 0.26 : 0)
@@ -154,7 +155,7 @@ public struct LoadingView: View {
                 .animation(.easeOut(duration: 1.0).delay(0.05), value: orbsVisible)
 
             Circle()
-                .fill(Color(hex: "#FFD27A"))
+                .fill(Color.Design.splashOrbYellow)
                 .frame(width: 180, height: 180)
                 .blur(radius: 60)
                 .opacity(orbsVisible ? 0.30 : 0)
@@ -172,10 +173,10 @@ public struct LoadingView: View {
             if step.isFinal {
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(Color(hex: "#34C759"))
+                    .foregroundColor(Color.Design.splashStatusFinalGreen)
             } else {
                 Circle()
-                    .fill(Color(hex: "#FF9500"))
+                    .fill(Color.Design.splashOrbOrange)
                     .frame(width: 5, height: 5)
                     .modifier(LoadingPulse())
             }
@@ -196,13 +197,13 @@ public struct LoadingView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(
                         LinearGradient(
-                            colors: [Color(hex: "#FF9500"), Color(hex: "#FF6A00")],
+                            colors: [Color.Design.splashOrbOrange, Color.Design.splashProgressEnd],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .frame(width: geo.size.width * progress)
-                    .shadow(color: Color(hex: "#FF9500").opacity(0.6), radius: 4)
+                    .shadow(color: Color.Design.splashOrbOrange.opacity(0.6), radius: 4)
                     .animation(.easeInOut(duration: 0.6), value: progress)
             }
         }

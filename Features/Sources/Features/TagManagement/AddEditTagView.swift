@@ -55,7 +55,7 @@ public struct AddEditTagView: View {
     // MARK: - Live Preview Hero
 
     private var livePreviewHero: some View {
-        let color = Color(hex: store.colorHex)
+        let color = Color.Design.fromHex(store.colorHex)
         return HStack(spacing: 8) {
             Circle()
                 .fill(color)

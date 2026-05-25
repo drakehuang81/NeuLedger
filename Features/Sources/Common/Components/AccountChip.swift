@@ -39,7 +39,7 @@ public struct AccountChip: View {
     }
 
     private var swatch: Color {
-        account.color.isEmpty ? Color.Design.accentOrange : Color(hex: account.color)
+        account.color.isEmpty ? Color.Design.accentOrange : Color.Design.fromHex(account.color)
     }
 }
 

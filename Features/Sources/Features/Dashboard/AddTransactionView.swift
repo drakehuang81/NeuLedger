@@ -347,7 +347,7 @@ public struct AddTransactionView: View {
     @ViewBuilder
     private var categoryFieldValue: some View {
         if let category = selectedCategory {
-            let tint = Color(hex: category.color)
+            let tint = Color.Design.fromHex(category.color)
             HStack(spacing: 8) {
                 ZStack {
                     Circle().fill(tint.opacity(0.18))
@@ -381,7 +381,7 @@ public struct AddTransactionView: View {
     private func accountFieldValue(account: Account?) -> some View {
         if let account {
             HStack(spacing: 8) {
-                Circle().fill(Color(hex: account.color)).frame(width: 8, height: 8)
+                Circle().fill(Color.Design.fromHex(account.color)).frame(width: 8, height: 8)
                 Text(account.name)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.Design.textPrimary)
@@ -563,7 +563,7 @@ public struct AddTransactionView: View {
     }
 
     private func categoryTile(category: Domain.Category) -> some View {
-        let tint = Color(hex: category.color)
+        let tint = Color.Design.fromHex(category.color)
         let isSelected = store.categoryId == category.id
         let isSuggested = store.suggestedCategoryNames.contains(category.name)
         return VStack(spacing: 4) {
@@ -645,7 +645,7 @@ public struct AddTransactionView: View {
     }
 
     private func accountRow(account: Account, isSelected: Bool) -> some View {
-        let tint = Color(hex: account.color)
+        let tint = Color.Design.fromHex(account.color)
         return HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 11, style: .continuous).fill(tint.opacity(0.18))

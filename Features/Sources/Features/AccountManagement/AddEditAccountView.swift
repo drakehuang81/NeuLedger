@@ -78,7 +78,7 @@ public struct AddEditAccountView: View {
 
     private func typeTile(_ type: AccountType) -> some View {
         let isSelected = store.type == type
-        let color = Color(hex: type.defaultColor)
+        let color = Color.Design.fromHex(type.defaultColor)
         return Button {
             store.send(.typeChanged(type))
             store.send(.iconChanged(type.defaultIcon))
@@ -147,7 +147,7 @@ public struct AddEditAccountView: View {
                 IconPickerRow(
                     icons: DesignConstants.accountIconOptions,
                     selectedIcon: store.icon,
-                    accentColor: Color(hex: store.colorHex),
+                    accentColor: Color.Design.fromHex(store.colorHex),
                     onSelect: { store.send(.iconChanged($0)) }
                 )
             }
@@ -175,7 +175,7 @@ public struct AddEditAccountView: View {
             GlassContainer(cornerRadius: 14, padding: 14) {
                 HStack(spacing: 12) {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(hex: store.colorHex))
+                        .fill(Color.Design.fromHex(store.colorHex))
                         .frame(width: 44, height: 44)
                         .overlay {
                             Image(systemName: store.icon)

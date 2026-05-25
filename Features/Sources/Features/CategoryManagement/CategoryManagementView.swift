@@ -136,7 +136,7 @@ public struct CategoryManagementView: View {
         } label: {
             HStack(spacing: 12) {
                 Circle()
-                    .fill(Color(hex: category.color))
+                    .fill(Color.Design.fromHex(category.color))
                     .frame(width: 40, height: 40)
                     .overlay {
                         Image(systemName: category.icon)

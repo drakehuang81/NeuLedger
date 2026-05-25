@@ -121,7 +121,7 @@ Features/Sources/
 - **Fonts:** `--font-display` → Bricolage Grotesque (screen headings), `--font-body` → DM Sans (general content), `--font-mono` → DM Mono (monetary amounts, always `.monospacedDigit()`)
 - **Brand colors** (Asset Catalog with Light/Dark variants): `accentColor` (#FF9500 / #FF9F0A), `incomeGreen` (#34C759 / #30D158), `expenseRed` (#FF3B30 / #FF453A), `surfaceInverse`, `textInverse`
 - **Liquid Glass:** Use `.glassEffect()` for cards, action bars, and floating elements. `.buttonStyle(.glass)` / `.buttonStyle(.glassProminent)` for buttons. Wrap related glass elements in `GlassEffectContainer`. Use `@Namespace` + `.glassEffectID` for morphing transitions.
-- **Reusable components:** `TransactionRow`, `AccountCard`, `CategoryChip`, `TagPill`, `BalanceDisplay`, `InsightCard`, `BudgetGauge`, `EmptyStateView`
+- **Reusable components:** `TransactionRow`, `AccountChip`, `TagPill`, `InsightCard`, `BudgetGauge`, `EmptyStateView`, `LoadingView`, `LedgerCutIcon`, `AppIconBadge`, `AvatarBadge`, `GlassContainer`, `GlassCard`, `WarmGradientBackground`, `ColorSwatchPicker`, `BudgetCategoryListPicker`, `IconPickerRow`, `FormSection`, `DetailField`, `PrimaryButton`, `ErrorText`, `SectionFailureView`, `MetricBadge`, `StatPill`, `MiniSparkline`, `PageDots`, `FlowLayout`
 - **Icons:** SF Symbols only. Do not mix icon sets. `.symbolRenderingMode(.hierarchical)` for multi-layered icons. No emojis as functional UI icons.
 
 ### AI Integration
@@ -204,6 +204,9 @@ Tests use **Swift Testing** (`@Suite`, `@Test`) — not XCTest. TDD cycle applie
 - Accounts with associated transactions can only be **archived**, not permanently deleted
 - Tag deletion must automatically disassociate the tag from all linked transactions
 - Validation errors use **inline** messages — never `Alert` for form validation failures
-- Do not hardcode `#000000` / `#FFFFFF` in views — use semantic colors or Asset Catalog color sets with Dark Mode variants
+- **All `Color` values must go through `Color.Design`** (`Common/DesignSystem/Color+extension.swift`). The hex-to-`Color` initializer is `fileprivate` to that file — direct `Color(hex: ...)` calls do not compile. Two sanctioned paths:
+  - **Design constants** (brand, accent, splash, ledger-cut, settings-tile icons, warm-gradient backdrop, etc.) → add a named static member to `Color.Design`, then reference it via `Color.Design.tokenName`
+  - **Runtime hex strings from domain models** (`SDAccount.color`, `SDCategory.color`, `SDTag.color`) → use `Color.Design.fromHex(_:)`
+  - No exceptions. Do not introduce a second hex helper (no `init(warmHex:)`-style duplicates), and do not hardcode `#000000` / `#FFFFFF` literals in views
 - Floating Split TabBar requires bottom padding in all scrollable content so no content hides behind it
 - All user-facing strings must use `String(localized:)` or `LocalizedStringKey` — never hardcode raw strings in views or reducers

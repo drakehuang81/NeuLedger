@@ -271,7 +271,7 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let label {
                 Text(label)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Font.Design.size11Medium)
                     .monospaced()
                     .tracking(1.2)
                     .textCase(.uppercase)
@@ -283,7 +283,7 @@ public struct SettingsView: View {
             }
             if let footer, !footer.isEmpty {
                 Text(footer)
-                    .font(.system(size: 11))
+                    .font(Font.Design.size11)
                     .foregroundStyle(footer == store.exportError ? Color.Design.expenseRed : Color.Design.textSecondary)
                     .lineSpacing(2)
                     .padding(.horizontal, 6)
@@ -319,7 +319,7 @@ public struct SettingsView: View {
         HStack(spacing: 12) {
             iconBox(icon, bg: iconBg)
             Text(label)
-                .font(.system(size: 15))
+                .font(Font.Design.size15)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer(minLength: 0)
             Toggle("", isOn: isOn)
@@ -342,12 +342,12 @@ public struct SettingsView: View {
         HStack(spacing: 12) {
             iconBox(icon, bg: iconBg)
             Text(label)
-                .font(.system(size: 15))
+                .font(Font.Design.size15)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer(minLength: 0)
             if let value, !value.isEmpty {
                 Text(value)
-                    .font(.system(size: 14))
+                    .font(Font.Design.size14)
                     .foregroundStyle(Color.Design.textSecondary)
                     .lineLimit(1)
             }
@@ -355,7 +355,7 @@ public struct SettingsView: View {
                 trailing
             } else if showChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                     .foregroundStyle(Color.Design.textSecondary)
             }
         }
@@ -368,7 +368,7 @@ public struct SettingsView: View {
         Image(systemName: system)
             .symbolRenderingMode(.monochrome)
             .foregroundStyle(.white)
-            .font(.system(size: 13, weight: .semibold))
+            .font(Font.Design.size13Semibold)
             .frame(width: 28, height: 28)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous).fill(bg)

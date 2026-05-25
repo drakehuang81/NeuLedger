@@ -1310,6 +1310,40 @@
         }
       }
     },
+    "dashboard_section_balance_overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance overview"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "餘額總覽"
+          }
+        }
+      }
+    },
+    "dashboard_view_analysis_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View analysis"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看分析"
+          }
+        }
+      }
+    },
     "dashboard_period_recent": {
       "extractionState": "manual",
       "localizations": {

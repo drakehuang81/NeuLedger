@@ -138,6 +138,9 @@ public struct DashboardFeature: Sendable {
         case addTransactionWithPrefilledData(ExtractedTransaction)
         case seeAllTransactionsTapped
         case accountTapped(Account.ID)
+        /// Entry from the "餘額總覽" section header; navigates to Analysis with
+        /// the dashboard's currently-selected account filter (nil → portfolio view).
+        case analysisShortcutTapped
         case transactionTapped(Transaction.ID)
 
         // Child features
@@ -428,6 +431,10 @@ public struct DashboardFeature: Sendable {
 
             case let .accountTapped(id):
                 state.path.append(.analysis(AnalysisFeature.State(selectedAccountId: id)))
+                return .none
+
+            case .analysisShortcutTapped:
+                state.path.append(.analysis(AnalysisFeature.State(selectedAccountId: state.selectedAccountID)))
                 return .none
 
             case let .transactionTapped(id):

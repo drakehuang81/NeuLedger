@@ -5,9 +5,9 @@ import SwiftUI
 
 /// Horizontal strip of account-filter chips for the Dashboard B1 Warm Redesign.
 ///
-/// Tap a chip to filter the Hero balance and recent transactions. The active
-/// account chip reveals a trailing arrow button that navigates to the account
-/// analysis screen — a long-press context menu offers the same shortcut.
+/// Tap a chip to filter the Hero balance and recent transactions. The strip
+/// is **purely a filter control** — navigation into the per-account analysis
+/// screen lives in the "餘額總覽" section header above HeroBalanceCard.
 struct AccountChipsStrip: View {
     let store: StoreOf<DashboardFeature>
 
@@ -62,57 +62,23 @@ struct AccountChipsStrip: View {
         let isActive = store.selectedAccountID == account.id
         let tint = Color.Design.fromHex(account.color)
 
-        return HStack(spacing: 0) {
-            // Primary tap area: select / filter
-            Button {
-                store.send(.accountChipSelected(account.id))
-            } label: {
-                HStack(spacing: 8) {
-                    iconBadge(systemName: account.icon, tint: tint)
-                    Text(account.name)
-                        .font(Font.Design.size14Semibold)
-                        .lineLimit(1)
-                }
-                .padding(.leading, 10)
-                .padding(.trailing, isActive ? 6 : 12)
-                .padding(.vertical, 8)
-                .contentShape(Rectangle())
+        return Button {
+            store.send(.accountChipSelected(account.id))
+        } label: {
+            HStack(spacing: 8) {
+                iconBadge(systemName: account.icon, tint: tint)
+                Text(account.name)
+                    .font(Font.Design.size14Semibold)
+                    .lineLimit(1)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(isActive ? Color.Design.brandAccent : Color.primary)
-
-            // Secondary action: explicit "view analysis" button, only when active.
-            if isActive {
-                Button {
-                    store.send(.accountTapped(account.id))
-                } label: {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(Font.Design.size12Bold)
-                        .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
-                        .background(Color.Design.brandAccent, in: Circle())
-                        .padding(.trailing, 4)
-                        .padding(.leading, 2)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("dashboard_chip_view_analysis"))
-                .transition(.scale.combined(with: .opacity))
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .foregroundStyle(isActive ? Color.Design.brandAccent : Color.primary)
         .modifier(ChipBackground(isActive: isActive))
         .animation(.snappy(duration: 0.2), value: isActive)
-        .contextMenu {
-            Button {
-                store.send(.accountChipSelected(account.id))
-            } label: {
-                Label("dashboard_chip_filter_here", systemImage: "line.3.horizontal.decrease.circle")
-            }
-            Button {
-                store.send(.accountTapped(account.id))
-            } label: {
-                Label("dashboard_chip_view_analysis", systemImage: "chart.line.uptrend.xyaxis")
-            }
-        }
     }
 
     // MARK: - Building blocks

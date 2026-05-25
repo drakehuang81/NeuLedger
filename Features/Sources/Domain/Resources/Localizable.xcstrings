@@ -86,40 +86,6 @@
         }
       }
     },
-    "dashboard_chip_filter_here" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filter by this account"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "只看此帳戶"
-          }
-        }
-      }
-    },
-    "dashboard_chip_view_analysis" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "View analysis"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "查看分析"
-          }
-        }
-      }
-    },
     "budget_period_suffix_monthly" : {
       "extractionState" : "manual",
       "localizations" : {

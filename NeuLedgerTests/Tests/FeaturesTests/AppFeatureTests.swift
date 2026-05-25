@@ -6,8 +6,8 @@ import Testing
 @Suite("AppFeature Tests")
 struct AppFeatureTests {
     
-    @Test("App logic onAppear routes to main if onboarding is completed")
-    func onAppearRoutesToMain() async {
+    @Test("splashCompleted routes to main if onboarding is completed")
+    func splashCompletedRoutesToMain() async {
         let store = await TestStore(
             initialState: AppFeature.State()
         ) {
@@ -15,14 +15,14 @@ struct AppFeatureTests {
         } withDependencies: {
             $0.userSettingsAdapter.bool = { _ in true }
         }
-        
-        await store.send(\.onAppear) {
+
+        await store.send(\.splashCompleted) {
             $0.destination = .main(MainTabFeature.State())
         }
     }
-    
-    @Test("App logic onAppear routes to onboarding if onboarding is not completed")
-    func onAppearRoutesToOnboarding() async {
+
+    @Test("splashCompleted routes to onboarding if onboarding is not completed")
+    func splashCompletedRoutesToOnboarding() async {
         let store = await TestStore(
             initialState: AppFeature.State()
         ) {
@@ -30,8 +30,8 @@ struct AppFeatureTests {
         } withDependencies: {
             $0.userSettingsAdapter.bool = { _ in false }
         }
-        
-        await store.send(\.onAppear) {
+
+        await store.send(\.splashCompleted) {
             $0.destination = .onboarding(OnboardingFeature.State())
         }
     }

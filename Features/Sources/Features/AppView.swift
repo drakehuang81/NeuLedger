@@ -32,7 +32,9 @@ struct NeuLedgerApp: App {
         VStack {
             switch Self.store.destination {
             case .splash:
-                SplashView()
+                LoadingView {
+                    Self.store.send(.splashCompleted)
+                }
             case .onboarding:
                 if let onboardingStore = Self.store.scope(state: \.destination.onboarding, action: \.onboarding) {
                     OnboardingView(store: onboardingStore)
@@ -57,9 +59,6 @@ struct NeuLedgerApp: App {
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: Self.store.destination)
-        .task {
-            Self.store.send(.onAppear)
-        }
         .onOpenURL { url in
             Self.store.send(.deepLinkReceived(url))
         }

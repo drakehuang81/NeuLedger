@@ -19,14 +19,14 @@ struct CustomAccountFormView: View {
                 .font(.system(size: 24, weight: .bold))
                 .padding(.bottom, 4)
             Text("onboarding_custom_sheet_subtitle")
-                .font(.system(size: 13))
+                .font(Font.Design.size13)
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 18)
 
             FieldLabel("onboarding_custom_name_label")
             GlassContainer(cornerRadius: 14, padding: 12) {
                 TextField("onboarding_custom_name_placeholder", text: $store.name)
-                    .font(.system(size: 16))
+                    .font(Font.Design.size16)
             }
             .padding(.bottom, 14)
 
@@ -67,7 +67,7 @@ struct CustomAccountFormView: View {
                     .font(.system(size: 18))
                     .foregroundStyle(isSelected ? Color.Design.brandPrimary : Color.primary)
                 Text(type.displayLabel)
-                    .font(.system(size: 11))
+                    .font(Font.Design.size11)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
@@ -93,7 +93,7 @@ private struct FieldLabel: View {
     init(_ key: LocalizedStringKey) { self.key = key }
     var body: some View {
         Text(key)
-            .font(.system(size: 10, weight: .medium))
+            .font(Font.Design.size10Medium)
             .textCase(.uppercase)
             .tracking(1)
             .foregroundStyle(.secondary)

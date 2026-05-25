@@ -40,7 +40,7 @@ struct OnboardingView: View {
                     Spacer()
                     Button { store.send(.skipButtonTapped) } label: {
                         Text("common_skip")
-                            .font(.system(size: 15))
+                            .font(Font.Design.size15)
                             .foregroundStyle(.secondary)
                     }
                     .opacity(showsSkip ? 1 : 0)
@@ -149,7 +149,7 @@ struct OnboardingView: View {
         GlassContainer(cornerRadius: 28, padding: 24) {
             VStack(alignment: .leading, spacing: 14) {
                 Text("onboarding_welcome_card_eyebrow")
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(.secondary)
                 Text(Decimal(0).twdFormatted)
                     .font(.system(size: 44, weight: .bold).monospacedDigit())
@@ -165,7 +165,7 @@ struct OnboardingView: View {
     @ViewBuilder
     private func chip(_ key: LocalizedStringKey, color: Color) -> some View {
         Text(key)
-            .font(.system(size: 12, weight: .medium))
+            .font(Font.Design.size12Medium)
             .foregroundStyle(color)
             .padding(.vertical, 5)
             .padding(.horizontal, 10)
@@ -180,7 +180,7 @@ struct OnboardingView: View {
             .lineSpacing(-2)
 
             Text("onboarding_welcome_subtitle")
-                .font(.system(size: 16))
+                .font(Font.Design.size16)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -191,7 +191,7 @@ struct OnboardingView: View {
     private var accountSelectionStep: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("onboarding_step_indicator_2")
-                .font(.system(size: 13))
+                .font(Font.Design.size13)
                 .foregroundStyle(.secondary)
                 .padding(.top, 16)
 
@@ -199,7 +199,7 @@ struct OnboardingView: View {
                 .font(.system(size: 32, weight: .bold))
                 .padding(.top, 12)
             Text("onboarding_selection_subtitle")
-                .font(.system(size: 14))
+                .font(Font.Design.size14)
                 .foregroundStyle(.secondary)
                 .padding(.top, 6)
                 .padding(.bottom, 20)
@@ -229,7 +229,7 @@ struct OnboardingView: View {
                             Image(systemName: "plus")
                             Text("onboarding_selection_add_custom")
                         }
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Font.Design.size14Medium)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -278,13 +278,13 @@ struct OnboardingView: View {
                 }
                 Spacer()
                 Text(eyebrow(for: type))
-                    .font(.system(size: 10, weight: .medium))
+                    .font(Font.Design.size10Medium)
                     .textCase(.uppercase)
                     .tracking(1)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 4)
                 Text(type.displayLabel)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(Font.Design.size15Semibold)
                     .foregroundStyle(.primary)
             }
             .padding(16)
@@ -316,7 +316,7 @@ struct OnboardingView: View {
                 )
             if isSelected {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(Font.Design.size12Bold)
                     .foregroundStyle(.white)
             }
         }
@@ -338,7 +338,7 @@ struct OnboardingView: View {
             Image(systemName: draft.type.defaultIcon)
                 .foregroundStyle(Color.Design.fromHex(draft.color))
             Text(draft.name)
-                .font(.system(size: 15, weight: .medium))
+                .font(Font.Design.size15Medium)
             Spacer()
             Button { store.send(.customAccountDeleted(draft.id)) } label: {
                 Image(systemName: "trash")
@@ -380,12 +380,12 @@ struct OnboardingView: View {
                 GlassContainer(cornerRadius: 22, padding: 20) {
                     VStack(spacing: 8) {
                         Text("onboarding_ready_total_label")
-                            .font(.system(size: 13))
+                            .font(Font.Design.size13)
                             .foregroundStyle(.secondary)
                         Text(Decimal(0).twdFormatted)
                             .font(.system(size: 24, weight: .bold).monospacedDigit())
                         Text(accountCountText)
-                            .font(.system(size: 12))
+                            .font(Font.Design.size12)
                             .foregroundStyle(.secondary)
                             .padding(.top, 4)
                     }
@@ -422,7 +422,7 @@ struct OnboardingView: View {
                 Text("onboarding_done_title")
                     .font(.system(size: 36, weight: .bold))
                 Text("onboarding_done_subtitle")
-                    .font(.system(size: 15))
+                    .font(Font.Design.size15)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

@@ -120,12 +120,12 @@ public struct AddEditCarrierView: View {
                             .fill(accent)
                             .frame(width: 32, height: 32)
                         Image(systemName: typeIcon(type))
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(Font.Design.size15Semibold)
                             .foregroundStyle(.white)
                             .symbolRenderingMode(.hierarchical)
                     }
                     Text(type.defaultName)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Font.Design.size13Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
 
                     Text(typeBarcodeFormat(type))
@@ -228,10 +228,10 @@ public struct AddEditCarrierView: View {
                 if let error = store.barcodeError {
                     HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(Color.Design.expenseRed)
                         Text(error)
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(Color.Design.expenseRed)
                             .lineSpacing(2)
                     }
@@ -239,7 +239,7 @@ public struct AddEditCarrierView: View {
                 } else {
                     // Format hint
                     Text(barcodeFormatHint(store.type))
-                        .font(.system(size: 11))
+                        .font(Font.Design.size11)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineSpacing(2)
                         .padding(.horizontal, 6)
@@ -263,7 +263,7 @@ public struct AddEditCarrierView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

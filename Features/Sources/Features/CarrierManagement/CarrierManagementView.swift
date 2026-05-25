@@ -149,7 +149,7 @@ public struct CarrierManagementView: View {
                             .font(Font.Design.body.weight(.semibold))
                             .foregroundStyle(Color.Design.textPrimary)
                         Text(carrier.barcode)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(Font.Design.size12Monospaced)
                             .foregroundStyle(Color.Design.textSecondary)
                             .lineLimit(1)
                             .truncationMode(.middle)

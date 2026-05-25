@@ -48,7 +48,7 @@ public struct IconPickerRow: View {
                 Image(systemName: iconName)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(isSelected ? Color.Design.textInverse : Color.Design.textSecondary)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(Font.Design.size18Medium)
             }
         }
         .buttonStyle(.plain)

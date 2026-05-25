@@ -68,7 +68,7 @@ public struct NotificationSettingsView: View {
                         .foregroundStyle(Color.Design.textPrimary)
 
                     Text(String(localized: "notification_permission_denied_banner"))
-                        .font(.system(size: 12.5))
+                        .font(Font.Design.size13)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -400,7 +400,7 @@ private struct RecurringSectionView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
+                    .font(Font.Design.size20)
                     .foregroundStyle(Color.Design.brandPrimary)
                 Text(String(localized: "notification_recurring_add"))
                     .font(Font.Design.size16)

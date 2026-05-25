@@ -269,7 +269,7 @@ struct OnboardingView: View {
                         RoundedRectangle(cornerRadius: 11, style: .continuous)
                             .fill(Color.Design.fromHex(type.defaultColor).opacity(0.12))
                         Image(systemName: type.defaultIcon)
-                            .font(.system(size: 20))
+                            .font(Font.Design.size20)
                             .foregroundStyle(Color.Design.fromHex(type.defaultColor))
                     }
                     .frame(width: 36, height: 36)

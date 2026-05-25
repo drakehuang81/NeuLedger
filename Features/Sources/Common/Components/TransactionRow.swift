@@ -59,7 +59,7 @@ public struct TransactionRow: View {
                         .frame(width: 40, height: 40)
 
                     Image(systemName: icon)
-                        .font(.system(size: 20))
+                        .font(Font.Design.size20)
                         .foregroundStyle(iconColor)
                 }
 

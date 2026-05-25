@@ -179,7 +179,7 @@ public struct AddEditAccountView: View {
                         .frame(width: 44, height: 44)
                         .overlay {
                             Image(systemName: store.icon)
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(Font.Design.size20Semibold)
                                 .foregroundStyle(.white)
                         }
                     Text(store.name.isEmpty

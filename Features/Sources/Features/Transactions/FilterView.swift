@@ -108,7 +108,7 @@ public struct FilterView: View {
                     .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(Font.Design.size11Semibold)
                 }
             }
             .foregroundStyle(isActive ? color : Color.Design.textPrimary)
@@ -160,7 +160,7 @@ public struct FilterView: View {
                     .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(Font.Design.size11Semibold)
                 }
             }
             .foregroundStyle(isActive ? color : Color.Design.textPrimary)
@@ -206,7 +206,7 @@ public struct FilterView: View {
                     .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(Font.Design.size11Semibold)
                 }
             }
             .foregroundStyle(isActive ? color : Color.Design.textPrimary)
@@ -250,7 +250,7 @@ public struct FilterView: View {
                     .font(Font.Design.size13Medium)
                 if isActive {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(Font.Design.size11Semibold)
                 }
             }
             .foregroundStyle(isActive ? color : Color.Design.textPrimary)

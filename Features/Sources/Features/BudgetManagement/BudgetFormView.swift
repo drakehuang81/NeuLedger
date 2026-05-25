@@ -122,7 +122,7 @@ public struct BudgetFormView: View {
                         .padding(.bottom, 10)
                 } else if let breakdown = breakdownText {
                     Text(breakdown)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(Font.Design.size12Monospaced)
                         .tracking(-0.1)
                         .foregroundStyle(Color.Design.textSecondary)
                         .padding(.horizontal, 16)

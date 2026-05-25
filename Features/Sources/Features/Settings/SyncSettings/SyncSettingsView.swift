@@ -67,7 +67,7 @@ public struct SyncSettingsView: View {
 
                 VStack(spacing: 8) {
                     Text("sync_enable_title")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(Font.Design.size22Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text("sync_enable_subtitle")
                         .font(Font.Design.size14)
@@ -108,7 +108,7 @@ public struct SyncSettingsView: View {
                 ringProgressHero(progress: progress)
 
                 Text("sync_migrating")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(Font.Design.size22Semibold)
                     .foregroundStyle(Color.Design.textPrimary)
                     .multilineTextAlignment(.center)
 
@@ -130,7 +130,7 @@ public struct SyncSettingsView: View {
 
                 VStack(spacing: 8) {
                     Text("sync_enable_title")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(Font.Design.size22Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text("sync_enable_subtitle")
                         .font(Font.Design.size14)
@@ -180,7 +180,7 @@ public struct SyncSettingsView: View {
 
                 VStack(spacing: 6) {
                     Text("sync_enabled_title")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(Font.Design.size22Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
 
                     HStack(spacing: 6) {

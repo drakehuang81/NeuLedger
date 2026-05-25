@@ -214,7 +214,7 @@ struct CategoryDonutCard: View {
                         .frame(height: 4)
                     }
                     Text(percentText(for: proportion))
-                        .font(.system(size: 9).monospacedDigit())
+                        .font(Font.Design.size9.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                         .frame(minWidth: 28, alignment: .trailing)
                 }

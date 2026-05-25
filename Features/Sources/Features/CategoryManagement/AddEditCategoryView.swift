@@ -75,7 +75,7 @@ public struct AddEditCategoryView: View {
                 ? String(localized: "category_form_name_placeholder")
                 : store.name
             )
-            .font(.system(size: 20, weight: .semibold))
+            .font(Font.Design.size20Semibold)
             .foregroundStyle(
                 store.name.isEmpty
                     ? Color.Design.textTertiary

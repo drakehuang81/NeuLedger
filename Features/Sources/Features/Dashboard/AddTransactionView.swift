@@ -570,7 +570,7 @@ public struct AddTransactionView: View {
             ZStack {
                 Circle().fill(tint.opacity(isSelected ? 0.22 : 0.14))
                 Image(systemName: category.icon)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(Font.Design.size18Medium)
                     .foregroundStyle(tint)
             }
             .frame(width: 40, height: 40)
@@ -650,7 +650,7 @@ public struct AddTransactionView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 11, style: .continuous).fill(tint.opacity(0.18))
                 Image(systemName: account.icon)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(Font.Design.size18Medium)
                     .foregroundStyle(tint)
             }
             .frame(width: 38, height: 38)
@@ -665,7 +665,7 @@ public struct AddTransactionView: View {
 
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20))
+                    .font(Font.Design.size20)
                     .foregroundStyle(tint)
             }
         }

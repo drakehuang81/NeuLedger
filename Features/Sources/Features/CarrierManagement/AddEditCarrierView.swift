@@ -77,7 +77,7 @@ public struct AddEditCarrierView: View {
                     ? store.type.defaultName
                     : store.name
             )
-            .font(.system(size: 20, weight: .semibold))
+            .font(Font.Design.size20Semibold)
             .foregroundStyle(
                 store.name.isEmpty
                     ? Color.Design.textTertiary
@@ -86,7 +86,7 @@ public struct AddEditCarrierView: View {
 
             if !store.barcode.isEmpty {
                 Text(store.barcode)
-                    .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                    .font(Font.Design.size12Monospaced.monospacedDigit())
                     .foregroundStyle(Color.Design.textSecondary)
                     .tracking(0.5)
             }
@@ -129,7 +129,7 @@ public struct AddEditCarrierView: View {
                         .foregroundStyle(Color.Design.textPrimary)
 
                     Text(typeBarcodeFormat(type))
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Font.Design.size11Monospaced)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

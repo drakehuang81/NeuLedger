@@ -64,7 +64,7 @@ struct DailyBarsCard: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text("NT$")
-                            .font(.system(size: 9).monospacedDigit())
+                            .font(Font.Design.size9.monospacedDigit())
                             .foregroundStyle(Color.Design.textSecondary)
                         Text(totalBodyText)
                             .font(Font.Design.size14Medium.monospacedDigit())
@@ -118,7 +118,7 @@ struct DailyBarsCard: View {
                                 )
                             )
                         Text(weekdayLabel(for: point.date))
-                            .font(.system(size: 9).monospacedDigit())
+                            .font(Font.Design.size9.monospacedDigit())
                             .foregroundStyle(
                                 point.isLatest ? Color.Design.textPrimary : Color.Design.textSecondary
                             )

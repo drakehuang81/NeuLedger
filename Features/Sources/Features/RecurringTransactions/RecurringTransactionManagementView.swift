@@ -344,7 +344,7 @@ public struct RecurringTransactionManagementView: View {
                     }
                     .overlay {
                         Image(systemName: item.type == .income ? "arrow.down.left.circle" : "arrow.up.right.circle")
-                            .font(.system(size: 18, weight: .medium))
+                            .font(Font.Design.size18Medium)
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(freqColor)
                     }

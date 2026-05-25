@@ -43,7 +43,7 @@ struct AIDock: View {
 
                 if isOpen, !insight.description.isEmpty {
                     Text(insight.description)
-                        .font(.system(size: 12.5))
+                        .font(Font.Design.size13)
                         .lineSpacing(3)
                         .foregroundStyle(Color.Design.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)

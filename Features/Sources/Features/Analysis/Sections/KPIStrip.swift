@@ -76,7 +76,7 @@ struct KPIStrip: View {
             HStack(alignment: .firstTextBaseline, spacing: 1) {
                 if let prefix = trimmed.prefix {
                     Text(prefix)
-                        .font(.system(size: 9).monospacedDigit())
+                        .font(Font.Design.size9.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                 }
                 Text(trimmed.body)

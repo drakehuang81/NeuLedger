@@ -195,7 +195,7 @@ public struct BudgetManagementView: View {
 
                 if let breakdown = budget.amount.perPeriodBreakdown(budget.period) {
                     Text(breakdown)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Font.Design.size11Monospaced)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)

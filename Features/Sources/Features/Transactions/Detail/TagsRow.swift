@@ -12,7 +12,7 @@ struct TagsRow: View {
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 Text("transaction_detail_tags")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(Font.Design.size10MediumMonospaced)
                     .tracking(1.2)
                     .textCase(.uppercase)
                     .foregroundStyle(Color.Design.textSecondary)

@@ -54,7 +54,7 @@ public struct NotificationSettingsView: View {
             HStack(alignment: .top, spacing: 12) {
                 // Bell-slash icon box
                 Image(systemName: "bell.slash.fill")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(Font.Design.size16Semibold)
                     .foregroundStyle(Color.Design.brandPrimary)
                     .frame(width: 34, height: 34)
                     .background(
@@ -64,11 +64,11 @@ public struct NotificationSettingsView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(String(localized: "notification_settings_permission_denied_title"))
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Font.Design.size14Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
 
                     Text(String(localized: "notification_permission_denied_banner"))
-                        .font(.system(size: 12.5))
+                        .font(Font.Design.size13)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -78,9 +78,9 @@ public struct NotificationSettingsView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Text(String(localized: "notification_open_settings"))
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Font.Design.size13Semibold)
                             Image(systemName: "arrow.up.right")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(Font.Design.size11Semibold)
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
@@ -113,7 +113,7 @@ public struct NotificationSettingsView: View {
                     // Toggle row
                     HStack {
                         Text(String(localized: "notification_daily_reminder_toggle"))
-                            .font(.system(size: 16))
+                            .font(Font.Design.size16)
                             .foregroundStyle(Color.Design.textPrimary)
                         Spacer(minLength: 0)
                         Toggle("", isOn: Binding(
@@ -130,7 +130,7 @@ public struct NotificationSettingsView: View {
                     rowDivider
                     HStack {
                         Text(String(localized: "notification_reminder_time"))
-                            .font(.system(size: 16))
+                            .font(Font.Design.size16)
                             .foregroundStyle(Color.Design.textPrimary)
                         Spacer(minLength: 0)
                         DatePicker(
@@ -165,7 +165,7 @@ public struct NotificationSettingsView: View {
                     // Toggle row
                     HStack {
                         Text(String(localized: "notification_budget_warning_toggle"))
-                            .font(.system(size: 16))
+                            .font(Font.Design.size16)
                             .foregroundStyle(Color.Design.textPrimary)
                         Spacer(minLength: 0)
                         Toggle("", isOn: Binding(
@@ -195,14 +195,14 @@ public struct NotificationSettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(String(localized: "notification_settings_threshold_label"))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Font.Design.size11Medium)
                     .monospaced()
                     .tracking(0.5)
                     .textCase(.uppercase)
                     .foregroundStyle(Color.Design.textSecondary)
                 Spacer(minLength: 0)
                 Text(String(format: String(localized: "notification_settings_threshold_footer"), store.warningThreshold))
-                    .font(.system(size: 11).monospaced())
+                    .font(Font.Design.size11.monospaced())
                     .foregroundStyle(Color.Design.textSecondary)
             }
 
@@ -213,7 +213,7 @@ public struct NotificationSettingsView: View {
                         store.send(.warningThresholdChanged(value))
                     } label: {
                         Text("\(value)%")
-                            .font(.system(size: 14, weight: .semibold).monospaced())
+                            .font(Font.Design.size14Semibold.monospaced())
                             .foregroundStyle(selected ? .white : Color.Design.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -249,7 +249,7 @@ public struct NotificationSettingsView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 11, weight: .medium))
+            .font(Font.Design.size11Medium)
             .monospaced()
             .tracking(1.2)
             .textCase(.uppercase)
@@ -260,7 +260,7 @@ public struct NotificationSettingsView: View {
 
     private func sectionFooter(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12))
+            .font(Font.Design.size12)
             .foregroundStyle(Color.Design.textSecondary)
             .lineSpacing(2.5)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -285,7 +285,7 @@ private struct RecurringSectionView: View {
             // Section header with active count eyebrow
             HStack {
                 Text(String(localized: "notification_recurring_section"))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Font.Design.size11Medium)
                     .monospaced()
                     .tracking(1.2)
                     .textCase(.uppercase)
@@ -295,7 +295,7 @@ private struct RecurringSectionView: View {
                 let totalCount = store.items.count
                 if totalCount > 0 {
                     Text("\(activeCount) / \(totalCount) ON")
-                        .font(.system(size: 11).monospaced())
+                        .font(Font.Design.size11.monospaced())
                         .tracking(0.6)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -303,7 +303,7 @@ private struct RecurringSectionView: View {
             .padding(.horizontal, 6)
 
             Text(String(localized: "notification_recurring_description"))
-                .font(.system(size: 12))
+                .font(Font.Design.size12)
                 .foregroundStyle(Color.Design.textSecondary)
                 .lineSpacing(2.5)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -343,7 +343,7 @@ private struct RecurringSectionView: View {
             HStack(spacing: 12) {
                 // Icon box
                 Image(systemName: "repeat")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.brandPrimary)
                     .frame(width: 36, height: 36)
                     .background(
@@ -353,7 +353,7 @@ private struct RecurringSectionView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.note ?? String(localized: "notification_recurring_empty"))
-                        .font(.system(size: 15))
+                        .font(Font.Design.size15)
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(1)
 
@@ -400,10 +400,10 @@ private struct RecurringSectionView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
+                    .font(Font.Design.size20)
                     .foregroundStyle(Color.Design.brandPrimary)
                 Text(String(localized: "notification_recurring_add"))
-                    .font(.system(size: 16))
+                    .font(Font.Design.size16)
                     .foregroundStyle(Color.Design.textPrimary)
                 Spacer(minLength: 0)
             }

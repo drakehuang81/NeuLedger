@@ -12,7 +12,7 @@ public struct AvatarBadge: View {
         Circle()
             .fill(
                 LinearGradient(
-                    colors: [Color.Design.brandPrimary, Color(hex: "#FF2D55")],
+                    colors: [Color.Design.brandPrimary, Color.Design.brandPink],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -20,7 +20,7 @@ public struct AvatarBadge: View {
             .frame(width: 36, height: 36)
             .overlay {
                 Text(initials.prefix(1))
-                    .font(.system(size: 15, weight: .bold))
+                    .font(Font.Design.size15Semibold)
                     .foregroundStyle(.white)
             }
             .shadow(color: Color.Design.brandPrimary.opacity(0.35), radius: 6, x: 0, y: 4)

@@ -81,27 +81,27 @@ public struct SettingsView: View {
 
     private var sectionManage: some View {
         sGroup(String(localized: "settings_manage")) {
-            sRow(icon: "wallet.bifold", iconBg: Color(hex: "#5AC8FA"),
+            sRow(icon: "wallet.bifold", iconBg: Color.Design.iconCyan,
                  label: String(localized: "settings_account_management")) {
                 store.send(.accountManagementTapped)
             }
             rowDivider
-            sRow(icon: "square.grid.2x2", iconBg: Color(hex: "#FF9500"),
+            sRow(icon: "square.grid.2x2", iconBg: Color.Design.accentOrange,
                  label: String(localized: "settings_category_management")) {
                 store.send(.categoryManagementTapped)
             }
             rowDivider
-            sRow(icon: "banknote", iconBg: Color(hex: "#34C759"),
+            sRow(icon: "banknote", iconBg: Color.Design.accentGreen,
                  label: String(localized: "settings_budget_management")) {
                 store.send(.budgetManagementTapped)
             }
             rowDivider
-            sRow(icon: "tag", iconBg: Color(hex: "#5E5CE6"),
+            sRow(icon: "tag", iconBg: Color.Design.transferPurple,
                  label: String(localized: "settings_tag_management")) {
                 store.send(.tagManagementTapped)
             }
             rowDivider
-            sRow(icon: "creditcard.and.123", iconBg: Color(hex: "#AF52DE"),
+            sRow(icon: "creditcard.and.123", iconBg: Color.Design.iconPurple,
                  label: String(localized: "settings_carrier_management")) {
                 store.send(.carrierManagementTapped)
             }
@@ -123,7 +123,7 @@ public struct SettingsView: View {
             } label: {
                 rowContent(
                     icon: "creditcard.fill",
-                    iconBg: Color(hex: "#0A84FF"),
+                    iconBg: Color.Design.iconBlueAlt,
                     label: String(localized: "settings_default_account"),
                     value: store.defaultAccountName,
                     showChevron: true
@@ -133,7 +133,7 @@ public struct SettingsView: View {
 
             rowDivider
 
-            sRow(icon: "globe", iconBg: Color(hex: "#0A84FF"),
+            sRow(icon: "globe", iconBg: Color.Design.iconBlueAlt,
                  label: String(localized: "settings_language"),
                  value: store.currentLanguage) {
                 store.send(.languageTapped)
@@ -141,7 +141,7 @@ public struct SettingsView: View {
 
             rowDivider
 
-            sRow(icon: "bell.badge", iconBg: Color(hex: "#FF3B30"),
+            sRow(icon: "bell.badge", iconBg: Color.Design.accentRed,
                  label: String(localized: "settings_notification_settings")) {
                 store.send(.notificationSettingsTapped)
             }
@@ -150,7 +150,7 @@ public struct SettingsView: View {
 
             sToggleRow(
                 icon: "dock.rectangle",
-                iconBg: Color(hex: "#34C759"),
+                iconBg: Color.Design.accentGreen,
                 label: String(localized: "settings_show_accessory_bar"),
                 isOn: $store.showAccessoryBar.sending(\.accessoryBarToggleChanged)
             )
@@ -162,7 +162,7 @@ public struct SettingsView: View {
             if store.carriers.isEmpty {
                 rowContent(
                     icon: "creditcard.fill",
-                    iconBg: Color(hex: "#5AC8FA"),
+                    iconBg: Color.Design.iconCyan,
                     label: String(localized: "settings_widget_carrier"),
                     value: String(localized: "settings_widget_no_carrier"),
                     showChevron: false
@@ -184,7 +184,7 @@ public struct SettingsView: View {
                 } label: {
                     rowContent(
                         icon: "creditcard.fill",
-                        iconBg: Color(hex: "#5AC8FA"),
+                        iconBg: Color.Design.iconCyan,
                         label: String(localized: "settings_widget_carrier"),
                         value: store.widgetCarrierName.isEmpty
                             ? String(localized: "common_please_select")
@@ -199,7 +199,7 @@ public struct SettingsView: View {
 
             rowContent(
                 icon: "mic.fill",
-                iconBg: Color(hex: "#8E8E93"),
+                iconBg: Color.Design.iconGray,
                 label: String(localized: "settings_widget_voice_account"),
                 value: String(localized: "settings_widget_coming_soon"),
                 showChevron: false
@@ -212,7 +212,7 @@ public struct SettingsView: View {
             String(localized: "settings_data"),
             footer: store.exportError
         ) {
-            sRow(icon: "icloud.and.arrow.up", iconBg: Color(hex: "#5AC8FA"),
+            sRow(icon: "icloud.and.arrow.up", iconBg: Color.Design.iconCyan,
                  label: String(localized: "settings_sync")) {
                 store.send(.syncSettingsTapped)
             }
@@ -221,7 +221,7 @@ public struct SettingsView: View {
 
             sRow(
                 icon: "square.and.arrow.down",
-                iconBg: Color(hex: "#5E5CE6"),
+                iconBg: Color.Design.transferPurple,
                 label: String(localized: "settings_export_csv"),
                 trailing: store.exportingFormat == .csv ? AnyView(ProgressView()) : nil
             ) {
@@ -232,7 +232,7 @@ public struct SettingsView: View {
 
             sRow(
                 icon: "tablecells",
-                iconBg: Color(hex: "#AF52DE"),
+                iconBg: Color.Design.iconPurple,
                 label: String(localized: "settings_export_json"),
                 trailing: store.exportingFormat == .json ? AnyView(ProgressView()) : nil
             ) {
@@ -245,7 +245,7 @@ public struct SettingsView: View {
         sGroup(String(localized: "settings_about")) {
             rowContent(
                 icon: "info.circle",
-                iconBg: Color(hex: "#8E8E93"),
+                iconBg: Color.Design.iconGray,
                 label: String(localized: "settings_version"),
                 value: appVersion,
                 showChevron: false
@@ -253,7 +253,7 @@ public struct SettingsView: View {
 
             rowDivider
 
-            sRow(icon: "doc.text", iconBg: Color(hex: "#8E8E93"),
+            sRow(icon: "doc.text", iconBg: Color.Design.iconGray,
                  label: String(localized: "settings_privacy")) {
                 store.send(.privacyPolicyTapped)
             }
@@ -271,7 +271,7 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let label {
                 Text(label)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Font.Design.size11Medium)
                     .monospaced()
                     .tracking(1.2)
                     .textCase(.uppercase)
@@ -283,7 +283,7 @@ public struct SettingsView: View {
             }
             if let footer, !footer.isEmpty {
                 Text(footer)
-                    .font(.system(size: 11))
+                    .font(Font.Design.size11)
                     .foregroundStyle(footer == store.exportError ? Color.Design.expenseRed : Color.Design.textSecondary)
                     .lineSpacing(2)
                     .padding(.horizontal, 6)
@@ -319,7 +319,7 @@ public struct SettingsView: View {
         HStack(spacing: 12) {
             iconBox(icon, bg: iconBg)
             Text(label)
-                .font(.system(size: 15))
+                .font(Font.Design.size15)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer(minLength: 0)
             Toggle("", isOn: isOn)
@@ -342,12 +342,12 @@ public struct SettingsView: View {
         HStack(spacing: 12) {
             iconBox(icon, bg: iconBg)
             Text(label)
-                .font(.system(size: 15))
+                .font(Font.Design.size15)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer(minLength: 0)
             if let value, !value.isEmpty {
                 Text(value)
-                    .font(.system(size: 14))
+                    .font(Font.Design.size14)
                     .foregroundStyle(Color.Design.textSecondary)
                     .lineLimit(1)
             }
@@ -355,7 +355,7 @@ public struct SettingsView: View {
                 trailing
             } else if showChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                     .foregroundStyle(Color.Design.textSecondary)
             }
         }
@@ -368,7 +368,7 @@ public struct SettingsView: View {
         Image(systemName: system)
             .symbolRenderingMode(.monochrome)
             .foregroundStyle(.white)
-            .font(.system(size: 13, weight: .semibold))
+            .font(Font.Design.size13Semibold)
             .frame(width: 28, height: 28)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous).fill(bg)

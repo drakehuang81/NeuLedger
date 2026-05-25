@@ -8,7 +8,7 @@ struct ActivityCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("transaction_detail_activity")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(Font.Design.size10MediumMonospaced)
                 .tracking(1.2)
                 .textCase(.uppercase)
                 .foregroundStyle(Color.Design.textSecondary)
@@ -33,15 +33,15 @@ struct ActivityCard: View {
     private func row(icon: String, tint: Color, key: LocalizedStringKey, date: Date) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .medium))
+                .font(Font.Design.size12Medium)
                 .foregroundStyle(tint)
                 .frame(width: 16)
             Text(key)
-                .font(.system(size: 12))
+                .font(Font.Design.size12)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer(minLength: 0)
             Text(date, style: .relative)
-                .font(.system(size: 10, design: .monospaced))
+                .font(Font.Design.size10Monospaced)
                 .foregroundStyle(Color.Design.textSecondary)
         }
     }

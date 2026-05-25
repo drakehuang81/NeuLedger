@@ -29,18 +29,18 @@ public struct EmptyStateView: View {
                     .frame(width: 72, height: 72)
 
                 Image(systemName: icon)
-                    .font(.system(size: 28))
+                    .font(Font.Design.size28)
                     .foregroundStyle(Color.Design.textSecondary)
             }
             .padding(.bottom, 8)
 
             VStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(Font.Design.size17Semibold)
                     .foregroundStyle(Color.Design.textPrimary)
 
                 Text(description)
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 280)

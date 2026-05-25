@@ -78,7 +78,7 @@ public struct AddEditAccountView: View {
 
     private func typeTile(_ type: AccountType) -> some View {
         let isSelected = store.type == type
-        let color = Color(hex: type.defaultColor)
+        let color = Color.Design.fromHex(type.defaultColor)
         return Button {
             store.send(.typeChanged(type))
             store.send(.iconChanged(type.defaultIcon))
@@ -90,11 +90,11 @@ public struct AddEditAccountView: View {
                     .frame(width: 36, height: 36)
                     .overlay {
                         Image(systemName: type.defaultIcon)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(Font.Design.size18Semibold)
                             .foregroundStyle(.white)
                     }
                 Text(type.displayLabel)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                     .foregroundStyle(Color.Design.textPrimary)
             }
             .frame(maxWidth: .infinity)
@@ -147,7 +147,7 @@ public struct AddEditAccountView: View {
                 IconPickerRow(
                     icons: DesignConstants.accountIconOptions,
                     selectedIcon: store.icon,
-                    accentColor: Color(hex: store.colorHex),
+                    accentColor: Color.Design.fromHex(store.colorHex),
                     onSelect: { store.send(.iconChanged($0)) }
                 )
             }
@@ -175,11 +175,11 @@ public struct AddEditAccountView: View {
             GlassContainer(cornerRadius: 14, padding: 14) {
                 HStack(spacing: 12) {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(hex: store.colorHex))
+                        .fill(Color.Design.fromHex(store.colorHex))
                         .frame(width: 44, height: 44)
                         .overlay {
                             Image(systemName: store.icon)
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(Font.Design.size20Semibold)
                                 .foregroundStyle(.white)
                         }
                     Text(store.name.isEmpty
@@ -207,7 +207,7 @@ public struct AddEditAccountView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

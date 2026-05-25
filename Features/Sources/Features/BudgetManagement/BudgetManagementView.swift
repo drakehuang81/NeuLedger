@@ -35,7 +35,7 @@ public struct BudgetManagementView: View {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.size17Semibold)
                 }
                 .accessibilityLabel(String(localized: "budget_management_add"))
             }
@@ -84,17 +84,17 @@ public struct BudgetManagementView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 11))
+                        .font(Font.Design.size11)
                         .foregroundStyle(Color.Design.brandAccent)
                     Text("budget_management_hero_eyebrow")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(Font.Design.size11Medium)
                         .textCase(.uppercase)
                         .tracking(1.2)
                         .foregroundStyle(.secondary)
                 }
 
                 Text(totalBudgetAmount.twdFormatted)
-                    .font(.system(size: 38, weight: .semibold).monospacedDigit())
+                    .font(Font.Design.size38Semibold.monospacedDigit())
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -106,7 +106,7 @@ public struct BudgetManagementView: View {
                         activeBudgets.count
                     )
                 )
-                .font(.system(size: 12))
+                .font(Font.Design.size12)
                 .foregroundStyle(.secondary)
                 .padding(.top, 6)
             }
@@ -120,7 +120,7 @@ public struct BudgetManagementView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("budget_management_section_categories")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Font.Design.size11Medium)
                     .textCase(.uppercase)
                     .tracking(1.2)
                     .foregroundStyle(.secondary)
@@ -129,7 +129,7 @@ public struct BudgetManagementView: View {
                 Spacer()
 
                 Text("budget_management_section_used_of")
-                    .font(.system(size: 12))
+                    .font(Font.Design.size12)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6)
             }
@@ -195,7 +195,7 @@ public struct BudgetManagementView: View {
 
                 if let breakdown = budget.amount.perPeriodBreakdown(budget.period) {
                     Text(breakdown)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Font.Design.size11Monospaced)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
@@ -216,7 +216,7 @@ public struct BudgetManagementView: View {
             .frame(width: 40, height: 40)
             .overlay {
                 Image(systemName: "banknote")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(Font.Design.size18Semibold)
                     .foregroundStyle(.white)
                     .symbolRenderingMode(.hierarchical)
             }

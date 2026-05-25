@@ -43,7 +43,7 @@ public struct AccountManagementView: View {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.size17Semibold)
                 }
                 .accessibilityLabel(String(localized: "a11y_account_add"))
             }
@@ -94,16 +94,16 @@ public struct AccountManagementView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkle")
-                        .font(.system(size: 11))
+                        .font(Font.Design.size11)
                         .foregroundStyle(Color.Design.brandAccent)
                     Text("account_management_net_worth")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(Font.Design.size11Medium)
                         .textCase(.uppercase)
                         .tracking(1.2)
                         .foregroundStyle(.secondary)
                 }
                 Text(totalBalance.twdFormatted)
-                    .font(.system(size: 38, weight: .semibold).monospacedDigit())
+                    .font(Font.Design.size38Semibold.monospacedDigit())
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -114,7 +114,7 @@ public struct AccountManagementView: View {
                         store.accounts.count
                     )
                 )
-                .font(.system(size: 12))
+                .font(Font.Design.size12)
                 .foregroundStyle(.secondary)
                 .padding(.top, 6)
             }
@@ -127,7 +127,7 @@ public struct AccountManagementView: View {
     private func groupSection(label: LocalizedStringKey, accounts: [Account]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
@@ -150,7 +150,7 @@ public struct AccountManagementView: View {
     private var archivedSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("account_management_archived")
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
@@ -250,11 +250,11 @@ public struct AccountManagementView: View {
 
     private func accountIcon(_ account: Account) -> some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color(hex: account.color))
+            .fill(Color.Design.fromHex(account.color))
             .frame(width: 40, height: 40)
             .overlay {
                 Image(systemName: account.icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(Font.Design.size18Semibold)
                     .foregroundStyle(.white)
             }
     }
@@ -267,9 +267,9 @@ public struct AccountManagementView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(Font.Design.size14Semibold)
                 Text("account_management_add")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(Font.Design.size14Semibold)
             }
             .foregroundStyle(Color.Design.brandAccent)
             .frame(maxWidth: .infinity)

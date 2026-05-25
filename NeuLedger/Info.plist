@@ -34,7 +34,12 @@
 		</dict>
 	</array>
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIImageName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<false/>
+	</dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>用麥克風錄製語音，辨識成交易描述文字。</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

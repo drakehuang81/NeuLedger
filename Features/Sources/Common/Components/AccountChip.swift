@@ -19,7 +19,7 @@ public struct AccountChip: View {
                 Circle()
                     .fill(swatch.opacity(0.15))
                 Image(systemName: account.icon.isEmpty ? "wallet.pass" : account.icon)
-                    .font(.system(size: dense ? 12 : 14, weight: .medium))
+                    .font(dense ? Font.Design.size12Medium : Font.Design.size14Medium)
                     .foregroundStyle(swatch)
                     .symbolRenderingMode(.hierarchical)
             }
@@ -27,10 +27,10 @@ public struct AccountChip: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(account.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.textPrimary)
                 Text(account.type.displayKey)
-                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                    .font(Font.Design.size9Monospaced)
                     .tracking(1)
                     .textCase(.uppercase)
                     .foregroundStyle(Color.Design.textSecondary)
@@ -39,7 +39,7 @@ public struct AccountChip: View {
     }
 
     private var swatch: Color {
-        account.color.isEmpty ? Color.Design.accentOrange : Color(hex: account.color)
+        account.color.isEmpty ? Color.Design.accentOrange : Color.Design.fromHex(account.color)
     }
 }
 

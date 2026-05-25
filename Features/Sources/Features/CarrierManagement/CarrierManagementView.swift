@@ -39,7 +39,7 @@ public struct CarrierManagementView: View {
                     store.send(.addTapped)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.size17Semibold)
                 }
             }
         }
@@ -91,13 +91,13 @@ public struct CarrierManagementView: View {
                         .fill(Color.Design.accentOrange.opacity(0.13))
                         .frame(width: 28, height: 28)
                     Image(systemName: "sparkles")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Font.Design.size13Semibold)
                         .foregroundStyle(Color.Design.accentOrange)
                 }
                 .flexibleFrame(width: 28, height: 28, alignment: .center)
 
                 Text(String(localized: "carrier_management_hint"))
-                    .font(.system(size: 12))
+                    .font(Font.Design.size12)
                     .foregroundStyle(Color.Design.textSecondary)
                     .lineSpacing(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -139,7 +139,7 @@ public struct CarrierManagementView: View {
                             .fill(carrierColor(carrier.type))
                             .frame(width: 40, height: 40)
                         Image(systemName: carrierIcon(carrier.type))
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(Font.Design.size18Semibold)
                             .foregroundStyle(.white)
                             .symbolRenderingMode(.hierarchical)
                     }
@@ -149,7 +149,7 @@ public struct CarrierManagementView: View {
                             .font(Font.Design.body.weight(.semibold))
                             .foregroundStyle(Color.Design.textPrimary)
                         Text(carrier.barcode)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(Font.Design.size12Monospaced)
                             .foregroundStyle(Color.Design.textSecondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
@@ -159,7 +159,7 @@ public struct CarrierManagementView: View {
 
                     Image(systemName: store.expandedCarrierId == carrier.id
                           ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Font.Design.size14Semibold)
                         .foregroundStyle(Color.Design.textTertiary)
                 }
                 .padding(.horizontal, 14)
@@ -214,7 +214,7 @@ public struct CarrierManagementView: View {
                                 .fill(Color.Design.accentOrange.opacity(0.12))
                                 .frame(width: 32, height: 32)
                             Image(systemName: "pencil")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Font.Design.size13Semibold)
                                 .foregroundStyle(Color.Design.accentOrange)
                         }
                     }
@@ -228,7 +228,7 @@ public struct CarrierManagementView: View {
                                 .fill(Color.Design.accentOrange.opacity(0.12))
                                 .frame(width: 32, height: 32)
                             Image(systemName: "doc.on.doc")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Font.Design.size13Semibold)
                                 .foregroundStyle(Color.Design.accentOrange)
                         }
                     }
@@ -260,7 +260,7 @@ public struct CarrierManagementView: View {
 
     private var footerHint: some View {
         Text(String(localized: "carrier_management_swipe_hint"))
-            .font(.system(size: 11))
+            .font(Font.Design.size11)
             .foregroundStyle(Color.Design.textSecondary)
             .padding(.horizontal, 6)
             .frame(maxWidth: .infinity, alignment: .leading)

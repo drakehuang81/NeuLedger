@@ -23,7 +23,7 @@ public struct AddEditTagView: View {
                         colorSection
 
                         Text("tag_form_usage_hint")
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 6)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -55,13 +55,13 @@ public struct AddEditTagView: View {
     // MARK: - Live Preview Hero
 
     private var livePreviewHero: some View {
-        let color = Color(hex: store.colorHex)
+        let color = Color.Design.fromHex(store.colorHex)
         return HStack(spacing: 8) {
             Circle()
                 .fill(color)
                 .frame(width: 10, height: 10)
             Text("#\(store.name.isEmpty ? String(localized: "tag_form_name_placeholder") : store.name)")
-                .font(.system(size: 17, weight: .bold))
+                .font(Font.Design.size17Semibold)
                 .foregroundStyle(color)
         }
         .padding(.vertical, 11)
@@ -128,7 +128,7 @@ public struct AddEditTagView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

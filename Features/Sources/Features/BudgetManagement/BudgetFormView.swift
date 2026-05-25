@@ -74,7 +74,7 @@ public struct BudgetFormView: View {
                         set: { store.send(.nameChanged($0)) }
                     )
                 )
-                .font(.system(size: 17))
+                .font(Font.Design.size17)
                 .foregroundStyle(Color.Design.textPrimary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -93,7 +93,7 @@ public struct BudgetFormView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .lastTextBaseline, spacing: 8) {
                     Text(verbatim: "NT$")
-                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                        .font(Font.Design.size15MediumMonospaced)
                         .tracking(0.5)
                         .foregroundStyle(Color.Design.textSecondary)
 
@@ -104,13 +104,13 @@ public struct BudgetFormView: View {
                             set: { store.send(.amountChanged($0)) }
                         )
                     )
-                    .font(.system(size: 32, weight: .medium, design: .monospaced))
+                    .font(Font.Design.size32MediumMonospaced)
                     .monospacedDigit()
                     .foregroundStyle(Color.Design.textPrimary)
                     .keyboardType(.numberPad)
 
                     Text("/ \(store.period.localizedSuffix)")
-                        .font(.system(size: 14))
+                        .font(Font.Design.size14)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
                 .padding(.horizontal, 16)
@@ -122,7 +122,7 @@ public struct BudgetFormView: View {
                         .padding(.bottom, 10)
                 } else if let breakdown = breakdownText {
                     Text(breakdown)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(Font.Design.size12Monospaced)
                         .tracking(-0.1)
                         .foregroundStyle(Color.Design.textSecondary)
                         .padding(.horizontal, 16)

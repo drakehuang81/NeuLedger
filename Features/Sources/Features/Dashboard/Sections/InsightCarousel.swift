@@ -74,9 +74,9 @@ struct InsightCarousel: View {
         GlassContainer(cornerRadius: 22, padding: 20) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("dashboard_insight_loading_title")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(Font.Design.size16Semibold)
                 Text("dashboard_insight_loading_body")
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

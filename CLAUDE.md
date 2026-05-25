@@ -119,9 +119,13 @@ Features/Sources/
 ### Design System (Common Layer)
 
 - **Fonts:** `--font-display` → Bricolage Grotesque (screen headings), `--font-body` → DM Sans (general content), `--font-mono` → DM Mono (monetary amounts, always `.monospacedDigit()`)
+- **Typography tokens:** All `.font(...)` calls **must** funnel through `Font.Design` (`Common/DesignSystem/Font+extension.swift`). `Font.system(size:...)` / `.font(.system(size:...))` is the file-private hex of typography — it is the only sanctioned location for those calls. Two scales:
+  - **Dynamic Type** — `Font.Design.body` / `.caption` / `.headline` / `.callout` / `.amount`. Use for body text, form labels, readable content that should follow the user's text-size preference.
+  - **Fixed pixel** — `Font.Design.size{N}{Weight?}{Design?}` (e.g. `size11Medium`, `size13Semibold`, `size14`, `size22SemiboldRounded`, `size10MediumMonospaced`). Use for chrome (tags, pills, badges, metric labels, row meta, navigation strips) and display sizes (hero numbers, headings) where the design specifies an exact pixel size that must not Dynamic-Type-scale.
+  - **Gateway rule:** never write `.system(size:...)` outside `Font+extension.swift`. If no existing token fits a new design need, **add one to `Font.Design` first**, then reference it from the call site. When a new use is close to an existing token (off by one weight step, half-pixel rounding, etc.), prefer rounding to the nearest existing token over introducing a single-use new one.
 - **Brand colors** (Asset Catalog with Light/Dark variants): `accentColor` (#FF9500 / #FF9F0A), `incomeGreen` (#34C759 / #30D158), `expenseRed` (#FF3B30 / #FF453A), `surfaceInverse`, `textInverse`
 - **Liquid Glass:** Use `.glassEffect()` for cards, action bars, and floating elements. `.buttonStyle(.glass)` / `.buttonStyle(.glassProminent)` for buttons. Wrap related glass elements in `GlassEffectContainer`. Use `@Namespace` + `.glassEffectID` for morphing transitions.
-- **Reusable components:** `TransactionRow`, `AccountCard`, `CategoryChip`, `TagPill`, `BalanceDisplay`, `InsightCard`, `BudgetGauge`, `EmptyStateView`
+- **Reusable components:** `TransactionRow`, `AccountChip`, `TagPill`, `InsightCard`, `BudgetGauge`, `EmptyStateView`, `LoadingView`, `LedgerCutIcon`, `AppIconBadge`, `AvatarBadge`, `GlassContainer`, `GlassCard`, `WarmGradientBackground`, `ColorSwatchPicker`, `BudgetCategoryListPicker`, `IconPickerRow`, `FormSection`, `DetailField`, `PrimaryButton`, `ErrorText`, `SectionFailureView`, `MetricBadge`, `StatPill`, `MiniSparkline`, `PageDots`, `FlowLayout`
 - **Icons:** SF Symbols only. Do not mix icon sets. `.symbolRenderingMode(.hierarchical)` for multi-layered icons. No emojis as functional UI icons.
 
 ### AI Integration
@@ -204,6 +208,9 @@ Tests use **Swift Testing** (`@Suite`, `@Test`) — not XCTest. TDD cycle applie
 - Accounts with associated transactions can only be **archived**, not permanently deleted
 - Tag deletion must automatically disassociate the tag from all linked transactions
 - Validation errors use **inline** messages — never `Alert` for form validation failures
-- Do not hardcode `#000000` / `#FFFFFF` in views — use semantic colors or Asset Catalog color sets with Dark Mode variants
+- **All `Color` values must go through `Color.Design`** (`Common/DesignSystem/Color+extension.swift`). The hex-to-`Color` initializer is `fileprivate` to that file — direct `Color(hex: ...)` calls do not compile. Two sanctioned paths:
+  - **Design constants** (brand, accent, splash, ledger-cut, settings-tile icons, warm-gradient backdrop, etc.) → add a named static member to `Color.Design`, then reference it via `Color.Design.tokenName`
+  - **Runtime hex strings from domain models** (`SDAccount.color`, `SDCategory.color`, `SDTag.color`) → use `Color.Design.fromHex(_:)`
+  - No exceptions. Do not introduce a second hex helper (no `init(warmHex:)`-style duplicates), and do not hardcode `#000000` / `#FFFFFF` literals in views
 - Floating Split TabBar requires bottom padding in all scrollable content so no content hides behind it
 - All user-facing strings must use `String(localized:)` or `LocalizedStringKey` — never hardcode raw strings in views or reducers

@@ -19,16 +19,16 @@ struct TxHero: View {
         HStack(spacing: 8) {
             if let icon = transaction.type.heroSymbol {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .foregroundStyle(transaction.type.amountDisplayColor)
             }
             if let name = categoryName {
                 Text(name)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .foregroundStyle(Color.Design.textPrimary)
             } else {
                 Text(Self.fallbackCategoryKey(for: transaction.type))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .foregroundStyle(Color.Design.textPrimary)
             }
         }
@@ -40,10 +40,10 @@ struct TxHero: View {
     private var amountRow: some View {
         HStack(alignment: .lastTextBaseline, spacing: 6) {
             Text(verbatim: "NT$")
-                .font(.system(size: 20, design: .monospaced))
+                .font(Font.Design.size20Monospaced)
                 .foregroundStyle(Color.Design.textSecondary)
             Text(amountFormatted)
-                .font(.system(size: 48, weight: .medium, design: .monospaced))
+                .font(Font.Design.size48MediumMonospaced)
                 .monospacedDigit()
                 .foregroundStyle(transaction.type.amountDisplayColor)
                 .lineLimit(1)
@@ -65,9 +65,9 @@ struct TxHero: View {
     private var aiFilledBadge: some View {
         HStack(spacing: 4) {
             Image(systemName: "sparkles")
-                .font(.system(size: 9, weight: .semibold))
+                .font(Font.Design.size9Medium)
             Text("transaction_detail_ai_filled")
-                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .font(Font.Design.size9SemiboldMonospaced)
                 .tracking(0.5)
                 .textCase(.uppercase)
         }

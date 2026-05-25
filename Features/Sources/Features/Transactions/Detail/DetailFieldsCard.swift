@@ -24,7 +24,7 @@ struct DetailFieldsCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(transaction.date, format: .dateTime.year().month(.wide).day())
                     Text(transaction.date, format: .dateTime.hour().minute())
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Font.Design.size11Monospaced)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
             }

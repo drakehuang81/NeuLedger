@@ -67,7 +67,7 @@ public struct AddEditCarrierView: View {
                     .frame(width: 80, height: 80)
                     .shadow(color: typeColor(store.type).opacity(0.35), radius: 12, x: 0, y: 8)
                 Image(systemName: typeIcon(store.type))
-                    .font(.system(size: 32, weight: .semibold))
+                    .font(Font.Design.size32Semibold)
                     .foregroundStyle(.white)
                     .symbolRenderingMode(.hierarchical)
             }
@@ -77,7 +77,7 @@ public struct AddEditCarrierView: View {
                     ? store.type.defaultName
                     : store.name
             )
-            .font(.system(size: 20, weight: .semibold))
+            .font(Font.Design.size20Semibold)
             .foregroundStyle(
                 store.name.isEmpty
                     ? Color.Design.textTertiary
@@ -86,7 +86,7 @@ public struct AddEditCarrierView: View {
 
             if !store.barcode.isEmpty {
                 Text(store.barcode)
-                    .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                    .font(Font.Design.size12Monospaced.monospacedDigit())
                     .foregroundStyle(Color.Design.textSecondary)
                     .tracking(0.5)
             }
@@ -120,16 +120,16 @@ public struct AddEditCarrierView: View {
                             .fill(accent)
                             .frame(width: 32, height: 32)
                         Image(systemName: typeIcon(type))
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(Font.Design.size15Semibold)
                             .foregroundStyle(.white)
                             .symbolRenderingMode(.hierarchical)
                     }
                     Text(type.defaultName)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Font.Design.size13Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
 
                     Text(typeBarcodeFormat(type))
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Font.Design.size11Monospaced)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,7 +140,7 @@ public struct AddEditCarrierView: View {
                                 .fill(accent)
                                 .frame(width: 18, height: 18)
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(Font.Design.size10Bold)
                                 .foregroundStyle(.white)
                         }
                     }
@@ -228,10 +228,10 @@ public struct AddEditCarrierView: View {
                 if let error = store.barcodeError {
                     HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(Color.Design.expenseRed)
                         Text(error)
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(Color.Design.expenseRed)
                             .lineSpacing(2)
                     }
@@ -239,7 +239,7 @@ public struct AddEditCarrierView: View {
                 } else {
                     // Format hint
                     Text(barcodeFormatHint(store.type))
-                        .font(.system(size: 11))
+                        .font(Font.Design.size11)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineSpacing(2)
                         .padding(.horizontal, 6)
@@ -263,7 +263,7 @@ public struct AddEditCarrierView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

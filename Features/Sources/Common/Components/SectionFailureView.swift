@@ -13,15 +13,15 @@ public struct SectionFailureView: View {
     public var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 22))
+                .font(Font.Design.size22)
                 .foregroundStyle(.secondary)
             Text(message)
-                .font(.system(size: 13))
+                .font(Font.Design.size13)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button(action: retry) {
                 Text("common_retry")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(Font.Design.size13Semibold)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(Capsule().fill(Color.Design.brandPrimary.opacity(0.15)))

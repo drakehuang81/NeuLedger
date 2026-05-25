@@ -59,14 +59,14 @@ public struct AddEditCategoryView: View {
     // MARK: - Live Preview Hero
 
     private var livePreviewHero: some View {
-        let color = Color(hex: store.colorHex)
+        let color = Color.Design.fromHex(store.colorHex)
         return VStack(spacing: 10) {
             Circle()
                 .fill(color)
                 .frame(width: 80, height: 80)
                 .overlay {
                     Image(systemName: store.icon)
-                        .font(.system(size: 32, weight: .semibold))
+                        .font(Font.Design.size32Semibold)
                         .foregroundStyle(.white)
                 }
                 .shadow(color: color.opacity(0.35), radius: 12, x: 0, y: 8)
@@ -75,7 +75,7 @@ public struct AddEditCategoryView: View {
                 ? String(localized: "category_form_name_placeholder")
                 : store.name
             )
-            .font(.system(size: 20, weight: .semibold))
+            .font(Font.Design.size20Semibold)
             .foregroundStyle(
                 store.name.isEmpty
                     ? Color.Design.textTertiary
@@ -83,7 +83,7 @@ public struct AddEditCategoryView: View {
             )
 
             Text(typeEyebrow)
-                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .font(Font.Design.size10Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
@@ -129,7 +129,7 @@ public struct AddEditCategoryView: View {
             store.send(.typeChanged(type))
         } label: {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(Font.Design.size13Semibold)
                 .foregroundStyle(
                     isActive ? activeColor : Color.Design.textSecondary
                 )
@@ -179,7 +179,7 @@ public struct AddEditCategoryView: View {
                 IconPickerRow(
                     icons: DesignConstants.categoryIconOptions,
                     selectedIcon: store.icon,
-                    accentColor: Color(hex: store.colorHex),
+                    accentColor: Color.Design.fromHex(store.colorHex),
                     onSelect: { store.send(.iconChanged($0)) }
                 )
             }
@@ -209,7 +209,7 @@ public struct AddEditCategoryView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

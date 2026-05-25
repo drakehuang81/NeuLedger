@@ -25,10 +25,10 @@ struct DashboardTopBar: View {
             AppIconBadge(size: 36)
             VStack(alignment: .leading, spacing: 2) {
                 Text(greeting)
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(.secondary)
                 Text(dateText)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(Font.Design.size16Semibold)
             }
             Spacer()
         }

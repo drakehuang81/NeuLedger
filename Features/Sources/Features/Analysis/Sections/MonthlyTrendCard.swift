@@ -37,7 +37,7 @@ struct MonthlyTrendCard: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "analysis_monthly_eyebrow"))
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
+                    .font(Font.Design.size9Medium.monospacedDigit())
                     .textCase(.uppercase)
                     .tracking(1.2)
                     .foregroundStyle(Color.Design.textSecondary)
@@ -47,7 +47,7 @@ struct MonthlyTrendCard: View {
                         average.twdFormatted
                     )
                 )
-                .font(.system(size: 13).monospacedDigit())
+                .font(Font.Design.size13.monospacedDigit())
                 .foregroundStyle(Color.Design.textPrimary)
             }
             Spacer(minLength: 8)

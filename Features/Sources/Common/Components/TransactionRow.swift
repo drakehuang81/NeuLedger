@@ -59,7 +59,7 @@ public struct TransactionRow: View {
                         .frame(width: 40, height: 40)
 
                     Image(systemName: icon)
-                        .font(.system(size: 20))
+                        .font(Font.Design.size20)
                         .foregroundStyle(iconColor)
                 }
 
@@ -111,9 +111,9 @@ public struct TransactionRow: View {
                         Button(action: onOpenDetail) {
                             HStack(spacing: 4) {
                                 Image(systemName: "pencil")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(Font.Design.size11Medium)
                                 Text("common_edit")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(Font.Design.size11Medium)
                             }
                             .foregroundStyle(Color.Design.textSecondary)
                         }

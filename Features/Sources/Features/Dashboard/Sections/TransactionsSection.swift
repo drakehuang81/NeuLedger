@@ -49,7 +49,7 @@ struct TransactionsSection: View {
             VStack(spacing: 0) {
                 ForEach(rows) { tx in
                     let category = tx.categoryId.flatMap { store.categoryMap[$0] }
-                    let iconColor = Color(hex: category?.color ?? "#999999")
+                    let iconColor = Color.Design.fromHex(category?.color ?? "#999999")
                     TransactionRow(
                         title: tx.note?.isEmpty == false
                             ? (tx.note ?? "")

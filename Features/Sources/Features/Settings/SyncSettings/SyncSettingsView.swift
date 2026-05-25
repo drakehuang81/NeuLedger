@@ -18,7 +18,7 @@ public struct SyncSettingsView: View {
                 VStack(spacing: 14) {
                     content
                     Text("sync_footer_hint")
-                        .font(.system(size: 12))
+                        .font(Font.Design.size12)
                         .foregroundStyle(.secondary)
                         .lineSpacing(2)
                         .padding(.horizontal, 6)
@@ -67,10 +67,10 @@ public struct SyncSettingsView: View {
 
                 VStack(spacing: 8) {
                     Text("sync_enable_title")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(Font.Design.size22Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text("sync_enable_subtitle")
-                        .font(.system(size: 14))
+                        .font(Font.Design.size14)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
@@ -108,7 +108,7 @@ public struct SyncSettingsView: View {
                 ringProgressHero(progress: progress)
 
                 Text("sync_migrating")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(Font.Design.size22Semibold)
                     .foregroundStyle(Color.Design.textPrimary)
                     .multilineTextAlignment(.center)
 
@@ -130,10 +130,10 @@ public struct SyncSettingsView: View {
 
                 VStack(spacing: 8) {
                     Text("sync_enable_title")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(Font.Design.size22Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text("sync_enable_subtitle")
-                        .font(.system(size: 14))
+                        .font(Font.Design.size14)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
@@ -152,9 +152,9 @@ public struct SyncSettingsView: View {
                     HStack(spacing: 6) {
                         Text("sync_open_settings")
                         Image(systemName: "arrow.up.right")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(Font.Design.size12Semibold)
                     }
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Font.Design.size15Medium)
                     .foregroundStyle(Color.Design.brandAccent)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
@@ -180,7 +180,7 @@ public struct SyncSettingsView: View {
 
                 VStack(spacing: 6) {
                     Text("sync_enabled_title")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(Font.Design.size22Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
 
                     HStack(spacing: 6) {
@@ -189,7 +189,7 @@ public struct SyncSettingsView: View {
                             .frame(width: 6, height: 6)
                             .shadow(color: Color.Design.incomeGreen.opacity(0.7), radius: 4)
                         Text("sync_enabled_active")
-                            .font(.system(size: 13))
+                            .font(Font.Design.size13)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -219,7 +219,7 @@ public struct SyncSettingsView: View {
                 )
                 .frame(width: 110, height: 110)
             Image(systemName: symbol)
-                .font(.system(size: 56, weight: .light))
+                .font(Font.Design.size56Light)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(tint)
         }
@@ -253,7 +253,7 @@ public struct SyncSettingsView: View {
                 .animation(.easeOut(duration: 0.3), value: progress)
 
             Image(systemName: "icloud.and.arrow.up")
-                .font(.system(size: 36, weight: .light))
+                .font(Font.Design.size36Light)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.Design.brandAccent)
         }
@@ -264,11 +264,11 @@ public struct SyncSettingsView: View {
     private var storageNote: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "internaldrive")
-                .font(.system(size: 12, weight: .semibold))
+                .font(Font.Design.size12Semibold)
                 .foregroundStyle(.secondary)
                 .padding(.top, 1)
             Text("sync_storage_note")
-                .font(.system(size: 12))
+                .font(Font.Design.size12)
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)
             Spacer(minLength: 0)
@@ -279,14 +279,14 @@ public struct SyncSettingsView: View {
     private var lastSyncedRow: some View {
         HStack(spacing: 12) {
             Image(systemName: "clock.arrow.2.circlepath")
-                .font(.system(size: 14, weight: .semibold))
+                .font(Font.Design.size14Semibold)
                 .foregroundStyle(.secondary)
             Text("sync_last_synced_label")
-                .font(.system(size: 13))
+                .font(Font.Design.size13)
                 .foregroundStyle(.secondary)
             Spacer()
             Text(lastSyncedDisplay)
-                .font(.system(size: 13, weight: .medium))
+                .font(Font.Design.size13Medium)
                 .foregroundStyle(Color.Design.textPrimary)
                 .monospacedDigit()
         }
@@ -315,11 +315,11 @@ public struct SyncSettingsView: View {
                     Text("sync_now_in_progress")
                 } else {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Font.Design.size14Semibold)
                     Text("sync_now_button")
                 }
             }
-            .font(.system(size: 15, weight: .semibold))
+            .font(Font.Design.size15Semibold)
             .foregroundStyle(Color.Design.brandAccent)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
@@ -351,11 +351,11 @@ public struct SyncSettingsView: View {
     private func featureRow(icon: String, label: LocalizedStringKey) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
+                .font(Font.Design.size16Semibold)
                 .foregroundStyle(Color.Design.brandAccent)
                 .frame(width: 28)
             Text(label)
-                .font(.system(size: 14))
+                .font(Font.Design.size14)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer()
         }
@@ -366,14 +366,14 @@ public struct SyncSettingsView: View {
     private var warningBanner: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 16))
+                .font(Font.Design.size16)
                 .foregroundStyle(Color.Design.expenseRed)
             VStack(alignment: .leading, spacing: 2) {
                 Text("sync_icloud_unavailable_title")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(Font.Design.size13Semibold)
                     .foregroundStyle(Color.Design.expenseRed)
                 Text("sync_icloud_unavailable")
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.textPrimary)
                     .lineSpacing(2)
             }
@@ -393,10 +393,10 @@ public struct SyncSettingsView: View {
     private func failureBanner(_ message: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 14))
+                .font(Font.Design.size14)
                 .foregroundStyle(Color.Design.expenseRed)
             Text(message)
-                .font(.system(size: 13))
+                .font(Font.Design.size13)
                 .foregroundStyle(Color.Design.expenseRed)
             Spacer(minLength: 0)
         }
@@ -412,15 +412,15 @@ public struct SyncSettingsView: View {
             VStack(spacing: 10) {
                 HStack {
                     Text("sync_migrating_progress_label")
-                        .font(.system(size: 13))
+                        .font(Font.Design.size13)
                         .foregroundStyle(.secondary)
                     Spacer()
                     HStack(spacing: 1) {
                         Text("\(Int(progress * 100))")
-                            .font(.system(size: 15, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size15Medium.monospacedDigit())
                             .foregroundStyle(Color.Design.textPrimary)
                         Text("%")
-                            .font(.system(size: 11).monospacedDigit())
+                            .font(Font.Design.size11.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -449,7 +449,7 @@ public struct SyncSettingsView: View {
                     label: "sync_icloud_account_active",
                     trailing: AnyView(
                         Image(systemName: store.isCloudKitAvailable ? "checkmark" : "xmark")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(Font.Design.size13Semibold)
                             .foregroundStyle(
                                 store.isCloudKitAvailable
                                     ? Color.Design.incomeGreen
@@ -469,11 +469,11 @@ public struct SyncSettingsView: View {
     ) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
+                .font(Font.Design.size16Semibold)
                 .foregroundStyle(iconTint)
                 .frame(width: 28)
             Text(label)
-                .font(.system(size: 15))
+                .font(Font.Design.size15)
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer()
             trailing
@@ -489,7 +489,7 @@ public struct SyncSettingsView: View {
     ) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 17, weight: .semibold))
+                .font(Font.Design.size17Semibold)
                 .foregroundStyle(
                     enabled ? Color.Design.textInverse : .secondary
                 )

@@ -29,7 +29,7 @@ struct HeroBalanceCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("dashboard_total_label")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Font.Design.size12Medium)
                     .textCase(.uppercase)
                     .tracking(1)
                     .foregroundStyle(.secondary)
@@ -45,7 +45,7 @@ struct HeroBalanceCard: View {
             }
 
             Text(store.filteredBalance.twdFormatted)
-                .font(.system(size: 40, weight: .bold).monospacedDigit())
+                .font(Font.Design.size40Bold.monospacedDigit())
                 .foregroundStyle(.primary)
                 .contentTransition(.numericText())
                 .animation(.spring(duration: 0.5), value: store.filteredBalance)
@@ -74,7 +74,7 @@ struct HeroBalanceCard: View {
                 format: String(localized: "dashboard_sparkline_warmup_hint", bundle: .main),
                 daysRemaining
             ))
-            .font(.system(size: 13))
+            .font(Font.Design.size13)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 40, alignment: .center)
@@ -122,7 +122,7 @@ private struct HeroPreviewWrapper: View {
             WarmGradientBackground(variant: .top)
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Font.Design.size11Medium)
                     .textCase(.uppercase)
                     .tracking(1)
                     .foregroundStyle(.secondary)

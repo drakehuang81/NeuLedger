@@ -118,7 +118,7 @@ public struct TransactionsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(String(localized: "transactions_no_match_title"))
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(Font.Design.size18Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text(String(localized: "transactions_no_match_desc"))
                         .font(Font.Design.caption)
@@ -129,10 +129,10 @@ public struct TransactionsView: View {
 
                 HStack(spacing: 6) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(Font.Design.size11Semibold)
                         .foregroundStyle(Color.Design.aiPurple)
                     Text(String(localized: "transactions_try_examples"))
-                        .font(.system(size: 11, weight: .medium))
+                        .font(Font.Design.size11Medium)
                         .monospaced()
                         .tracking(1.2)
                         .textCase(.uppercase)
@@ -164,24 +164,24 @@ public struct TransactionsView: View {
                 ZStack {
                     Circle().fill(Color.Design.aiPurple.opacity(0.14))
                     Image(systemName: icon)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Font.Design.size14Medium)
                         .foregroundStyle(Color.Design.aiPurple)
                 }
                 .frame(width: 32, height: 32)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(query)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Font.Design.size14Medium)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text(hint)
-                        .font(.system(size: 10.5).monospacedDigit())
+                        .font(Font.Design.size11.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                 }
 
                 Spacer(minLength: 0)
 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                     .foregroundStyle(Color.Design.textSecondary)
             }
         }
@@ -264,7 +264,7 @@ public struct TransactionsView: View {
     private func dateSectionHeader(_ date: Date) -> some View {
         HStack(spacing: 6) {
             Text(sectionTitle(for: date))
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .monospaced()
                 .tracking(1.2)
                 .textCase(.uppercase)

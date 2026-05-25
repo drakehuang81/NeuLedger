@@ -53,7 +53,7 @@ public struct TransactionDetailView: View {
                 }
                 ToolbarItem(placement: .principal) {
                     Text("transaction_detail_title")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(Font.Design.size10MediumMonospaced)
                         .tracking(1.6)
                         .textCase(.uppercase)
                         .foregroundStyle(Color.Design.textSecondary)

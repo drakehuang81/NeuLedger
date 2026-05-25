@@ -69,18 +69,18 @@ struct KPIStrip: View {
 
         return VStack(alignment: .leading, spacing: 3) {
             Text(String(localized: key))
-                .font(.system(size: 9, weight: .medium).monospacedDigit())
+                .font(Font.Design.size9Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(0.8)
                 .foregroundStyle(Color.Design.textSecondary)
             HStack(alignment: .firstTextBaseline, spacing: 1) {
                 if let prefix = trimmed.prefix {
                     Text(prefix)
-                        .font(.system(size: 9).monospacedDigit())
+                        .font(Font.Design.size9.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                 }
                 Text(trimmed.body)
-                    .font(.system(size: 14, weight: .medium).monospacedDigit())
+                    .font(Font.Design.size14Medium.monospacedDigit())
                     .foregroundStyle(valueColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

@@ -27,12 +27,12 @@ struct AnalysisTopBar: View {
     private var titleStack: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(eyebrowLabel(for: store.selectedPeriod))
-                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .font(Font.Design.size10Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(Color.Design.textSecondary)
             Text(String(localized: "analysis_title"))
-                .font(.system(size: 18, weight: .semibold))
+                .font(Font.Design.size18Semibold)
                 .foregroundStyle(Color.Design.textPrimary)
                 .lineLimit(1)
         }
@@ -52,7 +52,7 @@ struct AnalysisTopBar: View {
             store.send(.periodChanged(period))
         } label: {
             Text(period.displayName)
-                .font(.system(size: 11, weight: .medium).monospacedDigit())
+                .font(Font.Design.size11Medium.monospacedDigit())
                 .foregroundStyle(
                     isSelected ? Color.Design.textInverse : Color.Design.textSecondary
                 )
@@ -90,7 +90,7 @@ struct AnalysisTopBar: View {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color.Design.textPrimary.opacity(0.06))
                     Image(systemName: "line.3.horizontal.decrease")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Font.Design.size13Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                 }
                 .frame(width: 30, height: 30)

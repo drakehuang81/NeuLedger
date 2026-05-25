@@ -35,25 +35,25 @@ struct AppFeature {
     // MARK: - Action
     
     enum Action: Equatable {
-        case onAppear
+        case splashCompleted
         case deepLinkReceived(URL)
         case onboarding(OnboardingFeature.Action)
         case main(MainTabFeature.Action)
     }
-    
+
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    
+
     // MARK: - Body
-    
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
+            case .splashCompleted:
                 state.destination = userSettingsAdapter.bool(.hasCompletedOnboarding)
                     ? .main(MainTabFeature.State())
                     : .onboarding(OnboardingFeature.State())
                 return .none
-                
+
             case let .deepLinkReceived(url):
                 guard url.scheme == "neuledger",
                       url.host == "carrier-management" else { return .none }

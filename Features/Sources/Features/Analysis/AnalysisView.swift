@@ -100,7 +100,7 @@ public struct AnalysisView: View {
                 GlassContainer(cornerRadius: 16, padding: 14) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(String(localized: "analysis_budget_progress"))
-                            .font(.system(size: 9, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size9Medium.monospacedDigit())
                             .textCase(.uppercase)
                             .tracking(1.2)
                             .foregroundStyle(Color.Design.textSecondary)

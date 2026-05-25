@@ -39,7 +39,7 @@ public struct BudgetCategoryListPicker: View {
 
                 row(
                     symbol: cat.icon,
-                    color: Color(hex: cat.color),
+                    color: Color.Design.fromHex(cat.color),
                     title: Text(cat.localizedName),
                     isAll: false,
                     isSelected: selectedId == cat.id,
@@ -73,13 +73,13 @@ public struct BudgetCategoryListPicker: View {
                 .frame(width: 32, height: 32)
 
                 title
-                    .font(.system(size: 15.5))
+                    .font(Font.Design.size16)
                     .foregroundStyle(Color.Design.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(Font.Design.size18Semibold)
                         .foregroundStyle(Color.Design.accentOrange)
                 }
             }

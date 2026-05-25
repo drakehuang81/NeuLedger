@@ -12,7 +12,7 @@ struct AIInsightCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 header
                 Text(body(for: insight))
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .lineSpacing(2)
                     .foregroundStyle(Color.Design.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -27,10 +27,10 @@ struct AIInsightCard: View {
     private var header: some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkles")
-                .font(.system(size: 13, weight: .medium))
+                .font(Font.Design.size13Medium)
                 .foregroundStyle(Color.Design.accentOrange)
             Text("transaction_detail_insight_label")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(Font.Design.size10MediumMonospaced)
                 .tracking(1.2)
                 .textCase(.uppercase)
                 .foregroundStyle(Color.Design.textSecondary)

@@ -23,12 +23,12 @@ public struct AppIconBadge: View {
             } else {
                 ZStack {
                     LinearGradient(
-                        colors: [Color.Design.brandPrimary, Color(hex: "#FF2D55")],
+                        colors: [Color.Design.brandPrimary, Color.Design.brandPink],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                     Image(systemName: "wallet.pass.fill")
-                        .font(.system(size: size * 0.42, weight: .bold))
+                        .font(Font.Design.dynamic(size: size * 0.42, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }

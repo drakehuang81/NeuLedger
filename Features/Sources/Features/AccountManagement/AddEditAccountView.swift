@@ -90,11 +90,11 @@ public struct AddEditAccountView: View {
                     .frame(width: 36, height: 36)
                     .overlay {
                         Image(systemName: type.defaultIcon)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(Font.Design.size18Semibold)
                             .foregroundStyle(.white)
                     }
                 Text(type.displayLabel)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                     .foregroundStyle(Color.Design.textPrimary)
             }
             .frame(maxWidth: .infinity)
@@ -207,7 +207,7 @@ public struct AddEditAccountView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

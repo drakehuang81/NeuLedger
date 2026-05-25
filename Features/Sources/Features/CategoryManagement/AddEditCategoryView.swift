@@ -83,7 +83,7 @@ public struct AddEditCategoryView: View {
             )
 
             Text(typeEyebrow)
-                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .font(Font.Design.size10Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
@@ -129,7 +129,7 @@ public struct AddEditCategoryView: View {
             store.send(.typeChanged(type))
         } label: {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(Font.Design.size13Semibold)
                 .foregroundStyle(
                     isActive ? activeColor : Color.Design.textSecondary
                 )
@@ -209,7 +209,7 @@ public struct AddEditCategoryView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

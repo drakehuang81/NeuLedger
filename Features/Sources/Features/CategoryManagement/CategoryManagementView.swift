@@ -47,7 +47,7 @@ public struct CategoryManagementView: View {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.size17Semibold)
                 }
             }
         }
@@ -82,7 +82,7 @@ public struct CategoryManagementView: View {
             store.send(.selectedTypeChanged(type))
         } label: {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(Font.Design.size13Semibold)
                 .foregroundStyle(
                     isActive ? Color.Design.textPrimary : Color.Design.textSecondary
                 )
@@ -120,7 +120,7 @@ public struct CategoryManagementView: View {
                 }
 
                 Text("category_management_default_hint")
-                    .font(.system(size: 11))
+                    .font(Font.Design.size11)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,7 +140,7 @@ public struct CategoryManagementView: View {
                     .frame(width: 40, height: 40)
                     .overlay {
                         Image(systemName: category.icon)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(Font.Design.size18Semibold)
                             .foregroundStyle(.white)
                     }
 
@@ -151,7 +151,7 @@ public struct CategoryManagementView: View {
 
                     if category.isDefault {
                         Text("category_management_default")
-                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size10Medium.monospacedDigit())
                             .textCase(.uppercase)
                             .tracking(0.5)
                             .foregroundStyle(.secondary)
@@ -165,7 +165,7 @@ public struct CategoryManagementView: View {
 
                 if !category.isDefault {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(Font.Design.size12Semibold)
                         .foregroundStyle(Color.Design.textTertiary)
                 }
             }

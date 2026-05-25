@@ -35,7 +35,7 @@ public struct TagManagementView: View {
                     store.send(.addButtonTapped)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Font.Design.size17Semibold)
                 }
             }
         }
@@ -81,7 +81,7 @@ public struct TagManagementView: View {
     private var chipOverviewSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(format: String(localized: "tag_management_all_count_format"), store.tags.count))
-                .font(.system(size: 11, weight: .medium).monospacedDigit())
+                .font(Font.Design.size11Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
@@ -103,7 +103,7 @@ public struct TagManagementView: View {
                 .fill(color)
                 .frame(width: 8, height: 8)
             Text("#\(tag.name)")
-                .font(.system(size: 13, weight: .semibold))
+                .font(Font.Design.size13Semibold)
                 .foregroundStyle(color)
         }
         .padding(.vertical, 7)
@@ -117,7 +117,7 @@ public struct TagManagementView: View {
     private var detailListSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("tag_management_usage_section")
-                .font(.system(size: 11, weight: .medium).monospacedDigit())
+                .font(Font.Design.size11Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
@@ -137,7 +137,7 @@ public struct TagManagementView: View {
             }
 
             Text("tag_management_delete_hint")
-                .font(.system(size: 11))
+                .font(Font.Design.size11)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 6)
                 .padding(.top, 10)
@@ -158,7 +158,7 @@ public struct TagManagementView: View {
                         .overlay(Circle().strokeBorder(color, lineWidth: 1.5))
                         .frame(width: 36, height: 36)
                     Text("#")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Font.Design.size14Semibold)
                         .foregroundStyle(color)
                 }
 
@@ -169,7 +169,7 @@ public struct TagManagementView: View {
 
                     if let hex = tag.color {
                         Text(hex.uppercased())
-                            .font(.system(size: 11).monospacedDigit())
+                            .font(Font.Design.size11.monospacedDigit())
                             .tracking(0.3)
                             .foregroundStyle(Color.Design.textSecondary)
                     }
@@ -180,16 +180,16 @@ public struct TagManagementView: View {
                 // TODO: Show real usage count when tagClient exposes it
                 VStack(alignment: .trailing, spacing: 1) {
                     Text("—")
-                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                        .font(Font.Design.size13Semibold.monospacedDigit())
                         .foregroundStyle(Color.Design.textPrimary)
                     Text("TXNS")
-                        .font(.system(size: 10).monospacedDigit())
+                        .font(Font.Design.size10.monospacedDigit())
                         .tracking(0.5)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.Design.size12Semibold)
                     .foregroundStyle(Color.Design.textTertiary)
             }
             .padding(.horizontal, 14)

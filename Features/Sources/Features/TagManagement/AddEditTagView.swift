@@ -23,7 +23,7 @@ public struct AddEditTagView: View {
                         colorSection
 
                         Text("tag_form_usage_hint")
-                            .font(.system(size: 11))
+                            .font(Font.Design.size11)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 6)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -128,7 +128,7 @@ public struct AddEditTagView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(Font.Design.size11Medium)
                 .textCase(.uppercase)
                 .tracking(1.2)
                 .foregroundStyle(.secondary)

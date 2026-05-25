@@ -28,7 +28,7 @@ public struct AppIconBadge: View {
                         endPoint: .bottomTrailing
                     )
                     Image(systemName: "wallet.pass.fill")
-                        .font(.system(size: size * 0.42, weight: .bold))
+                        .font(Font.Design.dynamic(size: size * 0.42, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }

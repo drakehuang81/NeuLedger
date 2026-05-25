@@ -67,7 +67,7 @@ public struct AddEditCarrierView: View {
                     .frame(width: 80, height: 80)
                     .shadow(color: typeColor(store.type).opacity(0.35), radius: 12, x: 0, y: 8)
                 Image(systemName: typeIcon(store.type))
-                    .font(.system(size: 32, weight: .semibold))
+                    .font(Font.Design.size32Semibold)
                     .foregroundStyle(.white)
                     .symbolRenderingMode(.hierarchical)
             }
@@ -140,7 +140,7 @@ public struct AddEditCarrierView: View {
                                 .fill(accent)
                                 .frame(width: 18, height: 18)
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(Font.Design.size10Bold)
                                 .foregroundStyle(.white)
                         }
                     }

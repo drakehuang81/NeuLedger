@@ -29,7 +29,7 @@ public struct EmptyStateView: View {
                     .frame(width: 72, height: 72)
 
                 Image(systemName: icon)
-                    .font(.system(size: 28))
+                    .font(Font.Design.size28)
                     .foregroundStyle(Color.Design.textSecondary)
             }
             .padding(.bottom, 8)

@@ -174,7 +174,7 @@ public struct TransactionsView: View {
                         .font(Font.Design.size14Medium)
                         .foregroundStyle(Color.Design.textPrimary)
                     Text(hint)
-                        .font(.system(size: 10.5).monospacedDigit())
+                        .font(Font.Design.size11.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                 }
 

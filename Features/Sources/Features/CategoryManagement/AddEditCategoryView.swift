@@ -66,7 +66,7 @@ public struct AddEditCategoryView: View {
                 .frame(width: 80, height: 80)
                 .overlay {
                     Image(systemName: store.icon)
-                        .font(.system(size: 32, weight: .semibold))
+                        .font(Font.Design.size32Semibold)
                         .foregroundStyle(.white)
                 }
                 .shadow(color: color.opacity(0.35), radius: 12, x: 0, y: 8)

@@ -13,7 +13,7 @@ public struct SectionFailureView: View {
     public var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 22))
+                .font(Font.Design.size22)
                 .foregroundStyle(.secondary)
             Text(message)
                 .font(Font.Design.size13)

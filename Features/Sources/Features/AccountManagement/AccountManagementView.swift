@@ -103,7 +103,7 @@ public struct AccountManagementView: View {
                         .foregroundStyle(.secondary)
                 }
                 Text(totalBalance.twdFormatted)
-                    .font(.system(size: 38, weight: .semibold).monospacedDigit())
+                    .font(Font.Design.size38Semibold.monospacedDigit())
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)

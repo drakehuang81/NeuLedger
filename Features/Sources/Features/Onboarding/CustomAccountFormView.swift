@@ -16,7 +16,7 @@ struct CustomAccountFormView: View {
                 .padding(.bottom, 18)
 
             Text("onboarding_custom_sheet_title")
-                .font(.system(size: 24, weight: .bold))
+                .font(Font.Design.size24Bold)
                 .padding(.bottom, 4)
             Text("onboarding_custom_sheet_subtitle")
                 .font(Font.Design.size13)
@@ -64,7 +64,7 @@ struct CustomAccountFormView: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: type.defaultIcon)
-                    .font(.system(size: 18))
+                    .font(Font.Design.size18)
                     .foregroundStyle(isSelected ? Color.Design.brandPrimary : Color.primary)
                 Text(type.displayLabel)
                     .font(Font.Design.size11)

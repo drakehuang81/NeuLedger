@@ -163,7 +163,7 @@ public struct AddTransactionView: View {
             store.send(.typeChanged(type))
         } label: {
             Text(type.displayName)
-                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                .font(isSelected ? Font.Design.size14Semibold : Font.Design.size14Medium)
                 .foregroundStyle(isSelected ? tint : Color.Design.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
@@ -192,19 +192,19 @@ public struct AddTransactionView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("NT$")
-                        .font(.system(size: 18, weight: .regular).monospacedDigit())
+                        .font(Font.Design.size18.monospacedDigit())
                         .foregroundStyle(store.amountText.isEmpty ? Color.Design.textSecondary : amountTint)
 
                     if !amountSignPrefix.isEmpty {
                         Text(amountSignPrefix)
-                            .font(.system(size: 44, weight: .medium).monospacedDigit())
+                            .font(Font.Design.size44Medium.monospacedDigit())
                             .foregroundStyle(amountTint)
                     }
 
                     TextField("0", text: $store.amountText)
                     .keyboardType(.numberPad)
                     .focused($focusedField, equals: .amount)
-                    .font(.system(size: 44, weight: .medium).monospacedDigit())
+                    .font(Font.Design.size44Medium.monospacedDigit())
                     .foregroundStyle(store.amountText.isEmpty ? Color.Design.textSecondary : amountTint)
                     .tint(amountTint)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -576,7 +576,7 @@ public struct AddTransactionView: View {
             .frame(width: 40, height: 40)
 
             Text(category.localizedName)
-                .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                .font(isSelected ? Font.Design.size11Semibold : Font.Design.size11Medium)
                 .foregroundStyle(isSelected ? tint : Color.Design.textPrimary)
                 .lineLimit(1)
         }
@@ -594,7 +594,7 @@ public struct AddTransactionView: View {
         .overlay(alignment: .topTrailing) {
             if isSuggested {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(Font.Design.size10Medium)
                     .foregroundStyle(Color.Design.aiPurple)
                     .padding(6)
             }

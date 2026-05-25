@@ -19,7 +19,7 @@ public struct AccountChip: View {
                 Circle()
                     .fill(swatch.opacity(0.15))
                 Image(systemName: account.icon.isEmpty ? "wallet.pass" : account.icon)
-                    .font(.system(size: dense ? 12 : 14, weight: .medium))
+                    .font(dense ? Font.Design.size12Medium : Font.Design.size14Medium)
                     .foregroundStyle(swatch)
                     .symbolRenderingMode(.hierarchical)
             }
@@ -30,7 +30,7 @@ public struct AccountChip: View {
                     .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.textPrimary)
                 Text(account.type.displayKey)
-                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                    .font(Font.Design.size9Monospaced)
                     .tracking(1)
                     .textCase(.uppercase)
                     .foregroundStyle(Color.Design.textSecondary)

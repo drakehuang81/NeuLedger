@@ -45,7 +45,7 @@ struct HeroBalanceCard: View {
             }
 
             Text(store.filteredBalance.twdFormatted)
-                .font(.system(size: 40, weight: .bold).monospacedDigit())
+                .font(Font.Design.size40Bold.monospacedDigit())
                 .foregroundStyle(.primary)
                 .contentTransition(.numericText())
                 .animation(.spring(duration: 0.5), value: store.filteredBalance)

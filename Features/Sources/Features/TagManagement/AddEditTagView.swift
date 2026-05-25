@@ -61,7 +61,7 @@ public struct AddEditTagView: View {
                 .fill(color)
                 .frame(width: 10, height: 10)
             Text("#\(store.name.isEmpty ? String(localized: "tag_form_name_placeholder") : store.name)")
-                .font(.system(size: 17, weight: .bold))
+                .font(Font.Design.size17Semibold)
                 .foregroundStyle(color)
         }
         .padding(.vertical, 11)

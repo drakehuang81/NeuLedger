@@ -99,7 +99,7 @@ public struct LoadingView: View {
 
                 VStack(spacing: 10) {
                     Text("NeuLedger")
-                        .font(.system(size: 30, weight: .bold, design: .default))
+                        .font(Font.Design.size30Bold)
                         .tracking(-0.8)
                         .foregroundColor(primaryTextColor)
 

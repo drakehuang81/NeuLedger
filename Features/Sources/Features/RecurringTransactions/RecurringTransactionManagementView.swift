@@ -65,20 +65,20 @@ public struct RecurringTransactionManagementView: View {
                             .frame(width: 96, height: 96)
 
                         Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 40, weight: .regular))
+                            .font(Font.Design.size40)
                             .foregroundStyle(Color.Design.brandAccent)
                     }
                     .shadow(color: Color.Design.brandAccent.opacity(0.16), radius: 30)
 
                     VStack(spacing: 8) {
                         Text(String(localized: "recurring_transaction_empty_title"))
-                            .font(.system(size: 22, weight: .semibold, design: .rounded))
+                            .font(Font.Design.size22SemiboldRounded)
                             .foregroundStyle(Color.Design.textPrimary)
                             .multilineTextAlignment(.center)
                             .tracking(-0.4)
 
                         Text(String(localized: "recurring_transaction_empty_desc"))
-                            .font(.system(size: 13.5))
+                            .font(Font.Design.size14)
                             .foregroundStyle(Color.Design.textSecondary)
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
@@ -239,7 +239,7 @@ public struct RecurringTransactionManagementView: View {
                         .font(Font.Design.size12Medium.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                     Text(netAmountText(net))
-                        .font(.system(size: 34, weight: .semibold, design: .rounded).monospacedDigit())
+                        .font(Font.Design.size34SemiboldRounded.monospacedDigit())
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
@@ -368,7 +368,7 @@ public struct RecurringTransactionManagementView: View {
                             let dueText = dueDateText(item.nextDueDate)
                             let dueColor = dueDateColor(item.nextDueDate)
                             Text(dueText)
-                                .font(.system(size: 11.5).monospacedDigit())
+                                .font(Font.Design.size12.monospacedDigit())
                                 .tracking(0.2)
                                 .foregroundStyle(dueColor)
                         } else {
@@ -433,7 +433,7 @@ public struct RecurringTransactionManagementView: View {
         case .yearly:  label = "recurring_freq_yearly_short"
         }
         return Text(label)
-            .font(.system(size: 10, weight: .semibold).monospacedDigit())
+            .font(Font.Design.size10Medium.monospacedDigit())
             .textCase(.uppercase)
             .tracking(0.5)
             .foregroundStyle(color)

@@ -73,7 +73,7 @@ public struct BudgetCategoryListPicker: View {
                 .frame(width: 32, height: 32)
 
                 title
-                    .font(.system(size: 15.5))
+                    .font(Font.Design.size16)
                     .foregroundStyle(Color.Design.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 

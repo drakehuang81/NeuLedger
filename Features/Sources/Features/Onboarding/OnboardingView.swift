@@ -152,7 +152,7 @@ struct OnboardingView: View {
                     .font(Font.Design.size13)
                     .foregroundStyle(.secondary)
                 Text(Decimal(0).twdFormatted)
-                    .font(.system(size: 44, weight: .bold).monospacedDigit())
+                    .font(Font.Design.size44Bold.monospacedDigit())
                     .foregroundStyle(.primary)
                 HStack(spacing: 8) {
                     chip("onboarding_welcome_chip_starting", color: Color.Design.brandPrimary)
@@ -176,7 +176,7 @@ struct OnboardingView: View {
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("\(Text("onboarding_welcome_title_lead").font(.system(size: 44, weight: .bold))) \(Text("onboarding_welcome_title_emphasis").font(.system(size: 44, weight: .semibold).italic()).foregroundColor(Color.Design.brandPrimary))")
+            Text("\(Text("onboarding_welcome_title_lead").font(Font.Design.size44Bold)) \(Text("onboarding_welcome_title_emphasis").font(Font.Design.size44Medium.italic()).foregroundColor(Color.Design.brandPrimary))")
             .lineSpacing(-2)
 
             Text("onboarding_welcome_subtitle")
@@ -196,7 +196,7 @@ struct OnboardingView: View {
                 .padding(.top, 16)
 
             Text("onboarding_selection_title")
-                .font(.system(size: 32, weight: .bold))
+                .font(Font.Design.size32Semibold)
                 .padding(.top, 12)
             Text("onboarding_selection_subtitle")
                 .font(Font.Design.size14)
@@ -366,14 +366,14 @@ struct OnboardingView: View {
                         .frame(width: 100, height: 100)
                         .shadow(color: Color.Design.brandPrimary.opacity(0.35), radius: 28, x: 0, y: 10)
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 48))
+                        .font(Font.Design.size48)
                         .foregroundStyle(.white)
                 }
                 VStack(spacing: 12) {
                     Text("onboarding_ready_title")
-                        .font(.system(size: 36, weight: .bold))
+                        .font(Font.Design.size36Bold)
                     Text("onboarding_ready_subtitle")
-                        .font(.system(size: 17))
+                        .font(Font.Design.size17)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -383,7 +383,7 @@ struct OnboardingView: View {
                             .font(Font.Design.size13)
                             .foregroundStyle(.secondary)
                         Text(Decimal(0).twdFormatted)
-                            .font(.system(size: 24, weight: .bold).monospacedDigit())
+                            .font(Font.Design.size24Bold.monospacedDigit())
                         Text(accountCountText)
                             .font(Font.Design.size12)
                             .foregroundStyle(.secondary)
@@ -414,13 +414,13 @@ struct OnboardingView: View {
                     .frame(width: 88, height: 88)
                     .shadow(color: Color.Design.brandPrimary.opacity(0.55), radius: 30, x: 0, y: 12)
                 Image(systemName: "checkmark")
-                    .font(.system(size: 38, weight: .heavy))
+                    .font(Font.Design.size38Heavy)
                     .foregroundStyle(.white)
             }
             .modifier(RevealOnAppear(delay: 0.05))
             VStack(spacing: 8) {
                 Text("onboarding_done_title")
-                    .font(.system(size: 36, weight: .bold))
+                    .font(Font.Design.size36Bold)
                 Text("onboarding_done_subtitle")
                     .font(Font.Design.size15)
                     .foregroundStyle(.secondary)

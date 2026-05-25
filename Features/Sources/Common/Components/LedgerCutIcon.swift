@@ -53,7 +53,7 @@ public struct LedgerCutIcon: View {
 
             // Letter N — TOP half (full fg colour)
             Text("N")
-                .font(.system(size: size * 0.74, weight: .heavy, design: .default))
+                .font(Font.Design.dynamic(size: size * 0.74, weight: .heavy))
                 .tracking(-size * 0.74 * 0.06)
                 .foregroundColor(palette.fg)
                 .offset(y: -size * 0.01)
@@ -67,7 +67,7 @@ public struct LedgerCutIcon: View {
 
             // Letter N — BOTTOM half (dimmed, closer to bg)
             Text("N")
-                .font(.system(size: size * 0.74, weight: .heavy, design: .default))
+                .font(Font.Design.dynamic(size: size * 0.74, weight: .heavy))
                 .tracking(-size * 0.74 * 0.06)
                 .foregroundColor(palette.fg.opacity(palette.dimOpacity))
                 .offset(y: -size * 0.01)

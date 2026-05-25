@@ -21,7 +21,7 @@ public struct FormSection<Content: View>: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(headerKey)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(Font.Design.size11MediumMonospaced)
                 .tracking(1.2)
                 .textCase(.uppercase)
                 .foregroundStyle(Color.Design.textSecondary)

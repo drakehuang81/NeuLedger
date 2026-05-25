@@ -219,7 +219,7 @@ public struct SyncSettingsView: View {
                 )
                 .frame(width: 110, height: 110)
             Image(systemName: symbol)
-                .font(.system(size: 56, weight: .light))
+                .font(Font.Design.size56Light)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(tint)
         }
@@ -253,7 +253,7 @@ public struct SyncSettingsView: View {
                 .animation(.easeOut(duration: 0.3), value: progress)
 
             Image(systemName: "icloud.and.arrow.up")
-                .font(.system(size: 36, weight: .light))
+                .font(Font.Design.size36Light)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.Design.brandAccent)
         }

@@ -121,7 +121,7 @@ public struct RecurringTransactionFormView: View {
                             "0",
                             text: $store.amountText.sending(\.amountChanged)
                         )
-                        .font(.system(size: 34, weight: .semibold, design: .monospaced).monospacedDigit())
+                        .font(Font.Design.size34SemiboldMonospaced.monospacedDigit())
                         .foregroundStyle(Color.Design.textPrimary)
                         .keyboardType(.numberPad)
                         .padding(.vertical, 14)
@@ -357,7 +357,7 @@ public struct RecurringTransactionFormView: View {
                 .font(Font.Design.size10Medium)
                 .foregroundStyle(Color.Design.textTertiary)
             Text(nextDueDateLabel)
-                .font(.system(size: 11, weight: .regular))
+                .font(Font.Design.size11)
                 .foregroundStyle(Color.Design.textTertiary)
         }
         .padding(.horizontal, 6)

@@ -65,7 +65,7 @@ public struct FilterView: View {
                         store.send(.applyTapped)
                     } label: {
                         Text(String(localized: "filter_apply"))
-                            .font(.system(size: 14, weight: .bold))
+                            .font(Font.Design.size14Semibold)
                             .foregroundStyle(.white)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
@@ -153,7 +153,7 @@ public struct FilterView: View {
                     .frame(width: 16, height: 16)
                     .overlay {
                         Image(systemName: category.icon)
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(Font.Design.size9Medium)
                             .foregroundStyle(.white)
                     }
                 Text(category.localizedName)

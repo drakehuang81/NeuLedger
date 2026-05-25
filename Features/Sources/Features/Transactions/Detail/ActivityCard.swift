@@ -41,7 +41,7 @@ struct ActivityCard: View {
                 .foregroundStyle(Color.Design.textPrimary)
             Spacer(minLength: 0)
             Text(date, style: .relative)
-                .font(.system(size: 10, design: .monospaced))
+                .font(Font.Design.size10Monospaced)
                 .foregroundStyle(Color.Design.textSecondary)
         }
     }

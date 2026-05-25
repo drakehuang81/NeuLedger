@@ -27,13 +27,13 @@ public struct DetailField<Value: View>: View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 14) {
                 Text(labelKey)
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(Font.Design.size10MediumMonospaced)
                     .tracking(1.2)
                     .textCase(.uppercase)
                     .foregroundStyle(Color.Design.textSecondary)
                     .frame(width: 76, alignment: .leading)
                 value()
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

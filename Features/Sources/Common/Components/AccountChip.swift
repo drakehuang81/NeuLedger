@@ -27,7 +27,7 @@ public struct AccountChip: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(account.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Font.Design.size14Medium)
                     .foregroundStyle(Color.Design.textPrimary)
                 Text(account.type.displayKey)
                     .font(.system(size: 9, weight: .regular, design: .monospaced))

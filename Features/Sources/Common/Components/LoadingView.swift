@@ -104,7 +104,7 @@ public struct LoadingView: View {
                         .foregroundColor(primaryTextColor)
 
                     Text("EVERY NT$, SEEN.")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(Font.Design.size10MediumMonospaced)
                         .tracking(1.6)
                         .foregroundColor(secondaryTextColor)
                 }
@@ -172,7 +172,7 @@ public struct LoadingView: View {
         return HStack(spacing: 8) {
             if step.isFinal {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(Font.Design.size12Bold)
                     .foregroundColor(Color.Design.splashStatusFinalGreen)
             } else {
                 Circle()
@@ -181,7 +181,7 @@ public struct LoadingView: View {
                     .modifier(LoadingPulse())
             }
             Text(step.text)
-                .font(.system(size: 13, weight: .medium))
+                .font(Font.Design.size13Medium)
                 .tracking(-0.1)
                 .foregroundColor(primaryTextColor)
         }

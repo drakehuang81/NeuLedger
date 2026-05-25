@@ -39,11 +39,11 @@ public struct InsightCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .center, spacing: 8) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 16))
+                        .font(Font.Design.size16)
                         .foregroundStyle(Color.Design.accentYellow)
 
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(Font.Design.size16Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(1)
 
@@ -66,7 +66,7 @@ public struct InsightCard: View {
                 }
 
                 Text(bodyText)
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.textSecondary)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -78,9 +78,9 @@ public struct InsightCard: View {
                     } label: {
                         HStack(spacing: 4) {
                             Text(cta)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Font.Design.size13Semibold)
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(Font.Design.size11Semibold)
                         }
                         .foregroundStyle(Color.Design.brandPrimary)
                     }

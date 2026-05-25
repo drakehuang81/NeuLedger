@@ -19,7 +19,7 @@ public struct ErrorText: View {
     public var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Image(systemName: "exclamationmark.circle")
-                .font(.system(size: 12, weight: .medium))
+                .font(Font.Design.size12Medium)
                 .foregroundStyle(Color.Design.expenseRed)
             Text(messageKey)
                 .font(.system(size: 12.5))

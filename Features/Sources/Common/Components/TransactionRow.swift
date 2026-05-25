@@ -111,9 +111,9 @@ public struct TransactionRow: View {
                         Button(action: onOpenDetail) {
                             HStack(spacing: 4) {
                                 Image(systemName: "pencil")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(Font.Design.size11Medium)
                                 Text("common_edit")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(Font.Design.size11Medium)
                             }
                             .foregroundStyle(Color.Design.textSecondary)
                         }

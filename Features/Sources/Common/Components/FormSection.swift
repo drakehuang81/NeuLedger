@@ -37,7 +37,7 @@ public struct FormSection<Content: View>: View {
 
             if let footerKey {
                 Text(footerKey)
-                    .font(.system(size: 12))
+                    .font(Font.Design.size12)
                     .foregroundStyle(Color.Design.textSecondary)
                     .lineSpacing(2)
                     .padding(.horizontal, 6)

@@ -79,7 +79,7 @@ public struct BudgetCategoryListPicker: View {
 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(Font.Design.size18Semibold)
                         .foregroundStyle(Color.Design.accentOrange)
                 }
             }

@@ -36,11 +36,11 @@ public struct EmptyStateView: View {
 
             VStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(Font.Design.size17Semibold)
                     .foregroundStyle(Color.Design.textPrimary)
 
                 Text(description)
-                    .font(.system(size: 13))
+                    .font(Font.Design.size13)
                     .foregroundStyle(Color.Design.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 280)

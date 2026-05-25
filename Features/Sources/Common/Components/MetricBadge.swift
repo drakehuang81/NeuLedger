@@ -12,7 +12,7 @@ public struct MetricBadge: View {
 
     public var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .medium).monospacedDigit())
+            .font(Font.Design.size11Medium.monospacedDigit())
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(Capsule().fill(color.opacity(0.18)))

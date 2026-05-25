@@ -60,7 +60,7 @@ public struct ColorSwatchPicker: View {
                         .frame(width: 36, height: 36)
                     Image(systemName: "checkmark")
                         .foregroundStyle(Color.Design.textInverse)
-                        .font(.system(size: 12, weight: .bold))
+                        .font(Font.Design.size12Bold)
                 }
             }
         }

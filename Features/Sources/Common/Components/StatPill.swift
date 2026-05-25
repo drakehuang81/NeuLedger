@@ -16,12 +16,12 @@ public struct StatPill: View {
         GlassContainer {
             VStack(alignment: .leading, spacing: 6) {
                 Text(label)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(Font.Design.size10Medium)
                     .textCase(.uppercase)
                     .tracking(1)
                     .foregroundStyle(.secondary)
                 Text(value)
-                    .font(.system(size: 16, weight: .semibold).monospacedDigit())
+                    .font(Font.Design.size16Semibold.monospacedDigit())
                     .foregroundStyle(valueColor)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

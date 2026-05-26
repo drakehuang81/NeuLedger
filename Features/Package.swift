@@ -71,7 +71,8 @@ let package = Package(
             sources: ["Core", "Application"]
         ),
         .target(name: "Common", dependencies: ["Domain"]),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
 
 extension Target.Dependency {

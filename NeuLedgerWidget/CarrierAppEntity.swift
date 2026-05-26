@@ -12,7 +12,7 @@ struct CarrierAppEntity: AppEntity {
         TypeDisplayRepresentation(name: "carrier_entity_type_name")
     }
 
-    static var defaultQuery = CarrierEntityQuery()
+    static let defaultQuery = CarrierEntityQuery()
 
     let id: String
     let name: String
@@ -67,8 +67,8 @@ struct CarrierEntityQuery: EntityQuery {
 /// The configurable intent that drives `CarrierWidget`.
 /// User long-presses the widget → "Edit Widget" → picks a carrier.
 struct CarrierSelectionIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "carrier_intent_title"
-    static var description = IntentDescription("carrier_intent_description")
+    static let title: LocalizedStringResource = "carrier_intent_title"
+    static let description = IntentDescription("carrier_intent_description")
 
     @Parameter(title: "carrier_intent_parameter_title")
     var carrier: CarrierAppEntity?

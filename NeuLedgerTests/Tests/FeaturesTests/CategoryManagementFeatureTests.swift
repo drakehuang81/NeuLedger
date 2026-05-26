@@ -133,6 +133,12 @@ struct CategoryManagementFeatureTests {
         await store.send(.addButtonTapped) {
             $0.addEdit = AddEditCategoryFeature.State(mode: .add(.income))
         }
+
+        // Dismiss the presented sheet so the @Presents dismiss-listener
+        // effect tears down before the test ends.
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
     }
 
     // MARK: - Delete Custom Category

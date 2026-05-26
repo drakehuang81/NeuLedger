@@ -25,9 +25,9 @@ public enum BudgetPeriod: String, Codable, CaseIterable, Equatable, Sendable {
     /// Short localized suffix used in UI labels such as "NT$ 8,000 / 月".
     public var localizedSuffix: String {
         switch self {
-        case .weekly:  return String(localized: "budget_period_suffix_weekly", bundle: .module)
-        case .monthly: return String(localized: "budget_period_suffix_monthly", bundle: .module)
-        case .yearly:  return String(localized: "budget_period_suffix_yearly", bundle: .module)
+        case .weekly:  return String(localized: "budget_period_suffix_weekly", bundle: .main)
+        case .monthly: return String(localized: "budget_period_suffix_monthly", bundle: .main)
+        case .yearly:  return String(localized: "budget_period_suffix_yearly", bundle: .main)
         }
     }
 }

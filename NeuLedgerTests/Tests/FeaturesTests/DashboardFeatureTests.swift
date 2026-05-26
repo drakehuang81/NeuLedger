@@ -376,6 +376,10 @@ struct DashboardFeatureTests {
         await store.send(.transactionTapped(transaction.id)) {
             $0.detail = TransactionDetailFeature.State(transaction: transaction)
         }
+
+        await store.send(\.detail.dismiss) {
+            $0.detail = nil
+        }
     }
 
     @Test("transactionTapped with unknown ID does nothing")

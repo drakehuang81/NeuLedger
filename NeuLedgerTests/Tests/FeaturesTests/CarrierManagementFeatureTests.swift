@@ -246,6 +246,10 @@ struct CarrierManagementFeatureTests {
         await store.send(.addTapped) {
             $0.addEdit = AddEditCarrierFeature.State(mode: .add)
         }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
     }
 
     @Test("deleteTapped clears widget when deleted carrier was the widget carrier")

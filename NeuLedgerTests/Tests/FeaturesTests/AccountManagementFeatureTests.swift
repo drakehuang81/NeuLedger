@@ -78,6 +78,10 @@ struct AccountManagementFeatureTests {
                 existingNames: ["現金", "銀行"]
             )
         }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
     }
 
     // MARK: - Validation: Empty Name

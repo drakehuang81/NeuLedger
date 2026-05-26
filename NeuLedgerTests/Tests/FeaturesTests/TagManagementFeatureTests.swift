@@ -53,6 +53,10 @@ struct TagManagementFeatureTests {
         await store.send(.addButtonTapped) {
             $0.addEdit = AddEditTagFeature.State(mode: .add)
         }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
     }
 
     @Test("saveTapped with empty name sets nameError")
@@ -80,6 +84,10 @@ struct TagManagementFeatureTests {
 
         await store.send(.tagTapped(Self.tagA)) {
             $0.addEdit = AddEditTagFeature.State(mode: .edit(Self.tagA))
+        }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
         }
     }
 

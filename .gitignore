@@ -139,3 +139,7 @@ firebase-debug.*.log
 
 # oh-my-claudecode runtime state
 .omc/
+
+# Xcode Cloud artifacts downloaded for local triage
+NeuLedger Build*/
+*.xcresult/

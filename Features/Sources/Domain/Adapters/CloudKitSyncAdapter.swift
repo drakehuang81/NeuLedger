@@ -28,6 +28,12 @@ public struct CloudKitSyncAdapter: Sendable {
     /// are swallowed because CloudKit will retry whether we call this
     /// or not.
     public var flushPendingChanges: @Sendable () async -> Void
+
+    /// Delete the CloudKit private-database zone that
+    /// `NSPersistentCloudKitContainer` mirrors into. Used by the
+    /// destructive "wipe all data" debug action — clears every CKRecord
+    /// for this app under the user's iCloud account in one shot.
+    public var wipeCloudRecords: @Sendable () async throws -> Void
 }
 
 extension CloudKitSyncAdapter: TestDependencyKey {

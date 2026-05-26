@@ -46,6 +46,9 @@ public struct SettingsFeature: Sendable {
         public var widgetCarrierName: String = ""
         public var isPickingDefaultAccount: Bool = false
         public var isPickingWidgetCarrier: Bool = false
+        public var isConfirmingWipeAllData: Bool = false
+        public var isWipingAllData: Bool = false
+        public var wipeAllDataError: String? = nil
 
         public init(
             accounts: [Account] = [],
@@ -98,6 +101,20 @@ public struct SettingsFeature: Sendable {
         case defaultAccountPickerDismissed
         case widgetCarrierTapped
         case widgetCarrierPickerDismissed
+        // Destructive: wipe local + cloud data (debug entry point)
+        case wipeAllDataTapped
+        case wipeAllDataDismissed
+        case wipeAllDataConfirmed
+        case wipeAllDataCompleted
+        case wipeAllDataFailed(String)
+        case delegate(Delegate)
+
+        @CasePathable
+        public enum Delegate: Equatable {
+            /// All local + cloud data was destroyed; parent should route
+            /// the UI back to onboarding.
+            case allDataWiped
+        }
     }
 
     // MARK: - Dependencies
@@ -108,9 +125,10 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.carrierClient) var carrierClient
     @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
+    @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
     @Dependency(\.openURL) var openURL
 
-    private enum CancelID { case task }
+    private enum CancelID { case task; case wipeAll }
 
     // MARK: - Body
 
@@ -327,6 +345,44 @@ public struct SettingsFeature: Sendable {
                         )
                     }
                 }
+                return .none
+
+            case .wipeAllDataTapped:
+                state.wipeAllDataError = nil
+                state.isConfirmingWipeAllData = true
+                return .none
+
+            case .wipeAllDataDismissed:
+                state.isConfirmingWipeAllData = false
+                return .none
+
+            case .wipeAllDataConfirmed:
+                state.isConfirmingWipeAllData = false
+                state.isWipingAllData = true
+                state.wipeAllDataError = nil
+                return .run { [cloudSyncUseCase] send in
+                    do {
+                        try await cloudSyncUseCase.wipeAll()
+                        await send(.wipeAllDataCompleted)
+                    } catch {
+                        await send(.wipeAllDataFailed(error.localizedDescription))
+                    }
+                }
+                .cancellable(id: CancelID.wipeAll)
+
+            case .wipeAllDataCompleted:
+                state.isWipingAllData = false
+                // Tell the parent to swap the root destination back to
+                // onboarding; SettingsFeature itself can't navigate that
+                // far because its state lives below MainTab.
+                return .send(.delegate(.allDataWiped))
+
+            case let .wipeAllDataFailed(message):
+                state.isWipingAllData = false
+                state.wipeAllDataError = message
+                return .none
+
+            case .delegate:
                 return .none
             }
         }

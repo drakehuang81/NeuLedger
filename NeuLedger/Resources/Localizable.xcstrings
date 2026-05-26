@@ -2840,6 +2840,74 @@
         }
       }
     },
+    "settings_wipe_all_data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all data (local + iCloud)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除所有資料（含 iCloud）"
+          }
+        }
+      }
+    },
+    "settings_wipe_all_data_confirm_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all data?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確定清除所有資料？"
+          }
+        }
+      }
+    },
+    "settings_wipe_all_data_confirm_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deletes every transaction, account, category and tag from this device and from your iCloud private database. This cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機與你 iCloud 上的所有交易、帳戶、分類、標籤都會被刪除，無法復原。"
+          }
+        }
+      }
+    },
+    "settings_wipe_all_data_confirm_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase Everything"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部清除"
+          }
+        }
+      }
+    },
     "settings_export_csv": {
       "extractionState": "manual",
       "localizations": {

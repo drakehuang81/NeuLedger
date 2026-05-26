@@ -57,7 +57,7 @@ extension DatabaseClient: DependencyKey {
         return fallback.appending(path: filename, directoryHint: .notDirectory)
     }()
 
-    private static let localConfiguration = ModelConfiguration(
+    public static let localConfiguration = ModelConfiguration(
         schema: schema,
         url: storeURL,
         cloudKitDatabase: .none

@@ -1,3 +1,4 @@
+import CloudKit
 import Foundation
 import SwiftData
 import Dependencies
@@ -35,6 +36,26 @@ extension CloudKitSyncAdapter: DependencyKey {
                 if context.hasChanges {
                     try? context.save()
                 }
+            }
+        },
+        wipeCloudRecords: {
+            // SwiftData mirrors all `@Model` types into a single private
+            // custom zone owned by NSPersistentCloudKitContainer. Deleting
+            // the zone removes every CKRecord this app stores under the
+            // signed-in iCloud account in one round-trip — no need to
+            // enumerate record types.
+            let container = CKContainer(identifier: "iCloud.com.drake.NeuLedger")
+            let database = container.privateCloudDatabase
+            let zoneID = CKRecordZone.ID(
+                zoneName: "com.apple.coredata.cloudkit.zone",
+                ownerName: CKCurrentUserDefaultName
+            )
+            do {
+                _ = try await database.deleteRecordZone(withID: zoneID)
+            } catch let error as CKError where error.code == .zoneNotFound {
+                // No zone yet (sync was never enabled, or it was already
+                // wiped). Treat as success — the postcondition holds.
+                return
             }
         }
     )

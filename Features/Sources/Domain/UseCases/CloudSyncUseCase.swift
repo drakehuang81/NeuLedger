@@ -36,6 +36,13 @@ public struct CloudSyncUseCase: Sendable {
     /// stored `lastSyncedAt`. CloudKit Mirroring has no public "force
     /// sync now" API; this is mostly a UX touchpoint.
     public var requestNow: @Sendable () async throws -> Void = {}
+
+    /// Destructively delete every row in the local SwiftData store **and**
+    /// every CKRecord in the user's CloudKit private zone, then reset
+    /// preference flags (`hasCompletedOnboarding`, `isSyncEnabled`,
+    /// `lastSyncedAt`). Intended for a debug-only "factory reset" entry
+    /// point; callers should bounce the UI back to onboarding afterwards.
+    public var wipeAll: @Sendable () async throws -> Void = {}
 }
 
 extension CloudSyncUseCase: TestDependencyKey {

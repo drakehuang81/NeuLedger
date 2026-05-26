@@ -70,6 +70,14 @@ struct AppFeature {
             case .onboarding:
                 return .none
 
+            case .main(.settings(.delegate(.allDataWiped))):
+                // Debug "erase everything" finished — drop the entire
+                // MainTab state and bounce back to onboarding so the
+                // user re-creates their first account against the now-
+                // empty store.
+                state.destination = .onboarding(OnboardingFeature.State())
+                return .none
+
             case .main:
                 return .none
             }

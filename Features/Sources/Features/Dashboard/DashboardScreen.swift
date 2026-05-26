@@ -28,6 +28,7 @@ public struct DashboardScreen: View {
 
                             AccountChipsStrip(store: store)
 
+                            balanceSectionHeader
                             HeroBalanceCard(store: store)
                             StatsRow(store: store)
 
@@ -66,6 +67,33 @@ public struct DashboardScreen: View {
         }
     }
 
+    /// Section header above HeroBalanceCard: caption on the left, navigation
+    /// shortcut to per-account analysis on the right.
+    private var balanceSectionHeader: some View {
+        HStack(spacing: 0) {
+            Text("dashboard_section_balance_overview")
+                .font(Font.Design.size12Medium)
+                .textCase(.uppercase)
+                .tracking(1)
+                .foregroundStyle(Color.Design.textSecondary)
+
+            Spacer(minLength: 8)
+
+            Button {
+                store.send(.analysisShortcutTapped)
+            } label: {
+                HStack(spacing: 4) {
+                    Text("dashboard_view_analysis_link")
+                        .font(Font.Design.size12Semibold)
+                    Image(systemName: "chevron.right")
+                        .font(Font.Design.size10Medium)
+                }
+                .foregroundStyle(Color.Design.brandAccent)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("dashboard_view_analysis_link"))
+        }
+    }
 }
 
 

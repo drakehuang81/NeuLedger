@@ -110,26 +110,25 @@ public struct SettingsView: View {
 
     private var sectionPreferences: some View {
         sGroup(String(localized: "settings_preferences")) {
-            // Default account — Menu picker preserves native selection UI but uses our row style
-            Menu {
-                Picker(selection: Binding(
-                    get: { store.selectedDefaultAccountId },
-                    set: { store.send(.defaultAccountSelected($0)) }
-                ), label: EmptyView()) {
-                    ForEach(store.accounts) { account in
-                        Text(account.name).tag(account.id.uuidString)
+            sRow(icon: "creditcard.fill", iconBg: Color.Design.iconBlueAlt,
+                 label: String(localized: "settings_default_account"),
+                 value: store.defaultAccountName) {
+                store.send(.defaultAccountTapped)
+            }.confirmationDialog(
+                String(localized: "settings_default_account"),
+                isPresented: Binding(
+                    get: { store.isPickingDefaultAccount },
+                    set: { if !$0 { store.send(.defaultAccountPickerDismissed) } }
+                ),
+                titleVisibility: .visible
+            ) {
+                ForEach(store.accounts) { account in
+                    Button(account.name) {
+                        store.send(.defaultAccountSelected(account.id.uuidString))
                     }
                 }
-            } label: {
-                rowContent(
-                    icon: "creditcard.fill",
-                    iconBg: Color.Design.iconBlueAlt,
-                    label: String(localized: "settings_default_account"),
-                    value: store.defaultAccountName,
-                    showChevron: true
-                )
+                Button(String(localized: "common_cancel"), role: .cancel) {}
             }
-            .buttonStyle(.plain)
 
             rowDivider
 
@@ -168,31 +167,31 @@ public struct SettingsView: View {
                     showChevron: false
                 )
             } else {
-                Menu {
-                    Picker(selection: Binding(
-                        get: { store.widgetCarrierId },
-                        set: { newValue in
-                            if let uuid = UUID(uuidString: newValue) {
-                                store.send(.widgetCarrierSelected(uuid))
-                            }
-                        }
-                    ), label: EmptyView()) {
-                        ForEach(store.carriers) { carrier in
-                            Text(carrier.name).tag(carrier.id.uuidString)
+                sRow(
+                    icon: "creditcard.fill",
+                    iconBg: Color.Design.iconCyan,
+                    label: String(localized: "settings_widget_carrier"),
+                    value: store.widgetCarrierName.isEmpty
+                        ? String(localized: "common_please_select")
+                        : store.widgetCarrierName
+                ) {
+                    store.send(.widgetCarrierTapped)
+                }
+                .confirmationDialog(
+                    String(localized: "settings_widget_carrier"),
+                    isPresented: Binding(
+                        get: { store.isPickingWidgetCarrier },
+                        set: { if !$0 { store.send(.widgetCarrierPickerDismissed) } }
+                    ),
+                    titleVisibility: .visible
+                ) {
+                    ForEach(store.carriers) { carrier in
+                        Button(carrier.name) {
+                            store.send(.widgetCarrierSelected(carrier.id))
                         }
                     }
-                } label: {
-                    rowContent(
-                        icon: "creditcard.fill",
-                        iconBg: Color.Design.iconCyan,
-                        label: String(localized: "settings_widget_carrier"),
-                        value: store.widgetCarrierName.isEmpty
-                            ? String(localized: "common_please_select")
-                            : store.widgetCarrierName,
-                        showChevron: true
-                    )
+                    Button(String(localized: "common_cancel"), role: .cancel) {}
                 }
-                .buttonStyle(.plain)
             }
 
             rowDivider

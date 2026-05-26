@@ -44,6 +44,8 @@ public struct SettingsFeature: Sendable {
         public var carriers: [Carrier] = []
         public var widgetCarrierId: String = ""
         public var widgetCarrierName: String = ""
+        public var isPickingDefaultAccount: Bool = false
+        public var isPickingWidgetCarrier: Bool = false
 
         public init(
             accounts: [Account] = [],
@@ -92,6 +94,10 @@ public struct SettingsFeature: Sendable {
         case privacyPolicyTapped
         case widgetCarrierSelected(Carrier.ID)
         case widgetCarriersLoaded([Carrier])
+        case defaultAccountTapped
+        case defaultAccountPickerDismissed
+        case widgetCarrierTapped
+        case widgetCarrierPickerDismissed
     }
 
     // MARK: - Dependencies
@@ -171,10 +177,27 @@ public struct SettingsFeature: Sendable {
 
             case let .defaultAccountSelected(id):
                 state.selectedDefaultAccountId = id
+                state.isPickingDefaultAccount = false
                 userSettingsAdapter.setString(id, .defaultAccountId)
                 if let account = state.accounts.first(where: { $0.id.uuidString == id }) {
                     state.defaultAccountName = account.name
                 }
+                return .none
+
+            case .defaultAccountTapped:
+                state.isPickingDefaultAccount = true
+                return .none
+
+            case .defaultAccountPickerDismissed:
+                state.isPickingDefaultAccount = false
+                return .none
+
+            case .widgetCarrierTapped:
+                state.isPickingWidgetCarrier = true
+                return .none
+
+            case .widgetCarrierPickerDismissed:
+                state.isPickingWidgetCarrier = false
                 return .none
 
             case let .languageLoaded(name):
@@ -292,6 +315,7 @@ public struct SettingsFeature: Sendable {
 
             case let .widgetCarrierSelected(id):
                 state.widgetCarrierId = id.uuidString
+                state.isPickingWidgetCarrier = false
                 userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name

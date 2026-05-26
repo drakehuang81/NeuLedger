@@ -1,19 +1,5 @@
 import Foundation
 
-// NOTE: The seed-name keys consumed below
-// (`category_seed_food` / `_transport` / `_entertainment` / `_shopping` /
-// `_housing` / `_utilities` / `_health` / `_education` / `_other_expense` /
-// `_salary` / `_freelance` / `_investment` / `_gift` / `_other_income`)
-// live in TWO xcstrings catalogs and must be kept in sync:
-//
-//   - Features/Sources/Domain/Resources/Localizable.xcstrings  (Bundle.module)
-//   - NeuLedger/Resources/Localizable.xcstrings                (Bundle.main)
-//
-// The English keys also act as the lookup keys in `seedLocalizationMap`
-// below. If you rename a seed in Core/Persistence/DatabaseClient.swift,
-// update both the catalogs AND the map entry here so the resolver still
-// matches.
-
 public extension Category {
 
     /// Returns a localized display name for default seed categories.
@@ -23,7 +9,7 @@ public extension Category {
         guard isDefault, let key = Self.seedLocalizationMap[name] else {
             return name
         }
-        return String(localized: String.LocalizationValue(key), bundle: .module)
+        return String(localized: String.LocalizationValue(key), bundle: .main)
     }
 
     /// English seed name → i18n key. Mirrors the SeedCategory entries

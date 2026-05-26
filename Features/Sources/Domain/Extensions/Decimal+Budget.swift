@@ -1,18 +1,5 @@
 import Foundation
 
-// NOTE: The localization keys consumed below
-// (`budget_form_breakdown_weekly` / `_monthly` / `_yearly`) and the
-// `BudgetPeriod.localizedSuffix` keys
-// (`budget_period_suffix_weekly` / `_monthly` / `_yearly`) live in TWO
-// xcstrings catalogs and must be kept in sync:
-//
-//   - Features/Sources/Domain/Resources/Localizable.xcstrings  (Bundle.module)
-//   - NeuLedger/Resources/Localizable.xcstrings                (Bundle.main)
-//
-// The Domain bundle exists so DomainTests can resolve these strings
-// when running in isolation (the test runner becomes Bundle.main and
-// would otherwise miss the app's catalog).
-
 public extension Decimal {
 
     /// Returns a localized human-readable per-period breakdown of this amount.
@@ -30,21 +17,21 @@ public extension Decimal {
         case .weekly:
             let perDay = Self.rounded(self / 7)
             return String(
-                format: String(localized: "budget_form_breakdown_weekly", bundle: .module),
+                format: String(localized: "budget_form_breakdown_weekly", bundle: .main),
                 Self.formatted(perDay)
             )
         case .monthly:
             let perDay  = Self.rounded(self / 30)
             let perWeek = Self.rounded(self / Decimal(string: "4.33")!)
             return String(
-                format: String(localized: "budget_form_breakdown_monthly", bundle: .module),
+                format: String(localized: "budget_form_breakdown_monthly", bundle: .main),
                 Self.formatted(perDay),
                 Self.formatted(perWeek)
             )
         case .yearly:
             let perMonth = Self.rounded(self / 12)
             return String(
-                format: String(localized: "budget_form_breakdown_yearly", bundle: .module),
+                format: String(localized: "budget_form_breakdown_yearly", bundle: .main),
                 Self.formatted(perMonth)
             )
         }

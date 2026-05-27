@@ -3,11 +3,7 @@ import ComposableArchitecture
 import Domain
 import Common
 
-// Temporary stubs — replaced by real views in Tasks 7 and 8.
-struct AmountKeypadView: View {
-    let store: StoreOf<WatchRecordFeature>
-    var body: some View { Text("amount") }
-}
+// Temporary stub — replaced by real view in Task 8.
 struct ConfirmView: View {
     let store: StoreOf<WatchRecordFeature>
     var body: some View { Text("confirm") }

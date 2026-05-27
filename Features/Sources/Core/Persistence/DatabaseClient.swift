@@ -57,7 +57,7 @@ extension DatabaseClient: DependencyKey {
         return fallback.appending(path: filename, directoryHint: .notDirectory)
     }()
 
-    private static let localConfiguration = ModelConfiguration(
+    public static let localConfiguration = ModelConfiguration(
         schema: schema,
         url: storeURL,
         cloudKitDatabase: .none
@@ -134,67 +134,77 @@ public extension DependencyValues {
 }
 
 // MARK: - Seed Data
+
+/// A default category bundled with the app. The `id` is fixed (not random)
+/// so the same default category seeded on two devices — or after a
+/// delete-and-reinstall — produces SwiftData rows that share a UUID, which
+/// lets `seedIfNeeded` skip rows already present from a prior CloudKit sync.
 struct SeedCategory {
+    let id: UUID
     let name: String
     let icon: String
     let color: String
 }
 
 extension SeedCategory {
+    private static func stableID(_ suffix: String) -> UUID {
+        UUID(uuidString: "9E0FED11-CCCC-0000-0000-0000000000\(suffix)")!
+    }
+
     static var food: SeedCategory {
-        SeedCategory(name: "Food", icon: "fork.knife", color: "#FF6B6B")
+        SeedCategory(id: stableID("01"), name: "Food", icon: "fork.knife", color: "#FF6B6B")
     }
-    
+
     static var transport: SeedCategory {
-        SeedCategory(name: "Transport", icon: "car.fill", color: "#4ECDC4")
+        SeedCategory(id: stableID("02"), name: "Transport", icon: "car.fill", color: "#4ECDC4")
     }
-    
+
     static var entertainment: SeedCategory {
-        SeedCategory(name: "Entertainment", icon: "gamecontroller.fill", color: "#45B7D1")
+        SeedCategory(id: stableID("03"), name: "Entertainment", icon: "gamecontroller.fill", color: "#45B7D1")
     }
-    
+
     static var shopping: SeedCategory {
-        SeedCategory(name: "Shopping", icon: "bag.fill", color: "#96CEB4")
+        SeedCategory(id: stableID("04"), name: "Shopping", icon: "bag.fill", color: "#96CEB4")
     }
-    
+
     static var housing: SeedCategory {
-        SeedCategory(name: "Housing", icon: "house.fill", color: "#FFEAA7")
+        SeedCategory(id: stableID("05"), name: "Housing", icon: "house.fill", color: "#FFEAA7")
     }
-    
+
     static var utilities: SeedCategory {
-        SeedCategory(name: "Utilities", icon: "bolt.fill", color: "#DDA0DD")
+        SeedCategory(id: stableID("06"), name: "Utilities", icon: "bolt.fill", color: "#DDA0DD")
     }
-    
+
     static var health: SeedCategory {
-        SeedCategory(name: "Health", icon: "heart.fill", color: "#FF6B9D")
+        SeedCategory(id: stableID("07"), name: "Health", icon: "heart.fill", color: "#FF6B9D")
     }
-    
+
     static var education: SeedCategory {
-        SeedCategory(name: "Education", icon: "book.fill", color: "#C9B1FF")
+        SeedCategory(id: stableID("08"), name: "Education", icon: "book.fill", color: "#C9B1FF")
     }
-    
+
     static var otherExpense: SeedCategory {
-        SeedCategory(name: "Other Expense", icon: "ellipsis.circle.fill", color: "#95A5A6")
+        SeedCategory(id: stableID("09"), name: "Other Expense", icon: "ellipsis.circle.fill", color: "#95A5A6")
     }
-    
+
     static var salary: SeedCategory {
-        SeedCategory(name: "Salary", icon: "banknote.fill", color: "#2ECC71")
+        SeedCategory(id: stableID("0A"), name: "Salary", icon: "banknote.fill", color: "#2ECC71")
     }
-    
+
     static var freelance: SeedCategory {
-        SeedCategory(name: "Freelance", icon: "laptopcomputer", color: "#3498DB")
+        SeedCategory(id: stableID("0B"), name: "Freelance", icon: "laptopcomputer", color: "#3498DB")
     }
-    
+
     static var investment: SeedCategory {
-        SeedCategory(name: "Investment", icon: "chart.line.uptrend.xyaxis", color: "#F39C12")
+        SeedCategory(id: stableID("0C"), name: "Investment", icon: "chart.line.uptrend.xyaxis", color: "#F39C12")
     }
-    
+
     static var gift: SeedCategory {
-        SeedCategory(name: "Gift", icon: "gift.fill", color: "#E74C3C")
+        SeedCategory(id: stableID("0D"), name: "Gift", icon: "gift.fill", color: "#E74C3C")
     }
-    
+
     static var otherIncome: SeedCategory {
-        SeedCategory(name: "Other Income", icon: "ellipsis.circle.fill", color: "#1ABC9C")
+        SeedCategory(id: stableID("0E"), name: "Other Income", icon: "ellipsis.circle.fill", color: "#1ABC9C")
     }
     static var defaultExpenseCategories: [SeedCategory] {
         [.food, .transport, .entertainment, .shopping, .housing, .utilities, .health, .education, .otherExpense]
@@ -211,25 +221,34 @@ extension SeedCategory {
 private extension DatabaseClient {
     static func seedIfNeeded(in context: ModelContext) {
         do {
-            guard try context.fetchCount(FetchDescriptor<SDCategory>()) == 0 else { return }
+            try insertMissingDefaults(SeedCategory.defaultExpenseCategories,
+                                      type: .expense, in: context)
+            try insertMissingDefaults(SeedCategory.defaultIncomeCategories,
+                                      type: .income, in: context)
 
-            for (index, seed) in SeedCategory.defaultExpenseCategories.enumerated() {
-                context.insert(SDCategory(
-                    id: UUID(), name: seed.name, icon: seed.icon, color: seed.color,
-                    type: TransactionType.expense.rawValue, sortOrder: index, isDefault: true
-                ))
+            if context.hasChanges {
+                try context.save()
             }
-
-            for (index, seed) in SeedCategory.defaultIncomeCategories.enumerated() {
-                context.insert(SDCategory(
-                    id: UUID(), name: seed.name, icon: seed.icon, color: seed.color,
-                    type: TransactionType.income.rawValue, sortOrder: index, isDefault: true
-                ))
-            }
-
-            try context.save()
         } catch {
             print("Failed to seed default data: \(error)")
+        }
+    }
+
+    static func insertMissingDefaults(_ seeds: [SeedCategory],
+                                      type: TransactionType,
+                                      in context: ModelContext) throws {
+        for (index, seed) in seeds.enumerated() {
+            let seedID = seed.id
+            var descriptor = FetchDescriptor<SDCategory>(
+                predicate: #Predicate { $0.id == seedID }
+            )
+            descriptor.fetchLimit = 1
+            if try context.fetch(descriptor).first != nil { continue }
+
+            context.insert(SDCategory(
+                id: seed.id, name: seed.name, icon: seed.icon, color: seed.color,
+                type: type.rawValue, sortOrder: index, isDefault: true
+            ))
         }
     }
 }

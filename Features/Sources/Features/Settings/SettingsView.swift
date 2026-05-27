@@ -45,6 +45,9 @@ public struct SettingsView: View {
                         sectionPreferences
                         sectionWidget
                         sectionData
+                        #if DEBUG
+                        sectionDebugDanger
+                        #endif
                         sectionAbout
                     }
                     .padding(.horizontal, 16)
@@ -239,6 +242,39 @@ public struct SettingsView: View {
             }
         }
     }
+
+    #if DEBUG
+    private var sectionDebugDanger: some View {
+        sGroup(
+            "DEBUG",
+            footer: store.wipeAllDataError
+        ) {
+            sRow(
+                icon: "trash",
+                iconBg: Color.Design.expenseRed,
+                label: String(localized: "settings_wipe_all_data"),
+                trailing: store.isWipingAllData ? AnyView(ProgressView()) : nil
+            ) {
+                if !store.isWipingAllData { store.send(.wipeAllDataTapped) }
+            }
+        }
+        .confirmationDialog(
+            String(localized: "settings_wipe_all_data_confirm_title"),
+            isPresented: Binding(
+                get: { store.isConfirmingWipeAllData },
+                set: { if !$0 { store.send(.wipeAllDataDismissed) } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings_wipe_all_data_confirm_action"), role: .destructive) {
+                store.send(.wipeAllDataConfirmed)
+            }
+            Button(String(localized: "common_cancel"), role: .cancel) {}
+        } message: {
+            Text("settings_wipe_all_data_confirm_message")
+        }
+    }
+    #endif
 
     private var sectionAbout: some View {
         sGroup(String(localized: "settings_about")) {

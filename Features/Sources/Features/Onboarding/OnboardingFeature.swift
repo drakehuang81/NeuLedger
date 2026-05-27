@@ -95,13 +95,21 @@ struct OnboardingFeature {
                 let customs = state.customAccounts
                 return .run { [accountClient, userSettingsAdapter] send in
                     if types.isEmpty && customs.isEmpty {
-                        let acc = Account(
-                            name: AccountType.cash.displayLabel,
-                            type: .cash,
-                            icon: AccountType.cash.defaultIcon,
-                            color: AccountType.cash.defaultColor
-                        )
-                        try await accountClient.add(acc)
+                        // Use a stable UUID for the auto-seeded Cash account.
+                        // After delete-and-reinstall, CloudKit may still hold a
+                        // previously seeded copy; skip the insert if a row with
+                        // that id already exists to avoid duplicates.
+                        let existing = try await accountClient.fetchAll()
+                        if !existing.contains(where: { $0.id == Account.defaultCashID }) {
+                            let acc = Account(
+                                id: Account.defaultCashID,
+                                name: AccountType.cash.displayLabel,
+                                type: .cash,
+                                icon: AccountType.cash.defaultIcon,
+                                color: AccountType.cash.defaultColor
+                            )
+                            try await accountClient.add(acc)
+                        }
                     } else {
                         for type in types.sorted(by: { $0.rawValue < $1.rawValue }) {
                             let acc = Account(

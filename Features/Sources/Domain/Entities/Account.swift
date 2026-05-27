@@ -50,3 +50,11 @@ public struct Account: Identifiable, Equatable, Hashable, Codable, Sendable {
         self.createdAt = createdAt
     }
 }
+
+public extension Account {
+    /// Stable identifier for the Cash account Onboarding seeds when the user
+    /// skips account customization. Pinning it to a known UUID lets us detect
+    /// a previously seeded copy after a delete-and-reinstall (or on a second
+    /// device) and skip re-creating it, avoiding CloudKit-mirrored duplicates.
+    static let defaultCashID = UUID(uuidString: "9E0FED11-AAAA-0000-0000-00000000CA54")!
+}

@@ -3,12 +3,6 @@ import ComposableArchitecture
 import Domain
 import Common
 
-// Temporary stub — replaced by real view in Task 8.
-struct ConfirmView: View {
-    let store: StoreOf<WatchRecordFeature>
-    var body: some View { Text("confirm") }
-}
-
 /// Top-level view for the Apple Watch quick-record flow. Routes between
 /// the three steps based on `state.step`.
 public struct WatchRootView: View {

@@ -34,6 +34,19 @@ layer on iPhone.
 
 10. **Open Settings → Apple Watch with Watch unpaired** (turn off pairing in iPhone "Watch" app or remove Watch app from the paired Watch) → confirm Settings UI shows "未配對" / "尚未安裝 Watch App" and hides the default-account picker.
 
+## Complication families
+
+After Phase 3 lands, also verify each Complication family renders correctly:
+
+1. **Add a Complication to a watch face**: long-press the watch face → Edit → add a Complication slot → choose "NeuLedger" → pick "今日支出". Repeat for each of the four supported families:
+   - Modular Small / Circular (`.accessoryCircular`)
+   - Modular Corner (`.accessoryCorner`)
+   - Modular Rectangular (`.accessoryRectangular`)
+   - Modular Inline (`.accessoryInline`)
+2. After step 1 above, the Complication should display "—" if no snapshot has been received yet.
+3. Record a transaction on iPhone → the Complication should update within ~30 sec without the Watch app being open.
+4. Cross midnight → Complication should reset to "—" or "0" depending on whether `WatchMidnightTimer` fired.
+
 ## Known limitations
 
 - All four families of Complication aren't validated here — that's Phase 3's checklist (Complication target ships separately).

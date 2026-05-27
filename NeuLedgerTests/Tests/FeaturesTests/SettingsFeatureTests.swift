@@ -74,6 +74,7 @@ struct SettingsFeatureTests {
         await store.receive(\.accessoryBarToggleChanged) {
             $0.showAccessoryBar = false
         }
+        await store.receive(\.delegate.accessoryBarVisibilityChanged)
 
         await store.receive(\.widgetCarriersLoaded)
     }
@@ -108,6 +109,7 @@ struct SettingsFeatureTests {
 
         // showAccessoryBar is already true (default), so no state mutation expected
         await store.receive(\.accessoryBarToggleChanged)
+        await store.receive(\.delegate.accessoryBarVisibilityChanged)
 
         await store.receive(\.widgetCarriersLoaded)
     }
@@ -360,6 +362,7 @@ struct SettingsAccessoryBarTests {
         await store.receive(.accessoryBarToggleChanged(false)) {
             $0.showAccessoryBar = false
         }
+        await store.receive(.delegate(.accessoryBarVisibilityChanged(false)))
         await store.receive(\.widgetCarriersLoaded)
     }
 
@@ -378,6 +381,7 @@ struct SettingsAccessoryBarTests {
         await store.send(.accessoryBarToggleChanged(false)) {
             $0.showAccessoryBar = false
         }
+        await store.receive(.delegate(.accessoryBarVisibilityChanged(false)))
         #expect(persisted.value == false)
     }
 }
@@ -487,6 +491,7 @@ struct SettingsWidgetCarrierTests {
         await store.receive(\.accessoryBarToggleChanged) {
             $0.showAccessoryBar = false
         }
+        await store.receive(\.delegate.accessoryBarVisibilityChanged)
         await store.receive(\.widgetCarriersLoaded) {
             $0.carriers = Self.sampleCarriers
             $0.widgetCarrierId = carrier.id.uuidString

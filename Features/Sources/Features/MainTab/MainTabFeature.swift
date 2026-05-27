@@ -296,6 +296,10 @@ struct MainTabFeature {
             case .transactions:
                 return .none
 
+            case let .settings(.delegate(.accessoryBarVisibilityChanged(visible))):
+                state.showAccessoryBar = visible
+                return .none
+
             case .settings:
                 return .none
             }

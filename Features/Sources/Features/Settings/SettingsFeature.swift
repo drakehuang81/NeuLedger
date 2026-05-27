@@ -114,6 +114,9 @@ public struct SettingsFeature: Sendable {
             /// All local + cloud data was destroyed; parent should route
             /// the UI back to onboarding.
             case allDataWiped
+            /// User toggled the floating accessory bar visibility; parent
+            /// should sync its own state so the change applies immediately.
+            case accessoryBarVisibilityChanged(Bool)
         }
     }
 
@@ -313,7 +316,7 @@ public struct SettingsFeature: Sendable {
             case let .accessoryBarToggleChanged(value):
                 state.showAccessoryBar = value
                 userSettingsAdapter.setBool(value, .showAccessoryBar)
-                return .none
+                return .send(.delegate(.accessoryBarVisibilityChanged(value)))
 
             case .privacyPolicyTapped:
                 return .run { _ in

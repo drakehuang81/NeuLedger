@@ -1,0 +1,62 @@
+import Foundation
+import Dependencies
+import Domain
+
+/// Schedules a single Task that wakes up at the next local midnight and
+/// pushes a fresh `WatchContextSnapshot` to the Watch, so the
+/// today-total Complication and Watch UI reset cleanly at 00:00.
+///
+/// `WatchSyncObserver` calls `arm()` after its initial push and any
+/// time the app foregrounds (the previous Task is cancelled and
+/// re-armed for the new `nextMidnight` value).
+@MainActor
+public final class WatchMidnightTimer {
+
+    private let defaultAccountIdProvider: @Sendable () -> UUID?
+    private var task: Task<Void, Never>?
+
+    public init(defaultAccountIdProvider: @escaping @Sendable () -> UUID?) {
+        self.defaultAccountIdProvider = defaultAccountIdProvider
+    }
+
+    public func arm(now: Date = Date(), calendar: Calendar = .autoupdatingCurrent) {
+        task?.cancel()
+        guard let fireAt = Self.nextMidnight(after: now, calendar: calendar) else { return }
+        let delay = fireAt.timeIntervalSince(now)
+        guard delay > 0 else { return }
+        task = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard Task.isCancelled == false else { return }
+            await self?.fire()
+        }
+    }
+
+    public func cancel() {
+        task?.cancel()
+        task = nil
+    }
+
+    private func fire() async {
+        guard let defaultAccountId = defaultAccountIdProvider() else { return }
+        @Dependency(\.watchBridgeAdapter) var bridge
+        do {
+            let snapshot = try await WatchContextBuilder.build(
+                defaultAccountId: defaultAccountId
+            )
+            try await bridge.pushContext(snapshot)
+        } catch {
+            // Swallow — WC retries; one missed midnight push is not
+            // actionable. The next SwiftData save will push a correct
+            // snapshot anyway.
+        }
+    }
+
+    /// Returns the next local midnight strictly after `now`. If `now` is
+    /// already exactly midnight, returns 24 hours after `now`.
+    public nonisolated static func nextMidnight(after now: Date, calendar: Calendar) -> Date? {
+        let startOfDay = calendar.startOfDay(for: now)
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)
+        if let nextDay, nextDay > now { return nextDay }
+        return calendar.date(byAdding: .day, value: 1, to: nextDay ?? now)
+    }
+}

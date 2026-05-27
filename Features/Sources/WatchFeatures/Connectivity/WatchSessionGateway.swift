@@ -1,5 +1,6 @@
 import Foundation
 import Domain
+import WidgetKit
 #if canImport(WatchKit)
 import WatchKit
 #endif
@@ -35,9 +36,6 @@ public final class WatchSessionGateway: @unchecked Sendable {
         guard let data = payload["snapshot"] as? Data else { return }
         guard let snapshot = try? JSONDecoder().decode(WatchContextSnapshot.self, from: data) else { return }
         cache.save(snapshot)
-        #if canImport(WidgetKit)
-        // Phase 3 will uncomment:
-        // WidgetCenter.shared.reloadAllTimelines()
-        #endif
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

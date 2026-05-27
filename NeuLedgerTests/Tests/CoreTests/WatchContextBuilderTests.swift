@@ -62,6 +62,7 @@ struct WatchContextBuilderTests {
     @Test("monthBudgetProgress is nil when no overall monthly budget is active")
     func monthBudgetProgressNilWhenNoBudgetActive() async throws {
         let snapshot = try await withDependencies {
+            $0.calendar = Calendar(identifier: .gregorian)
             $0.transactionClient.fetchAll = { @Sendable in [] }
             $0.categoryClient.fetchAll = { @Sendable in [] }
             $0.accountClient.fetchActive = { @Sendable in [] }

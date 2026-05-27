@@ -12,7 +12,7 @@ extension LedgerUseCase: DependencyKey {
         // Shared enrichment helper — Domain join from id → resolved
         // entity. Categories and accounts are fetched once per call so
         // listAll / search return enriched rows in O(N) Swift-side.
-        let enrich: @Sendable ([Transaction]) async throws -> [EnrichedTransaction] = { transactions in
+        let enrich: @Sendable ([Transaction]) async throws -> [EnrichedTransaction] = { [categoryClient, accountClient] transactions in
             guard !transactions.isEmpty else { return [] }
             async let allCategories = categoryClient.fetchAll()
             async let allAccounts = accountClient.fetchAll()

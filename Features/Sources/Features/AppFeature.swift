@@ -36,30 +36,22 @@ enum WatchSyncObserverHost {
 
 @Reducer
 struct AppFeature {
-    
-    // MARK: - Destination
-    
+
+    // MARK: - State
+
+    @ObservableState
     @CasePathable
     @dynamicMemberLookup
-    enum Destination: Equatable {
+    enum State: Equatable {
         case splash
         case onboarding(OnboardingFeature.State)
         case main(MainTabFeature.State)
+
+        init() { self = .splash }
     }
-    
-    // MARK: - State
-    
-    @ObservableState
-    struct State: Equatable {
-        var destination: Destination
-        
-        init(destination: Destination = .splash) {
-            self.destination = destination
-        }
-    }
-    
+
     // MARK: - Action
-    
+
     enum Action: Equatable {
         case splashCompleted
         case deepLinkReceived(URL)
@@ -75,7 +67,7 @@ struct AppFeature {
         Reduce { state, action in
             switch action {
             case .splashCompleted:
-                state.destination = userSettingsAdapter.bool(.hasCompletedOnboarding)
+                state = userSettingsAdapter.bool(.hasCompletedOnboarding)
                     ? .main(MainTabFeature.State())
                     : .onboarding(OnboardingFeature.State())
                 let settings = userSettingsAdapter
@@ -88,14 +80,14 @@ struct AppFeature {
             case let .deepLinkReceived(url):
                 guard url.scheme == "neuledger",
                       url.host == "carrier-management" else { return .none }
-                guard case .main(var mainState) = state.destination else { return .none }
+                guard case .main(var mainState) = state else { return .none }
                 mainState.selectedTab = .settings
                 mainState.settings.path.append(.carrierManagement(CarrierManagementFeature.State()))
-                state.destination = .main(mainState)
+                state = .main(mainState)
                 return .none
 
             case .onboarding(.delegate(.onboardingCompleted)):
-                state.destination = .main(MainTabFeature.State())
+                state = .main(MainTabFeature.State())
                 return .none
 
             case .onboarding:
@@ -106,17 +98,17 @@ struct AppFeature {
                 // MainTab state and bounce back to onboarding so the
                 // user re-creates their first account against the now-
                 // empty store.
-                state.destination = .onboarding(OnboardingFeature.State())
+                state = .onboarding(OnboardingFeature.State())
                 return .none
 
             case .main:
                 return .none
             }
         }
-        .ifLet(\.destination.onboarding, action: \.onboarding) {
+        .ifCaseLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()
         }
-        .ifLet(\.destination.main, action: \.main) {
+        .ifCaseLet(\.main, action: \.main) {
             MainTabFeature()
         }
     }

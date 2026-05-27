@@ -17,7 +17,7 @@ struct AppFeatureTests {
         }
 
         await store.send(\.splashCompleted) {
-            $0.destination = .main(MainTabFeature.State())
+            $0 = .main(MainTabFeature.State())
         }
     }
 
@@ -32,20 +32,20 @@ struct AppFeatureTests {
         }
 
         await store.send(\.splashCompleted) {
-            $0.destination = .onboarding(OnboardingFeature.State())
+            $0 = .onboarding(OnboardingFeature.State())
         }
     }
 
     @Test("Onboarding completion routes to main")
     func onboardingCompletedRoutesToMain() async {
         let store = await TestStore(
-            initialState: AppFeature.State(destination: .onboarding(OnboardingFeature.State()))
+            initialState: AppFeature.State.onboarding(OnboardingFeature.State())
         ) {
             AppFeature()
         }
-        
+
         await store.send(\.onboarding.delegate.onboardingCompleted) {
-            $0.destination = .main(MainTabFeature.State())
+            $0 = .main(MainTabFeature.State())
         }
     }
 }

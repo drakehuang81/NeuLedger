@@ -30,13 +30,13 @@ struct NeuLedgerApp: App {
     }
     private var contentView: some View {
         VStack {
-            switch Self.store.destination {
+            switch Self.store.state {
             case .splash:
                 LoadingView {
                     Self.store.send(.splashCompleted)
                 }
             case .onboarding:
-                if let onboardingStore = Self.store.scope(state: \.destination.onboarding, action: \.onboarding) {
+                if let onboardingStore = Self.store.scope(state: \.onboarding, action: \.onboarding) {
                     OnboardingView(store: onboardingStore)
                         .transition(
                             .asymmetric(
@@ -45,9 +45,9 @@ struct NeuLedgerApp: App {
                             )
                         )
                 }
-                
+
             case .main:
-                if let mainStore = Self.store.scope(state: \.destination.main, action: \.main) {
+                if let mainStore = Self.store.scope(state: \.main, action: \.main) {
                     MainTabView(store: mainStore)
                         .transition(
                             .asymmetric(
@@ -58,7 +58,7 @@ struct NeuLedgerApp: App {
                 }
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: Self.store.destination)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: Self.store.state)
         .onOpenURL { url in
             Self.store.send(.deepLinkReceived(url))
         }

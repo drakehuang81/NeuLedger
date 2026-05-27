@@ -17,13 +17,12 @@
 4. 選 **App**，按 Next
 5. 設定欄位：
    - **Product Name**: `NeuLedgerWatch`
-   - **Team**: 你的開發 team（同 iOS app）
-   - **Organization Identifier**: 跟現有 iOS app 一致（檢查 iOS target 的 General → Bundle Identifier，取 reverse-DNS 前綴）
-   - **Bundle Identifier**: 會自動變成 `<org>.NeuLedger.watchkitapp` 或類似 — 之後可以在 General tab 改
-   - **Interface**: **SwiftUI**
-   - **Language**: **Swift**
-   - **Include Notification Scene**: ✘ **不勾**（MVP 用不到）
-   - **Include Tests**: ✓ 勾（之後 Watch 端 reducer 測試會用到）
+   - **Team**: 你的開發 team（`Jie liang Huang`）
+   - **Organization Identifier**: `com.drake`（跟現有 iOS app 一致）
+   - **Bundle Identifier**: 自動變成 `com.drake.NeuLedgerWatch`（之後 Step 3 會調）
+   - **App type radio**: 選 **「Watch App for Existing iOS App」**（不是中間那個 "Watch App with New Companion iOS App"！）
+     - 選了之後下方 dropdown 會展開，選 **NeuLedger**（既有 iOS app）
+   - **Testing System**: **Swift Testing**（不是 XCTest，專案用 Swift Testing）
 6. 按 **Finish**
 7. 如果跳出「Activate scheme?」對話框，按 **Activate**
 
@@ -45,20 +44,20 @@
 
 iOS Watch app 的 bundle ID 慣例是 iPhone app 的 ID 加 `.watchkitapp` 後綴。
 
-1. iOS target `NeuLedger` 的 General → Bundle Identifier，假設是：
+1. iOS target `NeuLedger` 的 General → Bundle Identifier 是：
    ```
-   com.welltend.NeuLedger
+   com.drake.NeuLedger
    ```
 2. 設 `NeuLedgerWatch` 的 Bundle Identifier 為：
    ```
-   com.welltend.NeuLedger.watchkitapp
+   com.drake.NeuLedger.watchkitapp
    ```
 3. 設 `NeuLedgerWatchTests` 的 Bundle Identifier 為：
    ```
-   com.welltend.NeuLedger.watchkitapp.tests
+   com.drake.NeuLedger.watchkitapp.tests
    ```
 
-如果你的 iOS bundle 前綴不是 `com.welltend.NeuLedger`，把上面的字串換掉。
+（注意 Xcode 預設可能會給你 `com.drake.NeuLedgerWatch` — 改成 `com.drake.NeuLedger.watchkitapp`，Watch app 慣例要當作 iOS app 的子 bundle。）
 
 ✅ **驗收：** 三個 target 的 bundle ID 都對齊。
 
@@ -74,14 +73,14 @@ Watch App 跟 Watch Complication（Phase 3）會共用一個 `UserDefaults(suite
 2. 左上 **+ Capability** → 選 **App Groups**
 3. App Group ID 輸入：
    ```
-   group.com.welltend.NeuLedger.watch
+   group.com.drake.NeuLedger.watch
    ```
-   （前綴跟你的 bundle ID 對齊；如果 bundle 前綴不是 `com.welltend.NeuLedger` 改成對應的）
+   （前綴跟 iOS bundle 一致：`com.drake.NeuLedger`）
 4. 按勾選讓它生效（Xcode 會建立 entitlements 檔）
 
 iOS target 不需要這個 App Group（Watch 跨裝置不共享 sandbox，iOS App 收到 WC 後寫 SwiftData 就好，不必走 App Group）。
 
-✅ **驗收：** `NeuLedgerWatch` target 的 **Signing & Capabilities** tab 顯示 App Group 已勾選 `group.com.welltend.NeuLedger.watch`。
+✅ **驗收：** `NeuLedgerWatch` target 的 **Signing & Capabilities** tab 顯示 App Group 已勾選 `group.com.drake.NeuLedger.watch`。
 
 ---
 
@@ -281,8 +280,6 @@ EOF
 ## 完成後回報
 
 跟 Claude 說「Phase 2 Xcode setup done」加上：
-- watchOS App bundle ID（如果你改成不一樣的前綴）
-- App Group ID（如果你改成不一樣的）
-- Apple Watch simulator 你用哪個（Series 10 / Ultra 2 / 其他）
+- Apple Watch simulator 你用哪個（Series 10 / Ultra 2 / 其他）— 用來填 Phase 2 plan 的 xcodebuild 指令
 
-我會根據這些調 Phase 2 plan 裡的字串。
+bundle ID（`com.drake.NeuLedger.watchkitapp`）和 App Group（`group.com.drake.NeuLedger.watch`）已經內嵌在 plan 裡。

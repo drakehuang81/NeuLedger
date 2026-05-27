@@ -46,6 +46,7 @@ struct MainTabView: View {
             await store.send(.task).finish()
         }
         .tabBarMinimizeBehavior(.onScrollDown)
+        .tint(Color.Design.accentOrange)
     }
 }
 

@@ -1,17 +1,23 @@
-//
-//  NeuLedgerWatchApp.swift
-//  NeuLedgerWatch Watch App
-//
-//  Created by Welltend_drake on 2026/5/27.
-//
-
 import SwiftUI
+import ComposableArchitecture
+import WatchFeatures
 
 @main
 struct NeuLedgerWatch_Watch_AppApp: App {
+
+    init() {
+        prepareDependencies { dependencies in
+            WatchDependencies.register(in: &dependencies)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            WatchRootView(
+                store: Store(initialState: WatchRecordFeature.State()) {
+                    WatchRecordFeature()
+                }
+            )
         }
     }
 }

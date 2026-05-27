@@ -49,7 +49,7 @@ public extension Color {
 
         /// Creates a dynamic color that automatically adapts to Light and Dark mode.
         private static func dynamicColor(light: String, dark: String) -> Color {
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS)
             return Color(uiColor: UIColor { traitCollection in
                 if traitCollection.userInterfaceStyle == .dark {
                     return UIColor(Color(hexLiteral: dark))
@@ -103,20 +103,32 @@ public extension Color {
         public static let iconBlueAlt = Color(hexLiteral: "#0A84FF")
 
         // MARK: - Background & Surface Colors
+        #if os(iOS)
         public static let background = Color(uiColor: .systemBackground)
+        public static let surfaceInverse = Color(uiColor: .label)
+        #else
+        // watchOS has no UIColor.systemBackground / .label and is always
+        // dark-themed. Use literal fallbacks that match the dark-iOS values.
+        public static let background = Color.black
+        public static let surfaceInverse = Color.white
+        #endif
         public static let surface = dynamicColor(light: "#FFFFFF", dark: "#1C1C1E")
         public static let surfaceSecondary = dynamicColor(light: "#F2F2F7", dark: "#2C2C2E")
-        public static let surfaceInverse = Color(uiColor: .label)
 
         // MARK: - Glassmorphism Surfaces
         public static let glassProminent = dynamicColor(light: "#FFFFFFCC", dark: "#2C2C2ECC")
         public static let glassSurface = dynamicColor(light: "#FFFFFFB3", dark: "#1C1C1EB3")
 
         // MARK: - Text Colors
+        #if os(iOS)
         public static let textPrimary = Color(uiColor: .label)
+        public static let textInverse = Color(uiColor: .systemBackground)
+        #else
+        public static let textPrimary = Color.white
+        public static let textInverse = Color.black
+        #endif
         public static let textSecondary = dynamicColor(light: "#3C3C43CC", dark: "#EBEBF5CC")
         public static let textTertiary = dynamicColor(light: "#3C3C434D", dark: "#EBEBF54D")
-        public static let textInverse = Color(uiColor: .systemBackground)
 
         // MARK: - Divider / Border
         public static let separator = dynamicColor(light: "#3C3C434A", dark: "#54545899")

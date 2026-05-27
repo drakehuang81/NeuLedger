@@ -1,3 +1,4 @@
+#if canImport(FoundationModels)
 import Foundation
 import Dependencies
 import DependenciesMacros
@@ -61,3 +62,5 @@ public extension DependencyValues {
         set { self[AIUseCase.self] = newValue }
     }
 }
+
+#endif

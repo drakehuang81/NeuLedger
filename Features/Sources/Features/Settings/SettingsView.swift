@@ -76,6 +76,7 @@ public struct SettingsView: View {
             case .carrierManagement(let s):     CarrierManagementView(store: s)
             case .notificationSettings(let s):  NotificationSettingsView(store: s)
             case .syncSettings(let s):          SyncSettingsView(store: s)
+            case .watchSettings(let s):         WatchSettingsView(store: s)
             }
         }
     }
@@ -214,6 +215,13 @@ public struct SettingsView: View {
             String(localized: "settings_data"),
             footer: store.exportError
         ) {
+            sRow(icon: "applewatch", iconBg: Color.Design.iconGray,
+                 label: String(localized: "settings_watch_row_title")) {
+                store.send(.watchSettingsTapped)
+            }
+
+            rowDivider
+
             sRow(icon: "icloud.and.arrow.up", iconBg: Color.Design.iconCyan,
                  label: String(localized: "settings_sync")) {
                 store.send(.syncSettingsTapped)

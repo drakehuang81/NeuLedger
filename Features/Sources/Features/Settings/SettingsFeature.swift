@@ -26,6 +26,7 @@ public struct SettingsFeature: Sendable {
         case carrierManagement(CarrierManagementFeature)
         case notificationSettings(NotificationSettingsFeature)
         case syncSettings(SyncSettingsFeature)
+        case watchSettings(WatchSettingsFeature)
     }
 
     // MARK: - State
@@ -82,6 +83,7 @@ public struct SettingsFeature: Sendable {
         case carrierManagementTapped
         case notificationSettingsTapped
         case syncSettingsTapped
+        case watchSettingsTapped
         case path(StackActionOf<Destination>)
         case task
         case accountsLoaded([Account])
@@ -165,6 +167,10 @@ public struct SettingsFeature: Sendable {
 
             case .syncSettingsTapped:
                 state.path.append(.syncSettings(SyncSettingsFeature.State()))
+                return .none
+
+            case .watchSettingsTapped:
+                state.path.append(.watchSettings(WatchSettingsFeature.State()))
                 return .none
 
             case .path:

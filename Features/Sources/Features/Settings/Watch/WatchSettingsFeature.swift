@@ -25,7 +25,7 @@ public struct WatchSettingsFeature: Sendable {
         }
     }
 
-    public enum Action: Sendable {
+    public enum Action: Equatable, Sendable {
         case task
         case loaded(accounts: [Account], selectedAccountId: UUID?, isPaired: Bool, isWatchAppInstalled: Bool)
         case accountSelected(UUID)

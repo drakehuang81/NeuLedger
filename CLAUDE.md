@@ -40,11 +40,45 @@ xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
 
 ## Git Workflow
 
-**All changes go through Pull Requests** — `developer` and `main` are protected (no direct push, no force push, no deletions). Even single-line fixes flow through a `feature/*` branch + PR.
+**All changes go through Pull Requests** — `developer` and `main` are protected (no direct push, no force push, no deletions). Even single-line fixes flow through a `feature/*` / `fix/*` branch + PR.
 
-**Branch naming:** `feature/<short-description>` for new work, `fix/<short-description>` for bug fixes, `release/x.y.z` for App Store cuts.
+### Branch naming
 
-Use `git pull --rebase` (not plain `git pull`) when syncing a PR branch with target. Prefer `commit-commands:commit-push-pr` for opening PRs.
+| Prefix | Use | Triggers Xcode Cloud PR workflow? |
+|---|---|---|
+| `feature/<name>` | New features | ✅ Yes |
+| `fix/<name>` | Bug fixes | ✅ Yes |
+| `PR/<name>` | Misc work that should still run CI | ✅ Yes |
+| anything else (`chore/*`, `docs/*`, `experiment/*`...) | Local-only or non-CI work | ❌ No |
+
+### Xcode Cloud trigger model
+
+Three workflows, each triggered by a distinct mechanism — **no `developer` push trigger**:
+
+| Workflow | Trigger | Action |
+|---|---|---|
+| **PR** | Push to `feature/*`, `fix/*`, `PR/*` | Build + Test (no archive) |
+| **TestFlight** | Tag push matching `v*.*.*-beta*` (e.g. `v1.2.0-beta1`) | Archive + upload to TestFlight |
+| **Release** | Tag push matching `v*.*.*` or manual trigger from App Store Connect | Archive + App Store submission |
+
+### `[ci skip]` convention
+
+Xcode Cloud natively skips builds when the commit message or PR title contains any of: `[ci skip]`, `[skip ci]`, `[ci-skip]`, `[skip-ci]`, `***NO_CI***`.
+
+**Default: every commit I author gets `[ci skip]` appended to the subject line.** Xcode Cloud is opt-in, not opt-out — the user explicitly triggers CI when they want it by telling me "run CI on this one" / "讓 CI 跑" / similar. Until then, assume CI should not run.
+
+When the user opts in, drop `[ci skip]` from **that specific commit's** subject only; subsequent commits revert to the default-skip behavior unless told again.
+
+**Never** strip `[ci skip]` from a commit someone else authored without asking.
+
+### Release / TestFlight
+
+I do **not** push tags matching `v*.*.*-beta*` or `v*.*.*`, and do **not** manually trigger the Release workflow from App Store Connect. Those are version-cut decisions for the user.
+
+### Misc
+
+- Use `git pull --rebase` (not plain `git pull`) when syncing a PR branch with target.
+- Prefer `commit-commands:commit-push-pr` for opening PRs.
 
 ## Architecture
 

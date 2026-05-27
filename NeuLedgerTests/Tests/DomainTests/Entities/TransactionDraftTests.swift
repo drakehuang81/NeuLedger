@@ -2,10 +2,10 @@ import Foundation
 import Testing
 @testable import Domain
 
-@Suite
+@Suite("TransactionDraft Tests")
 struct TransactionDraftTests {
 
-    @Test
+    @Test("Codable round-trip preserves all fields")
     func encodesAndDecodes() throws {
         let original = TransactionDraft(
             id: UUID(),
@@ -21,7 +21,7 @@ struct TransactionDraftTests {
         #expect(decoded == original)
     }
 
-    @Test
+    @Test("isValid is true only when amount > 0")
     func isValidRequiresPositiveAmount() {
         let zero = TransactionDraft(
             id: UUID(),

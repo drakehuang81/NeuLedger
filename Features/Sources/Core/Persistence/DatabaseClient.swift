@@ -73,7 +73,7 @@ extension DatabaseClient: DependencyKey {
     /// previously enabled. Replaced at runtime by CloudSyncUseCase during the migration flow.
     nonisolated(unsafe) public static var container: ModelContainer = {
         do {
-            // Read raw UserDefaults directly here (rather than via UserSettingsAdapter)
+            // Read raw UserDefaults directly here (rather than via UserSettingsRepository)
             // because this static initializer runs before TCA dependencies resolve.
             // Use SettingsKey.rawValue as the single source of truth for the key.
             let isSyncEnabled = UserDefaults.standard.bool(forKey: SettingsKey<Bool>.isSyncEnabled.rawValue)

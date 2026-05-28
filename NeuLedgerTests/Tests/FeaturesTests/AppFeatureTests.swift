@@ -5,33 +5,35 @@ import Testing
 
 @Suite("AppFeature Tests")
 struct AppFeatureTests {
-    
-    @Test("splashCompleted routes to main if onboarding is completed")
+
+    @Test("splashCompleted routes to main if onboarding can be skipped")
     func splashCompletedRoutesToMain() async {
         let store = await TestStore(
             initialState: AppFeature.State()
         ) {
             AppFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in true }
+            $0.deeplinkClient.canSkipOnboarding = { true }
         }
 
-        await store.send(\.splashCompleted) {
+        await store.send(\.splashCompleted)
+        await store.receive(\.route.main) {
             $0 = .main(MainTabFeature.State())
         }
     }
 
-    @Test("splashCompleted routes to onboarding if onboarding is not completed")
+    @Test("splashCompleted routes to onboarding if onboarding cannot be skipped")
     func splashCompletedRoutesToOnboarding() async {
         let store = await TestStore(
             initialState: AppFeature.State()
         ) {
             AppFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in false }
+            $0.deeplinkClient.canSkipOnboarding = { false }
         }
 
-        await store.send(\.splashCompleted) {
+        await store.send(\.splashCompleted)
+        await store.receive(\.route.onboarding) {
             $0 = .onboarding(OnboardingFeature.State())
         }
     }
@@ -44,7 +46,8 @@ struct AppFeatureTests {
             AppFeature()
         }
 
-        await store.send(\.onboarding.delegate.onboardingCompleted) {
+        await store.send(\.onboarding.delegate.onboardingCompleted)
+        await store.receive(\.route.main) {
             $0 = .main(MainTabFeature.State())
         }
     }

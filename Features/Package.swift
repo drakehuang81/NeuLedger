@@ -41,6 +41,10 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-dependencies",
             exact: "1.11.0"
         ),
+        .package(
+            url: "https://github.com/pointfreeco/swift-case-paths",
+            from: "1.5.0"
+        ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -59,6 +63,7 @@ let package = Package(
             dependencies: [
                 .dependencies,
                 .dependenciesMacros,
+                .casePaths,
             ]
         ),
         .target(
@@ -105,5 +110,9 @@ extension Target.Dependency {
     static let tca: Target.Dependency = .product(
         name: "ComposableArchitecture",
         package: "swift-composable-architecture"
+    )
+    static let casePaths: Target.Dependency = .product(
+        name: "CasePaths",
+        package: "swift-case-paths"
     )
 }

@@ -8,7 +8,7 @@ import Foundation
 /// Surface follows `docs/architecture.md` §5 Sync Context. Live
 /// implementation delegates `NSPersistentCloudKitContainer` lifecycle
 /// to `CloudKitSyncAdapter` and reads/writes preference flags via
-/// `UserSettingsAdapter`.
+/// `UserSettingsRepository`.
 @DependencyClient
 public struct CloudSyncUseCase: Sendable {
     /// Whether the device has an active iCloud account that we can

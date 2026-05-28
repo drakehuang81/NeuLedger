@@ -7,7 +7,7 @@ import DependenciesMacros
 ///
 /// Surface follows `docs/architecture.md` §5 Carrier Context. CRUD
 /// delegates to `CarrierClient`; the widget-active selection persists
-/// via `UserSettingsAdapter` under the existing `.widgetCarrierId`
+/// via `UserSettingsRepository` under the existing `.widgetCarrierId`
 /// SettingsKey (UserDefaults storage — survives app/widget restarts).
 @DependencyClient
 public struct CarrierUseCase: Sendable {

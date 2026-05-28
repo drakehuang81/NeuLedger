@@ -32,7 +32,7 @@ public struct WatchSettingsFeature: Sendable {
     }
 
     @Dependency(\.accountClient) var accountClient
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.userSettingsRepository) var userSettingsRepository
     @Dependency(\.watchBridgeAdapter) var watchBridgeAdapter
 
     public init() {}
@@ -44,7 +44,7 @@ public struct WatchSettingsFeature: Sendable {
             case .task:
                 return .run { send in
                     let accounts = (try? await accountClient.fetchActive()) ?? []
-                    let raw = userSettingsAdapter.string(.watchDefaultAccountId)
+                    let raw = userSettingsRepository.string(.watchDefaultAccountId)
                     let selected = raw.isEmpty ? nil : UUID(uuidString: raw)
                     await send(.loaded(
                         accounts: accounts,
@@ -63,7 +63,7 @@ public struct WatchSettingsFeature: Sendable {
 
             case let .accountSelected(id):
                 state.selectedAccountId = id
-                userSettingsAdapter.setString(id.uuidString, .watchDefaultAccountId)
+                userSettingsRepository.setString(id.uuidString, .watchDefaultAccountId)
                 return .none
             }
         }

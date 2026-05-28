@@ -164,7 +164,7 @@ public struct DashboardFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.aiUseCase) var aiUseCase
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.userSettingsRepository) var userSettingsRepository
     @Dependency(\.date.now) var now
 
     // MARK: - Body

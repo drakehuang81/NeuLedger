@@ -44,7 +44,7 @@ struct OnboardingFeature {
         }
     }
 
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.userSettingsRepository) var userSettingsRepository
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.continuousClock) var clock
 
@@ -93,7 +93,7 @@ struct OnboardingFeature {
                 state.isCreatingAccounts = true
                 let types = state.selectedTypes
                 let customs = state.customAccounts
-                return .run { [accountClient, userSettingsAdapter] send in
+                return .run { [accountClient, userSettingsRepository] send in
                     if types.isEmpty && customs.isEmpty {
                         // Use a stable UUID for the auto-seeded Cash account.
                         // After delete-and-reinstall, CloudKit may still hold a
@@ -130,7 +130,7 @@ struct OnboardingFeature {
                             try await accountClient.add(acc)
                         }
                     }
-                    userSettingsAdapter.setBool(true, .hasCompletedOnboarding)
+                    userSettingsRepository.setBool(true, .hasCompletedOnboarding)
                     await send(.accountsCreated)
                 }
                 .cancellable(id: CancelID.create)

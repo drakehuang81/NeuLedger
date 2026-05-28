@@ -59,7 +59,7 @@ public struct NotificationSettingsFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.userSettingsRepository) var userSettingsRepository
     @Dependency(\.openURL) var openURL
 
     // MARK: - Reducer
@@ -72,11 +72,11 @@ public struct NotificationSettingsFeature: Sendable {
             switch action {
 
             case .task:
-                let reminderEnabled = userSettingsAdapter.bool(.dailyReminderEnabled)
-                let warningEnabled = userSettingsAdapter.bool(.budgetWarningEnabled)
-                let hour = userSettingsAdapter.int(.dailyReminderHour)
-                let minute = userSettingsAdapter.int(.dailyReminderMinute)
-                let threshold = userSettingsAdapter.int(.budgetWarningThreshold)
+                let reminderEnabled = userSettingsRepository.bool(.dailyReminderEnabled)
+                let warningEnabled = userSettingsRepository.bool(.budgetWarningEnabled)
+                let hour = userSettingsRepository.int(.dailyReminderHour)
+                let minute = userSettingsRepository.int(.dailyReminderMinute)
+                let threshold = userSettingsRepository.int(.budgetWarningThreshold)
 
                 state.dailyReminderEnabled = reminderEnabled
                 state.budgetWarningEnabled = warningEnabled
@@ -104,13 +104,13 @@ public struct NotificationSettingsFeature: Sendable {
             case let .dailyReminderToggled(enabled):
                 if !enabled {
                     state.dailyReminderEnabled = false
-                    userSettingsAdapter.setBool(false, .dailyReminderEnabled)
+                    userSettingsRepository.setBool(false, .dailyReminderEnabled)
                     return .run { _ in await notificationAdapter.cancelDailyReminder() }
                 }
                 // Enabling — request permission if needed
                 if state.isAuthorized {
                     state.dailyReminderEnabled = true
-                    userSettingsAdapter.setBool(true, .dailyReminderEnabled)
+                    userSettingsRepository.setBool(true, .dailyReminderEnabled)
                     let hour = Calendar.current.component(.hour, from: state.reminderDate)
                     let minute = Calendar.current.component(.minute, from: state.reminderDate)
                     return .run { _ in try await notificationAdapter.scheduleDailyReminder(hour, minute) }
@@ -130,20 +130,20 @@ public struct NotificationSettingsFeature: Sendable {
                 state.reminderDate = date
                 let hour = Calendar.current.component(.hour, from: date)
                 let minute = Calendar.current.component(.minute, from: date)
-                userSettingsAdapter.setInt(hour, .dailyReminderHour)
-                userSettingsAdapter.setInt(minute, .dailyReminderMinute)
+                userSettingsRepository.setInt(hour, .dailyReminderHour)
+                userSettingsRepository.setInt(minute, .dailyReminderMinute)
                 guard state.dailyReminderEnabled else { return .none }
                 return .run { _ in try await notificationAdapter.scheduleDailyReminder(hour, minute) }
 
             case let .budgetWarningToggled(enabled):
                 if !enabled {
                     state.budgetWarningEnabled = false
-                    userSettingsAdapter.setBool(false, .budgetWarningEnabled)
+                    userSettingsRepository.setBool(false, .budgetWarningEnabled)
                     return .none
                 }
                 if state.isAuthorized {
                     state.budgetWarningEnabled = true
-                    userSettingsAdapter.setBool(true, .budgetWarningEnabled)
+                    userSettingsRepository.setBool(true, .budgetWarningEnabled)
                     return .none
                 } else {
                     return .run { send in
@@ -159,7 +159,7 @@ public struct NotificationSettingsFeature: Sendable {
 
             case let .warningThresholdChanged(threshold):
                 state.warningThreshold = threshold
-                userSettingsAdapter.setInt(threshold, .budgetWarningThreshold)
+                userSettingsRepository.setInt(threshold, .budgetWarningThreshold)
                 return .none
 
             case .permissionDenied:

@@ -7,7 +7,7 @@ import DependenciesMacros
 ///
 /// Surface follows `docs/architecture.md` §5 App Environment Context.
 /// Lives in the Application layer so feature reducers stop reaching
-/// directly into the `UserSettingsAdapter` / `NotificationAdapter` /
+/// directly into the `UserSettingsRepository` / `NotificationAdapter` /
 /// `UIApplication` triumvirate.
 @DependencyClient
 public struct AppEnvironmentUseCase: Sendable {

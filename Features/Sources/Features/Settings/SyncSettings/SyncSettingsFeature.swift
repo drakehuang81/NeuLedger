@@ -45,7 +45,7 @@ public struct SyncSettingsFeature: Sendable {
     }
 
     @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.userSettingsRepository) var userSettingsRepository
     @Dependency(\.continuousClock) var clock
 
     public init() {}
@@ -54,7 +54,7 @@ public struct SyncSettingsFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
-                state.isSyncEnabled = userSettingsAdapter.bool(.isSyncEnabled)
+                state.isSyncEnabled = userSettingsRepository.bool(.isSyncEnabled)
                 state.isCloudKitAvailable = cloudSyncUseCase.isAvailable()
                 state.lastSyncedAt = cloudSyncUseCase.lastSyncedAt()
                 return .none

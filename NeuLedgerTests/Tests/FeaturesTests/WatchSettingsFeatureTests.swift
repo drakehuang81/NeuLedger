@@ -35,7 +35,7 @@ struct WatchSettingsFeatureTests {
             $0.accountClient.fetchActive = { @Sendable in
                 [cash, card]
             }
-            $0.userSettingsAdapter.string = { @Sendable _ in
+            $0.userSettingsRepository.string = { @Sendable _ in
                 card.id.uuidString
             }
             $0.watchBridgeAdapter.isPaired = { true }
@@ -51,7 +51,7 @@ struct WatchSettingsFeatureTests {
         }
     }
 
-    @Test("Selecting an account writes the UUID to userSettingsAdapter")
+    @Test("Selecting an account writes the UUID to userSettingsRepository")
     func selectingAccountPersists() async {
         let cash = Self.cashAccount
         let card = Self.cardAccount
@@ -67,7 +67,7 @@ struct WatchSettingsFeatureTests {
         ) {
             WatchSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { @Sendable value, _ in
+            $0.userSettingsRepository.setString = { @Sendable value, _ in
                 captured.setValue(value)
             }
         }

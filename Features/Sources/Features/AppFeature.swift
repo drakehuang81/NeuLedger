@@ -35,9 +35,10 @@ struct AppFeature {
         case deepLinkReceived(URL)
         case onboarding(OnboardingFeature.Action)
         case main(MainTabFeature.Action)
+        case route(RouteLinkDestination)
     }
 
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.deeplinkClient) var deeplinkClient
 
     // MARK: - Body
 
@@ -45,36 +46,41 @@ struct AppFeature {
         Reduce { state, action in
             switch action {
             case .splashCompleted:
-                state = userSettingsAdapter.bool(.hasCompletedOnboarding)
-                    ? .main(MainTabFeature.State())
-                    : .onboarding(OnboardingFeature.State())
-                return .none
-
+                return .run { send in
+                    let canSkipOnboarding = try await deeplinkClient.canSkipOnboarding()
+                    await send(.route(canSkipOnboarding ? .main : .onboarding))
+                }
             case let .deepLinkReceived(url):
-                guard url.scheme == "neuledger",
-                      url.host == "carrier-management" else { return .none }
-                guard case .main(var mainState) = state else { return .none }
-                mainState.selectedTab = .settings
-                mainState.settings.path.append(.carrierManagement(CarrierManagementFeature.State()))
-                state = .main(mainState)
-                return .none
-
+                return .run { send in
+                    let destination = try await deeplinkClient.parseLinkTo(url)
+                    await send(.route(destination))
+                }
             case .onboarding(.delegate(.onboardingCompleted)):
-                state = .main(MainTabFeature.State())
-                return .none
-
-            case .onboarding:
-                return .none
-
+                return .send(.route(.main))
             case .main(.settings(.delegate(.allDataWiped))):
                 // Debug "erase everything" finished — drop the entire
                 // MainTab state and bounce back to onboarding so the
                 // user re-creates their first account against the now-
                 // empty store.
-                state = .onboarding(OnboardingFeature.State())
-                return .none
-
-            case .main:
+                return .send(.route(.onboarding))
+            case .route(let action):
+                switch action {
+                case .carrierManagement:
+                    guard case .main(var mainState) = state else { return .none }
+                    mainState.selectedTab = .settings
+                    mainState.settings.path.append(.carrierManagement(CarrierManagementFeature.State()))
+                    state = .main(mainState)
+                    return .none
+                case .main:
+                    state = .main(MainTabFeature.State())
+                    return .none
+                case .onboarding:
+                    state = .onboarding(OnboardingFeature.State())
+                    return .none
+                default:
+                    return .none
+                }
+            default:
                 return .none
             }
         }

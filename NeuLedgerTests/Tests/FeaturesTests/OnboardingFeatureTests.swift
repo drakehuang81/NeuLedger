@@ -143,7 +143,7 @@ struct OnboardingFeatureTests {
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setBool = { _, _ in setBoolCalled.setValue(true) }
+            $0.userSettingsRepository.setBool = { _, _ in setBoolCalled.setValue(true) }
             $0.accountClient.add = { acc in
                 added.withValue { $0.append(acc) }
             }
@@ -179,7 +179,7 @@ struct OnboardingFeatureTests {
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setBool = { _, _ in setBoolCalled.setValue(true) }
+            $0.userSettingsRepository.setBool = { _, _ in setBoolCalled.setValue(true) }
             $0.accountClient.add = { acc in added.setValue(acc) }
             $0.continuousClock = clock
         }

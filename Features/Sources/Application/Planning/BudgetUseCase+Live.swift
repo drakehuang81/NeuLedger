@@ -7,7 +7,7 @@ extension BudgetUseCase: DependencyKey {
         @Dependency(\.budgetClient) var budgetClient
         @Dependency(\.transactionClient) var transactionClient
         @Dependency(\.notificationAdapter) var notificationAdapter
-        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+        @Dependency(\.userSettingsRepository) var userSettingsRepository
 
         return BudgetUseCase(
             listActive: { try await budgetClient.fetchActive() },
@@ -38,8 +38,8 @@ extension BudgetUseCase: DependencyKey {
                 // active budget" if profiling flags it; until then, the brute
                 // re-scan keeps behaviour identical to the original.
 
-                guard userSettingsAdapter.bool(.budgetWarningEnabled) else { return }
-                let threshold = userSettingsAdapter.int(.budgetWarningThreshold)
+                guard userSettingsRepository.bool(.budgetWarningEnabled) else { return }
+                let threshold = userSettingsRepository.int(.budgetWarningThreshold)
                 guard let activeBudgets = try? await budgetClient.fetchActive() else { return }
 
                 let today = Date()

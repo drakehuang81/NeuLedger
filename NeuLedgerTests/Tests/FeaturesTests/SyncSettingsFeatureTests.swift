@@ -12,7 +12,7 @@ struct SyncSettingsFeatureTests {
         let store = await TestStore(initialState: SyncSettingsFeature.State()) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { key in
+            $0.userSettingsRepository.bool = { key in
                 switch key.rawValue {
                 case "isSyncEnabled": return false
                 default: return key.defaultValue
@@ -38,8 +38,8 @@ struct SyncSettingsFeatureTests {
                     continuation.finish()
                 }
             }
-            $0.userSettingsAdapter.bool = { _ in false }
-            $0.userSettingsAdapter.setBool = { _, _ in }
+            $0.userSettingsRepository.bool = { _ in false }
+            $0.userSettingsRepository.setBool = { _, _ in }
             $0.cloudSyncUseCase.lastSyncedAt = { nil }
             $0.continuousClock = ImmediateClock()
         }
@@ -73,7 +73,7 @@ struct SyncSettingsFeatureTests {
                     continuation.finish(throwing: SyncError())
                 }
             }
-            $0.userSettingsAdapter.bool = { _ in false }
+            $0.userSettingsRepository.bool = { _ in false }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {

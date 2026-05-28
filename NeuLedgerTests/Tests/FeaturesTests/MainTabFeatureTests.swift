@@ -14,7 +14,7 @@ struct MainTabFeatureTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.string = { _ in "add" }
+            $0.userSettingsRepository.string = { _ in "add" }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
             }
@@ -31,7 +31,7 @@ struct MainTabFeatureTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { false }
-            $0.userSettingsAdapter.string = { _ in "ai" }
+            $0.userSettingsRepository.string = { _ in "ai" }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
             }
@@ -96,7 +96,7 @@ struct MainTabFeatureTests {
             $0.aiUseCase.extractFromText = { _ in extracted }
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsRepository.string = { _ in "" }
             $0.date = .constant(fixedDate)
         }
         await store.send(.aiExtractionCompleted(.success(extracted))) {
@@ -145,7 +145,7 @@ struct MainTabRecurringConfirmationTests {
         } withDependencies: {
             $0.recurringTransactionClient.fetchAll = { [template] }
             $0.aiUseCase.isAvailable = { false }
-            $0.userSettingsAdapter.bool = { _ in false }
+            $0.userSettingsRepository.bool = { _ in false }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { continuation in
                     continuation.finish()
@@ -174,10 +174,10 @@ struct MainTabAccessoryBarTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.bool = { key in
+            $0.userSettingsRepository.bool = { key in
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
-            $0.userSettingsAdapter.string = { _ in "add" }
+            $0.userSettingsRepository.string = { _ in "add" }
             $0.notificationAdapter.pendingConfirmations = {
                 AsyncStream { $0.finish() }
             }
@@ -230,7 +230,7 @@ struct MainTabAccessoryModeTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.setString = { value, key in
+            $0.userSettingsRepository.setString = { value, key in
                 savedKey.setValue(key.rawValue)
                 savedValue.setValue(value)
             }
@@ -251,7 +251,7 @@ struct MainTabAccessoryModeTests {
             MainTabFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.setString = { value, _ in savedValue.setValue(value) }
+            $0.userSettingsRepository.setString = { value, _ in savedValue.setValue(value) }
         }
         await store.send(.accessoryModeSwitched(.add)) {
             $0.accessoryMode = .add

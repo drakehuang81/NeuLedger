@@ -40,7 +40,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [cash, bank] }
             $0.categoryClient.fetchAll = { [food] }
             // defaultAccountId set to bank.id → state.accountId should match bank.id
-            $0.userSettingsAdapter.string = { _ in bank.id.uuidString }
+            $0.userSettingsRepository.string = { _ in bank.id.uuidString }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -67,7 +67,7 @@ struct AddTransactionFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [cash] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }   // empty = no default
+            $0.userSettingsRepository.string = { _ in "" }   // empty = no default
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -167,7 +167,7 @@ struct AddTransactionFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsRepository.string = { _ in "" }
             $0.aiUseCase.isAvailable = { aiAvailable }
             if aiAvailable {
                 $0.aiUseCase.extractFromText = { _ in ExtractedTransaction() }
@@ -197,7 +197,7 @@ struct AddTransactionFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [account] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsRepository.string = { _ in "" }
             $0.aiUseCase.isAvailable = { false }
             $0.ledger.record = { saved.setValue($0) }
             $0.dismiss = DismissEffect { }
@@ -243,7 +243,7 @@ struct AddTransactionFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsRepository.string = { _ in "" }
             $0.aiUseCase.isAvailable = { false }
         }
         await store.send(.backgroundExtractionCompleted(nil)) {
@@ -347,7 +347,7 @@ struct AddTransactionFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [Self.account1] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.userSettingsRepository.string = { _ in "" }
             $0.aiUseCase.isAvailable = { false }
             $0.ledger.update = { updatedCapture.setValue($0) }
         }

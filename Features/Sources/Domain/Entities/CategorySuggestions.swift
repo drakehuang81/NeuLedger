@@ -1,3 +1,4 @@
+#if canImport(FoundationModels)
 import Foundation
 import FoundationModels
 
@@ -22,3 +23,5 @@ public struct CategorySuggestions: Equatable, Sendable {
         self.confidence = confidence
     }
 }
+
+#endif

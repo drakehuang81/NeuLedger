@@ -1,3 +1,4 @@
+#if canImport(FoundationModels)
 import Foundation
 import FoundationModels
 
@@ -37,3 +38,5 @@ public struct ExtractedTransaction: Equatable, Sendable {
         self.type = type
     }
 }
+
+#endif

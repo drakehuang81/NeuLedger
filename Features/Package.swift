@@ -7,6 +7,7 @@ let package = Package(
     name: "Features",
     platforms: [
         .iOS(.v26),
+        .watchOS(.v26),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -26,11 +27,15 @@ let package = Package(
             name: "Common",
             targets: ["Common"]
         ),
+        .library(
+            name: "WatchFeatures",
+            targets: ["WatchFeatures"]
+        ),
     ],
     dependencies: [
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            exact: "1.23.1"
+            exact: "1.23.2"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-dependencies",
@@ -71,6 +76,19 @@ let package = Package(
             sources: ["Core", "Application"]
         ),
         .target(name: "Common", dependencies: ["Domain"]),
+        // WatchFeatures: watchOS-only target. Intentionally does NOT depend
+        // on Core — Core carries iOS-only SwiftData/CloudKit code that
+        // would force a platform-conditional rewrite. Watch-side live
+        // client implementations and the WatchSessionGateway live here
+        // and only need Domain + Common (design tokens) + TCA.
+        .target(
+            name: "WatchFeatures",
+            dependencies: [
+                .tca,
+                "Domain",
+                "Common",
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

@@ -24,7 +24,9 @@ public final class WatchSyncObserver {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.scheduleRebuild()
+            Task { @MainActor in
+                self?.scheduleRebuild()
+            }
         }
         scheduleRebuild()
     }
@@ -48,11 +50,24 @@ public final class WatchSyncObserver {
     }
 
     private func rebuildAndPush() async {
-        guard let defaultAccountId = defaultAccountIdProvider() else { return }
         @Dependency(\.watchBridgeAdapter) var bridge
+        @Dependency(\.accountClient) var accountClient
         do {
+            // Prefer the Watch-specific default account chosen in Settings →
+            // Watch; fall back to the first active account so the Watch app
+            // can still receive categories/accounts before the user has ever
+            // visited that screen. Only bail when there is genuinely no
+            // account at all — Watch has nothing useful to show then.
+            let resolvedDefaultId: UUID
+            if let chosen = defaultAccountIdProvider() {
+                resolvedDefaultId = chosen
+            } else if let first = try await accountClient.fetchActive().first?.id {
+                resolvedDefaultId = first
+            } else {
+                return
+            }
             let snapshot = try await WatchContextBuilder.build(
-                defaultAccountId: defaultAccountId
+                defaultAccountId: resolvedDefaultId
             )
             try await bridge.pushContext(snapshot)
         } catch {

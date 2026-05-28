@@ -102,16 +102,27 @@ public struct WatchRecordFeature: Sendable {
             switch action {
 
             case .task:
-                return .run { send in
-                    async let categories = (try? await categoryClient.fetchByType(.expense)) ?? []
-                    async let accounts = (try? await accountClient.fetchActive()) ?? []
-                    let cats = await categories
-                    let accs = await accounts
-                    await send(.loaded(
-                        categories: cats,
-                        accounts: accs,
-                        defaultAccountId: accs.first?.id
-                    ))
+                return .run { [categoryClient, accountClient] send in
+                    @Sendable func load() async {
+                        async let categories = (try? await categoryClient.fetchByType(.expense)) ?? []
+                        async let accounts = (try? await accountClient.fetchActive()) ?? []
+                        let cats = await categories
+                        let accs = await accounts
+                        await send(.loaded(
+                            categories: cats,
+                            accounts: accs,
+                            defaultAccountId: accs.first?.id
+                        ))
+                    }
+                    await load()
+                    // Re-load whenever the iPhone snapshot lands in the
+                    // cache, so the empty cold-start screen self-heals once
+                    // the first WC context arrives.
+                    for await _ in NotificationCenter.default.notifications(
+                        named: WatchCacheStore.didUpdateNotification
+                    ) {
+                        await load()
+                    }
                 }
 
             case let .loaded(categories, accounts, defaultAccountId: defaultId):

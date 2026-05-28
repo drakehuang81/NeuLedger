@@ -37,11 +37,19 @@ public final class WatchMidnightTimer {
     }
 
     private func fire() async {
-        guard let defaultAccountId = defaultAccountIdProvider() else { return }
         @Dependency(\.watchBridgeAdapter) var bridge
+        @Dependency(\.accountClient) var accountClient
         do {
+            let resolvedDefaultId: UUID
+            if let chosen = defaultAccountIdProvider() {
+                resolvedDefaultId = chosen
+            } else if let first = try await accountClient.fetchActive().first?.id {
+                resolvedDefaultId = first
+            } else {
+                return
+            }
             let snapshot = try await WatchContextBuilder.build(
-                defaultAccountId: defaultAccountId
+                defaultAccountId: resolvedDefaultId
             )
             try await bridge.pushContext(snapshot)
         } catch {

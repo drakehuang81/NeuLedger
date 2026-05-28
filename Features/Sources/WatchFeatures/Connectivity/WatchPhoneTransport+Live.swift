@@ -40,15 +40,37 @@ public final class LiveWatchPhoneTransport: NSObject, WatchPhoneTransport, WCSes
     public func onReceiveApplicationContext(
         _ handler: @escaping @Sendable ([String: Any]) -> Void
     ) {
-        lock.lock(); defer { lock.unlock() }
+        lock.lock()
         contextHandler = handler
+        lock.unlock()
+        // Race recovery: if iPhone already pushed a context before we got
+        // here (or before activation fired the delegate), `WCSession` keeps
+        // it in `receivedApplicationContext`. Replay it once so the Watch
+        // cache is filled on cold start.
+        dispatchCachedContextIfAny()
     }
 
     public func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
-    ) {}
+    ) {
+        guard activationState == .activated else { return }
+        dispatchCachedContextIfAny()
+    }
+
+    private func dispatchCachedContextIfAny() {
+        guard WCSession.isSupported() else { return }
+        let session = WCSession.default
+        guard session.activationState == .activated else { return }
+        let cached = session.receivedApplicationContext
+        guard !cached.isEmpty else { return }
+        let handler: (@Sendable ([String: Any]) -> Void)? = {
+            lock.lock(); defer { lock.unlock() }
+            return contextHandler
+        }()
+        handler?(cached)
+    }
 
     public func session(_ session: WCSession, didReceiveApplicationContext context: [String: Any]) {
         let handler: (@Sendable ([String: Any]) -> Void)? = {

@@ -53,7 +53,7 @@ struct ConfirmView: View {
                 WKInterfaceDevice.current().play(.success)
                 #endif
             } label: {
-                Text("確認")
+                Text(String(localized: "watch_confirm_button"))
                     .font(Font.Design.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
@@ -64,7 +64,7 @@ struct ConfirmView: View {
             Button {
                 store.send(.cancelTapped)
             } label: {
-                Text("取消")
+                Text(String(localized: "watch_cancel_button"))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }

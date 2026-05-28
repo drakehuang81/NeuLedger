@@ -13,6 +13,10 @@ public final class WatchCacheStore: @unchecked Sendable {
     /// Matches the entitlement set up in Phase 2 scaffold.
     public static let appGroupSuite = "group.com.drake.NeuLedger"
 
+    /// Posted on `NotificationCenter.default` whenever a fresh snapshot has
+    /// been persisted. UI observers reload from the cache on receipt.
+    public static let didUpdateNotification = Notification.Name("WatchCacheStore.didUpdate")
+
     private static let storageKey = "watch.context_snapshot.v1"
 
     private let defaults: UserDefaults
@@ -29,8 +33,10 @@ public final class WatchCacheStore: @unchecked Sendable {
     }
 
     public func save(_ snapshot: WatchContextSnapshot) {
-        lock.lock(); defer { lock.unlock() }
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        lock.lock()
+        guard let data = try? JSONEncoder().encode(snapshot) else { lock.unlock(); return }
         defaults.set(data, forKey: Self.storageKey)
+        lock.unlock()
+        NotificationCenter.default.post(name: Self.didUpdateNotification, object: nil)
     }
 }

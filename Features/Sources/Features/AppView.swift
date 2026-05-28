@@ -19,6 +19,13 @@ struct NeuLedgerApp: App {
         AppFeature()
     }
 
+    init() {
+        // Composition Root: wire the Watch bridge before any UI exists so
+        // background-delivered WatchConnectivity payloads are caught on
+        // the very first delegate dispatch after launch.
+        WatchBootstrap.start()
+    }
+
     // `.modelContainer(_:)` is intentionally NOT applied here: feature views
     // reach persistence via `@Dependency(\.databaseClient)` instead of
     // SwiftData's `@Environment(\.modelContext)`, and the Features layer must

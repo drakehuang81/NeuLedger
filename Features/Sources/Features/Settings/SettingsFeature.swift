@@ -50,6 +50,9 @@ public struct SettingsFeature: Sendable {
         public var isConfirmingWipeAllData: Bool = false
         public var isWipingAllData: Bool = false
         public var wipeAllDataError: String? = nil
+        public var isSeedingRandomData: Bool = false
+        public var seedRandomDataResult: String? = nil
+        public var seedRandomDataError: String? = nil
 
         public init(
             accounts: [Account] = [],
@@ -109,6 +112,11 @@ public struct SettingsFeature: Sendable {
         case wipeAllDataConfirmed
         case wipeAllDataCompleted
         case wipeAllDataFailed(String)
+        // Debug-only: seed randomized accounts + transactions for manual testing
+        case seedRandomDataTapped
+        case seedRandomDataCompleted(accountCount: Int, transactionCount: Int)
+        case seedRandomDataFailed(String)
+        case seedRandomDataDismissed
         case delegate(Delegate)
 
         @CasePathable
@@ -133,7 +141,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
     @Dependency(\.openURL) var openURL
 
-    private enum CancelID { case task; case wipeAll }
+    private enum CancelID { case task; case wipeAll; case seedRandom }
 
     // MARK: - Body
 
@@ -389,6 +397,88 @@ public struct SettingsFeature: Sendable {
             case let .wipeAllDataFailed(message):
                 state.isWipingAllData = false
                 state.wipeAllDataError = message
+                return .none
+
+            case .seedRandomDataTapped:
+                guard !state.isSeedingRandomData else { return .none }
+                state.isSeedingRandomData = true
+                state.seedRandomDataResult = nil
+                state.seedRandomDataError = nil
+                return .run { [accountClient, transactionClient, categoryClient] send in
+                    do {
+                        let categories = try await categoryClient.fetchAll()
+                        let expenseCats = categories.filter { $0.type == .expense }
+                        let incomeCats = categories.filter { $0.type == .income }
+                        let nameSeeds = ["主錢包", "活儲", "信用卡", "悠遊", "街口", "現金", "副帳", "外幣", "投資", "緊急"]
+                        let palette = ["#FF9500", "#34C759", "#0A84FF", "#FF3B30", "#5E5CE6",
+                                       "#FF2D55", "#30D158", "#64D2FF", "#FF9F0A", "#BF5AF2"]
+                        let now = Date()
+                        let day: TimeInterval = 24 * 60 * 60
+
+                        let accountCount = Int.random(in: 2...5)
+                        var totalTransactions = 0
+
+                        for i in 0..<accountCount {
+                            let type = AccountType.allCases.randomElement() ?? .cash
+                            let nameBase = nameSeeds.randomElement() ?? "帳戶"
+                            let account = Account(
+                                name: "\(nameBase) #\(Int.random(in: 100...999))",
+                                type: type,
+                                icon: type.defaultIcon,
+                                color: palette.randomElement() ?? type.defaultColor,
+                                sortOrder: 1000 + i
+                            )
+                            try await accountClient.add(account)
+
+                            let txnCount = Int.random(in: 30...60)
+                            for _ in 0..<txnCount {
+                                let isExpense = Double.random(in: 0..<1) < 0.75
+                                let txnType: TransactionType = isExpense ? .expense : .income
+                                let pool = isExpense ? expenseCats : incomeCats
+                                let categoryId = pool.randomElement()?.id
+                                let amount: Decimal = isExpense
+                                    ? Decimal(Int.random(in: 30...3_000))
+                                    : Decimal(Int.random(in: 500...30_000))
+                                let daysAgo = Double(Int.random(in: 0...90))
+                                let date = now.addingTimeInterval(-daysAgo * day - Double.random(in: 0..<day))
+                                let txn = Transaction(
+                                    amount: amount,
+                                    date: date,
+                                    note: nil,
+                                    categoryId: categoryId,
+                                    accountId: account.id,
+                                    type: txnType
+                                )
+                                try await transactionClient.add(txn)
+                            }
+                            totalTransactions += txnCount
+                        }
+                        await send(.seedRandomDataCompleted(
+                            accountCount: accountCount,
+                            transactionCount: totalTransactions
+                        ))
+                    } catch {
+                        await send(.seedRandomDataFailed(error.localizedDescription))
+                    }
+                }
+                .cancellable(id: CancelID.seedRandom)
+
+            case let .seedRandomDataCompleted(accountCount, transactionCount):
+                state.isSeedingRandomData = false
+                state.seedRandomDataResult = "已產生 \(accountCount) 個帳戶、\(transactionCount) 筆交易"
+                return .run { [accountClient] send in
+                    let accounts = try await accountClient.fetchActive()
+                    await send(.accountsLoaded(accounts))
+                }
+
+            case let .seedRandomDataFailed(message):
+                state.isSeedingRandomData = false
+                state.seedRandomDataError = message
+                return .none
+
+            case .seedRandomDataDismissed:
+                state.seedRandomDataResult = nil
+                state.seedRandomDataError = nil
                 return .none
 
             case .delegate:

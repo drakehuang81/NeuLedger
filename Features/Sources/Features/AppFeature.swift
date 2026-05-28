@@ -10,28 +10,6 @@ import Foundation
 import Core
 import Domain
 
-// MARK: - WatchSyncObserverHost
-
-/// Singleton host that owns the `WatchSyncObserver` lifetime for the iOS app.
-/// Created once on first `startIfNeeded()` call and never torn down.
-@MainActor
-enum WatchSyncObserverHost {
-    private static var observer: WatchSyncObserver?
-
-    /// Creates (if needed) and starts the `WatchSyncObserver`.
-    /// Safe to call multiple times — subsequent calls are no-ops.
-    static func startIfNeeded(userSettings: UserSettingsAdapter) {
-        if observer == nil {
-            observer = WatchSyncObserver(defaultAccountIdProvider: { @Sendable in
-                let raw = userSettings.string(.watchDefaultAccountId)
-                guard !raw.isEmpty else { return nil }
-                return UUID(uuidString: raw)
-            })
-        }
-        observer?.start()
-    }
-}
-
 // MARK: - AppFeature
 
 @Reducer
@@ -70,12 +48,7 @@ struct AppFeature {
                 state = userSettingsAdapter.bool(.hasCompletedOnboarding)
                     ? .main(MainTabFeature.State())
                     : .onboarding(OnboardingFeature.State())
-                let settings = userSettingsAdapter
-                return .run { _ in
-                    await MainActor.run {
-                        WatchSyncObserverHost.startIfNeeded(userSettings: settings)
-                    }
-                }
+                return .none
 
             case let .deepLinkReceived(url):
                 guard url.scheme == "neuledger",

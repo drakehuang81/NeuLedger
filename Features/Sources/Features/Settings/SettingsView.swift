@@ -255,8 +255,20 @@ public struct SettingsView: View {
     private var sectionDebugDanger: some View {
         sGroup(
             "DEBUG",
-            footer: store.wipeAllDataError
+            footer: store.seedRandomDataError ?? store.wipeAllDataError
         ) {
+            sRow(
+                icon: "die.face.5",
+                iconBg: Color.Design.iconBlueAlt,
+                label: "產生隨機測試資料",
+                value: store.seedRandomDataResult,
+                trailing: store.isSeedingRandomData ? AnyView(ProgressView()) : nil
+            ) {
+                if !store.isSeedingRandomData { store.send(.seedRandomDataTapped) }
+            }
+
+            rowDivider
+
             sRow(
                 icon: "trash",
                 iconBg: Color.Design.expenseRed,

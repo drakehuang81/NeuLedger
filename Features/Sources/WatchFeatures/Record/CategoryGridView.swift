@@ -24,7 +24,7 @@ struct CategoryGridView: View {
                 .padding(.horizontal, 4)
             }
         }
-        .navigationTitle("記一筆")
+        .navigationTitle(String(localized: "watch_record_title"))
     }
 
     private func categoryButton(_ category: Domain.Category) -> some View {
@@ -50,7 +50,7 @@ struct CategoryGridView: View {
         VStack(spacing: 8) {
             Image(systemName: "iphone.gen3.slash")
                 .font(Font.Design.size22SemiboldRounded)
-            Text("請先在 iPhone 開啟並設定分類")
+            Text(String(localized: "watch_category_empty_hint"))
                 .font(Font.Design.caption)
                 .multilineTextAlignment(.center)
         }

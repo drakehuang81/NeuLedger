@@ -15,6 +15,10 @@ public final class LiveWatchSessionTransport: NSObject, WatchSessionTransport, W
     private let lock = NSLock()
     private var inboundHandler: (@Sendable ([String: Any]) -> Void)?
     private var didActivate = false
+    /// Snapshots queued before `WCSession` finishes async activation. Apple
+    /// throws `WCError.sessionNotActivated` if you write before activation,
+    /// so we hold the most recent context here and flush on activation.
+    private var pendingContext: [String: Any]?
 
     public var isActivated: Bool {
         guard WCSession.isSupported() else { return false }
@@ -43,7 +47,12 @@ public final class LiveWatchSessionTransport: NSObject, WatchSessionTransport, W
 
     public func updateApplicationContext(_ context: [String: Any]) throws {
         guard WCSession.isSupported() else { return }
-        try WCSession.default.updateApplicationContext(context)
+        let session = WCSession.default
+        if session.activationState != .activated {
+            lock.lock(); pendingContext = context; lock.unlock()
+            return
+        }
+        try session.updateApplicationContext(context)
     }
 
     public func onReceiveUserInfo(_ handler: @escaping @Sendable ([String: Any]) -> Void) {
@@ -58,7 +67,16 @@ public final class LiveWatchSessionTransport: NSObject, WatchSessionTransport, W
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
-        // No-op: callers consult `isActivated` lazily.
+        guard activationState == .activated else { return }
+        let pending: [String: Any]? = {
+            lock.lock(); defer { lock.unlock() }
+            let p = pendingContext
+            pendingContext = nil
+            return p
+        }()
+        if let pending {
+            try? session.updateApplicationContext(pending)
+        }
     }
 
     public func sessionDidBecomeInactive(_ session: WCSession) {}

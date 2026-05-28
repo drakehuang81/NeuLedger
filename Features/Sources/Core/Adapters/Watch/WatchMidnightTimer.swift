@@ -12,10 +12,10 @@ import Domain
 @MainActor
 public final class WatchMidnightTimer {
 
-    private let defaultAccountIdProvider: @Sendable () -> UUID?
+    private let defaultAccountIdProvider: @Sendable () -> Account.ID?
     private var task: Task<Void, Never>?
 
-    public init(defaultAccountIdProvider: @escaping @Sendable () -> UUID?) {
+    public init(defaultAccountIdProvider: @escaping @Sendable () -> Account.ID?) {
         self.defaultAccountIdProvider = defaultAccountIdProvider
     }
 
@@ -40,7 +40,7 @@ public final class WatchMidnightTimer {
         @Dependency(\.watchBridgeAdapter) var bridge
         @Dependency(\.accountClient) var accountClient
         do {
-            let resolvedDefaultId: UUID
+            let resolvedDefaultId: Account.ID
             if let chosen = defaultAccountIdProvider() {
                 resolvedDefaultId = chosen
             } else if let first = try await accountClient.fetchActive().first?.id {

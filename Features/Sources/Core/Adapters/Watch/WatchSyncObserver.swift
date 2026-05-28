@@ -9,11 +9,11 @@ import Domain
 @MainActor
 public final class WatchSyncObserver {
 
-    private let defaultAccountIdProvider: @Sendable () -> UUID?
+    private let defaultAccountIdProvider: @Sendable () -> Account.ID?
     private var observerToken: NSObjectProtocol?
     private var debounceTask: Task<Void, Never>?
 
-    public init(defaultAccountIdProvider: @escaping @Sendable () -> UUID?) {
+    public init(defaultAccountIdProvider: @escaping @Sendable () -> Account.ID?) {
         self.defaultAccountIdProvider = defaultAccountIdProvider
     }
 
@@ -58,7 +58,7 @@ public final class WatchSyncObserver {
             // can still receive categories/accounts before the user has ever
             // visited that screen. Only bail when there is genuinely no
             // account at all — Watch has nothing useful to show then.
-            let resolvedDefaultId: UUID
+            let resolvedDefaultId: Account.ID
             if let chosen = defaultAccountIdProvider() {
                 resolvedDefaultId = chosen
             } else if let first = try await accountClient.fetchActive().first?.id {

@@ -127,7 +127,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                 // Build a temporary RecurringTransaction to use the domain helper
                 let temp = RecurringTransaction(
                     id: UUID(), amount: 0, note: nil,
-                    categoryId: nil, accountId: UUID(), toAccountId: nil,
+                    categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
                     type: .expense, tags: [], frequency: freq,
                     nextDueDate: now, isActive: true, createdAt: now
                 )

@@ -135,15 +135,15 @@ public struct TransactionDetailView: View {
 #if DEBUG
 private enum PreviewFixtures {
     static let cashAccount = Account(
-        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000001")!,
+        id: "AA000000-0000-0000-0000-000000000001",
         name: "Cash 現金", type: .cash, icon: "banknote", color: "#8E8E93"
     )
     static let bankAccount = Account(
-        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000002")!,
+        id: "AA000000-0000-0000-0000-000000000002",
         name: "玉山銀行", type: .bank, icon: "building.columns.fill", color: "#0A84FF"
     )
     static let ewalletAccount = Account(
-        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000003")!,
+        id: "AA000000-0000-0000-0000-000000000003",
         name: "悠遊卡", type: .eWallet, icon: "iphone.gen3", color: "#5E5CE6"
     )
 

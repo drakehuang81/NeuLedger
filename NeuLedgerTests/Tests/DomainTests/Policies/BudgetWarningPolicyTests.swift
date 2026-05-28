@@ -25,7 +25,7 @@ struct BudgetWarningPolicyTests {
             amount: amount,
             date: Date(),
             categoryId: categoryId,
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense
         )
     }
@@ -93,14 +93,14 @@ struct BudgetWarningPolicyTests {
         let income = Transaction(
             amount: 100_000,
             date: Date(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .income
         )
         let transfer = Transaction(
             amount: 100_000,
             date: Date(),
-            accountId: UUID(),
-            toAccountId: UUID(),
+            accountId: UUID().uuidString,
+            toAccountId: UUID().uuidString,
             type: .transfer
         )
         let outcome = BudgetWarningPolicy.evaluate(

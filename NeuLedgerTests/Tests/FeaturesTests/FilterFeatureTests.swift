@@ -13,7 +13,7 @@ struct FilterFeatureTests {
         type: .expense, sortOrder: 0, isDefault: false
     )
     static let sampleAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000020")!,
+        id: "00000000-0000-0000-0000-000000000020",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759",
         sortOrder: 0, isArchived: false, createdAt: Date(timeIntervalSince1970: 0)
     )

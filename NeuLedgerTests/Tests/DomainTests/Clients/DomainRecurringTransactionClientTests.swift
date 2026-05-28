@@ -17,7 +17,7 @@ struct DomainRecurringTransactionClientTests {
         let base = Date(timeIntervalSince1970: 0)
         let original = RecurringTransaction(
             id: UUID(), amount: 5000, note: "月租",
-            categoryId: UUID(), accountId: UUID(), toAccountId: nil,
+            categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil,
             type: .expense, tags: [], frequency: .monthly,
             nextDueDate: base, isActive: true, createdAt: base
         )
@@ -31,7 +31,7 @@ struct DomainRecurringTransactionClientTests {
         let base = Date(timeIntervalSince1970: 0)
         let rt = RecurringTransaction(
             id: UUID(), amount: 100, note: nil, categoryId: nil,
-            accountId: UUID(), toAccountId: nil, type: .expense,
+            accountId: UUID().uuidString, toAccountId: nil, type: .expense,
             tags: [], frequency: .weekly,
             nextDueDate: base, isActive: true, createdAt: base
         )
@@ -45,7 +45,7 @@ struct DomainRecurringTransactionClientTests {
         let base = Date(timeIntervalSince1970: 0)
         let rt = RecurringTransaction(
             id: UUID(), amount: 100, note: nil, categoryId: nil,
-            accountId: UUID(), toAccountId: nil, type: .expense,
+            accountId: UUID().uuidString, toAccountId: nil, type: .expense,
             tags: [], frequency: .monthly,
             nextDueDate: base, isActive: true, createdAt: base
         )
@@ -59,7 +59,7 @@ struct DomainRecurringTransactionClientTests {
         let base = Date(timeIntervalSince1970: 0)
         let rt = RecurringTransaction(
             id: UUID(), amount: 100, note: nil, categoryId: nil,
-            accountId: UUID(), toAccountId: nil, type: .expense,
+            accountId: UUID().uuidString, toAccountId: nil, type: .expense,
             tags: [], frequency: .yearly,
             nextDueDate: base, isActive: true, createdAt: base
         )

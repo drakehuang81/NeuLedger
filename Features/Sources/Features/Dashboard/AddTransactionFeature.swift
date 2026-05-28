@@ -207,7 +207,7 @@ public struct AddTransactionFeature: Sendable {
                 if case .add = state.mode, state.accountId == nil {
                     let defaultId = userSettingsRepository.string(.defaultAccountId)
                     if !defaultId.isEmpty,
-                       let match = accounts.first(where: { $0.id.uuidString == defaultId }) {
+                       let match = accounts.first(where: { $0.id == defaultId }) {
                         state.accountId = match.id
                     } else {
                         state.accountId = accounts.first?.id

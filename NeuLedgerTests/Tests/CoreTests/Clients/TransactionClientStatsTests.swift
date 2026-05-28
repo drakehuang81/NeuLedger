@@ -28,7 +28,7 @@ struct TransactionClientStatsTests {
         let (dbc, ctx) = try makeTestDatabaseClient()
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let acctId = UUID()
+        let acctId = UUID().uuidString
 
         // Today: expense 200
         ctx.insert(SDTransaction(
@@ -72,7 +72,7 @@ struct TransactionClientStatsTests {
         let today = Calendar.current.startOfDay(for: Date())
         ctx.insert(SDTransaction(
             id: UUID(), amount: 50, date: today, note: "",
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
             type: TransactionType.expense.rawValue,
             aiSuggested: false, createdAt: today, updatedAt: today
         ))

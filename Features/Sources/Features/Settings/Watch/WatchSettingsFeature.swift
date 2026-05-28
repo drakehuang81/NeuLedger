@@ -8,13 +8,13 @@ public struct WatchSettingsFeature: Sendable {
     @ObservableState
     public struct State: Equatable, Sendable {
         public var accounts: [Account]
-        public var selectedAccountId: UUID?
+        public var selectedAccountId: Account.ID?
         public var isPaired: Bool
         public var isWatchAppInstalled: Bool
 
         public init(
             accounts: [Account] = [],
-            selectedAccountId: UUID? = nil,
+            selectedAccountId: Account.ID? = nil,
             isPaired: Bool = false,
             isWatchAppInstalled: Bool = false
         ) {
@@ -27,8 +27,8 @@ public struct WatchSettingsFeature: Sendable {
 
     public enum Action: Equatable, Sendable {
         case task
-        case loaded(accounts: [Account], selectedAccountId: UUID?, isPaired: Bool, isWatchAppInstalled: Bool)
-        case accountSelected(UUID)
+        case loaded(accounts: [Account], selectedAccountId: Account.ID?, isPaired: Bool, isWatchAppInstalled: Bool)
+        case accountSelected(Account.ID)
     }
 
     @Dependency(\.accountClient) var accountClient
@@ -45,7 +45,7 @@ public struct WatchSettingsFeature: Sendable {
                 return .run { send in
                     let accounts = (try? await accountClient.fetchActive()) ?? []
                     let raw = userSettingsRepository.string(.watchDefaultAccountId)
-                    let selected = raw.isEmpty ? nil : UUID(uuidString: raw)
+                    let selected: Account.ID? = raw.isEmpty ? nil : raw
                     await send(.loaded(
                         accounts: accounts,
                         selectedAccountId: selected,
@@ -63,7 +63,7 @@ public struct WatchSettingsFeature: Sendable {
 
             case let .accountSelected(id):
                 state.selectedAccountId = id
-                userSettingsRepository.setString(id.uuidString, .watchDefaultAccountId)
+                userSettingsRepository.setString(id, .watchDefaultAccountId)
                 return .none
             }
         }

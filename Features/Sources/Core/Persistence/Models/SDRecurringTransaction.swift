@@ -20,10 +20,10 @@ final class SDRecurringTransaction {
     var categoryId: UUID?
 
     /// The identifier of the source account.
-    var accountId: UUID = UUID()
+    var accountId: String = ""
 
     /// The identifier of the destination account for transfers, if any.
-    var toAccountId: UUID?
+    var toAccountId: String?
 
     /// The raw string representation of the ``TransactionType``.
     var typeRaw: String = ""
@@ -48,8 +48,8 @@ final class SDRecurringTransaction {
         amount: Decimal,
         note: String? = nil,
         categoryId: UUID? = nil,
-        accountId: UUID,
-        toAccountId: UUID? = nil,
+        accountId: String,
+        toAccountId: String? = nil,
         typeRaw: String,
         tagIds: [UUID] = [],
         frequencyRaw: String,

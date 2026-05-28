@@ -44,7 +44,7 @@ struct TransactionClientTests {
             date: Date(),
             note: "Flight tickets",
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             toAccountId: nil,
             type: .expense,
             tags: [tag],
@@ -66,8 +66,8 @@ struct TransactionClientTests {
     @Test("Fetch all transactions sorted by date descending")
     func testFetchAllTransactions() async throws {
         let now = Date()
-        let t1 = Transaction(id: UUID(), amount: 100, date: now.addingTimeInterval(-86400), note: "Yesterday", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: now, updatedAt: now)
-        let t2 = Transaction(id: UUID(), amount: 200, date: now, note: "Today", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: now, updatedAt: now)
+        let t1 = Transaction(id: UUID(), amount: 100, date: now.addingTimeInterval(-86400), note: "Yesterday", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: now, updatedAt: now)
+        let t2 = Transaction(id: UUID(), amount: 200, date: now, note: "Today", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: now, updatedAt: now)
         
         try await sut.add(t1)
         try await sut.add(t2)
@@ -83,7 +83,7 @@ struct TransactionClientTests {
         for i in 0..<25 {
             let t = Transaction(
                 id: UUID(), amount: Decimal(i), date: Date(timeIntervalSince1970: TimeInterval(i * 1000)),
-                note: "Note \(i)", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
+                note: "Note \(i)", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
             )
             try await sut.add(t)
         }
@@ -100,8 +100,8 @@ struct TransactionClientTests {
     func testFetchWithFilter() async throws {
         let cat1 = UUID()
         let cat2 = UUID()
-        let acc1 = UUID()
-        let acc2 = UUID()
+        let acc1 = UUID().uuidString
+        let acc2 = UUID().uuidString
         let tag1 = Tag(id: UUID(), name: "Tag 1", color: "#FFF")
         let now = Date()
         
@@ -145,9 +145,9 @@ struct TransactionClientTests {
     
     @Test("Search transactions by note text")
     func testSearchTransactions() async throws {
-        let t1 = Transaction(id: UUID(), amount: 100, date: Date(), note: "Sushi dinner", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date())
-        let t2 = Transaction(id: UUID(), amount: 200, date: Date(), note: "Taxi to airport", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date())
-        let t3 = Transaction(id: UUID(), amount: 300, date: Date(), note: "Buying dinner ingredients", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date())
+        let t1 = Transaction(id: UUID(), amount: 100, date: Date(), note: "Sushi dinner", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date())
+        let t2 = Transaction(id: UUID(), amount: 200, date: Date(), note: "Taxi to airport", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date())
+        let t3 = Transaction(id: UUID(), amount: 300, date: Date(), note: "Buying dinner ingredients", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date())
         
         try await sut.add(t1)
         try await sut.add(t2)
@@ -163,7 +163,7 @@ struct TransactionClientTests {
     @Test("Update transaction fields correctly")
     func testUpdateTransaction() async throws {
         let transaction = Transaction(
-            id: UUID(), amount: 100, date: Date(), note: "Old Note", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
+            id: UUID(), amount: 100, date: Date(), note: "Old Note", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
         )
         try await sut.add(transaction)
         
@@ -184,7 +184,7 @@ struct TransactionClientTests {
     @Test("Delete transaction removes from database")
     func testDeleteTransaction() async throws {
         let transaction = Transaction(
-            id: UUID(), amount: 100, date: Date(), note: "Delete me", categoryId: UUID(), accountId: UUID(), toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
+            id: UUID(), amount: 100, date: Date(), note: "Delete me", categoryId: UUID(), accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()
         )
         try await sut.add(transaction)
 

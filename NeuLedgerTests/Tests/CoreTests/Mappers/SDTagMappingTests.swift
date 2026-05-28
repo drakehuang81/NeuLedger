@@ -23,7 +23,7 @@ struct SDTagMappingTests {
         let tx = Transaction(
             amount: 100,
             date: Date(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense,
             tags: [tag]
         )

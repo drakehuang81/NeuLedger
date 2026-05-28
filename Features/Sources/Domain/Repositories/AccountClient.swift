@@ -7,6 +7,8 @@ import DependenciesMacros
 /// Use `AccountClient` to create, update, fetch, archive, or delete account records.
 @DependencyClient
 public struct AccountClient: Sendable {
+    public var setupAccounts: @Sendable ([Account]) async throws -> Void
+
     /// Fetches all accounts, including archived ones.
     ///
     /// - Returns: An array of all stored `Account` entities.

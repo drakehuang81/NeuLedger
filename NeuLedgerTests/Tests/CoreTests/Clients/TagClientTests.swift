@@ -82,7 +82,7 @@ struct TagClientTests {
         // Insert an account directly so TransactionClient can reference it
         let context = ModelContext(container)
         let sdAccount = SDAccount(
-            id: UUID(), name: "現金", type: AccountType.cash.rawValue,
+            id: UUID().uuidString, name: "現金", type: AccountType.cash.rawValue,
             icon: "banknote", color: "#34C759", sortOrder: 0,
             isArchived: false, createdAt: Date()
         )

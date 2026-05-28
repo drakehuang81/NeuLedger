@@ -10,7 +10,7 @@ public enum WatchContextBuilder {
 
     public static func build(
         now: Date = Date(),
-        defaultAccountId: UUID
+        defaultAccountId: Account.ID
     ) async throws -> WatchContextSnapshot {
         @Dependency(\.calendar) var calendar
         @Dependency(\.transactionClient) var transactionClient

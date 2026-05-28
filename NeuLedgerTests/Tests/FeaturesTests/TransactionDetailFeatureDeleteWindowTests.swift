@@ -10,7 +10,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
 
     private static let sample = Transaction(
         id: UUID(uuidString: "44000000-0000-0000-0000-000000000001")!,
-        amount: 100, date: .now, accountId: UUID(), type: .expense
+        amount: 100, date: .now, accountId: UUID().uuidString, type: .expense
     )
 
     @Test("undoTapped clears pendingDelete and cancels window — delete never runs")

@@ -75,7 +75,7 @@ public struct WatchSettingsView: View {
                 initialState: WatchSettingsFeature.State(
                     accounts: [
                         Account(
-                            id: UUID(),
+                            id: UUID().uuidString,
                             name: "Cash",
                             type: .cash,
                             icon: "banknote",
@@ -83,7 +83,7 @@ public struct WatchSettingsView: View {
                             sortOrder: 0
                         ),
                         Account(
-                            id: UUID(),
+                            id: UUID().uuidString,
                             name: "Card",
                             type: .creditCard,
                             icon: "creditcard",

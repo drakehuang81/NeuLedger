@@ -8,7 +8,7 @@ import Domain
 struct TransactionDetailFeatureTests {
 
     private static let account = Account(
-        id: UUID(uuidString: "11000000-0000-0000-0000-000000000001")!,
+        id: "11000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759"
     )
 
@@ -103,7 +103,7 @@ struct TransactionDetailFeatureTests {
             name: "現金", type: .cash, icon: "banknote", color: "#34C759"
         )
         let toAccount = Account(
-            id: UUID(uuidString: "11000000-0000-0000-0000-000000000002")!,
+            id: "11000000-0000-0000-0000-000000000002",
             name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
         )
         let category = Domain.Category(

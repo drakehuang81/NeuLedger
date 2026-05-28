@@ -105,7 +105,7 @@ struct SwiftDataStoreTests {
         } operation: { @Sendable in
             let store = SwiftDataStore<Account, SDAccount>()
             await #expect(throws: CoreError.self) {
-                try await store.delete(id: UUID())
+                try await store.delete(id: UUID().uuidString)
             }
         }
     }

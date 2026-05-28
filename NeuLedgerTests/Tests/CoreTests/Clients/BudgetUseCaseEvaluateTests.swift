@@ -109,7 +109,7 @@ struct BudgetUseCaseEvaluateTests {
     private static func expense(amount: Decimal, categoryId: UUID? = nil) -> Transaction {
         Transaction(
             id: UUID(), amount: amount, date: Date(), note: nil,
-            categoryId: categoryId, accountId: UUID(), toAccountId: nil,
+            categoryId: categoryId, accountId: UUID().uuidString, toAccountId: nil,
             type: .expense, tags: [], aiSuggested: false,
             createdAt: Date(), updatedAt: Date()
         )

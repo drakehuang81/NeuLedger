@@ -128,7 +128,7 @@ public struct SettingsView: View {
             ) {
                 ForEach(store.accounts) { account in
                     Button(account.name) {
-                        store.send(.defaultAccountSelected(account.id.uuidString))
+                        store.send(.defaultAccountSelected(account.id))
                     }
                 }
                 Button(String(localized: "common_cancel"), role: .cancel) {}

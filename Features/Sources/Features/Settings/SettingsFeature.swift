@@ -203,7 +203,7 @@ public struct SettingsFeature: Sendable {
 
             case let .accountsLoaded(accounts):
                 state.accounts = accounts
-                if let selected = accounts.first(where: { $0.id.uuidString == state.selectedDefaultAccountId }) {
+                if let selected = accounts.first(where: { $0.id == state.selectedDefaultAccountId }) {
                     state.defaultAccountName = selected.name
                 } else {
                     state.defaultAccountName = accounts.first?.name ?? String(localized: "settings_none")
@@ -214,7 +214,7 @@ public struct SettingsFeature: Sendable {
                 state.selectedDefaultAccountId = id
                 state.isPickingDefaultAccount = false
                 userSettingsRepository.setString(id, .defaultAccountId)
-                if let account = state.accounts.first(where: { $0.id.uuidString == id }) {
+                if let account = state.accounts.first(where: { $0.id == id }) {
                     state.defaultAccountName = account.name
                 }
                 return .none

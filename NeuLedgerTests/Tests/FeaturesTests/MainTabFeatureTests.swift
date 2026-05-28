@@ -136,7 +136,7 @@ struct MainTabRecurringConfirmationTests {
         let recurringId = UUID()
         let template = RecurringTransaction(
             id: recurringId, amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
             type: .expense, tags: [], frequency: .monthly,
             nextDueDate: Date(), isActive: true, createdAt: Date()
         )

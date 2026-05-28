@@ -23,6 +23,7 @@ struct NeuLedgerApp: App {
         // Composition Root: wire the Watch bridge before any UI exists so
         // background-delivered WatchConnectivity payloads are caught on
         // the very first delegate dispatch after launch.
+        // TODO: Dependency injection
         WatchBootstrap.start()
     }
 

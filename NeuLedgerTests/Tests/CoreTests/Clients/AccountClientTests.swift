@@ -48,7 +48,7 @@ struct AccountClientTests {
     @Test("Add account")
     func testAddAccount() async throws {
         let newAccount = Account(
-            id: UUID(),
+            id: UUID().uuidString,
             name: "Test Bank",
             type: .bank,
             icon: "building.2",
@@ -69,10 +69,10 @@ struct AccountClientTests {
     @Test("Fetch active accounts filters out archived accounts")
     func testFetchActiveAccounts() async throws {
         let activeAccount = Account(
-            id: UUID(), name: "Active Bank", type: .bank, icon: "active", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
+            id: UUID().uuidString, name: "Active Bank", type: .bank, icon: "active", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
         )
         let archivedAccount = Account(
-            id: UUID(), name: "Archived Bank", type: .bank, icon: "archived", color: "#000", sortOrder: 1, isArchived: true, createdAt: Date()
+            id: UUID().uuidString, name: "Archived Bank", type: .bank, icon: "archived", color: "#000", sortOrder: 1, isArchived: true, createdAt: Date()
         )
         
         try await sut.add(activeAccount)
@@ -89,7 +89,7 @@ struct AccountClientTests {
     @Test("Update account properties")
     func testUpdateAccount() async throws {
         let account = Account(
-            id: UUID(), name: "Test Bank", type: .bank, icon: "building", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
+            id: UUID().uuidString, name: "Test Bank", type: .bank, icon: "building", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
         )
         try await sut.add(account)
         
@@ -108,7 +108,7 @@ struct AccountClientTests {
     @Test("Archive account")
     func testArchiveAccount() async throws {
         let account = Account(
-            id: UUID(), name: "Test Bank", type: .bank, icon: "building", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
+            id: UUID().uuidString, name: "Test Bank", type: .bank, icon: "building", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
         )
         try await sut.add(account)
         
@@ -131,7 +131,7 @@ struct AccountClientTests {
     @Test("Delete account removes from database")
     func testDeleteAccount() async throws {
         let account = Account(
-            id: UUID(), name: "Test Bank", type: .bank, icon: "building", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
+            id: UUID().uuidString, name: "Test Bank", type: .bank, icon: "building", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()
         )
         try await sut.add(account)
         
@@ -143,8 +143,8 @@ struct AccountClientTests {
     
     @Test("Compute balance correctly aggregates transactions")
     func testComputeBalance() async throws {
-        let accountId = UUID()
-        let anotherAccountId = UUID()
+        let accountId = UUID().uuidString
+        let anotherAccountId = UUID().uuidString
         let categoryId = UUID()
         
         let account = Account(

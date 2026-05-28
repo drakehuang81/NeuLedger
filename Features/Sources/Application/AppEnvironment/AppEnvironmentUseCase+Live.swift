@@ -44,11 +44,10 @@ extension AppEnvironmentUseCase: DependencyKey {
             },
             defaultAccountId: {
                 let raw = userSettingsRepository.string(.defaultAccountId)
-                guard !raw.isEmpty else { return nil }
-                return UUID(uuidString: raw)
+                return raw.isEmpty ? nil : raw
             },
             setDefaultAccountId: { id in
-                userSettingsRepository.setString(id?.uuidString ?? "", .defaultAccountId)
+                userSettingsRepository.setString(id ?? "", .defaultAccountId)
             },
             hasCompletedOnboarding: { userSettingsRepository.bool(.hasCompletedOnboarding) },
             markOnboardingComplete: {

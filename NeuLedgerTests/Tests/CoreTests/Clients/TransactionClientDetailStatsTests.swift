@@ -29,7 +29,7 @@ struct TransactionClientDetailStatsTests {
         try ctx.save()
     }
 
-    private static let accountID = UUID(uuidString: "11000000-0000-0000-0000-000000000001")!
+    private static let accountID: String = "11000000-0000-0000-0000-000000000001"
     private static let categoryFood = UUID(uuidString: "33000000-0000-0000-0000-000000000001")!
     private static let categorySalary = UUID(uuidString: "33000000-0000-0000-0000-000000000002")!
 
@@ -76,8 +76,8 @@ struct TransactionClientDetailStatsTests {
     func testTransferStats() async throws {
         let client = Self.freshClient()
         let now = Date()
-        let other = Transaction(amount: 2500, date: now, accountId: Self.accountID, toAccountId: UUID(), type: .transfer)
-        let subject = Transaction(amount: 3000, date: now, accountId: Self.accountID, toAccountId: UUID(), type: .transfer)
+        let other = Transaction(amount: 2500, date: now, accountId: Self.accountID, toAccountId: UUID().uuidString, type: .transfer)
+        let subject = Transaction(amount: 3000, date: now, accountId: Self.accountID, toAccountId: UUID().uuidString, type: .transfer)
         try Self.insert(other, into: client)
         try Self.insert(subject, into: client)
 

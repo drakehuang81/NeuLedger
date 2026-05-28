@@ -8,7 +8,7 @@ import Testing
 @Suite("TransactionDetailFeature Detent Tests")
 struct TransactionDetailFeatureDetentTests {
 
-    private static let sample = Transaction(amount: 100, date: .now, accountId: UUID(), type: .expense)
+    private static let sample = Transaction(amount: 100, date: .now, accountId: UUID().uuidString, type: .expense)
 
     @Test("detentChanged updates state.detent")
     func testDetentChange() async {

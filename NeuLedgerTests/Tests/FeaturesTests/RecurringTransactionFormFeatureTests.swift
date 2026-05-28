@@ -8,7 +8,7 @@ import Domain
 struct RecurringTransactionFormFeatureTests {
 
     static let sampleAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: "00000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759",
         sortOrder: 0, isArchived: false, createdAt: Date()
     )
@@ -196,7 +196,7 @@ struct RecurringTransactionFormFeatureTests {
 
         let rt = RecurringTransaction(
             id: UUID(), amount: 100, note: nil, categoryId: nil,
-            accountId: UUID(), toAccountId: nil, type: .expense,
+            accountId: UUID().uuidString, toAccountId: nil, type: .expense,
             tags: [], frequency: .monthly, nextDueDate: jan31,
             isActive: true, createdAt: jan31
         )

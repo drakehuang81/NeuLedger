@@ -13,7 +13,7 @@ struct TransactionsFeatureTests {
         date: Date(timeIntervalSince1970: 1_000_000),
         note: "午餐",
         categoryId: nil,
-        accountId: UUID(),
+        accountId: UUID().uuidString,
         toAccountId: nil,
         type: .expense,
         tags: [],

@@ -10,15 +10,15 @@ struct AccountManagementFeatureTests {
     // MARK: - Helpers
 
     private static let cashAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: "00000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759", sortOrder: 0
     )
     private static let bankAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+        id: "00000000-0000-0000-0000-000000000002",
         name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6", sortOrder: 1
     )
     private static let archivedAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+        id: "00000000-0000-0000-0000-000000000003",
         name: "舊帳戶", type: .cash, icon: "creditcard", color: "#8E8E93", sortOrder: 2,
         isArchived: true
     )

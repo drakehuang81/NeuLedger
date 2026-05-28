@@ -8,11 +8,11 @@ import Domain
 struct AddTransactionFeatureTests {
 
     private static let account1 = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: "00000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759"
     )
     private static let account2 = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+        id: "00000000-0000-0000-0000-000000000002",
         name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
     )
 
@@ -20,11 +20,11 @@ struct AddTransactionFeatureTests {
     @Test(".task loads accounts and categories and sets default accountId from userSettings")
     func testTaskLoadsOptionsAndAppliesDefaultAccount() async {
         let cash = Account(
-            id: UUID(uuidString: "AA000000-0000-0000-0000-000000000001")!,
+            id: "AA000000-0000-0000-0000-000000000001",
             name: "現金", type: .cash, icon: "banknote", color: "#34C759"
         )
         let bank = Account(
-            id: UUID(uuidString: "AA000000-0000-0000-0000-000000000002")!,
+            id: "AA000000-0000-0000-0000-000000000002",
             name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
         )
         let food = Domain.Category(
@@ -40,7 +40,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [cash, bank] }
             $0.categoryClient.fetchAll = { [food] }
             // defaultAccountId set to bank.id → state.accountId should match bank.id
-            $0.userSettingsRepository.string = { _ in bank.id.uuidString }
+            $0.userSettingsRepository.string = { _ in bank.id }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -56,7 +56,7 @@ struct AddTransactionFeatureTests {
     @Test(".task falls back to first account when userSettings has no defaultAccountId")
     func testTaskFallsBackToFirstAccountWhenNoDefault() async {
         let cash = Account(
-            id: UUID(uuidString: "AB000000-0000-0000-0000-000000000001")!,
+            id: "AB000000-0000-0000-0000-000000000001",
             name: "現金", type: .cash, icon: "banknote", color: "#34C759"
         )
 
@@ -182,7 +182,7 @@ struct AddTransactionFeatureTests {
     func saveTappedPrefilledCreatesTransaction() async {
         let saved = LockIsolated<Transaction?>(nil)
         let account = Account(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
+            id: "00000000-0000-0000-0000-000000000010",
             name: "現金", type: .cash, icon: "banknote", color: "#00FF00"
         )
         // Use .transfer type to skip category validation; manually set both accountId and toAccountId
@@ -294,7 +294,7 @@ struct AddTransactionFeatureTests {
     @Test("saveTapped in addRecurringConfirmation mode emits savedRecurringConfirmation delegate")
     func testSaveTappedRecurringConfirmationEmitsDelegate() async {
         let recurringId = UUID()
-        let accountId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let accountId = "00000000-0000-0000-0000-000000000001"
         let categoryId = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
         let template = RecurringTransaction(
             id: recurringId, amount: 500, note: "房租",

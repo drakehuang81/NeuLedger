@@ -10,7 +10,7 @@ struct AnalysisFeatureTests {
     // MARK: - Shared Helpers
 
     private static let categoryId = UUID()
-    private static let accountId = UUID()
+    private static let accountId = UUID().uuidString
 
     private static let sampleCategory = Category(
         id: categoryId,
@@ -31,7 +31,7 @@ struct AnalysisFeatureTests {
         Transaction(amount: 300, date: day1, note: "午餐", categoryId: categoryId, accountId: accountId, type: .expense),
         Transaction(amount: 200, date: day1, note: "咖啡", categoryId: categoryId, accountId: accountId, type: .expense),
         Transaction(amount: 5000, date: day1, note: "薪資", accountId: accountId, type: .income),
-        Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID(), type: .transfer),
+        Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID().uuidString, type: .transfer),
     ]
 
     // MARK: - Dismiss Insight
@@ -263,8 +263,8 @@ struct AnalysisFeatureTests {
         let categoryId = UUID()
         let proportion = CategoryProportion(id: categoryId.uuidString, name: "飲食", amount: 500)
         let expectedTransactions: [Transaction] = [
-            Transaction(amount: 300, date: Date(), note: "午餐", categoryId: categoryId, accountId: UUID(), type: .expense),
-            Transaction(amount: 200, date: Date(), note: "晚餐", categoryId: categoryId, accountId: UUID(), type: .expense),
+            Transaction(amount: 300, date: Date(), note: "午餐", categoryId: categoryId, accountId: UUID().uuidString, type: .expense),
+            Transaction(amount: 200, date: Date(), note: "晚餐", categoryId: categoryId, accountId: UUID().uuidString, type: .expense),
         ]
 
         var initialState = AnalysisFeature.State()
@@ -428,7 +428,7 @@ struct AnalysisFeatureTests {
 
     @Test("accountSelected updates selectedAccountId and triggers loadData")
     func testAccountSelected() async {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
@@ -449,7 +449,7 @@ struct AnalysisFeatureTests {
 
     @Test("loadData passes accountIds filter when selectedAccountId is set")
     func testLoadDataPassesAccountFilter() async {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         var initial = AnalysisFeature.State()
         initial.selectedAccountId = accountId
 
@@ -477,7 +477,7 @@ struct AnalysisFeatureTests {
 
     @Test("computeBudgetMetrics filters budgets to account-relevant categories")
     func testBudgetMetricsAccountFilter() async {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let relevantCategoryId = UUID()
         let irrelevantCategoryId = UUID()
 

@@ -15,7 +15,7 @@ struct RecurringTransactionManagementFeatureTests {
     ) -> RecurringTransaction {
         RecurringTransaction(
             id: id, amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
             type: .expense, tags: [], frequency: frequency,
             nextDueDate: nextDueDate, isActive: isActive, createdAt: Date()
         )

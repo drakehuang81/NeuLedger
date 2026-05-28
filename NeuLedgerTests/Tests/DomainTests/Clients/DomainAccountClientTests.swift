@@ -27,7 +27,7 @@ struct DomainAccountClientTests {
 
     @Test("AccountClient computeBalance mock override")
     func testComputeBalanceMock() async throws {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
 
         try await withDependencies {
             $0.accountClient.computeBalance = { id in

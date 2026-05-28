@@ -160,7 +160,7 @@ struct SettingsFeatureTests {
             }
         }
 
-        let targetId = Self.sampleAccounts[1].id.uuidString
+        let targetId = Self.sampleAccounts[1].id
         await store.send(.defaultAccountSelected(targetId)) {
             $0.selectedDefaultAccountId = targetId
             $0.defaultAccountName = "銀行帳戶"

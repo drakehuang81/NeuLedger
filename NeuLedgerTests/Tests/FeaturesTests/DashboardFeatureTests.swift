@@ -52,28 +52,28 @@ struct DashboardFeatureTests {
             amount: 120,
             date: Date(timeIntervalSince1970: 1_000_003),
             note: "Lunch",
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense
         ),
         Transaction(
             amount: 50000,
             date: Date(timeIntervalSince1970: 1_000_002),
             note: "Salary",
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .income
         ),
         Transaction(
             amount: 200,
             date: Date(timeIntervalSince1970: 1_000_001),
             note: "Coffee",
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense
         ),
         Transaction(
             amount: 80,
             date: Date(timeIntervalSince1970: 1_000_000),
             note: "Snack",
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense
         ),
     ]
@@ -345,7 +345,7 @@ struct DashboardFeatureTests {
 
     @Test("accountTapped opens analysis with selectedAccountId set")
     func testAccountTappedOpensAnalysis() async throws {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let store = await TestStore(
             initialState: DashboardFeature.State()
         ) {
@@ -363,7 +363,7 @@ struct DashboardFeatureTests {
             amount: 100,
             date: Date(timeIntervalSince1970: 0),
             note: "Test",
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense
         )
         var initial = DashboardFeature.State()

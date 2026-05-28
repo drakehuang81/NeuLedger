@@ -9,7 +9,27 @@ extension AccountClient: DependencyKey {
         let accountStore = SwiftDataStore<Account, SDAccount>()
         let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
 
+        @Dependency(\.userSettingsRepository) var userSettingsRepository
+
         return AccountClient(
+            setupAccounts: { newAccount in
+                
+                let exsiting = (try? await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])) ?? []
+
+                var dictionary = Dictionary(uniqueKeysWithValues: newAccount.map { ($0.id, $0)})
+
+                exsiting.forEach { account in
+                    if dictionary[account.id] != nil {
+                        // remove exsiting account from database
+                        dictionary.removeValue(forKey: account.id)
+                    }
+                }
+                // TODO: batch, error handle
+                for account in dictionary.values {
+                    try await accountStore.add(account)
+                }
+                userSettingsRepository.setBool(true, .hasCompletedOnboarding)
+            },
             fetchAll: {
                 try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
             },

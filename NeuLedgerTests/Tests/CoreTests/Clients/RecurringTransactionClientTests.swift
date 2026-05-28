@@ -39,7 +39,7 @@ struct RecurringTransactionClientIntegrationTests {
             amount: 15000,
             note: "房租",
             categoryId: nil,
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             toAccountId: nil,
             type: .expense,
             tags: [],

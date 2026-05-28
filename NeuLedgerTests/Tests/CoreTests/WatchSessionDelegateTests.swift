@@ -44,7 +44,7 @@ struct WatchSessionDelegateTests {
         let dedup = makeDedupStore()
         let draft = TransactionDraft(
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             amount: 480
         )
 
@@ -76,7 +76,7 @@ struct WatchSessionDelegateTests {
         let dedup = makeDedupStore()
         let draft = TransactionDraft(
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             amount: 100
         )
 

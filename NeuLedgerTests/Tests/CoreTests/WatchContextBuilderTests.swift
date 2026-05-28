@@ -9,7 +9,7 @@ struct WatchContextBuilderTests {
 
     @Test("Snapshot aggregates only today's expenses, not income or other days")
     func aggregatesTodaysExpensesOnly() async throws {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let category = Category(
             id: UUID(),
             name: "Food",
@@ -68,7 +68,7 @@ struct WatchContextBuilderTests {
             $0.accountClient.fetchActive = { @Sendable in [] }
             $0.budgetClient.fetchActive = { @Sendable in [] }
         } operation: {
-            try await WatchContextBuilder.build(now: Date(), defaultAccountId: UUID())
+            try await WatchContextBuilder.build(now: Date(), defaultAccountId: UUID().uuidString)
         }
 
         #expect(snapshot.monthBudgetProgress == nil)

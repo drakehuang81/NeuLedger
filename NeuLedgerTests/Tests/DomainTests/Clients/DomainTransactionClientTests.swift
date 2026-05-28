@@ -14,7 +14,7 @@ struct DomainTransactionClientTests {
     @Test("TransactionClient fetchAll mock override")
     func testFetchAllMock() async throws {
         let now = Date()
-        let expected = [Transaction(amount: 100, date: now, accountId: UUID(), type: .expense, createdAt: now, updatedAt: now)]
+        let expected = [Transaction(amount: 100, date: now, accountId: UUID().uuidString, type: .expense, createdAt: now, updatedAt: now)]
 
         try await withDependencies {
             $0.transactionClient.fetchAll = { expected }
@@ -28,7 +28,7 @@ struct DomainTransactionClientTests {
     @Test("TransactionClient fetch with filter mock override")
     func testFetchWithFilterMock() async throws {
         let now = Date()
-        let expected = [Transaction(amount: 200, date: now, accountId: UUID(), type: .income, createdAt: now, updatedAt: now)]
+        let expected = [Transaction(amount: 200, date: now, accountId: UUID().uuidString, type: .income, createdAt: now, updatedAt: now)]
 
         try await withDependencies {
             $0.transactionClient.fetch = { _ in expected }
@@ -43,7 +43,7 @@ struct DomainTransactionClientTests {
     @Test("TransactionClient search mock override")
     func testSearchMock() async throws {
         let now = Date()
-        let expected = [Transaction(amount: 150, date: now, note: "lunch", accountId: UUID(), type: .expense, createdAt: now, updatedAt: now)]
+        let expected = [Transaction(amount: 150, date: now, note: "lunch", accountId: UUID().uuidString, type: .expense, createdAt: now, updatedAt: now)]
 
         try await withDependencies {
             $0.transactionClient.search = { query in

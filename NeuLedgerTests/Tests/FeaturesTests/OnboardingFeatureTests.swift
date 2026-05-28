@@ -4,23 +4,23 @@ import Domain
 import Foundation
 @testable import Features
 
-@Suite("OnboardingFeature Tests (Redesign)")
+@Suite("OnboardingFeature Tests")
 struct OnboardingFeatureTests {
 
     // ── Step navigation ──────────────────────────────────────────────
 
-    @Test("startButtonTapped: welcome -> accountSelection")
-    func testStart() async {
+    @Test("nextButtonTapped: welcome -> accountSelection")
+    func testNextFromWelcome() async {
         let store = await TestStore(initialState: OnboardingFeature.State()) {
             OnboardingFeature()
         }
-        await store.send(.startButtonTapped) {
+        await store.send(.nextButtonTapped) {
             $0.currentStep = .accountSelection
         }
     }
 
     @Test("nextButtonTapped: accountSelection -> ready")
-    func testNext() async {
+    func testNextFromAccountSelection() async {
         let store = await TestStore(
             initialState: OnboardingFeature.State(currentStep: .accountSelection)
         ) {
@@ -71,7 +71,7 @@ struct OnboardingFeatureTests {
         }
     }
 
-    @Test("sheet delegate.submitted appends to customAccounts and dismisses sheet")
+    @Test("sheet delegate.submitted appends draft and dismisses sheet")
     func testSheetSubmit() async {
         let draftId = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
         let draft = CustomAccountDraft(id: draftId, name: "玉山銀行", type: .bank, color: "#0A84FF")
@@ -82,8 +82,6 @@ struct OnboardingFeatureTests {
             )
         ) {
             OnboardingFeature()
-        } withDependencies: {
-            $0.uuid = .constant(draftId)
         }
 
         await store.send(.customAccountSheet(.presented(.delegate(.submitted(draft))))) {
@@ -123,15 +121,13 @@ struct OnboardingFeatureTests {
         }
     }
 
-    // ── Finish & Skip (write accounts) ───────────────────────────────
+    // ── Finish flow (ready → done → setup accounts → delegate) ───────
 
-    @Test("finishButtonTapped writes selected types + customs, transitions to done")
+    @Test("nextButtonTapped on ready triggers finishOnboarding and writes accounts")
     func testFinishWritesAccounts() async {
-        let added = LockIsolated<[Account]>([])
-        let setBoolCalled = LockIsolated(false)
+        let captured = LockIsolated<[Account]>([])
         let id1 = UUID(uuidString: "00000000-0000-0000-0000-0000000000B1")!
         let custom = CustomAccountDraft(id: id1, name: "玉山銀行", type: .bank, color: "#0A84FF")
-
         let clock = TestClock()
 
         let store = await TestStore(
@@ -143,60 +139,50 @@ struct OnboardingFeatureTests {
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.userSettingsRepository.setBool = { _, _ in setBoolCalled.setValue(true) }
-            $0.accountClient.add = { acc in
-                added.withValue { $0.append(acc) }
+            $0.accountClient.setupAccounts = { accounts in
+                captured.withValue { $0 = accounts }
             }
             $0.continuousClock = clock
         }
 
-        await store.send(.finishButtonTapped) {
-            $0.isCreatingAccounts = true
-        }
-        await store.receive(\.accountsCreated) {
+        await store.send(.nextButtonTapped) {
             $0.currentStep = .done
         }
+        await store.receive(\.finishOnboarding)
         await clock.advance(by: .milliseconds(1600))
-        await store.receive(\.doneAnimationFinished)
         await store.receive(\.delegate.onboardingCompleted)
 
-        let names = added.value.map(\.name).sorted()
-        let types = Set(added.value.map(\.type))
-        #expect(setBoolCalled.value == true)
-        #expect(added.value.count == 3)
+        let names = captured.value.map(\.name)
+        let types = Set(captured.value.map(\.type))
+        #expect(captured.value.count == 3)
         #expect(types == [.cash, .creditCard, .bank])
         #expect(names.contains("玉山銀行"))
     }
 
-    @Test("skipButtonTapped writes default cash account and transitions to done")
-    func testSkip() async {
-        let added = LockIsolated<Account?>(nil)
-        let setBoolCalled = LockIsolated(false)
+    @Test("finishOnboarding directly writes accounts and completes")
+    func testFinishOnboardingDirect() async {
+        let captured = LockIsolated<[Account]>([])
         let clock = TestClock()
 
         let store = await TestStore(
-            initialState: OnboardingFeature.State(currentStep: .welcome)
+            initialState: OnboardingFeature.State(
+                currentStep: .done,
+                selectedTypes: [.cash]
+            )
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.userSettingsRepository.setBool = { _, _ in setBoolCalled.setValue(true) }
-            $0.accountClient.add = { acc in added.setValue(acc) }
+            $0.accountClient.setupAccounts = { accounts in
+                captured.withValue { $0 = accounts }
+            }
             $0.continuousClock = clock
         }
 
-        await store.send(.skipButtonTapped) {
-            $0.isCreatingAccounts = true
-        }
-        await store.receive(\.accountsCreated) {
-            $0.currentStep = .done
-        }
+        await store.send(.finishOnboarding)
         await clock.advance(by: .milliseconds(1600))
-        await store.receive(\.doneAnimationFinished)
         await store.receive(\.delegate.onboardingCompleted)
 
-        let acc = added.value
-        #expect(acc?.type == .cash)
-        #expect(acc?.icon == "banknote")
-        #expect(setBoolCalled.value == true)
+        #expect(captured.value.count == 1)
+        #expect(captured.value.first?.type == .cash)
     }
 }

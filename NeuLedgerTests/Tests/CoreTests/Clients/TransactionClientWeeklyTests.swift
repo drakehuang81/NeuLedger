@@ -28,7 +28,7 @@ struct TransactionClientWeeklyTests {
         let (dbc, ctx) = try makeTestDatabaseClient()
 
         let acc = SDAccount(
-            id: UUID(),
+            id: UUID().uuidString,
             name: "Test",
             type: AccountType.cash.rawValue,
             icon: "banknote",
@@ -76,8 +76,8 @@ struct TransactionClientWeeklyTests {
     func testFilteredByAccount() async throws {
         let (dbc, ctx) = try makeTestDatabaseClient()
 
-        let a = SDAccount(id: UUID(), name: "A", type: AccountType.cash.rawValue, icon: "", color: "#000", sortOrder: 0, isArchived: false, createdAt: Date())
-        let b = SDAccount(id: UUID(), name: "B", type: AccountType.bank.rawValue, icon: "", color: "#000", sortOrder: 1, isArchived: false, createdAt: Date())
+        let a = SDAccount(id: UUID().uuidString, name: "A", type: AccountType.cash.rawValue, icon: "", color: "#000", sortOrder: 0, isArchived: false, createdAt: Date())
+        let b = SDAccount(id: UUID().uuidString, name: "B", type: AccountType.bank.rawValue, icon: "", color: "#000", sortOrder: 1, isArchived: false, createdAt: Date())
         ctx.insert(a)
         ctx.insert(b)
 
@@ -107,7 +107,7 @@ struct TransactionClientWeeklyTests {
     @Test("Ignores income/transfer entries")
     func testIgnoresNonExpense() async throws {
         let (dbc, ctx) = try makeTestDatabaseClient()
-        let acc = SDAccount(id: UUID(), name: "X", type: AccountType.cash.rawValue, icon: "", color: "#000", sortOrder: 0, isArchived: false, createdAt: Date())
+        let acc = SDAccount(id: UUID().uuidString, name: "X", type: AccountType.cash.rawValue, icon: "", color: "#000", sortOrder: 0, isArchived: false, createdAt: Date())
         ctx.insert(acc)
         let today = Calendar.current.startOfDay(for: Date())
         ctx.insert(SDTransaction(

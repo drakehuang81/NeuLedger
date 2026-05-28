@@ -277,21 +277,21 @@ public struct SettingsView: View {
             ) {
                 if !store.isWipingAllData { store.send(.wipeAllDataTapped) }
             }
-        }
-        .confirmationDialog(
-            String(localized: "settings_wipe_all_data_confirm_title"),
-            isPresented: Binding(
-                get: { store.isConfirmingWipeAllData },
-                set: { if !$0 { store.send(.wipeAllDataDismissed) } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "settings_wipe_all_data_confirm_action"), role: .destructive) {
-                store.send(.wipeAllDataConfirmed)
+            .confirmationDialog(
+                String(localized: "settings_wipe_all_data_confirm_title"),
+                isPresented: Binding(
+                    get: { store.isConfirmingWipeAllData },
+                    set: { if !$0 { store.send(.wipeAllDataDismissed) } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button(String(localized: "settings_wipe_all_data_confirm_action"), role: .destructive) {
+                    store.send(.wipeAllDataConfirmed)
+                }
+                Button(String(localized: "common_cancel"), role: .cancel) {}
+            } message: {
+                Text("settings_wipe_all_data_confirm_message")
             }
-            Button(String(localized: "common_cancel"), role: .cancel) {}
-        } message: {
-            Text("settings_wipe_all_data_confirm_message")
         }
     }
     #endif

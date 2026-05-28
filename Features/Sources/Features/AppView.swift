@@ -56,16 +56,11 @@ struct NeuLedgerApp: App {
             case .main:
                 if let mainStore = Self.store.scope(state: \.main, action: \.main) {
                     MainTabView(store: mainStore)
-                        .transition(
-                            .asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            )
-                        )
+                        .transition(.opacity)
                 }
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: Self.store.state)
+        .animation(.easeInOut(duration: 0.35), value: Self.store.state)
         .onOpenURL { url in
             Self.store.send(.deepLinkReceived(url))
         }

@@ -24,9 +24,6 @@ struct MainTabFeature {
         // Accessory bar visibility — depends on tab + child nav, so it stays here.
         var showAccessoryBar: Bool = true
 
-        // Recurring transaction confirmation routing
-        var pendingRecurringConfirmationId: RecurringTransaction.ID? = nil
-
         var isAccessoryVisible: Bool {
             guard showAccessoryBar else { return false }
             switch selectedTab {
@@ -44,10 +41,6 @@ struct MainTabFeature {
         // Lifecycle
         case task
         case accessoryBarVisibilityLoaded(Bool)
-
-        // Recurring transaction confirmation routing
-        case pendingRecurringConfirmationReceived(RecurringTransaction.ID)
-        case recurringTemplateFetched(RecurringTransaction)
 
         case accessory(AccessoryBarFeature.Action)
         case dashboard(DashboardFeature.Action)
@@ -81,22 +74,12 @@ struct MainTabFeature {
         Reduce { state, action in
             switch action {
             case .task:
+                // Forward to the accessory bar's own load (availability + mode) when MainTabView appears,
+                // so it runs regardless of whether the accessory is currently visible.
                 return .run { send in
-                    // Forward to the accessory bar's own load (availability + mode) when MainTabView appears,
-                    // so it runs regardless of whether the accessory is currently visible.
                     await send(.accessory(.task))
-                    await withTaskGroup(of: Void.self) { group in
-                        group.addTask {
-                            let showAccessoryBar = userSettingsRepository.bool(.showAccessoryBar)
-                            await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
-                        }
-                        // Subscribe to recurring notification taps
-                        group.addTask {
-                            for await recurringId in notificationAdapter.pendingConfirmations() {
-                                await send(.pendingRecurringConfirmationReceived(recurringId))
-                            }
-                        }
-                    }
+                    let showAccessoryBar = userSettingsRepository.bool(.showAccessoryBar)
+                    await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
                 }
                 .cancellable(id: CancelID.task)
 
@@ -128,34 +111,13 @@ struct MainTabFeature {
             case .accessory:
                 return .none
 
-            // MARK: Recurring
-            case let .pendingRecurringConfirmationReceived(id):
-                return .run { send in
-                    do {
-                        let all = try await recurringTransactionClient.fetchAll()
-                        guard let template = all.first(where: { $0.id == id }) else { return }
-                        await send(.recurringTemplateFetched(template))
-                    } catch {
-                        // silently ignore — template may have been deleted
-                    }
-                }
-
-            case let .recurringTemplateFetched(template):
-                state.pendingRecurringConfirmationId = template.id
-                state.dashboard.addTransaction = AddTransactionFeature.State(
-                    mode: .addRecurringConfirmation(template)
-                )
-                state.selectedTab = .dashboard
-                return .none
-
             // MARK: Child delegates
             case .dashboard(.delegate(.seeAllTransactionsTapped)):
                 state.selectedTab = .transactions
                 return .none
 
             case let .dashboard(.delegate(.savedRecurringConfirmation(id, newNextDueDate))):
-                state.pendingRecurringConfirmationId = nil
-                return .run { send in
+                return .run { _ in
                     do {
                         let all = try await recurringTransactionClient.fetchAll()
                         if var template = all.first(where: { $0.id == id }) {

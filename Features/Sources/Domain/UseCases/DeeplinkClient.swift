@@ -22,6 +22,8 @@ public struct DeeplinkClient: Sendable {
     public var parseLinkTo: @Sendable (URL) async throws -> RouteLinkDestination
 
     public var canSkipOnboarding: @Sendable () async throws -> Bool
+
+    public var resolveRecurringConfirmation: @Sendable (_ id: RecurringTransaction.ID) async throws -> RouteLinkDestination
 }
 
 // MARK: - TestDependencyKey

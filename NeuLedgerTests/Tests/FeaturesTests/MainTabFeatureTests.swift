@@ -18,9 +18,6 @@ struct MainTabFeatureTests {
             $0.userSettingsRepository.bool = { key in
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
-            $0.notificationAdapter.pendingConfirmations = {
-                AsyncStream { $0.finish() }
-            }
         }
         await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)
@@ -93,42 +90,6 @@ struct MainTabFeatureTests {
         await store.send(.accessory(.delegate(.transactionExtracted(extracted))))
         await store.receive(\.transactions.addTransactionWithPrefilledData) { state in
             #expect(state.transactions.addTransaction?.mode == .addPrefilled(extracted))
-        }
-    }
-}
-
-@Suite("MainTabFeature — recurring confirmation")
-struct MainTabRecurringConfirmationTests {
-
-    @Test("pendingRecurringConfirmationReceived pre-fills dashboard and switches tab")
-    func testPendingRecurringConfirmationReceived() async {
-        let recurringId = UUID()
-        let template = RecurringTransaction(
-            id: recurringId, amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(), isActive: true, createdAt: Date()
-        )
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.recurringTransactionClient.fetchAll = { [template] }
-            $0.userSettingsRepository.bool = { _ in false }
-            $0.notificationAdapter.pendingConfirmations = {
-                AsyncStream { continuation in
-                    continuation.finish()
-                }
-            }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.pendingRecurringConfirmationReceived(recurringId))
-        await store.receive(\.recurringTemplateFetched) { state in
-            #expect(state.dashboard.addTransaction != nil)
-            #expect(state.selectedTab == .dashboard)
-            #expect(state.pendingRecurringConfirmationId == recurringId)
         }
     }
 }

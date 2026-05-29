@@ -65,5 +65,8 @@ struct NeuLedgerApp: App {
         .onOpenURL { url in
             Self.store.send(.deepLinkReceived(url))
         }
+        .task {
+            await Self.store.send(.task).finish()
+        }
     }
 }

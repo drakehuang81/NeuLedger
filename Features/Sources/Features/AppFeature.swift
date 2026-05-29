@@ -36,15 +36,28 @@ struct AppFeature {
         case onboarding(OnboardingFeature.Action)
         case main(MainTabFeature.Action)
         case route(RouteLinkDestination)
+        case task
     }
 
     @Dependency(\.deeplinkClient) var deeplinkClient
+    @Dependency(\.notificationAdapter) var notificationAdapter
+
+    private enum CancelID { case recurringSubscription }
 
     // MARK: - Body
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .task:
+                return .run { send in
+                    for await id in notificationAdapter.pendingConfirmations() {
+                        let destination = (try? await deeplinkClient.resolveRecurringConfirmation(id)) ?? .none
+                        await send(.route(destination))
+                    }
+                }
+                .cancellable(id: CancelID.recurringSubscription)
+
             case .splashCompleted:
                 return .run { send in
                     let canSkipOnboarding = try await deeplinkClient.canSkipOnboarding()

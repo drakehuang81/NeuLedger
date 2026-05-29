@@ -89,4 +89,53 @@ struct AppFeatureTests {
         // guard case .main fails → no-op, no state change
         await store.send(.route(.recurringConfirmation(template)))
     }
+
+    @Test("task routes a tapped recurring confirmation")
+    func taskRoutesRecurringConfirmation() async {
+        let template = RecurringTransaction(
+            id: UUID(), amount: 15000, note: "房租",
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: Date(), isActive: true, createdAt: Date()
+        )
+        let store = await TestStore(initialState: .main(MainTabFeature.State())) {
+            AppFeature()
+        } withDependencies: {
+            $0.notificationAdapter.pendingConfirmations = {
+                AsyncStream { continuation in
+                    continuation.yield(template.id)
+                    continuation.finish()
+                }
+            }
+            $0.deeplinkClient.resolveRecurringConfirmation = { _ in .recurringConfirmation(template) }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.task)
+        await store.receive(\.route) { state in
+            guard case let .main(main) = state else {
+                Issue.record("expected .main state")
+                return
+            }
+            #expect(main.dashboard.addTransaction?.mode == .addRecurringConfirmation(template))
+        }
+        await store.finish()
+    }
+
+    @Test("task ignores a confirmation that resolves to none")
+    func taskIgnoresUnresolvedConfirmation() async {
+        let store = await TestStore(initialState: .main(MainTabFeature.State())) {
+            AppFeature()
+        } withDependencies: {
+            $0.notificationAdapter.pendingConfirmations = {
+                AsyncStream { continuation in
+                    continuation.yield(UUID())
+                    continuation.finish()
+                }
+            }
+            $0.deeplinkClient.resolveRecurringConfirmation = { _ in .none }
+        }
+        await store.send(.task)
+        await store.receive(\.route)
+        await store.finish()
+    }
 }

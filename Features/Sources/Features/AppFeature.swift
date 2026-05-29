@@ -77,6 +77,14 @@ struct AppFeature {
                 case .onboarding:
                     state = .onboarding(OnboardingFeature.State())
                     return .none
+                case let .recurringConfirmation(template):
+                    guard case .main(var mainState) = state else { return .none }
+                    mainState.selectedTab = .dashboard
+                    mainState.dashboard.addTransaction = AddTransactionFeature.State(
+                        mode: .addRecurringConfirmation(template)
+                    )
+                    state = .main(mainState)
+                    return .none
                 default:
                     return .none
                 }

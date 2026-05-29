@@ -3,7 +3,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct AccessoryView: View {
-    let store: StoreOf<MainTabFeature>
+    let store: StoreOf<AccessoryBarFeature>
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
     var body: some View {
@@ -333,11 +333,11 @@ private struct AccessoryShimmerPill: View {
 // MARK: - Previews
 
 @MainActor
-private func previewStore(_ mutate: (inout MainTabFeature.State) -> Void) -> StoreOf<MainTabFeature> {
-    var state = MainTabFeature.State()
+private func previewStore(_ mutate: (inout AccessoryBarFeature.State) -> Void) -> StoreOf<AccessoryBarFeature> {
+    var state = AccessoryBarFeature.State()
     mutate(&state)
     return Store(initialState: state) {
-        MainTabFeature()
+        AccessoryBarFeature()
     }
 }
 

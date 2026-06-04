@@ -387,4 +387,160 @@ struct LedgerClientLiveTests {
         // And the account itself was still inserted.
         #expect(try await spyClient.listAccounts().count == 1)
     }
+
+    // MARK: - Catalog (Categories)
+
+    @Test("createCategory persists and listCategories returns it sorted")
+    func testCreateAndListCategories() async throws {
+        let income = Domain.Category(id: UUID(), name: "Salary", icon: "dollarsign", color: "#0F0", type: .income, sortOrder: 1, isDefault: false)
+        let expense = Domain.Category(id: UUID(), name: "Food", icon: "fork.knife", color: "#F00", type: .expense, sortOrder: 0, isDefault: false)
+        try await sut.createCategory(income)
+        try await sut.createCategory(expense)
+
+        let all = try await sut.listCategories(nil)
+        #expect(all.count == 2)
+        // Sorted by sortOrder ascending.
+        #expect(all.first?.name == "Food")
+    }
+
+    @Test("listCategories filters by transaction type")
+    func testListCategoriesByType() async throws {
+        let income = Domain.Category(id: UUID(), name: "Salary", icon: "dollarsign", color: "#0F0", type: .income, sortOrder: 0, isDefault: false)
+        let expense = Domain.Category(id: UUID(), name: "Food", icon: "fork.knife", color: "#F00", type: .expense, sortOrder: 1, isDefault: false)
+        try await sut.createCategory(income)
+        try await sut.createCategory(expense)
+
+        let expenses = try await sut.listCategories(.expense)
+        #expect(expenses.count == 1)
+        #expect(expenses.first?.type == .expense)
+    }
+
+    @Test("updateCategory mutates the persisted category")
+    func testUpdateCategory() async throws {
+        let id = UUID()
+        try await sut.createCategory(Domain.Category(id: id, name: "Old", icon: "a", color: "#F00", type: .expense, sortOrder: 0, isDefault: false))
+
+        try await sut.updateCategory(Domain.Category(id: id, name: "New", icon: "b", color: "#00F", type: .expense, sortOrder: 2, isDefault: false))
+
+        let fetched = try await sut.listCategories(nil).first
+        #expect(fetched?.name == "New")
+        #expect(fetched?.icon == "b")
+        #expect(fetched?.sortOrder == 2)
+    }
+
+    @Test("deleteCategory removes a non-default category")
+    func testDeleteCategory() async throws {
+        let id = UUID()
+        try await sut.createCategory(Domain.Category(id: id, name: "Temp", icon: "a", color: "#F00", type: .expense, sortOrder: 0, isDefault: false))
+        #expect(try await sut.listCategories(nil).count == 1)
+
+        try await sut.deleteCategory(id)
+        #expect(try await sut.listCategories(nil).isEmpty)
+    }
+
+    @Test("deleteCategory is denied for a default category")
+    func testDeleteDefaultCategoryThrows() async throws {
+        let id = UUID()
+        try await sut.createCategory(Domain.Category(id: id, name: "Default", icon: "a", color: "#F00", type: .expense, sortOrder: 0, isDefault: true))
+
+        await #expect(throws: CoreError.self) {
+            try await sut.deleteCategory(id)
+        }
+        // Still present after the denied delete.
+        #expect(try await sut.listCategories(nil).count == 1)
+    }
+
+    @Test("deleteCategory throws notFound for an unknown id")
+    func testDeleteUnknownCategoryThrows() async throws {
+        await #expect(throws: CoreError.self) {
+            try await sut.deleteCategory(UUID())
+        }
+    }
+
+    // MARK: - Catalog (Tags)
+
+    @Test("createTag persists and listTags returns it sorted by name")
+    func testCreateAndListTags() async throws {
+        try await sut.createTag(Tag(id: UUID(), name: "Zebra", color: "#000"))
+        try await sut.createTag(Tag(id: UUID(), name: "Apple", color: "#FFF"))
+
+        let tags = try await sut.listTags()
+        #expect(tags.count == 2)
+        // Sorted by name ascending.
+        #expect(tags.first?.name == "Apple")
+    }
+
+    @Test("updateTag mutates the persisted tag")
+    func testUpdateTag() async throws {
+        let id = UUID()
+        try await sut.createTag(Tag(id: id, name: "Old", color: "#000"))
+
+        try await sut.updateTag(Tag(id: id, name: "New", color: "#FFF"))
+
+        let fetched = try await sut.listTags().first
+        #expect(fetched?.name == "New")
+        #expect(fetched?.color == "#FFF")
+    }
+
+    @Test("deleteTag removes the tag")
+    func testDeleteTag() async throws {
+        let id = UUID()
+        try await sut.createTag(Tag(id: id, name: "Temp", color: "#000"))
+        #expect(try await sut.listTags().count == 1)
+
+        try await sut.deleteTag(id)
+        #expect(try await sut.listTags().isEmpty)
+    }
+
+    @Test("deleteTag disassociates the tag from every linked transaction")
+    func testDeleteTagDisassociatesFromTransactions() async throws {
+        let tagId = UUID()
+        let tag = Tag(id: tagId, name: "Travel", color: "#00F")
+        try await sut.createTag(tag)
+
+        let txId = UUID()
+        try await sut.record(Transaction(id: txId, amount: 100, date: Date(), note: "Flight", categoryId: nil, accountId: UUID().uuidString, toAccountId: nil, type: .expense, tags: [tag], aiSuggested: false, createdAt: Date(), updatedAt: Date()))
+        // Sanity: the transaction carries the tag.
+        #expect(try await sut.fetch(txId)?.transaction.tags.contains { $0.id == tagId } == true)
+
+        try await sut.deleteTag(tagId)
+
+        // The transaction survives, but no longer references the deleted tag.
+        let row = try await sut.fetch(txId)
+        #expect(row != nil)
+        #expect(row?.transaction.tags.contains { $0.id == tagId } == false)
+    }
+
+    // MARK: - Export
+
+    @Test("exportCSV writes a header plus one row per transaction with resolved names")
+    func testExportCSV() async throws {
+        let categoryId = UUID()
+        let accountId = UUID().uuidString
+        try await sut.createCategory(Domain.Category(id: categoryId, name: "Food", icon: "fork.knife", color: "#F00", type: .expense, sortOrder: 0, isDefault: false))
+        try await sut.createAccount(Account(id: accountId, name: "Cash", type: .cash, icon: "banknote", color: "#0F0", sortOrder: 0, isArchived: false, createdAt: Date()))
+
+        try await sut.record(Transaction(id: UUID(), amount: 250, date: Date(timeIntervalSince1970: 0), note: "Lunch", categoryId: categoryId, accountId: accountId, toAccountId: nil, type: .expense, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()))
+
+        let url = try await sut.exportCSV()
+        let contents = try String(contentsOf: url, encoding: .utf8)
+        let lines = contents.split(separator: "\n", omittingEmptySubsequences: false)
+        #expect(lines.count == 2) // header + 1 transaction
+        // Expense amounts are negated; account/category names resolved.
+        #expect(contents.contains("-250"))
+        #expect(contents.contains("Cash"))
+    }
+
+    @Test("exportCSV escapes fields containing commas per RFC 4180")
+    func testExportCSVEscaping() async throws {
+        let accountId = UUID().uuidString
+        try await sut.createAccount(Account(id: accountId, name: "Cash", type: .cash, icon: "banknote", color: "#0F0", sortOrder: 0, isArchived: false, createdAt: Date()))
+
+        try await sut.record(Transaction(id: UUID(), amount: 100, date: Date(timeIntervalSince1970: 0), note: "Lunch, dinner", categoryId: nil, accountId: accountId, toAccountId: nil, type: .income, tags: [], aiSuggested: false, createdAt: Date(), updatedAt: Date()))
+
+        let url = try await sut.exportCSV()
+        let contents = try String(contentsOf: url, encoding: .utf8)
+        // The note containing a comma must be wrapped in quotes.
+        #expect(contents.contains("\"Lunch, dinner\""))
+    }
 }

@@ -3,31 +3,46 @@ import SwiftData
 import Dependencies
 import Domain
 
-/// Live implementation of `LedgerClient` — step-5a2 (Transactions + Accounts
-/// internalised; Catalog / Recurring / Export still delegating).
+/// Live implementation of `LedgerClient` — step-5a3 (Transactions + Accounts +
+/// Catalog + Recurring + Export all internalised).
 ///
-/// The Transactions and Accounts sections now read and write `SwiftDataStore`
-/// directly (this file is compiled into the **Core** target — see
-/// `Package.swift` `sources: ["Core", "Application"]` — so SwiftData usage here
-/// is sanctioned, matching `TransactionClient+Live`/`AccountClient+Live`). The
-/// remaining sections forward to the still-living UseCases/repositories so the
-/// switchover (step 5b) stays behavior-preserving until their own internalise
-/// commits land.
+/// Every section now reads and writes `SwiftDataStore` directly (this file is
+/// compiled into the **Core** target — see `Package.swift` `sources: ["Core",
+/// "Application"]` — so SwiftData usage here is sanctioned, matching
+/// `TransactionClient+Live`/`AccountClient+Live`/etc.). No delegating UseCase or
+/// repository client is injected any longer: the Live value depends solely on
+/// `SwiftDataStore`×5 (Transaction/Account/Category/Tag/RecurringTransaction) +
+/// `planningClient` (§3.1 INVARIANT) + `notificationAdapter` (recurring
+/// reminders) + `userSettingsAdapter` (`.defaultAccountId`).
 ///
-/// Section → implementation (plan 5a2 mapping):
+/// Section → implementation (plan 5a3 mapping):
 /// - Transactions → `SwiftDataStore<Transaction, SDTransaction>` directly, with
 ///   the `EnrichedTransaction` join + filter/search lifted from
 ///   `LedgerUseCase+Live`. `record`/`update` keep the `// INVARIANT(§3.1)`
-///   budget-evaluation post-condition via `\.planningClient`.
+///   budget-evaluation post-condition via `\.planningClient`. The shared
+///   `recordTransaction` closure carries that invariant so `tick` reuses the
+///   exact same record path (SAGA internalised — see Recurring below).
 /// - Accounts → `SwiftDataStore<Account, SDAccount>` directly, with
 ///   `computeBalance`, the archive rule, the synthesized `unarchive`, and the
 ///   `balances` aggregate lifted from `AccountClient+Live`/`AccountUseCase+Live`.
 ///   `\.userSettingsAdapter` (`.defaultAccountId` key) backs the default account.
-/// - Catalog → `\.metadataUseCase`, method-for-method (still delegating).
-/// - Recurring → `\.recurringTransactionClient` (CRUD/list) + `\.recurringUseCase` (`tick`).
-/// - Export → `\.exportUseCase.exportTransactionsCSV`.
+/// - Catalog → `SwiftDataStore<Category, SDCategory>` + `<Tag, SDTag>` directly
+///   (factory in `+LiveCatalog.swift`), preserving the default-category delete
+///   guard and the many-to-many tag disassociation (handled inside
+///   `SDTag.prepareForDelete()`).
+/// - Recurring → `SwiftDataStore<RecurringTransaction, SDRecurringTransaction>`
+///   directly (factory in `+LiveRecurring.swift`). **Notification scheduling is
+///   now owned here (new behaviour, 5a3 上收)**: `createRecurring`/
+///   `updateRecurring` schedule a due-date reminder via
+///   `notificationAdapter.scheduleRecurringReminder`, `deleteRecurring` cancels
+///   it via `cancelRecurringReminder`. `tick` is internalised (SAGA collapse):
+///   it fetches due templates, materialises them through the shared
+///   `recordTransaction` path (preserving the budget invariant + the reactive
+///   Watch/Widget mirror), then advances `nextDueDate`.
+/// - Export → CSV assembly lifted verbatim from `ExportUseCase+Live`
+///   (factory + `csvField` escaping in `+LiveExport.swift`).
 ///
-/// ## Watch / Widget mirroring (post-condition decision — 5a2)
+/// ## Watch / Widget mirroring (post-condition decision — 5a2, unchanged in 5a3)
 ///
 /// The plan asks each of `record`/`update`/`delete` to mirror to Widget/Watch.
 /// Investigation of the existing sync path settled the implementation:
@@ -49,18 +64,19 @@ import Domain
 /// The mirror post-condition is therefore "every ledger mutation produces a
 /// context save", which `LedgerClientMirrorTests` asserts by observing
 /// `.NSManagedObjectContextDidSave` exactly once per `record`/`update`/`delete`.
+/// Because `tick` routes through `recordTransaction`, each materialised recurring
+/// transaction inherits the same reactive mirror for free.
 extension LedgerClient: DependencyKey {
     public static var liveValue: LedgerClient {
         @Dependency(\.planningClient) var planningClient
-        @Dependency(\.metadataUseCase) var metadataUseCase
-        @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-        @Dependency(\.recurringUseCase) var recurringUseCase
-        @Dependency(\.exportUseCase) var exportUseCase
+        @Dependency(\.notificationAdapter) var notificationAdapter
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
         let accountStore = SwiftDataStore<Account, SDAccount>()
         let categoryStore = SwiftDataStore<Domain.Category, SDCategory>()
+        let tagStore = SwiftDataStore<Tag, SDTag>()
+        let recurringStore = SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
 
         // Domain join from id → resolved entity. Categories and accounts are
         // fetched once per call so listAll / search return enriched rows in
@@ -83,14 +99,22 @@ extension LedgerClient: DependencyKey {
             }
         }
 
+        // Shared record path: insert + the §3.1 budget post-condition. `record`
+        // and the internalised `tick` both go through this closure so a
+        // scheduler-materialised transaction is indistinguishable from a
+        // user-recorded one (same invariant, same reactive mirror).
+        let recordTransaction: @Sendable (Transaction) async throws -> Void = { transaction in
+            try await transactionStore.add(transaction)
+            // INVARIANT(§3.1): 每筆交易記錄/更新後必評估預算警告
+            // (architecture.md §3.1 Scenario B). Cannot rely on individual
+            // callers to remember.
+            await planningClient.evaluateAfterTransaction(transaction)
+        }
+
         return LedgerClient(
             // MARK: Transactions
             record: { transaction in
-                try await transactionStore.add(transaction)
-                // INVARIANT(§3.1): 每筆交易記錄/更新後必評估預算警告
-                // (architecture.md §3.1 Scenario B). Cannot rely on individual
-                // callers to remember.
-                await planningClient.evaluateAfterTransaction(transaction)
+                try await recordTransaction(transaction)
             },
             update: { transaction in
                 try await transactionStore.update(transaction)
@@ -265,53 +289,25 @@ extension LedgerClient: DependencyKey {
                 userSettingsAdapter.setString(id ?? "", .defaultAccountId)
             },
 
-            // MARK: Catalog
-            listCategories: { type in
-                try await metadataUseCase.listCategories(type)
-            },
-            createCategory: { category in
-                try await metadataUseCase.createCategory(category)
-            },
-            updateCategory: { category in
-                try await metadataUseCase.updateCategory(category)
-            },
-            deleteCategory: { id in
-                try await metadataUseCase.deleteCategory(id)
-            },
-            listTags: {
-                try await metadataUseCase.listTags()
-            },
-            createTag: { tag in
-                try await metadataUseCase.createTag(tag)
-            },
-            updateTag: { tag in
-                try await metadataUseCase.updateTag(tag)
-            },
-            deleteTag: { id in
-                try await metadataUseCase.deleteTag(id)
-            },
+            // MARK: Catalog (internalised — see +LiveCatalog.swift)
+            listCategories: Self.makeListCategories(categoryStore),
+            createCategory: Self.makeCreateCategory(categoryStore),
+            updateCategory: Self.makeUpdateCategory(categoryStore),
+            deleteCategory: Self.makeDeleteCategory(categoryStore),
+            listTags: Self.makeListTags(tagStore),
+            createTag: Self.makeCreateTag(tagStore),
+            updateTag: Self.makeUpdateTag(tagStore),
+            deleteTag: Self.makeDeleteTag(tagStore),
 
-            // MARK: Recurring
-            listRecurring: {
-                try await recurringTransactionClient.fetchAll()
-            },
-            createRecurring: { template in
-                try await recurringTransactionClient.add(template)
-            },
-            updateRecurring: { template in
-                try await recurringTransactionClient.update(template)
-            },
-            deleteRecurring: { id in
-                try await recurringTransactionClient.delete(id)
-            },
-            tick: {
-                try await recurringUseCase.tick()
-            },
+            // MARK: Recurring (internalised — see +LiveRecurring.swift)
+            listRecurring: Self.makeListRecurring(recurringStore),
+            createRecurring: Self.makeCreateRecurring(recurringStore, notificationAdapter),
+            updateRecurring: Self.makeUpdateRecurring(recurringStore, notificationAdapter),
+            deleteRecurring: Self.makeDeleteRecurring(recurringStore, notificationAdapter),
+            tick: Self.makeTick(recurringStore, recordTransaction),
 
-            // MARK: Export
-            exportCSV: {
-                try await exportUseCase.exportTransactionsCSV()
-            }
+            // MARK: Export (internalised — see +LiveExport.swift)
+            exportCSV: Self.makeExportCSV(transactionStore, categoryStore, accountStore)
         )
     }
 }

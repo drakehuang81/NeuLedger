@@ -21,8 +21,18 @@
 - [x] 步驟 2：Planning — 2a `5f02332` / 2b `ec0a060` / 2c `0e59bb4`，全綠。偵察驅動 fan-out 模式驗證成功（額外呼叫端：WatchContextBuilder、AnalyticsUseCase+Live、NotificationSettings 預算警告偏好）。行為微調：evaluate/currentStatus 的交易讀取改 fetchAll + inline 過濾（語意等價）。已知 flaky（與本 refactor 無關，留待專項）：SyncSettingsFeatureTests 兩條 enableSync 測試建議補顯式 timeout
 - [x] 步驟 3：AI 拆分 — 3a `3c3992e`+`ce34854` / 3b `37254ee`（含 MainTabFeatureTests scope 組合修復）/ 3c `6e0f1a6`，全綠 580 passed。CaptureClient 整檔包 `#if canImport(FoundationModels)`（簽名引用 ExtractedTransaction）；SyncSettings flaky 已加寬限 timeout 治理
 - [x] 步驟 4：Platform — 4a `ec7cf44` / 4b `f494a18` / 4c `6c22427`，**新基準 603 passed / 0 failed**。RouteLinkDestination 搬至 `Domain/ValueObjects/`（AccessoryMode/ReminderTime 本就在獨立檔）；OnboardingUseCase 確認零呼叫端直接刪除；`Application/` 只剩 Ledger/Planning/Insights/Capture/Carrier/Platform 六個 context 資料夾
-- [ ] 步驟 5：Ledger（大魔王，含 Watch 特例 §E）
-- [ ] 步驟 6：收網（grep audit + `DatabaseClient` 改名 + architecture.md 回寫）
+- [x] 步驟 5：Ledger — 5a1 `46af411` / 5a2 `3036e9c` / 5a3 `cbc811a` / 5b `8e3260a`+fix `9250580` / 5d `0a0c46a` / 5c-pre `2060db8` / 5c `4df1889`（33 檔退役）。最終 gate：iOS 全綠 + Watch 建置綠。`Domain/UseCases`、`Domain/Repositories`、`Core/Repositories`、`Application/Misc` 資料夾消失
+
+### 步驟 5 教訓補錄（8–12）
+
+8. **大型 agent 的 StructuredOutput 陣亡**是 context 耗盡的症狀：5a1（35 方法介面）與 5a3-verify 都死於此。對策已驗證有效：編輯/驗證 agent 分離 + context 紀律（grep 行號再讀區段、輸出 tail、修復限兩輪）。
+9. **驗證 agent 禁用萬用字元讀 log**：5b 驗證 agent 用 `tail /tmp/verify_*.log` glob 讀到舊綠 log 假放行，54 行 keypath 回歸混進 commit。驗證 log 一律唯一檔名、只讀自己的。
+10. **Scope parent 陷阱三度發作**：MainTab→AccessoryBar（步驟 3）、NotificationSettings→RecurringManagement（5b）、MainTab→Dashboard prefill（5c-pre）。切 child 依賴前必 grep「誰 Scope 了它」。
+11. **模擬器衰竭**：一日多輪測試累積 805 個 CoreSimulator 進程，引發系統性 flake（假超時、ipc/mig 死亡、suite 假死 20 分鐘）。長 session 定期 `xcrun simctl --set testing delete all`。
+12. **Subagent 不可把驗證丟背景就交棒**：背景任務生命週期綁定 agent，提前結束 = 驗證夭折。prompt 必須明令「等驗證完成才回報」。
+
+**5 期行為微調紀錄**：①setupAccounts 不再寫 onboarding 旗標（雙寫入點解除）②鏡像推送 post-condition 顯式化 ③recurring 通知排程上收 ④exportCSV 寫入唯一子目錄（檔名不變）⑤Watch record 保留交易日期（原 Date() 預設）⑥**待裁定**：WatchSessionDelegate 入站記帳仍直寫 store（沿用原行為），是否應改走 ledgerClient.record 吃完整 invariant 鏈（預算警告+鏡像）留收網後與使用者討論
+- [x] 步驟 6：收網 — 6A `2ce25d1`（watch 偏好歸 Platform）/ 6B `19335b7`（PersistenceBootstrap 改名）/ 文件三件套回寫。**最終 DoD 達成：Feature 層 adapter-free，注入面 = 6 Client + TCA 內建；全樹 DatabaseClient/UseCase/Repository 殘留歸零**
 
 ### 1e 食譜回顧（Carrier 試點教訓，步驟 2–5 必讀）
 
@@ -439,7 +449,7 @@ grep -rn "CarrierUseCase\|carrierUseCase" Features/Sources NeuLedgerTests && ech
 
 ### 步驟 6：收網
 
-- [ ] **6.1 DoD grep audit**（全部需 CLEAN）：
+- [x] **6.1 DoD grep audit**（全部需 CLEAN）：
 
 ```bash
 # Feature 端只准 6 個 Client keypath + TCA 內建
@@ -451,10 +461,10 @@ grep -rn "UseCase\b" Features/Sources --include="*.swift" | grep -v "Tests"
 ls Features/Sources/Domain/Repositories Features/Sources/Core/Repositories 2>&1 | grep "No such"
 ```
 
-- [ ] **6.2** `DatabaseClient` → `PersistenceBootstrap` 改名（Core 內部：seeding + container + CloudKitSyncAdapter 引用 + CLAUDE.md 文字）
-- [ ] **6.3** `docs/architecture.md` §2/§3/§3.1/§4/§5/§8 回寫為新模型（spec §3/§4 為藍本）；§9 加一段 2026-06 整併紀錄
-- [ ] **6.4** `CLAUDE.md` Architecture 段同步更新（Client 目錄、依賴規則）
-- [ ] **6.5** 完整 scheme 最終綠燈 + 本計畫「進度狀態」全勾
+- [x] **6.2** `DatabaseClient` → `PersistenceBootstrap` 改名（Core 內部：seeding + container + CloudKitSyncAdapter 引用 + CLAUDE.md 文字）
+- [x] **6.3** `docs/architecture.md` §2/§3/§3.1/§4/§5/§8 回寫為新模型（spec §3/§4 為藍本）；§9 加一段 2026-06 整併紀錄
+- [x] **6.4** `CLAUDE.md` Architecture 段同步更新（Client 目錄、依賴規則）
+- [x] **6.5** 完整 scheme 最終綠燈 + 本計畫「進度狀態」全勾
 
 ---
 

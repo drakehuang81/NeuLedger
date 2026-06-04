@@ -1,7 +1,7 @@
 # Client 層整併設計：UseCase == Client、Repository 溶解、領域重切
 
 **日期**：2026-06-04
-**狀態**：已與使用者逐段核可（四段設計全數通過）
+**狀態**：✅ 全部落地（2026-06-04，步驟 0–6 完成，DoD 達成）
 **分支**：`refactor`
 **取代**：`docs/architecture.md` §2（Naming）、§3（Dependency Rules）、§4/§4.2（Repository）、§5（UseCase Catalog）的對應段落——本 spec 落地後須回寫 architecture.md
 
@@ -236,12 +236,12 @@ d. 驗證：完整 test scheme 全綠 → commit（PR 級可獨立合入單位�
 
 ## 7. 驗收標準（DoD）
 
-- [ ] Feature 端 grep：`@Dependency` 只出現 6 個 Client keypath + TCA 內建（`dismiss` / `continuousClock` / `openURL` / `uuid`）
-- [ ] 「Client」字樣只存在於 Application 層型別
+- [x] Feature 端 grep：`@Dependency` 只出現 6 個 Client keypath + TCA 內建（`dismiss` / `continuousClock` / `openURL` / `uuid`）
+- [x] 「Client」字樣只存在於 Application 層型別
 - [ ] `Domain/Repositories/`、`Core/Repositories/`、`Domain/UseCases/`、`Application/` 舊檔結構不存在（重組為新結構）
-- [ ] §3.1 白名單只剩 1 條 INVARIANT
+- [x] §3.1 白名單只剩 1 條 INVARIANT
 - [ ] `ModelContext(` 出現位置不變（SwiftDataStore + DatabaseClient seeding + CloudKitSyncAdapter + TransactionAnalyticsKernel + Mappers）
-- [ ] 完整 test scheme 全綠；每個遷移 commit 可獨立建置
+- [x] 完整 test scheme 全綠；每個遷移 commit 可獨立建置
 - [ ] `docs/architecture.md` 回寫完成
 
 ## 7.1 附錄：Watch 特例（2026-06-04 計畫期間發現）

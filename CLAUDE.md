@@ -86,13 +86,15 @@ The project uses **Clean Architecture + TCA (v1.23.1)** with a local SPM package
 
 ```
 Features/Sources/
-├── Domain/      # Zero persistence deps. Pure Swift entities + @DependencyClient interfaces.
-├── Core/        # SwiftData models (SD-prefixed), live client implementations, mappers.
-├── Common/      # Design system, extensions, shared SwiftUI components. No dependencies.
-└── Features/    # TCA Reducers + SwiftUI Views. Depends on all three above.
+├── Domain/         # Pure Swift entities/VOs/policies + Client/Adapter interfaces. Zero external imports.
+├── Core/           # Infrastructure: SwiftData (SD-prefixed models), SwiftDataStore, mappers, Adapter lives.
+├── Application/    # Client live implementations（與 Core 同一 SPM target），一個 bounded context 一個資料夾.
+├── Common/         # Design system, extensions, shared SwiftUI components. No dependencies.
+├── Features/       # iOS TCA Reducers + SwiftUI Views. Depends on all of the above.
+└── WatchFeatures/  # watchOS presentation + WatchLedgerClient（cache/gateway-backed）.
 ```
 
-**Dependency direction:** `Features → Core → Domain`. Feature modules never import SwiftData directly.
+**Dependency direction:** `Features → Application(Client) → Core/Domain`. Feature modules never import SwiftData and never inject Adapters — **Clients only**. Full rules: `docs/architecture.md`.
 
 ### Domain Layer
 
@@ -108,36 +110,35 @@ Features/Sources/
 
 **AI types:** `ExtractedTransaction`, `CategorySuggestions`, `SpendingSummary`
 
-**Client interfaces** use `@DependencyClient` macro and declare `testValue = Self()` (unimplemented stubs). `DependencyValues` extension registers each client:
+**Clients（= UseCase 層）** use `@DependencyClient` macro and declare `testValue = Self()` (unimplemented stubs — Feature 測試必須 stub reducer 路徑會碰到的每個 closure)。介面在 `Domain/Clients/`、Live 在 `Application/<Context>/`。六個領域 Client：
 
-| Key path | Key methods |
-|----------|-------------|
-| `\.transactionClient` | `fetchRecent`, `fetchAll`, `fetch(TransactionFilter)`, `search(String)`, `add`, `update`, `delete` |
-| `\.accountClient` | `fetchAll`, `fetchActive`, `add`, `update`, `archive`, `delete`, `computeBalance` |
-| `\.categoryClient` | `fetchAll`, `fetch(TransactionType)`, `add`, `update`, `delete` |
-| `\.budgetClient` | `fetchAll`, `fetchActive`, `add`, `update`, `delete` |
-| `\.tagClient` | `fetchAll`, `add`, `update`, `delete` |
-| `\.aiServiceClient` | `extractTransaction(String)`, `suggestCategories(String,[String])`, `generateInsight(SpendingSummary)`, `isAvailable()` |
+| Key path | 領域（一句話職責） | 代表方法 |
+|----------|-------------|-------------|
+| `\.ledgerClient` | 帳本上的事實（交易+帳戶+分類/標籤+週期+匯出） | `record`, `update`, `delete`, `listRecent`, `listAll(filter:)`, `listAccounts`, `listCategories`, `listTags`, `listRecurring`, `tick`, `exportCSV` |
+| `\.planningClient` | 對未來花費的約束 | `listActive`, CRUD, `currentStatus`, `evaluateAfterTransaction`, `warningEnabled/Threshold` |
+| `\.insightsClient` | 帳本的唯讀投影 | `todayStats`, `weeklySparkline`, `dailyBars`, `categoryProportions`, `budgetGauges`, `detailStats`, `generateAIInsight(s)`, `answerFinancialQuestion`, `isAIAvailable` |
+| `\.captureClient` | 進帳本前的輸入輔助（只產草稿） | `extractFromText/Voice`, `suggestCategories`, `isAvailable`, voice session 三方法 |
+| `\.carrierClient` | 電子發票載具保管 | `listAll`, CRUD, `setActiveForWidget`, `activeForWidget` |
+| `\.platformClient` | App 自身的運行環境 | 偏好/通知/同步/路由/系統 + watch 配對四方法 |
+
+內部不變量（已測試）：`ledgerClient.record/update` → `planningClient.evaluateAfterTransaction`（唯一 §3.1 白名單）；交易異動 → Widget/Watch 鏡像推送；recurring CRUD → 通知排程。Client→Client 預設禁止，跨域協調由 Reducer 用兩個 `.run` effect 做。
 
 ### Core Layer
 
 - SwiftData `@Model` classes are prefixed `SD` (e.g., `SDTransaction`, `SDAccount`)
-- All five models (`SDTransaction`, `SDAccount`, `SDCategory`, `SDBudget`, `SDTag`) must be in the `Schema` array of `DatabaseClient.liveValue` and `testValue`
+- New SwiftData models must be in the `Schema` array of `PersistenceBootstrap`（`Core/Persistence/`，前名 DatabaseClient）的 `liveValue` 與 `testValue`
 - Domain enums are stored as raw `String` values; mappers convert via `init(rawValue:)`
 - `SDTransaction` has a `@Relationship` to `[SDTag]` (many-to-many); `SDTag` has the inverse `@Relationship` back
-- All models conform to `DomainConvertible` (in their `+Mapping.swift` files): `toDomain()` and `static func from(_:context:)`
-- `DatabaseClient` holds the shared `ModelContainer`. Live client implementations inject it via `@Dependency(\.databaseClient)` and use helpers from `SwiftDataHelpers.swift`:
-  - `databaseClient.fetch(_:)` — fetch + map to domain in one call
-  - `databaseClient.add(_:as:)` — insert + save
-  - `databaseClient.update(matching:mutation:)` — find (fetchLimit=1) + mutate closure + save
-  - `databaseClient.deleteFirst(matching:validation:)` — find (fetchLimit=1) + optional guard + delete + save
+- All SD models conform to `PersistentDomainModel`（`+Mapping.swift`）：`toDomain()` / `from(_:context:)` / `applyChanges(from:context:)` / `prepareForDelete()` / `idPredicate(_:)`——關聯生命週期（如刪 Tag 解除交易關聯）住在 mapper
+- **持久化唯一磚塊是 `SwiftDataStore<Domain, SD>`**（零參數建構；只有它可 `@Dependency(\.modelContainer)`）。Client Live 直接實例化使用；自訂查詢先 `fetchAll()` + Swift 過濾，瓶頸才加 constrained extension
+- `ModelContext` 合法出現位置（封閉清單）：`SwiftDataStore`、mappers、`PersistenceBootstrap`（seeding）、`CloudKitSyncAdapter`、`TransactionAnalyticsKernel`、`Core/Adapters/Watch/` 管線
 - `CoreError.notFound` / `.operationDenied` are the only error types thrown from the Core layer
-- Default data seeding (via `seedIfNeeded(in:)` in `DatabaseClient.swift`) populates default categories and the default "Cash" account on first launch (only when `SDCategory` count == 0)
+- Default data seeding（`PersistenceBootstrap` 的 `seedIfNeeded(in:)`）populates default categories and the default "Cash" account on first launch (only when `SDCategory` count == 0)
 - All SwiftData operations run on a `@ModelActor`-isolated context for thread safety
 
 ### Features Layer
 
-**App routing:** `AppFeature` defines `enum Destination { case onboarding(OnboardingFeature.State), case main }`. On launch it reads `userSettingsClient.bool(.hasCompletedOnboarding)` to set the initial destination. `AppView` renders `OnboardingView` or `MainTabView` based on destination.
+**App routing:** `AppFeature` defines `enum Destination { case onboarding(OnboardingFeature.State), case main }`. On launch it reads `platformClient.hasCompletedOnboarding()` to set the initial destination, and subscribes `platformClient.pendingRecurringConfirmations()` + resolves deep links via `platformClient.parseLink` / `resolveRecurringConfirmation`. `AppView` renders `OnboardingView` or `MainTabView` based on destination.
 
 **Main tabs:** `MainTabFeature` composes four tabs — Dashboard, Transactions, Analysis, Settings — with a custom **Split Capsule TabBar** floating above the bottom safe area (left capsule: tab navigation; right capsule: global context action such as search or add).
 
@@ -180,13 +181,15 @@ Feature tests use TCA `TestStore` with dependency overrides:
 let store = await TestStore(initialState: DashboardFeature.State()) {
     DashboardFeature()
 } withDependencies: {
-    $0.transactionClient.fetchRecent = { Self.sampleTransactions }
+    $0.ledgerClient.listRecent = { _ in Self.sampleTransactions }
 }
 await store.send(.task) { $0.isLoading = true }
 await store.receive(\.transactionsUpdated) { ... }
 ```
 
-Core/persistence tests use `DatabaseClient.testValue` (in-memory SwiftData container).
+注意兩個血淚規則（詳見 `docs/architecture.md` §10）：①`@DependencyClient` 介面預設值不是 test stub——reducer 路徑碰到的每個 closure 都要覆寫；②TCA `Scope` 的 parent 測試會走到 child 的依賴，切換 child 注入時 parent 測試一併更新。
+
+Client Live 測試用 in-memory `$0.modelContainer` 注入 + `SwiftDataStore` seed（範例：`LedgerClientLiveTests`）；adapter 副作用用 spy 覆寫斷言。
 
 Domain tests verify: entity protocol conformance (Equatable, Hashable, Codable round-trip), enum `allCases` completeness and raw values, `TransactionFilter` equality, and `@DependencyClient` `testValue` accessibility via `DependencyValues` key paths.
 
@@ -233,11 +236,11 @@ Tests use **Swift Testing** (`@Suite`, `@Test`) — not XCTest. TDD cycle applie
 ## Key Constraints
 
 - **iOS 26.0 minimum** — no `#available` checks needed; use Liquid Glass, Foundation Models, Swift Charts directly
-- Features must never import `SwiftData` directly — always go through a `Client`
+- Features must never import `SwiftData` and never inject Adapters/`SwiftDataStore` — **Clients only**（`\.ledgerClient` / `\.planningClient` / `\.insightsClient` / `\.captureClient` / `\.carrierClient` / `\.platformClient`）
 - All monetary amounts are **TWD only**, displayed as integers with "NT$" prefix — no decimal places, no `currency` field on any entity
 - Account balances are **computed on-the-fly** from transactions — never stored as a persistent field
-- New clients: interface in `Domain/Clients/`, live implementation in `Core/Clients/` conforming to `DependencyKey`
-- New SwiftData models must be added to the `Schema` array in both `DatabaseClient.liveValue` and `testValue`
+- 不要新增 ambiguous 的 `XxxClient`：新能力先問屬於哪個既有 bounded context；真要開新 context 須先補 `docs/architecture.md` §5 目錄。Client→Client 呼叫預設禁止（唯一白名單見 §3.1）
+- New SwiftData models must be added to the `Schema` array in both `PersistenceBootstrap.liveValue` and `testValue`
 - Default categories (`isDefault == true`) must not be deletable
 - Accounts with associated transactions can only be **archived**, not permanently deleted
 - Tag deletion must automatically disassociate the tag from all linked transactions

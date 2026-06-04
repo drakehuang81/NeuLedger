@@ -4,55 +4,43 @@ This document is the **source of truth** for layering, naming, and dependency
 rules. New code and refactors must conform to this spec; deviations need an
 explicit note in code review.
 
-Status: **current architecture** — Phase 5–7 migration completed 2026-05-21.
+Status: **current architecture** — Client layer consolidation completed
+2026-06-04 (see §8 History).
 
-Layer separation (Domain / Application / Core), the UseCase catalog
-(12), the Adapter catalog (5), the Repository pattern via
-`SwiftDataStore`, and the BudgetWarningPolicy / LedgerUseCase →
-BudgetUseCase §3.1 invariant chain are all in place.
+The Application layer is six domain **Clients** (`UseCase == Client`); the
+Repository layer is dissolved — Client Lives read persistence through
+`SwiftDataStore<Domain, SD>` directly. "Client" as a word exists **only** in
+the Application layer.
 
-Known follow-ups (intentional, low-risk cleanup):
-
-- Repository interfaces still use the legacy `*Client.swift` /
-  `XxxClient` type names instead of `*Repository`. File locations
-  match the §8 layout (`Domain/Repositories/`, `Core/Repositories/`)
-  and §10 antipatterns are clean — only the type renames remain.
-- Some Feature reducers continue to inject Repositories / Adapters
-  directly rather than the new UseCases (e.g., `@Dependency(\.account
-  Client)` rather than `\.accountUseCase`). §10 does not forbid this,
-  so the residual cleanup is ergonomic rather than compliance.
-- `TransactionClient.weeklySpending` / `statsSnapshot` / `detailStats`
-  remain on the Repository surface as thin pass-throughs to
-  `TransactionAnalyticsKernel`. Callsites can switch to the
-  architecture-target `AnalyticsUseCase` endpoints as ergonomics
-  allow.
-
-See [§9 Migration](#9-migration) for the original Phase 0–7 plan.
+Pending ruling (recorded, not yet decided): `WatchSessionDelegate` records
+inbound watch transactions by writing the store directly (pre-existing
+behavior). Whether it should route through `ledgerClient.record` to gain the
+budget-warning invariant + mirror push is an open product decision.
 
 ---
 
 ## 1. Layers
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Presentation       Views + Reducers (TCA Features)          │
-│                    ↓ only inward                            │
-├─────────────────────────────────────────────────────────────┤
-│ Application        UseCases — one per bounded context       │
-│                    ↓                                        │
-├─────────────────────────────────────────────────────────────┤
-│ Domain             Entities, ValueObjects, Policies         │
-│                    + Repository / Adapter / UseCase         │
-│                    interfaces. Zero external imports.       │
-├─────────────────────────────────────────────────────────────┤
-│ Infrastructure     Repository impl (SwiftData)              │
-│                    Adapter impl (UN, UserDefaults,          │
-│                    AppGroup, Foundation Models, CloudKit)   │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│ Presentation    XxxFeature / XxxView (TCA)             │
+│                   │ injects Clients only (any number)  │
+│                   ▼                                    │
+│ Application     XxxClient (= the UseCase layer)        │
+│                   │ composes                           │
+│                   ├─▶ SwiftDataStore<Domain, SD>       │
+│                   ├─▶ XxxAdapter (system APIs)         │
+│                   ├─▶ XxxPolicy (pure logic)           │
+│                   └─▶ another Client (§3.1 only)       │
+│ Domain          Entity / ValueObject / Policy          │
+│                 + Client / Adapter interfaces.         │
+│                 Zero external imports.                 │
+│ Infrastructure  SwiftDataStore + Mappers + Adapter     │
+│                 Lives + PersistenceBootstrap           │
+└────────────────────────────────────────────────────────┘
 ```
 
-Dependency direction: **outer → inner, never reversed.** Inner layers know
-nothing about outer ones.
+Dependency direction: **outer → inner, never reversed.**
 
 ---
 
@@ -62,565 +50,297 @@ nothing about outer ones.
 |---|---|---|
 | View | `XxxView` | — |
 | Reducer | `XxxFeature` | — |
-| UseCase | `XxxUseCase` | verb-first, no suffix: `\.ledger`, `\.cloudSync` |
-| Repository | `XxxRepository` | `\.xxxRepository` |
+| Client (Application) | `XxxClient` | `\.xxxClient` |
 | Adapter | `XxxAdapter` | `\.xxxAdapter` |
-| Entity | `Xxx` | — |
-| Value Object | `Xxx` (descriptive) | — |
+| Entity / Value Object | `Xxx` | — |
 | SwiftData Model | `SDXxx` | — |
 | Domain Policy | `XxxPolicy` (enum w/ static funcs) | — |
 
-### Why UseCase keypath is verb-first
-
-```swift
-@Dependency(\.ledger) var ledger
-try await ledger.record(tx)       // reads like an action
-```
-
-vs.
-
-```swift
-@Dependency(\.ledgerUseCase) var ledgerUseCase
-try await ledgerUseCase.record(tx)  // reads like Java enterprise
-```
-
-### Repository / Adapter keep their suffix in keypath
-
-To avoid collisions with state field names like `accounts: [Account]` or
-`notifications: [Notification]`.
+There is no `Repository` and no `UseCase` suffix anymore. A new `XxxClient`
+file is legitimate **only** as a domain-shaped Application surface (see §5
+for the catalog); persistence access goes through `SwiftDataStore`, system
+APIs through an `XxxAdapter`.
 
 ---
 
 ## 3. Dependency Rules (Strict)
 
-| Layer | May depend on | May NOT depend on |
+| Who | May depend on | May NOT depend on |
 |---|---|---|
-| **Feature** | UseCase (always) | Repository, Adapter, Database, system APIs (except in `View` body for layout) |
-| **UseCase** | Repository, Adapter, Policy, Domain types, Foundation primitives, **other UseCase only under §3.1 whitelist** | Reducer, View, SwiftData, UIKit, WidgetKit, CloudKit, UserDefaults, UNUserNotificationCenter, Foundation Models — all of these go through Adapters |
-| **Repository** | DatabaseClient, Domain types | Other Repository (rare exceptions for joins — comment why), any Adapter, any UseCase |
-| **Adapter** | System APIs, Domain types | Other Adapter, Repository, UseCase |
-| **Policy** | Pure Swift only (Foundation OK) | Anything async / throws IO |
+| **Feature** | Clients (any number), TCA built-ins (`\.dismiss`, `\.continuousClock`, `\.uuid`, `\.openURL`, `\.date`) | Adapters, `SwiftDataStore`, `\.modelContainer`, system APIs |
+| **Client Live** | `SwiftDataStore`, Adapters, Policies, Domain types, another Client (§3.1 whitelist only) | `ModelContext` / SwiftData primitives, UIKit/WidgetKit/etc. directly |
+| **Adapter** | System APIs, Domain types | Other Adapters, Clients, `SwiftDataStore` |
+| **SwiftDataStore / Mapper** | `\.modelContainer`, `ModelContext` | Business logic |
+| **Policy** | Pure Swift (Foundation OK) | Anything async / throws IO |
 
-**Rationale for strict Feature → UseCase only:** every screen-driven mutation
-or composed query is funneled through a UseCase. Future cross-cutting changes
-(audit log, telemetry, optimistic UI) only need to touch UseCases, not 15
-Reducers.
+**Rationale for strict Feature → Client only:** every screen-driven mutation
+or composed query funnels through a Client. Cross-cutting changes (audit
+log, telemetry, optimistic UI) touch six Clients, not thirty reducers.
 
-### One concession
+**One concession:** pure system-API calls that only affect the running app
+(e.g., `UIApplication.shared.open` for an outbound URL) may stay inline in
+`View` if a Client wrapper would be pure overhead. Anything that **writes to
+user data or stored state must go through a Client**.
 
-Pure system-API calls that only affect the running app (e.g., open URL,
-read-then-display-only) may stay inline in `View` if a UseCase wrapper would
-be pure overhead. Example: `UIApplication.shared.open(...)` for a deep link.
-But anything that **writes to user data or stored state must go through a
-UseCase**.
+**Infrastructure-internal exception (§E.2):** components that *are* the
+mirror/sync pipeline (`WatchContextBuilder`, `WatchSyncObserver`,
+`WatchMidnightTimer`, `WatchSessionDelegate`) live in `Core/Adapters/Watch/`
+and may read/write `SwiftDataStore` directly — same layer, no rule crossed.
 
 ---
 
-## 3.1 UseCase → UseCase: Whitelist Only
+## 3.1 Client → Client: Whitelist Only
 
-**Default rule: a UseCase does NOT call another UseCase.** UseCases are
-peers, not stacked. Coordination across UseCases belongs in the caller
-(usually the Reducer). This keeps each UseCase independently testable,
-prevents hidden side-effect chains, and avoids accidental cycles.
+Default rule: Clients are peers, not stacked. Coordination across Clients
+belongs in the caller (usually the Reducer, via separate `.run` effects).
+Cross-Client calls carry a comment naming the scenario.
 
-Cross-UseCase calls are allowed only in two named scenarios. Any such call
-must carry a comment tagging which scenario it is.
-
-### Scenario A: Saga — a business flow spans bounded contexts
-
-Use when one UseCase's job is, by definition, to drive a flow that includes
-another UseCase's full chain of effects.
+Current whitelist — exactly one entry:
 
 ```swift
-// SAGA: Recurring tick must trigger the full transaction-record flow
-// (including budget evaluation), so we call LedgerUseCase rather than
-// touching transactionRepository directly.
-RecurringUseCase.tick() {
-    for rt in due {
-        try await ledgerUseCase.record(Transaction(from: rt))
-        try await recurringRepository.markFired(rt.id)
-    }
-}
+// INVARIANT(§3.1): every recorded/updated transaction must be evaluated
+// for budget warnings. Cannot rely on individual callers to remember.
+LedgerClient.record / .update → PlanningClient.evaluateAfterTransaction
 ```
 
-### Scenario B: Post-condition invariant — A must always be followed by B
-
-Use when the second action is an invariant of the first — never optional,
-never something a caller could legitimately skip.
-
-```swift
-// INVARIANT: every recorded transaction must be evaluated for budget
-// warnings. Cannot rely on individual callers to remember.
-LedgerUseCase.record(_ tx: Transaction) async throws {
-    try await transactionRepository.add(tx)
-    await budgetUseCase.evaluateAfterTransaction(tx)
-}
-```
-
-### Everything else: refuse and refactor
+Everything else: refuse and refactor.
 
 | If you're tempted to call... | Do this instead |
 |---|---|
-| Another UseCase to read entity data | Call the underlying Repository directly |
-| Another UseCase to read a setting | Call `AppEnvironmentUseCase` (the one wrapper UseCase exception) or its Adapter directly |
-| Another UseCase to reuse a calculation | Extract the calculation to a Policy |
-| Another UseCase to coordinate two steps for one screen | Let the Reducer coordinate via two `.run` Effects |
+| Another Client to read entity data | Read `SwiftDataStore` directly (Application layer is allowed to) |
+| Another Client to read a setting | Read `userSettingsAdapter` directly |
+| Another Client to reuse a calculation | Extract the calculation to a Policy |
+| Another Client to coordinate two steps for one screen | Let the Reducer coordinate via two `.run` effects |
 
-### Why AppEnvironmentUseCase is an exception
-
-`AppEnvironmentUseCase` is a **wrapper UseCase** — its job is to give other
-UseCases / Reducers a typed concept-shaped surface over UserDefaults
-Adapter, Notification Adapter, and System Adapter. Other UseCases reading
-preferences through it is fine; it's the difference between
-`userSettingsAdapter.bool(.budgetWarningEnabled)` (leaks UserDefaults
-knowledge) and `appEnvironmentUseCase.budgetWarningEnabled()` (concept-shaped).
+Historical note: the former `RecurringUseCase.tick → LedgerUseCase.record`
+saga is now an internal call inside `LedgerClient` (recurring lives in the
+ledger context), and the former `AppEnvironmentUseCase` wrapper exception is
+gone (each Client reads its own settings keys through `userSettingsAdapter`).
 
 ---
 
-## 4. Repository / Adapter Distinction
+## 4. Persistence Pattern
 
-> **The data's schema is yours = Repository. Someone else's schema = Adapter.**
+Three building blocks; `ModelContext` never escapes them.
 
-| Type | Repository | Adapter |
-|---|---|---|
-| What it wraps | Persistence of *your* aggregate | External system (Apple's or third-party) |
-| Returns | Domain entities (`Transaction`, `Account`, ...) | Domain types translated from system response |
-| Examples | `TransactionRepository`, `AccountRepository` | `NotificationAdapter`, `UserSettingsAdapter`, `WidgetSyncAdapter`, `CloudKitSyncAdapter`, `AIAdapter` |
-| Implementation | `Core/Repositories/` SwiftData | `Core/Adapters/` system frameworks |
+1. **`\.modelContainer`** — the `ModelContainer` as a TCA dependency.
+   Only `SwiftDataStore` may `@Dependency(\.modelContainer)`.
+2. **`PersistentDomainModel`** — protocol every SD model adopts
+   (`from(_:context:)`, `applyChanges(from:context:)`, `prepareForDelete()`,
+   `idPredicate(_:)`). Mapping and relationship lifecycle live here
+   (e.g., tag disassociation on delete).
+3. **`SwiftDataStore<Domain, SD>`** — generic CRUD struct
+   (`fetchAll(sortBy:)`, `fetch(id:)`, `add`, `update`, `delete(id:)`).
+   Client Lives instantiate it with zero arguments.
 
----
+Custom queries start as `store.fetchAll()` + Swift-side filtering. If
+profiling shows a bottleneck, add a `SwiftDataStore where SD == X`
+constrained extension — call sites don't change.
 
-## 4.2 Repository Implementation Pattern
+**`PersistenceBootstrap`** (`Core/Persistence/`) owns container construction
+and first-launch seeding (default categories + Cash account). It is
+infrastructure, not an Adapter, and nothing above the Infrastructure layer
+touches it.
 
-Repository **interfaces** stay as TCA `@DependencyClient` structs of closures.
-Repository **implementations** (Live) must not touch SwiftData primitives
-directly. Both rules are enforced by the design below.
-
-### Three building blocks
-
-1. **`\.modelContainer`** — the `ModelContainer` itself, exposed as a TCA
-   dependency. This is the only place `ModelContainer` is registered.
-   `SwiftDataStore` may depend on it; **no one else may**.
-
-2. **`PersistentDomainModel`** — protocol that every SwiftData model adopts,
-   absorbing all mapping + relationship + lifecycle concerns. This is where
-   `ModelContext` is allowed to surface, because mapping fundamentally needs it.
-
-3. **`SwiftDataStore<Domain, SD>`** — generic CRUD struct. Resolves the
-   container itself via `@Dependency`; Repositories instantiate it with zero
-   arguments. All `ModelContext` usage stays inside this struct's five methods.
-
-### `\.modelContainer` dependency
-
-```swift
-// Core/Persistence/ModelContainerKey.swift
-import SwiftData
-import Dependencies
-
-extension DependencyValues {
-    var modelContainer: ModelContainer {
-        get { self[ModelContainerKey.self] }
-        set { self[ModelContainerKey.self] = newValue }
-    }
-}
-
-private enum ModelContainerKey: DependencyKey {
-    static var liveValue: ModelContainer { makeLiveContainer() }   // current logic from DatabaseClient
-    static var testValue: ModelContainer { makeInMemoryContainer() }
-}
-```
-
-**Rule:** only `SwiftDataStore` may `@Dependency(\.modelContainer)`.
-Repository Live, UseCase, Feature, anyone else — forbidden.
-
-### `PersistentDomainModel` protocol
-
-```swift
-// Domain layer — zero SwiftData
-public protocol DomainConvertible {
-    associatedtype DomainModel: Identifiable & Sendable
-    func toDomain() -> DomainModel
-}
-
-// Core layer — SwiftData OK here, this is the boundary
-public protocol PersistentDomainModel: PersistentModel, DomainConvertible
-where DomainModel.ID: Sendable & Equatable {
-
-    /// Create a new SD instance and insert into context.
-    /// Internally resolves any relationships using the context.
-    @discardableResult
-    static func from(_ domain: DomainModel, context: ModelContext) -> Self
-
-    /// Apply Domain changes to this SD instance.
-    /// Internally resolves any relationship updates using the context.
-    func applyChanges(from domain: DomainModel, context: ModelContext)
-
-    /// Cleanup before delete (e.g. clearing inverse relationships).
-    /// Default implementation does nothing.
-    func prepareForDelete()
-
-    /// Build a predicate that finds this SD by domain id.
-    static func idPredicate(_ id: DomainModel.ID) -> Predicate<Self>
-}
-
-public extension PersistentDomainModel {
-    func prepareForDelete() {}
-}
-```
-
-`ModelContext` only appears in `from(_:context:)` and `applyChanges(_:context:)`
-inside the mapper. It does not escape into Repository or above.
-
-### `SwiftDataStore`
-
-```swift
-// Core/Persistence/SwiftDataStore.swift
-public struct SwiftDataStore<Domain: Identifiable & Sendable,
-                              SD: PersistentDomainModel>: Sendable
-    where SD.DomainModel == Domain
-{
-    @Dependency(\.modelContainer) private var container
-
-    public init() {}
-
-    public func fetchAll(sortBy: [SortDescriptor<SD>] = []) async throws -> [Domain]
-    public func fetch(id: Domain.ID) async throws -> Domain?
-    public func add(_ domain: Domain) async throws
-    public func update(_ domain: Domain) async throws
-    public func delete(id: Domain.ID) async throws
-}
-```
-
-Five methods, generic over any `(Domain, SD)` pair. No escape hatch. No
-context exposed.
-
-### Repository Live — zero infrastructure awareness
-
-```swift
-extension TransactionRepository: DependencyKey {
-    public static var liveValue: TransactionRepository {
-        let store = SwiftDataStore<Transaction, SDTransaction>()   // zero args
-
-        return TransactionRepository(
-            fetchAll: { try await store.fetchAll(sortBy: [SortDescriptor(\.date, order: .reverse)]) },
-            fetch: { try await store.fetch(id: $0) },
-            add: { try await store.add($0) },             // mapper handles tag resolution
-            update: { try await store.update($0) },       // mapper handles tag resolution
-            delete: { try await store.delete(id: $0) },
-            search: { query in
-                // No ModelContext access. Fetch + filter in Swift.
-                let lowered = query.lowercased()
-                let all = try await store.fetchAll()
-                return all.filter { $0.note?.lowercased().contains(lowered) == true }
-            },
-            weeklySpending: { accountId, days in
-                let all = try await store.fetchAll()
-                // ... aggregate in Swift
-            }
-        )
-    }
-}
-```
-
-Repository Live mentions neither `ModelContainer` nor `ModelContext`.
-
-### Evolution path for custom queries
-
-`search` and `weeklySpending` currently use `store.fetchAll()` + Swift-side
-filtering / aggregation. For NeuLedger's scale (hundreds to a few thousand
-transactions) this is fine. If profiling later shows it's a bottleneck,
-add a specialized method on `SwiftDataStore` via constrained extension:
-
-```swift
-extension SwiftDataStore where SD == SDTransaction {
-    public func search(_ query: String) async throws -> [Transaction] {
-        // Uses predicate directly, still hides ModelContext.
-    }
-}
-```
-
-Repository switches from `store.fetchAll() + filter` to `store.search(query)`;
-its public surface is unchanged. No call-site changes anywhere.
-
-### What this design forbids
-
-| Anti-pattern | Why it's banned |
-|---|---|
-| `@Dependency(\.modelContainer)` in Repository Live | Defeats the whole point — Repository would touch infrastructure |
-| `ModelContext(...)` outside `SwiftDataStore` or `PersistentDomainModel` mappers | Same |
-| `FetchDescriptor<SD>` returned from a Repository | Leaks SwiftData type upward |
-| Repository Live opens a context for "just one custom query" | Add a `SwiftDataStore where SD == X` extension instead |
-| Mapper performs business logic (not just translation) | Mappers translate shape only; business rules go in Policy / UseCase |
+Legal `ModelContext` sites — the closed list: `SwiftDataStore`,
+`PersistentDomainModel` mappers, `PersistenceBootstrap` (seeding),
+`CloudKitSyncAdapter`, `TransactionAnalyticsKernel`, and the
+`Core/Adapters/Watch/` pipeline via `SwiftDataStore`.
 
 ---
 
-## 5. UseCase Catalog (12)
+## 5. Client Catalog (6 + 1 watchOS)
 
-Grouped by **bounded context**, not per-aggregate. Each UseCase is a struct
-of `@Sendable` closures, registered as a TCA dependency.
+Each Client: interface in `Domain/Clients/` (TCA `@DependencyClient` struct
+of `@Sendable` closures, `testValue = Self()`), Live in
+`Application/<Context>/` conforming to `DependencyKey`.
 
-### 🧾 Ledger Context (3)
+### 🧾 `LedgerClient` — facts on the books
 
-**`LedgerUseCase`** — Transaction CRUD with enrichment
-- `record(_ tx: Transaction) async throws -> Void`
-- `update(_ tx: Transaction) async throws -> Void`
-- `delete(_ id: Transaction.ID) async throws -> Void`
-- `fetch(_ id: Transaction.ID) async throws -> Transaction?`
-- `listRecent(limit: Int) async throws -> [EnrichedTransaction]`
-- `listAll(filter: TransactionFilter) async throws -> [EnrichedTransaction]`
-- `search(query: String) async throws -> [EnrichedTransaction]`
+Five sections (`// MARK:`), ~35 closures. Live splits across
+`LedgerClient+Live{,Accounts,Catalog,Recurring,Export}.swift`.
 
-**`AccountUseCase`**
-- `create(_ account: Account) async throws -> Void`
-- `update(_ account: Account) async throws -> Void`
-- `archive(_ id: Account.ID) async throws -> Void`
-- `unarchive(_ id: Account.ID) async throws -> Void`
-- `delete(_ id: Account.ID) async throws -> Void`
-- `listAll() async throws -> [Account]`
-- `listActive() async throws -> [Account]`
-- `balances() async throws -> [Account.ID: Decimal]`
+- **Transactions** — `record` / `update` / `delete` / `fetch` /
+  `listRecent(limit:)` / `listAll(filter:)` / `search` (reads return
+  `EnrichedTransaction`)
+- **Accounts** — `setupAccounts` / `createAccount` / `updateAccount` /
+  `archiveAccount` / `unarchiveAccount` / `deleteAccount` / `listAccounts` /
+  `listActiveAccounts` / `balance(id:)` / `balances` /
+  `defaultAccountId` / `setDefaultAccountId`
+- **Catalog** — `listCategories(type?)` / category CRUD / `listTags` / tag CRUD
+- **Recurring** — `listRecurring` / recurring CRUD / `tick()`
+- **Export** — `exportCSV()` (writes into a unique temp subdirectory;
+  user-visible filename stays `NeuLedger_export.csv`)
 
-**`MetadataUseCase`** — Category + Tag combined
-- `listCategories(type: TransactionType?) async throws -> [Category]`
-- `createCategory(_:)` / `updateCategory(_:)` / `deleteCategory(_:)`
-- `listTags() async throws -> [Tag]`
-- `createTag(_:)` / `updateTag(_:)` / `deleteTag(_:)`
+Internal invariants (commented + tested):
+1. `record`/`update` → `planningClient.evaluateAfterTransaction` (§3.1)
+2. `record`/`update`/`delete` → Widget/Watch mirror push
+3. `tick()` → internal `record` (full chain applies to recurring fires)
+4. recurring CRUD → schedules/cancels recurring reminders
+   (`notificationAdapter`)
+5. accounts with transactions archive-only; `isDefault` categories
+   undeletable; tag deletion disassociates transactions
+6. `setupAccounts` does **not** write the onboarding flag (that belongs to
+   `PlatformClient`; `OnboardingFeature` calls both explicitly)
 
-### 💰 Planning Context (2)
+Live dependencies: `SwiftDataStore` ×5, `planningClient` (invariant),
+`widgetSyncAdapter`, `watchBridgeAdapter`, `notificationAdapter`,
+`userSettingsAdapter`.
 
-**`BudgetUseCase`**
-- `listActive() async throws -> [Budget]`
-- `create(_:)` / `update(_:)` / `delete(_:)`
-- `currentStatus(of: Budget) async throws -> BudgetStatus`
-- `evaluateAfterTransaction(_ tx: Transaction) async -> Void`
-  > Called internally by `LedgerUseCase.record/update`. Wraps the
-  > BudgetWarningPolicy + NotificationAdapter call chain.
+### 💰 `PlanningClient` — constraints on future spending
 
-**`RecurringUseCase`**
-- `listActive() async throws -> [RecurringTransaction]`
-- `create(_:)` / `update(_:)` / `delete(_:)`
-- `tick() async throws -> Void`
-  > Scheduler entry point — creates due transactions via
-  > `LedgerUseCase.record`.
+`listAll` / `listActive` / CRUD / `currentStatus(of:)` /
+`evaluateAfterTransaction` (BudgetWarningPolicy + notificationAdapter) /
+warning prefs (`warningEnabled` / `warningThreshold` + setters — owns its
+own settings keys).
 
-### 📊 Insights Context (1)
+### 📊 `InsightsClient` — read-only projections of the books
 
-**`AnalyticsUseCase`** — all read-only computed views
-- `todayStats(referenceDate: Date) async throws -> SpendingStats`
-- `weeklySparkline(accountId: Account.ID?) async throws -> [Decimal]`
-- `dailyBars(range: DateInterval) async throws -> [DailyAmount]`
-- `categoryProportions(range: DateInterval) async throws -> [CategoryProportion]`
-- `budgetGauges() async throws -> [BudgetGaugeMetric]`
-- `generateAIInsight(summary: SpendingSummary) async throws -> String`
-  > AI text generation lives here because it's a *summary of existing data*,
-  > not a write action.
+`todayStats(referenceDate:)` / `weeklySparkline(accountId:)` /
+`dailyBars(range:)` / `categoryProportions(range:)` /
+`budgetGauges(accountId:)` / `detailStats(transaction:)` /
+`generateAIInsight` / `generateInsights` / `answerFinancialQuestion`
+(natural-language reads, incl. `QueryTransactionsTool`) / `isAIAvailable`.
+Live composes `TransactionAnalyticsKernel` + `AIAdapter` + `InsightCache`.
+Deleting this entire context loses no data.
 
-### 🤖 Intelligence Context (1)
+### 🤖 `CaptureClient` — input assistance before the books
 
-**`AIUseCase`** — active AI that *creates* data
-- `extractFromText(_:) async throws -> ExtractedTransaction`
-- `extractFromVoice(_:) async throws -> ExtractedTransaction`
-- `suggestCategories(text: String, existing: [String]) async throws -> CategorySuggestions`
-- `isAvailable() -> Bool`
+`extractFromText` / `extractFromVoice` / `suggestCategories` / `isAvailable`
+/ voice session (`requestVoicePermission` / `startVoiceSession` /
+`stopVoiceSession` — forwards `speechAdapter`). Produces drafts
+(`ExtractedTransaction`) only; Features pass drafts to `ledgerClient.record`.
+Insights vs Capture split is by **direction** (read projection vs write
+assist), not by technology.
 
-### 🏷️ Carrier Context (1)
+### 🏷️ `CarrierClient` — Taiwan e-invoice carrier custody
 
-**`CarrierUseCase`** — Taiwan invoice carrier + widget
-- `listAll() async throws -> [Carrier]`
-- `create(_:)` / `update(_:)` / `delete(_:)`
-- `setActiveForWidget(_ id: Carrier.ID) async -> Void`
-- `activeForWidget() -> Carrier.ID?`
+`listAll` / CRUD / `setActiveForWidget` / `activeForWidget`. CRUD and
+activation reload the carrier widget internally (post-condition).
 
-### ☁️ Sync Context (1)
+### 🛠️ `PlatformClient` — the app's own runtime environment
 
-**`CloudSyncUseCase`**
-- `isAvailable() -> Bool`
-- `isEnabled() -> Bool`
-- `lastSyncedAt() -> Date?`
-- `enable() -> AsyncThrowingStream<Double, Error>`
-- `requestNow() async throws -> Void`
+- **Preferences** — `accessoryMode` / `reminderTime` / `dailyReminderEnabled`
+  / `hasCompletedOnboarding` / `markOnboardingComplete` / `showAccessoryBar`
+  (+ setters); watch pairing surface: `watchPaired` / `watchAppInstalled` /
+  `watchDefaultAccountId` / `setWatchDefaultAccountId`
+- **Notification** — `requestNotificationPermission` /
+  `notificationsAuthorized` / `scheduleDailyReminder` / `cancelDailyReminder`
+  / `pendingRecurringConfirmations` (stream)
+- **Sync** — `syncAvailable` / `syncEnabled` / `lastSyncedAt` /
+  `enableSync` (progress stream) / `requestSyncNow` / `wipeAllSyncData`
+- **Routing** — `parseLink(URL)` / `canSkipOnboarding` /
+  `resolveRecurringConfirmation(id)` → `RouteLinkDestination`
+- **System** — `openAppSettings`
 
-### 🛠️ App Environment Context (1)
+### ⌚️ `WatchLedgerClient` (watchOS target only)
 
-**`AppEnvironmentUseCase`** — Preference + Notification + System wrappers
-
-Preferences:
-- `accessoryMode()` / `setAccessoryMode(_:)`
-- `reminderTime()` / `setReminderTime(_:)`
-- `budgetWarningEnabled()` / `setBudgetWarningEnabled(_:)`
-- `budgetWarningThreshold()` / `setBudgetWarningThreshold(_:)`
-- `defaultAccountId()` / `setDefaultAccountId(_:)`
-- `hasCompletedOnboarding()` / `markOnboardingComplete()`
-
-Notification:
-- `requestNotificationPermission() async -> Bool`
-- `scheduleDailyReminder() async -> Void`
-- `cancelDailyReminder() async -> Void`
-
-System:
-- `openAppSettings() -> Void`
-
-### 🚪 Misc (2)
-
-**`OnboardingUseCase`** — single-shot onboarding flow
-- `complete(firstAccount: Account) async throws -> Void`
-  > Internally calls `accountRepository.add` directly (no §3.1 whitelist
-  > reason to route through `AccountUseCase`), then
-  > `appEnvironmentUseCase.markOnboardingComplete()`.
-
-**`ExportUseCase`**
-- `exportTransactionsCSV() async throws -> URL`
+The watch's view of the ledger: `activeAccounts` / `categories(type:)`
+(cache-backed snapshot reads) + `record` (forwards a `TransactionDraft` to
+the iPhone via `WatchSessionGateway`). Registered by
+`WatchDependencies.register`; never binds to the 35-method `LedgerClient`.
 
 ---
 
-## 6. Repository Catalog (7)
-
-All Repositories depend **only** on `DatabaseClient`. They return Domain
-entities. They never call other Repositories (with one rare exception for
-joins, which must be commented).
-
-| Repository | Aggregate |
-|---|---|
-| `TransactionRepository` | Transaction |
-| `AccountRepository` | Account |
-| `CategoryRepository` | Category |
-| `BudgetRepository` | Budget |
-| `TagRepository` | Tag (+ many-to-many disassoc on delete) |
-| `CarrierRepository` | Carrier |
-| `RecurringTransactionRepository` | RecurringTransaction |
-
----
-
-## 7. Adapter Catalog (5)
+## 6. Adapter Catalog (7)
 
 | Adapter | Wraps |
 |---|---|
-| `UserSettingsAdapter` | `UserDefaults.standard` |
-| `NotificationAdapter` | `UNUserNotificationCenter` + per-budget warning state in UserDefaults |
-| `WidgetSyncAdapter` | App Group `UserDefaults(suiteName:)` + `WidgetCenter.reloadAllTimelines()` |
+| `UserSettingsAdapter` | `UserDefaults` (`SettingsKey` raw values are persisted — never rename them) |
+| `NotificationAdapter` | `UNUserNotificationCenter` + warning state + recurring reminders + `pendingConfirmations` stream |
+| `WidgetSyncAdapter` | App Group `UserDefaults` + `WidgetCenter` reloads |
 | `AIAdapter` | Foundation Models (`SystemLanguageModel` / `LanguageModelSession`) |
 | `CloudKitSyncAdapter` | `NSPersistentCloudKitContainer` lifecycle + `lastSyncedAt` |
-
-`DatabaseClient` is **infrastructure but not a typical Adapter** — it
-exposes `ModelContainer` directly to Repositories. It is the only thing
-Repositories may touch from the infra layer.
+| `SpeechAdapter` | Speech recognition session (permission / start / stop) |
+| `WatchBridgeAdapter` | WatchConnectivity pairing + snapshot push |
 
 ---
 
-## 8. File / Folder Layout
+## 7. File / Folder Layout
 
 ```
 Features/Sources/
-├── Domain/                            # Pure. No external imports.
-│   ├── Entities/                      # Transaction, Account, ...
-│   ├── ValueObjects/                  # TransactionFilter, EnrichedTransaction
-│   ├── Policies/                      # AccountDeletionPolicy, BudgetWarningPolicy
-│   ├── Repositories/                  # TransactionRepository.swift (interface)
-│   ├── Adapters/                      # NotificationAdapter.swift (interface)
-│   └── UseCases/                      # LedgerUseCase.swift (interface)
+├── Domain/                      # Pure. No external imports.
+│   ├── Entities/  ValueObjects/  Enums/  Policies/
+│   ├── Clients/                 # 6 Client interfaces
+│   └── Adapters/                # 7 Adapter interfaces
 │
-├── Core/                              # Infrastructure implementations
-│   ├── Persistence/                   # ModelContainerKey, SwiftDataStore
-│   ├── Mappers/                       # SD*+Mapping.swift (PersistentDomainModel conformances)
-│   ├── Repositories/                  # *Repository+Live.swift (uses SwiftDataStore)
-│   └── Adapters/                      # *Adapter+Live.swift (system APIs)
+├── Core/                        # Infrastructure
+│   ├── Persistence/             # PersistenceBootstrap, ModelContainerKey,
+│   │                            # SwiftDataStore, PersistentDomainModel, Models/
+│   ├── Mappers/                 # SD*+Mapping.swift
+│   ├── Analytics/               # TransactionAnalyticsKernel
+│   └── Adapters/                # *Adapter+Live.swift (+ Watch/ pipeline)
 │
-├── Application/                       # UseCase implementations
-│   ├── Ledger/
-│   │   └── LedgerUseCase+Live.swift
-│   ├── Account/
-│   │   └── AccountUseCase+Live.swift
-│   ├── Metadata/
-│   ├── Budget/
-│   ├── Recurring/
-│   ├── Analytics/
-│   ├── AI/
-│   ├── Carrier/
-│   ├── CloudSync/
-│   ├── AppEnvironment/
-│   ├── Onboarding/
-│   └── Export/
+├── Application/                 # Client Lives (same SPM target as Core)
+│   ├── Ledger/  Planning/  Insights/  Capture/  Carrier/  Platform/
 │
-├── Common/                            # Design system, shared SwiftUI components
-│
-└── Features/                          # Presentation (TCA Reducers + Views)
-    └── (one folder per screen)
+├── WatchFeatures/               # watchOS presentation + WatchLedgerClient
+├── Common/                      # Design system, shared SwiftUI components
+└── Features/                    # iOS presentation (TCA Reducers + Views)
 ```
 
 ---
 
-## 9. Migration
+## 8. History
 
-Current state vs target:
+Two migrations shaped this architecture; both specs/plans are retained as
+records:
 
-| Current | Target |
-|---|---|
-| `Core/Persistence/DatabaseClient` (struct wrapping ModelContainer + 4 CRUD helpers) | Replace → `\.modelContainer` dependency + `SwiftDataStore<Domain, SD>` generic. CRUD helpers removed; mapping logic moves into `PersistentDomainModel` mappers. |
-| `DomainConvertible` only has `toDomain` / `from` | Promote SD-side conformance to `PersistentDomainModel` (adds `applyChanges`, `prepareForDelete`, `idPredicate`) |
-| `Core/Clients/TransactionClient+Live` (Repository + UseCase mix) | Split → `Core/Repositories/TransactionRepository+Live` (uses `SwiftDataStore`) + `Application/Ledger/LedgerUseCase+Live` (orchestration) |
-| `Core/Clients/AIServiceClient+Live` (already a UseCase but mis-named) | Rename → `Application/AI/AIUseCase+Live` |
-| `Core/Clients/SyncClient+Live` | Rename → `Application/CloudSync/CloudSyncUseCase+Live` |
-| `Core/Clients/NotificationClient+Live` | Rename → `Core/Adapters/NotificationAdapter+Live` |
-| `Core/Clients/WidgetSyncClient+Live` | Rename → `Core/Adapters/WidgetSyncAdapter+Live` |
-| `Core/Clients/UserSettingsClient+Live` | Rename → `Core/Adapters/UserSettingsAdapter+Live` |
-| `Domain/Clients/*Client.swift` | Move + split → `Domain/Repositories/`, `Domain/Adapters/`, `Domain/UseCases/` |
-| Features directly inject Repository / Adapter | Refactor to inject UseCase only |
-
-This is a multi-PR refactor. Suggested ordering:
-
-1. **Persistence foundation** (no behavior change, biggest blast radius):
-   introduce `\.modelContainer` + `SwiftDataStore` + `PersistentDomainModel`;
-   migrate every existing `*Client+Live` to use it; retire `DatabaseClient`.
-   Do this first because every Repository depends on it.
-2. **Adapter renames** (low risk): `NotificationClient` → `NotificationAdapter`,
-   `UserSettingsClient` → `UserSettingsAdapter`, `WidgetSyncClient` → `WidgetSyncAdapter`.
-3. **Promote misnamed UseCases**: `AIServiceClient` → `AIUseCase` (+ split out
-   `AIAdapter` for raw Foundation Models calls), `SyncClient` → `CloudSyncUseCase`
-   (+ split out `CloudKitSyncAdapter`).
-4. **Extract Ledger UseCase**: pull `checkBudgetWarnings` out of
-   `TransactionRepository`, create `LedgerUseCase` + `BudgetUseCase`. Update
-   Features that record transactions to call `LedgerUseCase.record`.
-5. **Introduce remaining UseCases incrementally**, one bounded context per PR.
-6. **Folder restructure** (Domain split, new Application folder) — best done
-   in the same PR as introducing the new UseCase implementations.
-
-Until migration is complete, the codebase will have both `*Client` and
-`*UseCase` / `*Repository` / `*Adapter` names. That's expected; the spec is
-the target, the code follows.
+1. **2026-05-21 — Clean Architecture + DDD migration** (Phase 0–7):
+   introduced `SwiftDataStore` / `PersistentDomainModel`, Adapter renames,
+   12 UseCases, folder split. Plan:
+   `docs/superpowers/plans/2026-05-20-architecture-migration.md`.
+2. **2026-06-04 — Client layer consolidation**: `UseCase == Client`
+   decision; 12 UseCases + 8 repositories consolidated into 6 domain
+   Clients (+ `WatchLedgerClient`); Repository layer dissolved;
+   `DatabaseClient` → `PersistenceBootstrap`. Spec:
+   `docs/superpowers/specs/2026-06-04-client-layer-consolidation-design.md`;
+   plan (incl. full retrospective):
+   `docs/superpowers/plans/2026-06-04-client-layer-consolidation.md`.
 
 ---
 
-## 10. Anti-Patterns
+## 9. Anti-Patterns
 
 | Smell | What to do instead |
 |---|---|
-| Reducer imports `SwiftData` or `UserDefaults` | Use a UseCase / Adapter |
-| Repository fetches + then computes business logic | Move the logic to a Policy or UseCase |
-| Two Repositories know about each other | One UseCase composes both |
-| UseCase named after a screen (`DashboardUseCase`) | Rename around a domain concept |
-| Adapter calls another Adapter | Compose at the UseCase layer instead |
-| Policy is `async throws` | It's a UseCase, not a Policy |
-| 30-method UseCase | Split by sub-context; don't let it grow past ~15 methods |
-| New `XxxClient` file | Decide: Repository, Adapter, or UseCase — never the ambiguous "Client" |
-| UseCase A calls UseCase B without a §3.1 saga/invariant comment | Refactor: call Repository / Adapter directly, or extract to Policy, or let Reducer coordinate |
-| Repository Live has `@Dependency(\.modelContainer)` | Only `SwiftDataStore` may. Repository instantiates `SwiftDataStore<Domain, SD>()` with zero args. |
-| `ModelContext` referenced outside `SwiftDataStore` / `PersistentDomainModel` mapper | Move the work to a Store method (or a constrained extension on Store) |
-| `FetchDescriptor<SD>` returned from a Repository | Return Domain types only |
+| Reducer imports `SwiftData` or `UserDefaults` | Go through a Client |
+| Feature injects an Adapter or `SwiftDataStore` | Go through a Client |
+| Client named after a screen (`DashboardClient`) | Name around a domain concept |
+| Client A calls Client B without a §3.1 invariant comment | Read the store/adapter directly, extract a Policy, or let the Reducer coordinate |
+| Adapter calls another Adapter / a Client | Compose inside a Client Live |
+| Policy is `async throws` | It's Client logic, not a Policy |
+| New ambiguous `XxxClient` outside §5 catalog | Decide: does it belong to an existing context? New contexts need a spec note |
+| `@Dependency(\.modelContainer)` outside `SwiftDataStore` | Instantiate `SwiftDataStore<Domain, SD>()` instead |
+| `ModelContext` outside the §4 closed list | Move the work into a Store method or constrained extension |
+| `FetchDescriptor<SD>` / SD types crossing above Infrastructure | Return Domain types only |
+| Mapper performs business logic | Mappers translate shape only; rules go in Policy / Client |
+| Fixed shared temp-file paths | Unique subdirectory per operation (see `exportCSV`) |
 
 ---
 
-## 11. Testability
+## 10. Testability
 
-Each layer has a clear test surface:
+- **Policy**: pure function tests — fastest, no setup
+- **Client Live**: in-memory `\.modelContainer` (seed via `SwiftDataStore`)
+  + adapter spies via `withDependencies` — see `LedgerClientLiveTests`
+- **Adapter Live**: integration tests against real system APIs (sparingly)
+- **Feature**: `TestStore` with **Client closures** overridden — minimal
+  mocking surface
 
-- **Policy**: pure function tests, fastest, no setup
-- **Adapter** (Live): integration tests against real system APIs (sparingly)
-- **Repository** (Live): in-memory `DatabaseClient.testValue` + Swift Testing
-- **UseCase**: TCA `TestStore` with Repository/Adapter overridden via
-  `withDependencies` — fast, deterministic
-- **Feature**: `TestStore` with **UseCase** overridden via `withDependencies` —
-  minimal mocking surface (a Feature test should rarely need to mock a
-  Repository or Adapter directly)
+Hard-won test rules (full retrospective in the 2026-06-04 plan):
 
-If a Feature test needs to mock more than 2 UseCases, that's a sign the
-Feature is doing too much.
+- `@DependencyClient` default values (`= { nil }`) are production fallbacks;
+  `testValue` closures stay unimplemented — stub **every** closure the
+  reducer path touches.
+- TCA `Scope` parents execute child paths: switching a child's dependencies
+  means updating the **parent feature's tests** too (grep "who Scopes this
+  feature" first).
+- Tests sharing the simulator process must not write fixed shared file
+  paths (parallel suites race).
+- Long test sessions degrade simulators; reset with
+  `xcrun simctl --set testing delete all` when flakes cluster.
+
+If a Feature test needs to mock more than 2 Clients, the Feature is doing
+too much.

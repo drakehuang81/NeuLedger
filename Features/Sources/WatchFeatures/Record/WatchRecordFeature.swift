@@ -90,9 +90,7 @@ public struct WatchRecordFeature: Sendable {
 
     private static let amountCap: Decimal = 9_999_999
 
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.accountClient) var accountClient
+    @Dependency(\.watchLedgerClient) var ledgerClient
     @Dependency(\.date.now) var now
 
     public init() {}
@@ -102,10 +100,10 @@ public struct WatchRecordFeature: Sendable {
             switch action {
 
             case .task:
-                return .run { [categoryClient, accountClient] send in
+                return .run { [ledgerClient] send in
                     @Sendable func load() async {
-                        async let categories = (try? await categoryClient.fetchByType(.expense)) ?? []
-                        async let accounts = (try? await accountClient.fetchActive()) ?? []
+                        async let categories = (try? await ledgerClient.categories(.expense)) ?? []
+                        async let accounts = (try? await ledgerClient.activeAccounts()) ?? []
                         let cats = await categories
                         let accs = await accounts
                         await send(.loaded(
@@ -183,7 +181,7 @@ public struct WatchRecordFeature: Sendable {
                     type: .expense
                 )
                 return .run { send in
-                    try? await transactionClient.add(transaction)
+                    try? await ledgerClient.record(transaction)
                     await send(.draftSent)
                 }
 

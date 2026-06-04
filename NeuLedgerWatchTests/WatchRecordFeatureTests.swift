@@ -41,10 +41,10 @@ struct WatchRecordFeatureTests {
         let store = TestStore(initialState: WatchRecordFeature.State()) {
             WatchRecordFeature()
         } withDependencies: {
-            $0.categoryClient.fetchByType = { @Sendable type in
+            $0.watchLedgerClient.categories = { @Sendable type in
                 type == .expense ? [Self.foodCategory, Self.transportCategory] : []
             }
-            $0.accountClient.fetchActive = { @Sendable in
+            $0.watchLedgerClient.activeAccounts = { @Sendable in
                 [Self.cashAccount, Self.cardAccount]
             }
         }
@@ -97,7 +97,7 @@ struct WatchRecordFeatureTests {
         ) {
             WatchRecordFeature()
         } withDependencies: {
-            $0.transactionClient.add = { @Sendable tx in
+            $0.watchLedgerClient.record = { @Sendable tx in
                 added.withValue { $0.append(tx) }
             }
             $0.date.now = Date(timeIntervalSince1970: 1_700_000_000)

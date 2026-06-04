@@ -1,11 +1,45 @@
 import Foundation
 import Testing
+import SwiftData
 import Dependencies
 import Domain
 @testable import Core
 
 @Suite("WatchContextBuilder Tests")
 struct WatchContextBuilderTests {
+
+    /// Builds a fresh in-memory container and seeds the supplied domain
+    /// values through `SwiftDataStore`, so `WatchContextBuilder.build`
+    /// (which now reads SwiftData directly) sees them. Returns the
+    /// container so the caller can inject it via `$0.modelContainer`.
+    private func makeSeededContainer(
+        categories: [Domain.Category] = [],
+        accounts: [Account] = [],
+        transactions: [Transaction] = []
+    ) async throws -> ModelContainer {
+        let schema = Schema([
+            SDTransaction.self,
+            SDAccount.self,
+            SDCategory.self,
+            SDBudget.self,
+            SDTag.self,
+        ])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+
+        try await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            let categoryStore = SwiftDataStore<Domain.Category, SDCategory>()
+            let accountStore = SwiftDataStore<Account, SDAccount>()
+            let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
+            for category in categories { try await categoryStore.add(category) }
+            for account in accounts { try await accountStore.add(account) }
+            for transaction in transactions { try await transactionStore.add(transaction) }
+        }
+
+        return container
+    }
 
     @Test("Snapshot aggregates only today's expenses, not income or other days")
     func aggregatesTodaysExpensesOnly() async throws {
@@ -41,11 +75,15 @@ struct WatchContextBuilderTests {
             Transaction(amount: 1000, date: now, accountId: accountId, type: .income),
         ]
 
+        let container = try await makeSeededContainer(
+            categories: [category],
+            accounts: [account],
+            transactions: txns
+        )
+
         let snapshot = try await withDependencies {
             $0.calendar = Calendar(identifier: .gregorian)
-            $0.transactionClient.fetchAll = { @Sendable in txns }
-            $0.categoryClient.fetchAll = { @Sendable in [category] }
-            $0.accountClient.fetchActive = { @Sendable in [account] }
+            $0.modelContainer = container
             $0.planningClient.listActive = { @Sendable in [] }
         } operation: {
             try await WatchContextBuilder.build(now: now, defaultAccountId: accountId)
@@ -61,11 +99,11 @@ struct WatchContextBuilderTests {
 
     @Test("monthBudgetProgress is nil when no overall monthly budget is active")
     func monthBudgetProgressNilWhenNoBudgetActive() async throws {
+        let container = try await makeSeededContainer()
+
         let snapshot = try await withDependencies {
             $0.calendar = Calendar(identifier: .gregorian)
-            $0.transactionClient.fetchAll = { @Sendable in [] }
-            $0.categoryClient.fetchAll = { @Sendable in [] }
-            $0.accountClient.fetchActive = { @Sendable in [] }
+            $0.modelContainer = container
             $0.planningClient.listActive = { @Sendable in [] }
         } operation: {
             try await WatchContextBuilder.build(now: Date(), defaultAccountId: UUID().uuidString)

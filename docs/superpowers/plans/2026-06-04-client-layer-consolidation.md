@@ -18,7 +18,7 @@
 
 - [x] 步驟 0：`UserSettingsRepository` → `UserSettingsAdapter` 機械改名 — `af94202`
 - [x] 步驟 1：Carrier 試點 — 1a `8addc18` / 1b `b24e5a6` / 1c `19053b2` / 1d `aa7ca8f`，完整 scheme 每 commit 全綠
-- [ ] 步驟 2：Planning
+- [x] 步驟 2：Planning — 2a `5f02332` / 2b `ec0a060` / 2c `0e59bb4`，全綠。偵察驅動 fan-out 模式驗證成功（額外呼叫端：WatchContextBuilder、AnalyticsUseCase+Live、NotificationSettings 預算警告偏好）。行為微調：evaluate/currentStatus 的交易讀取改 fetchAll + inline 過濾（語意等價）。已知 flaky（與本 refactor 無關，留待專項）：SyncSettingsFeatureTests 兩條 enableSync 測試建議補顯式 timeout
 - [ ] 步驟 3：AI 拆分（Insights + Capture）
 - [ ] 步驟 4：Platform
 - [ ] 步驟 5：Ledger（大魔王，含 Watch 特例 §E）
@@ -101,9 +101,17 @@ public struct InsightsClient: Sendable {
     public var generateInsights: @Sendable (_ summary: SpendingSummary) async throws -> [InsightData] = { _ in [] }
     /// 「用自然語言讀帳本」——自 AIUseCase 搬入（含 QueryTransactionsTool）
     public var answerFinancialQuestion: @Sendable (_ question: String) async throws -> String
+    /// 洞察類 AI 功能可用性（AIAssistant/Analysis/Dashboard 的顯示判斷）
+    public var isAIAvailable: @Sendable () -> Bool = { false }
 }
 // keypath: \.insightsClient
 ```
+
+**步驟 3 前偵察情報（2026-06-04）**：
+- `AnalyticsUseCase` 是幽靈——Feature 端零注入；Dashboard 的 stats 全走 `transactionClient.weeklySpending(id, 7)`×6 / `statsSnapshot()`×1，切換映射：→ `insightsClient.weeklySparkline(id)` / `todayStats(now)`（Dashboard 已注入 `\.date.now`）
+- `generateInsight`（單數）呼叫端：AnalysisFeature、DashboardFeature → 映射到 `generateAIInsight`（簽名相同）；`generateInsights`（複數）：DashboardFeature → 原樣
+- `isAvailable` 呼叫端按領域分流：AIAssistant（含 `AIAssistantCardView`）/Analysis/Dashboard → `insightsClient.isAIAvailable`；AddTransaction/AccessoryBar → `captureClient.isAvailable`
+- `TransactionDetailView` 的 PreviewFixtures 也覆寫 `detailStats`，切換時別漏
 
 **Live 組裝**：`TransactionAnalyticsKernel` + `AIAdapter` + `InsightCache`（檔案搬至 `Application/Insights/`）。
 **去重裁定**：`AIUseCase.generateInsight`（單數，SpendingSummary→String）與 `AnalyticsUseCase.generateAIInsight` 是重複入口——合約只保留 `generateAIInsight`，執行時確認兩者呼叫端後統一。

@@ -40,7 +40,7 @@ public struct BudgetManagementFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.budgetClient) var budgetClient
+    @Dependency(\.planningClient) var planningClient
 
     private enum CancelID { case task }
 
@@ -52,7 +52,7 @@ public struct BudgetManagementFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    let budgets = try await budgetClient.fetchAll()
+                    let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
                 }
                 .cancellable(id: CancelID.task)
@@ -74,8 +74,8 @@ public struct BudgetManagementFeature: Sendable {
                 var updated = budget
                 updated.isActive.toggle()
                 return .run { [updated] send in
-                    try await budgetClient.update(updated)
-                    let budgets = try await budgetClient.fetchAll()
+                    try await planningClient.update(updated)
+                    let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
                 }
 
@@ -96,8 +96,8 @@ public struct BudgetManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 return .run { send in
-                    try await budgetClient.delete(id)
-                    let budgets = try await budgetClient.fetchAll()
+                    try await planningClient.delete(id)
+                    let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
                 }
 
@@ -107,7 +107,7 @@ public struct BudgetManagementFeature: Sendable {
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
                 return .run { send in
-                    let budgets = try await budgetClient.fetchAll()
+                    let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
                 }
 

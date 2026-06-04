@@ -56,7 +56,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -76,7 +76,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in Self.sampleTransactions }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -108,7 +108,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -135,7 +135,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in throw URLError(.badServerResponse) }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -157,7 +157,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in Self.sampleTransactions }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
             $0.aiUseCase.isAvailable = { true }
             $0.aiUseCase.generateInsight = { _ in insightText }
@@ -185,7 +185,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in Self.sampleTransactions }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
             $0.aiUseCase.isAvailable = { true }
             $0.aiUseCase.generateInsight = { _ in throw AIError() }
@@ -235,7 +235,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in budgetTxns }
-            $0.budgetClient.fetchActive = { [budget] }
+            $0.planningClient.listActive = { [budget] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -357,7 +357,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in txns }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -387,7 +387,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [budget] }
+            $0.planningClient.listActive = { [budget] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -414,7 +414,7 @@ struct AnalysisFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { accounts }
             $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -433,7 +433,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -461,7 +461,7 @@ struct AnalysisFeatureTests {
                 capturedFilter.setValue(filter)
                 return []
             }
-            $0.budgetClient.fetchActive = { [] }
+            $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }
@@ -501,7 +501,7 @@ struct AnalysisFeatureTests {
             AnalysisFeature()
         } withDependencies: {
             $0.transactionClient.fetch = { _ in [accountTxn] }
-            $0.budgetClient.fetchActive = { [relevantBudget, irrelevantBudget] }
+            $0.planningClient.listActive = { [relevantBudget, irrelevantBudget] }
             $0.categoryClient.fetchAll = { [] }
             $0.aiUseCase.isAvailable = { false }
         }

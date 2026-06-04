@@ -85,7 +85,7 @@ public struct AnalysisFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.accountClient) var accountClient
-    @Dependency(\.budgetClient) var budgetClient
+    @Dependency(\.planningClient) var planningClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.aiUseCase) var aiUseCase
@@ -220,9 +220,9 @@ public struct AnalysisFeature: Sendable {
                             await send(.loadedData(.failure(error)))
                         }
                     },
-                    .run { [budgetClient, transactionClient, categoryClient] send in
+                    .run { [planningClient, transactionClient, categoryClient] send in
                         let metrics = await Self.computeBudgetMetrics(
-                            budgetClient: budgetClient,
+                            planningClient: planningClient,
                             transactionClient: transactionClient,
                             categoryClient: categoryClient,
                             accountId: selectedAccountId
@@ -295,13 +295,13 @@ public struct AnalysisFeature: Sendable {
     // MARK: - Budget Metrics Computation
 
     static func computeBudgetMetrics(
-        budgetClient: BudgetClient,
+        planningClient: PlanningClient,
         transactionClient: TransactionClient,
         categoryClient: CategoryClient,
         accountId: Account.ID? = nil
     ) async -> [BudgetGaugeMetrics] {
         do {
-            let activeBudgets = try await budgetClient.fetchActive()
+            let activeBudgets = try await planningClient.listActive()
             guard !activeBudgets.isEmpty else { return [] }
 
             var filteredBudgets = activeBudgets

@@ -77,7 +77,7 @@ public struct BudgetFormFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.budgetClient) var budgetClient
+    @Dependency(\.planningClient) var planningClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.dismiss) var dismiss
 
@@ -144,7 +144,7 @@ public struct BudgetFormFeature: Sendable {
                             period: period,
                             startDate: startDate
                         )
-                        try await budgetClient.add(budget)
+                        try await planningClient.create(budget)
                     case let .edit(existing):
                         let updated = Budget(
                             id: existing.id,
@@ -155,7 +155,7 @@ public struct BudgetFormFeature: Sendable {
                             startDate: startDate,
                             isActive: existing.isActive
                         )
-                        try await budgetClient.update(updated)
+                        try await planningClient.update(updated)
                     }
                     await send(.savedSuccessfully)
                 }

@@ -126,7 +126,7 @@ struct BudgetFormFeatureTests {
             BudgetFormFeature()
         } withDependencies: {
             $0.categoryClient.fetchAll = { [] }
-            $0.budgetClient.add = { budget in addedBudget.setValue(budget) }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -151,7 +151,7 @@ struct BudgetFormFeatureTests {
             BudgetFormFeature()
         } withDependencies: {
             $0.categoryClient.fetchAll = { [] }
-            $0.budgetClient.update = { budget in updatedBudget.setValue(budget) }
+            $0.planningClient.update = { budget in updatedBudget.setValue(budget) }
             $0.dismiss = DismissEffect { }
         }
 

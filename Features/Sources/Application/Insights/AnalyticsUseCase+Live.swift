@@ -9,7 +9,7 @@ extension AnalyticsUseCase: DependencyKey {
         // `\.modelContainer` directly — architecture.md §4.2 reserves
         // `@Dependency(\.modelContainer)` for `SwiftDataStore` only.
         @Dependency(\.databaseClient) var databaseClient
-        @Dependency(\.budgetClient) var budgetClient
+        @Dependency(\.planningClient) var planningClient
         @Dependency(\.categoryClient) var categoryClient
         @Dependency(\.aiUseCase) var aiUseCase
 
@@ -44,7 +44,7 @@ extension AnalyticsUseCase: DependencyKey {
             },
             budgetGauges: { accountId in
                 do {
-                    let active = try await budgetClient.fetchActive()
+                    let active = try await planningClient.listActive()
                     let categories = try await categoryClient.fetchAll()
                     let names = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
                     return try TransactionAnalyticsKernel.budgetGauges(

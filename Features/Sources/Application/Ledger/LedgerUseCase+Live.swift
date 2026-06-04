@@ -5,7 +5,7 @@ import Domain
 extension LedgerUseCase: DependencyKey {
     public static var liveValue: LedgerUseCase {
         @Dependency(\.transactionClient) var transactionClient
-        @Dependency(\.budgetUseCase) var budgetUseCase
+        @Dependency(\.planningClient) var planningClient
         @Dependency(\.categoryClient) var categoryClient
         @Dependency(\.accountClient) var accountClient
 
@@ -33,16 +33,16 @@ extension LedgerUseCase: DependencyKey {
         return LedgerUseCase(
             record: { transaction in
                 try await transactionClient.add(transaction)
-                // INVARIANT (architecture.md §3.1 Scenario B): every recorded
-                // transaction must be evaluated for budget warnings. Cannot
-                // rely on individual callers to remember.
-                await budgetUseCase.evaluateAfterTransaction(transaction)
+                // INVARIANT(§3.1): 每筆交易記錄/更新後必評估預算警告
+                // (architecture.md §3.1 Scenario B). Cannot rely on individual
+                // callers to remember.
+                await planningClient.evaluateAfterTransaction(transaction)
             },
             update: { transaction in
                 try await transactionClient.update(transaction)
-                // INVARIANT: same as record — an updated amount can push a
-                // budget past its threshold just like a new transaction can.
-                await budgetUseCase.evaluateAfterTransaction(transaction)
+                // INVARIANT(§3.1): same as record — an updated amount can push
+                // a budget past its threshold just like a new transaction can.
+                await planningClient.evaluateAfterTransaction(transaction)
             },
             delete: { id in
                 try await transactionClient.delete(id)

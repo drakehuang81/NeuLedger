@@ -46,7 +46,7 @@ struct WatchContextBuilderTests {
             $0.transactionClient.fetchAll = { @Sendable in txns }
             $0.categoryClient.fetchAll = { @Sendable in [category] }
             $0.accountClient.fetchActive = { @Sendable in [account] }
-            $0.budgetClient.fetchActive = { @Sendable in [] }
+            $0.planningClient.listActive = { @Sendable in [] }
         } operation: {
             try await WatchContextBuilder.build(now: now, defaultAccountId: accountId)
         }
@@ -66,7 +66,7 @@ struct WatchContextBuilderTests {
             $0.transactionClient.fetchAll = { @Sendable in [] }
             $0.categoryClient.fetchAll = { @Sendable in [] }
             $0.accountClient.fetchActive = { @Sendable in [] }
-            $0.budgetClient.fetchActive = { @Sendable in [] }
+            $0.planningClient.listActive = { @Sendable in [] }
         } operation: {
             try await WatchContextBuilder.build(now: Date(), defaultAccountId: UUID().uuidString)
         }

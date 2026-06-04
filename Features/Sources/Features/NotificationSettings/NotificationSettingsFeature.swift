@@ -60,6 +60,7 @@ public struct NotificationSettingsFeature: Sendable {
 
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.planningClient) var planningClient
     @Dependency(\.openURL) var openURL
 
     // MARK: - Reducer
@@ -73,10 +74,10 @@ public struct NotificationSettingsFeature: Sendable {
 
             case .task:
                 let reminderEnabled = userSettingsAdapter.bool(.dailyReminderEnabled)
-                let warningEnabled = userSettingsAdapter.bool(.budgetWarningEnabled)
+                let warningEnabled = planningClient.warningEnabled()
                 let hour = userSettingsAdapter.int(.dailyReminderHour)
                 let minute = userSettingsAdapter.int(.dailyReminderMinute)
-                let threshold = userSettingsAdapter.int(.budgetWarningThreshold)
+                let threshold = planningClient.warningThreshold()
 
                 state.dailyReminderEnabled = reminderEnabled
                 state.budgetWarningEnabled = warningEnabled
@@ -138,12 +139,12 @@ public struct NotificationSettingsFeature: Sendable {
             case let .budgetWarningToggled(enabled):
                 if !enabled {
                     state.budgetWarningEnabled = false
-                    userSettingsAdapter.setBool(false, .budgetWarningEnabled)
+                    planningClient.setWarningEnabled(false)
                     return .none
                 }
                 if state.isAuthorized {
                     state.budgetWarningEnabled = true
-                    userSettingsAdapter.setBool(true, .budgetWarningEnabled)
+                    planningClient.setWarningEnabled(true)
                     return .none
                 } else {
                     return .run { send in
@@ -159,7 +160,7 @@ public struct NotificationSettingsFeature: Sendable {
 
             case let .warningThresholdChanged(threshold):
                 state.warningThreshold = threshold
-                userSettingsAdapter.setInt(threshold, .budgetWarningThreshold)
+                planningClient.setWarningThreshold(threshold)
                 return .none
 
             case .permissionDenied:

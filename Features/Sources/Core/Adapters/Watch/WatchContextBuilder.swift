@@ -16,12 +16,12 @@ public enum WatchContextBuilder {
         @Dependency(\.transactionClient) var transactionClient
         @Dependency(\.categoryClient) var categoryClient
         @Dependency(\.accountClient) var accountClient
-        @Dependency(\.budgetClient) var budgetClient
+        @Dependency(\.planningClient) var planningClient
 
         let categories = try await categoryClient.fetchAll()
         let accounts = try await accountClient.fetchActive()
         let allTxns = try await transactionClient.fetchAll()
-        let activeBudgets = try await budgetClient.fetchActive()
+        let activeBudgets = try await planningClient.listActive()
 
         let startOfToday = calendar.startOfDay(for: now)
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) else {

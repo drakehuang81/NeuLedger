@@ -20,6 +20,8 @@ struct NotificationSettingsFeatureTests {
             $0.userSettingsAdapter.int = { key in
                 key.rawValue == SettingsKey<Int>.dailyReminderHour.rawValue ? 8 : key.defaultValue
             }
+            $0.planningClient.warningEnabled = { false }
+            $0.planningClient.warningThreshold = { 80 }
             $0.notificationAdapter.isAuthorized = { true }
             $0.recurringTransactionClient.fetchAll = { [] }
         }
@@ -130,6 +132,8 @@ struct NotificationSettingsFeatureTests {
             $0.notificationAdapter.isAuthorized = { true }  // user granted permission in Settings
             $0.userSettingsAdapter.bool = { $0.defaultValue }
             $0.userSettingsAdapter.int = { $0.defaultValue }
+            $0.planningClient.warningEnabled = { false }
+            $0.planningClient.warningThreshold = { 80 }
             $0.recurringTransactionClient.fetchAll = { [] }
         }
         await MainActor.run {
@@ -207,6 +211,8 @@ struct NotificationSettingsFeatureTests {
             $0.notificationAdapter.isAuthorized = { false }
             $0.userSettingsAdapter.bool = { $0.defaultValue }
             $0.userSettingsAdapter.int = { $0.defaultValue }
+            $0.planningClient.warningEnabled = { false }
+            $0.planningClient.warningThreshold = { 80 }
             $0.recurringTransactionClient.fetchAll = { [] }
         }
         await store.send(.task)
@@ -231,9 +237,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setInt = { val, key in
-                if key.rawValue == SettingsKey<Int>.budgetWarningThreshold.rawValue { persistedThreshold.setValue(val) }
-            }
+            $0.planningClient.setWarningThreshold = { val in persistedThreshold.setValue(val) }
             $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         }
 

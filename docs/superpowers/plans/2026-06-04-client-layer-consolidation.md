@@ -14,15 +14,28 @@
 
 ---
 
-## 進度狀態（2026-06-04 建立）
+## 進度狀態（2026-06-04 更新）
 
-- [ ] 步驟 0：`UserSettingsRepository` → `UserSettingsAdapter` 機械改名
-- [ ] 步驟 1：Carrier 試點（食譜驗證）
+- [x] 步驟 0：`UserSettingsRepository` → `UserSettingsAdapter` 機械改名 — `af94202`
+- [x] 步驟 1：Carrier 試點 — 1a `8addc18` / 1b `b24e5a6` / 1c `19053b2` / 1d `aa7ca8f`，完整 scheme 每 commit 全綠
 - [ ] 步驟 2：Planning
 - [ ] 步驟 3：AI 拆分（Insights + Capture）
 - [ ] 步驟 4：Platform
 - [ ] 步驟 5：Ledger（大魔王，含 Watch 特例 §E）
 - [ ] 步驟 6：收網（grep audit + `DatabaseClient` 改名 + architecture.md 回寫）
+
+### 1e 食譜回顧（Carrier 試點教訓，步驟 2–5 必讀）
+
+1. **驗證指令 pipe-masking bug（已修，見 §C）**：`xcodebuild ... | tail -40; echo "EXIT:$?"` 的 `$?` 取到的是 tail 的退出碼，會產生假綠燈。正確作法：xcodebuild 輸出導到 log 檔、`echo "EXIT:$?" >> log` 緊跟在 xcodebuild 之後，再 tail log 判讀。
+2. **`@DependencyClient` 預設值 ≠ testValue stub**：介面宣告 `= { nil }` 只是 production fallback，testValue 仍是 unimplemented stub。切換 Feature 注入後，凡 reducer 路徑會碰到的 closure，測試的 `withDependencies` 都必須補 stub（1c 在 SettingsFeatureTests 補了 3 處 `activeForWidget`）。步驟 5 切 17 個 Feature 檔時這是最大雷區。
+3. **Agent 中斷會留下 staged index**：workflow agent 失敗時可能留下 staged 變更；任何 commit 前必先 `git status` 確認 index 只含自己要的東西。
+4. **Subagent 必須以 StructuredOutput 結尾 + xcodebuild 輸出必 tail 限縮**——否則長輸出撐爆 context 後 agent 無法回報，整條 workflow 失敗。
+5. **上收 post-condition 時的語意微調要逐條記錄**（見下「行為微調」）。CoreTests 並非每個 repo 都有測試檔——以現場 grep 為準，別信計畫裡的檔案清單。
+
+**1c 行為微調紀錄**（上收 widget reload 進 CarrierClient Live 的連帶）：
+- read（`.task` 載入）不再觸發 widget reload（原 Feature 載入時手動 syncAllCarriers）——mutation 才 reload
+- 刪除 active 載具：原行為「清空 widget」→ 新行為「重新指向第一個剩餘載具」（**待使用者確認**：保留新行為或在 Live 內恢復清空）
+- 編輯後的單筆 syncCarrier → Live 統一 syncAllCarriers（語意等價偏廣）
 
 ---
 
@@ -305,16 +318,15 @@ c. 收縮   刪舊介面 + Live + DependencyValues 註冊；刪/搬舊測試
 d. 驗證   完整 scheme + grep 驗無殘留
 ```
 
-**驗證指令（每 commit 前必跑）：**
+**驗證指令（每 commit 前必跑；1e 教訓修正版——EXIT 必須緊跟 xcodebuild，不可隔著 pipe）：**
 
 ```bash
-# 建置
-xcodebuild build -project NeuLedger.xcodeproj -scheme NeuLedger \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
-
-# 完整測試（基準：FeaturesTests 273 + CoreTests 87 + DomainTests 120，1 個 NotificationSettings known issue 屬預期）
-xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+LOG=/tmp/verify_$(date +%s).log
+xcodebuild build-for-testing -project NeuLedger.xcodeproj -scheme NeuLedger \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet > "$LOG" 2>&1 && echo BUILD_OK >> "$LOG"
+xcodebuild test-without-building -project NeuLedger.xcodeproj -scheme NeuLedger \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet >> "$LOG" 2>&1; echo "EXIT:$?" >> "$LOG"
+tail -40 "$LOG"   # 判讀：BUILD_OK + EXIT:0 即綠；失敗時用 xcresulttool 取確切訊息
 ```
 
 **殘留檢查（phase d）：**
@@ -342,10 +354,10 @@ grep -rn "CarrierUseCase\|carrierUseCase" Features/Sources NeuLedgerTests && ech
 - Rename: `Features/Sources/Core/Repositories/UserSettingsRepository+Live.swift` → `Features/Sources/Core/Adapters/UserSettingsAdapter+Live.swift`
 - Modify: 所有引用檔（型別名 `UserSettingsRepository`→`UserSettingsAdapter`、keypath `\.userSettingsRepository`→`\.userSettingsAdapter`）：9 個 Feature 檔（§B 表）、`Application/` 內引用的 Live、`NeuLedgerTests/Tests/CoreTests/Clients/UserSettingsRepositoryTests.swift`（→ `UserSettingsAdapterTests.swift`）、FeaturesTests 覆寫
 
-- [ ] **0.1 盤點引用**：`grep -rln "UserSettingsRepository\|userSettingsRepository" Features/Sources NeuLedgerTests` 取得完整清單（執行當下為準）
-- [ ] **0.2 git mv 兩檔 + 全域型別/keypath 改名**（沿用 Phase 2 機械改名流程；`SettingsKey` 結構與所有 persisted raw value **絕不動**）
-- [ ] **0.3 建置 + 完整測試**：基準 273+87+120 全綠
-- [ ] **0.4 Commit**：`refactor(platform): rename UserSettingsRepository to UserSettingsAdapter [ci skip]`
+- [x] **0.1 盤點引用**：`grep -rln "UserSettingsRepository\|userSettingsRepository" Features/Sources NeuLedgerTests` 取得完整清單（執行當下為準）
+- [x] **0.2 git mv 兩檔 + 全域型別/keypath 改名**（沿用 Phase 2 機械改名流程；`SettingsKey` 結構與所有 persisted raw value **絕不動**）
+- [x] **0.3 建置 + 完整測試**：基準 273+87+120 全綠
+- [x] **0.4 Commit**：`refactor(platform): rename UserSettingsRepository to UserSettingsAdapter [ci skip]`
 
 ### 步驟 1：Carrier 試點
 
@@ -357,14 +369,14 @@ grep -rn "CarrierUseCase\|carrierUseCase" Features/Sources NeuLedgerTests && ech
 - 1c Modify: `CarrierManagement/CarrierManagementFeature.swift`、`CarrierManagement/AddEditCarrierFeature.swift`、`Settings/SettingsFeature.swift`（carrier 注入）+ 對應 `CarrierManagementFeatureTests`、`SettingsFeatureTests`
 - 1d Delete: `Domain/UseCases/CarrierUseCase.swift`、`Application/Carrier/CarrierUseCase+Live.swift`、`Domain/Repositories/CarrierRepository.swift`、`Core/Repositories/CarrierRepository+Live.swift` + 舊測試（內容先搬運至 1b 測試）
 
-- [ ] **1a.1** repo 撞名讓位改名（機械），建置+完整測試，commit：`refactor(carrier): rename repo CarrierClient to CarrierRepository [ci skip]`
-- [ ] **1b.1** 寫 `CarrierClientLiveTests`（先紅燈：型別不存在）——案例搬運自現有 CarrierClientTests/CarrierUseCase 相關測試，加 2 個新案例：CRUD 後 widget reload 被呼叫（spy widgetSyncAdapter）、setActiveForWidget 寫入設定
-- [ ] **1b.2** 建 `Domain/Clients/CarrierClient.swift`（§A.1）+ `Application/Carrier/CarrierClient+Live.swift`（實作搬自 CarrierUseCase+Live 與 CarrierRepository+Live：`SwiftDataStore<Carrier, SDCarrier>` 直用）
-- [ ] **1b.3** 跑 1b.1 測試綠燈 + 完整 scheme 綠，commit：`refactor(carrier): add CarrierClient interface + live [ci skip]`
-- [ ] **1c.1** 三個 Feature 檔切換 keypath + 測試覆寫更新（widgetSyncAdapter/userSettings 手動呼叫碼一併移除——已上收）
-- [ ] **1c.2** 完整測試綠，commit：`refactor(carrier): switch features to CarrierClient [ci skip]`
-- [ ] **1d.1** 刪 4 個舊檔 + 舊測試，grep 殘留檢查 CLEAN，完整測試綠，commit：`refactor(carrier): retire CarrierUseCase + CarrierRepository [ci skip]`
-- [ ] **1e 食譜回顧**：把試點踩到的坑寫回本檔「進度狀態」區，修正後續步驟的食譜假設
+- [x] **1a.1** repo 撞名讓位改名（機械），建置+完整測試，commit：`refactor(carrier): rename repo CarrierClient to CarrierRepository [ci skip]`
+- [x] **1b.1** 寫 `CarrierClientLiveTests`（先紅燈：型別不存在）——案例搬運自現有 CarrierClientTests/CarrierUseCase 相關測試，加 2 個新案例：CRUD 後 widget reload 被呼叫（spy widgetSyncAdapter）、setActiveForWidget 寫入設定
+- [x] **1b.2** 建 `Domain/Clients/CarrierClient.swift`（§A.1）+ `Application/Carrier/CarrierClient+Live.swift`（實作搬自 CarrierUseCase+Live 與 CarrierRepository+Live：`SwiftDataStore<Carrier, SDCarrier>` 直用）
+- [x] **1b.3** 跑 1b.1 測試綠燈 + 完整 scheme 綠，commit：`refactor(carrier): add CarrierClient interface + live [ci skip]`
+- [x] **1c.1** 三個 Feature 檔切換 keypath + 測試覆寫更新（widgetSyncAdapter/userSettings 手動呼叫碼一併移除——已上收）
+- [x] **1c.2** 完整測試綠，commit：`refactor(carrier): switch features to CarrierClient [ci skip]`
+- [x] **1d.1** 刪 4 個舊檔 + 舊測試，grep 殘留檢查 CLEAN，完整測試綠，commit：`refactor(carrier): retire CarrierUseCase + CarrierRepository [ci skip]`
+- [x] **1e 食譜回顧**：把試點踩到的坑寫回本檔「進度狀態」區，修正後續步驟的食譜假設
 
 ### 步驟 2：Planning
 

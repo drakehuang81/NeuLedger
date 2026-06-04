@@ -35,11 +35,9 @@ struct WatchSettingsFeatureTests {
             $0.ledgerClient.listActiveAccounts = { @Sendable in
                 [cash, card]
             }
-            $0.userSettingsAdapter.string = { @Sendable _ in
-                card.id
-            }
-            $0.watchBridgeAdapter.isPaired = { true }
-            $0.watchBridgeAdapter.isWatchAppInstalled = { true }
+            $0.platformClient.watchDefaultAccountId = { card.id }
+            $0.platformClient.watchPaired = { true }
+            $0.platformClient.watchAppInstalled = { true }
         }
 
         await store.send(.task)
@@ -51,11 +49,11 @@ struct WatchSettingsFeatureTests {
         }
     }
 
-    @Test("Selecting an account writes the UUID to userSettingsAdapter")
+    @Test("Selecting an account writes the UUID via platformClient")
     func selectingAccountPersists() async {
         let cash = Self.cashAccount
         let card = Self.cardAccount
-        let captured = LockIsolated<String?>(nil)
+        let captured = LockIsolated<Account.ID?>(nil)
 
         let store = TestStore(
             initialState: WatchSettingsFeature.State(
@@ -67,8 +65,8 @@ struct WatchSettingsFeatureTests {
         ) {
             WatchSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { @Sendable value, _ in
-                captured.setValue(value)
+            $0.platformClient.setWatchDefaultAccountId = { @Sendable id in
+                captured.setValue(id)
             }
         }
 

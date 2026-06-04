@@ -44,6 +44,16 @@ public struct PlatformClient: Sendable {
     /// Sets whether the bottom accessory bar is visible.
     public var setShowAccessoryBar: @Sendable (_ visible: Bool) -> Void
 
+    /// `true` if a paired Apple Watch is currently associated with this iPhone.
+    public var watchPaired: @Sendable () -> Bool = { false }
+    /// `true` if the watchOS companion app is installed on the paired Watch.
+    public var watchAppInstalled: @Sendable () -> Bool = { false }
+    /// The default account used when recording transactions from Apple Watch,
+    /// or `nil` when no override is set (falls back to the iOS default account).
+    public var watchDefaultAccountId: @Sendable () -> Account.ID? = { nil }
+    /// Sets the Apple Watch default account override. Passing `nil` clears it.
+    public var setWatchDefaultAccountId: @Sendable (_ id: Account.ID?) -> Void
+
     // MARK: - Notification
 
     /// Requests notification authorization. Returns `true` if granted.

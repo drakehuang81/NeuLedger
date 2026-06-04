@@ -32,8 +32,7 @@ public struct WatchSettingsFeature: Sendable {
     }
 
     @Dependency(\.ledgerClient) var ledger
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.watchBridgeAdapter) var watchBridgeAdapter
+    @Dependency(\.platformClient) var platformClient
 
     public init() {}
 
@@ -44,13 +43,11 @@ public struct WatchSettingsFeature: Sendable {
             case .task:
                 return .run { send in
                     let accounts = (try? await ledger.listActiveAccounts()) ?? []
-                    let raw = userSettingsAdapter.string(.watchDefaultAccountId)
-                    let selected: Account.ID? = raw.isEmpty ? nil : raw
                     await send(.loaded(
                         accounts: accounts,
-                        selectedAccountId: selected,
-                        isPaired: watchBridgeAdapter.isPaired(),
-                        isWatchAppInstalled: watchBridgeAdapter.isWatchAppInstalled()
+                        selectedAccountId: platformClient.watchDefaultAccountId(),
+                        isPaired: platformClient.watchPaired(),
+                        isWatchAppInstalled: platformClient.watchAppInstalled()
                     ))
                 }
 
@@ -63,7 +60,7 @@ public struct WatchSettingsFeature: Sendable {
 
             case let .accountSelected(id):
                 state.selectedAccountId = id
-                userSettingsAdapter.setString(id, .watchDefaultAccountId)
+                platformClient.setWatchDefaultAccountId(id)
                 return .none
             }
         }

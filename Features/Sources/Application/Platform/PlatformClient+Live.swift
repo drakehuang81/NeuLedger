@@ -23,6 +23,7 @@ extension PlatformClient: DependencyKey {
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
         @Dependency(\.notificationAdapter) var notificationAdapter
         @Dependency(\.cloudKitSyncAdapter) var cloudKitSyncAdapter
+        @Dependency(\.watchBridgeAdapter) var watchBridgeAdapter
 
         let recurringStore = SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
 
@@ -59,6 +60,15 @@ extension PlatformClient: DependencyKey {
             showAccessoryBar: { userSettingsAdapter.bool(.showAccessoryBar) },
             setShowAccessoryBar: { visible in
                 userSettingsAdapter.setBool(visible, .showAccessoryBar)
+            },
+            watchPaired: { watchBridgeAdapter.isPaired() },
+            watchAppInstalled: { watchBridgeAdapter.isWatchAppInstalled() },
+            watchDefaultAccountId: {
+                let raw = userSettingsAdapter.string(.watchDefaultAccountId)
+                return raw.isEmpty ? nil : raw
+            },
+            setWatchDefaultAccountId: { id in
+                userSettingsAdapter.setString(id ?? "", .watchDefaultAccountId)
             },
 
             // MARK: Notification

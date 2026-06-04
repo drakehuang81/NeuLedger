@@ -74,6 +74,33 @@ struct PlatformClientTests {
         }
     }
 
+    // MARK: - Watch
+
+    @Test("watchPaired / watchAppInstalled mock override")
+    func testWatchPairingMock() {
+        withDependencies {
+            $0.platformClient.watchPaired = { true }
+            $0.platformClient.watchAppInstalled = { true }
+        } operation: {
+            @Dependency(\.platformClient) var client
+            #expect(client.watchPaired() == true)
+            #expect(client.watchAppInstalled() == true)
+        }
+    }
+
+    @Test("watchDefaultAccountId / setWatchDefaultAccountId mock override")
+    func testWatchDefaultAccountIdMock() {
+        let id: Account.ID = "33333333-3333-3333-3333-333333333333"
+        withDependencies {
+            $0.platformClient.watchDefaultAccountId = { id }
+            $0.platformClient.setWatchDefaultAccountId = { _ in }
+        } operation: {
+            @Dependency(\.platformClient) var client
+            #expect(client.watchDefaultAccountId() == id)
+            client.setWatchDefaultAccountId(nil)
+        }
+    }
+
     // MARK: - Notification
 
     @Test("requestNotificationPermission mock override")

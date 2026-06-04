@@ -60,11 +60,13 @@ struct PlatformClientLiveTests {
 
     private func sut(
         container: ModelContainer? = nil,
-        settings: UserSettingsAdapter? = nil
+        settings: UserSettingsAdapter? = nil,
+        watch: WatchBridgeAdapter? = nil
     ) -> PlatformClient {
         withDependencies {
             if let container { $0.modelContainer = container }
             if let settings { $0.userSettingsAdapter = settings }
+            if let watch { $0.watchBridgeAdapter = watch }
         } operation: {
             PlatformClient.liveValue
         }
@@ -199,6 +201,48 @@ struct PlatformClientLiveTests {
         #expect(client.showAccessoryBar() == true) // default
         client.setShowAccessoryBar(false)
         #expect(client.showAccessoryBar() == false)
+    }
+
+    // MARK: - Watch
+
+    @Test("watchPaired / watchAppInstalled forward to watchBridgeAdapter")
+    func watchPairingForwards() async throws {
+        var watch = WatchBridgeAdapter.testValue
+        watch.isPaired = { true }
+        watch.isWatchAppInstalled = { true }
+        let client = sut(watch: watch)
+        #expect(client.watchPaired() == true)
+        #expect(client.watchAppInstalled() == true)
+    }
+
+    @Test("watchPaired / watchAppInstalled report false when no watch is paired")
+    func watchPairingDefaultsFalse() async throws {
+        var watch = WatchBridgeAdapter.testValue
+        watch.isPaired = { false }
+        watch.isWatchAppInstalled = { false }
+        let client = sut(watch: watch)
+        #expect(client.watchPaired() == false)
+        #expect(client.watchAppInstalled() == false)
+    }
+
+    @Test("setWatchDefaultAccountId then watchDefaultAccountId reads back the same id")
+    func watchDefaultAccountIdRoundTrip() async throws {
+        let box = SettingsBox()
+        let client = sut(settings: inMemorySettings(box))
+        #expect(client.watchDefaultAccountId() == nil) // default
+        let id: Account.ID = "33333333-3333-3333-3333-333333333333"
+        client.setWatchDefaultAccountId(id)
+        #expect(client.watchDefaultAccountId() == id)
+    }
+
+    @Test("setWatchDefaultAccountId(nil) clears the override back to nil")
+    func watchDefaultAccountIdClears() async throws {
+        let box = SettingsBox()
+        let client = sut(settings: inMemorySettings(box))
+        client.setWatchDefaultAccountId("33333333-3333-3333-3333-333333333333")
+        #expect(client.watchDefaultAccountId() != nil)
+        client.setWatchDefaultAccountId(nil)
+        #expect(client.watchDefaultAccountId() == nil)
     }
 
     // MARK: - Sync flags

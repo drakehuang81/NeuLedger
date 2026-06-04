@@ -40,7 +40,7 @@ public struct CarrierManagementFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.carrierClient) var carrierClient
-    @Dependency(\.userSettingsRepository) var userSettingsRepository
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
 
     private enum CancelID { case task }
@@ -98,13 +98,13 @@ public struct CarrierManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 state.expandedCarrierId = nil
-                return .run { [userSettingsRepository, widgetSyncAdapter] send in
+                return .run { [userSettingsAdapter, widgetSyncAdapter] send in
                     try await carrierClient.delete(id)
                     let carriers = try await carrierClient.fetchAll()
                     // If the deleted carrier was the active widget carrier, clear App Group
-                    let widgetCarrierId = userSettingsRepository.string(.widgetCarrierId)
+                    let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
                     if widgetCarrierId == id.uuidString {
-                        userSettingsRepository.setString("", .widgetCarrierId)
+                        userSettingsAdapter.setString("", .widgetCarrierId)
                         await widgetSyncAdapter.clearCarrier()
                     }
                     await widgetSyncAdapter.syncAllCarriers(carriers)
@@ -119,13 +119,13 @@ public struct CarrierManagementFeature: Sendable {
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { [userSettingsRepository, widgetSyncAdapter] send in
+                return .run { [userSettingsAdapter, widgetSyncAdapter] send in
                     let carriers = try await carrierClient.fetchAll()
-                    let widgetCarrierId = userSettingsRepository.string(.widgetCarrierId)
+                    let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
 
                     if widgetCarrierId.isEmpty, let first = carriers.first {
                         // P0: Auto-assign the first ever carrier as the widget carrier
-                        userSettingsRepository.setString(first.id.uuidString, .widgetCarrierId)
+                        userSettingsAdapter.setString(first.id.uuidString, .widgetCarrierId)
                         await widgetSyncAdapter.syncCarrier(
                             first.barcode,
                             first.type.rawValue,

@@ -44,7 +44,7 @@ struct DeeplinkClientTests {
     @Test("canSkipOnboarding returns true when hasCompletedOnboarding flag is true")
     func canSkipWhenOnboardingCompleted() async throws {
         try await withDependencies {
-            $0.userSettingsRepository.bool = { key in
+            $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey<Bool>.hasCompletedOnboarding.rawValue
             }
         } operation: {
@@ -57,7 +57,7 @@ struct DeeplinkClientTests {
     @Test("canSkipOnboarding returns false when hasCompletedOnboarding flag is false")
     func cannotSkipWhenOnboardingIncomplete() async throws {
         try await withDependencies {
-            $0.userSettingsRepository.bool = { _ in false }
+            $0.userSettingsAdapter.bool = { _ in false }
         } operation: {
             let client = DeeplinkClient.liveValue
             let result = try await client.canSkipOnboarding()

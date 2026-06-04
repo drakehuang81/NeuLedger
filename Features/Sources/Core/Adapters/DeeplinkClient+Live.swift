@@ -4,7 +4,7 @@ import Dependencies
 
 extension DeeplinkClient: DependencyKey {
     public static var liveValue: DeeplinkClient {
-        @Dependency(\.userSettingsRepository) var userSettingsRepository
+        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
         @Dependency(\.recurringTransactionClient) var recurringTransactionClient
         return .init(
             parseLinkTo: { url in
@@ -17,7 +17,7 @@ extension DeeplinkClient: DependencyKey {
                 }
             },
             canSkipOnboarding: {
-                return userSettingsRepository.bool(.hasCompletedOnboarding)
+                return userSettingsAdapter.bool(.hasCompletedOnboarding)
             },
             resolveRecurringConfirmation: { id in
                 let all = try await recurringTransactionClient.fetchAll()

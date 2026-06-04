@@ -14,8 +14,8 @@ struct MainTabFeatureTests {
         } withDependencies: {
             // forwarded to the scoped AccessoryBarFeature — its .task reads aiUseCase + accessoryMode
             $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsRepository.string = { _ in "add" }
-            $0.userSettingsRepository.bool = { key in
+            $0.userSettingsAdapter.string = { _ in "add" }
+            $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
             }
         }
@@ -69,7 +69,7 @@ struct MainTabFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsRepository.string = { _ in "" }
+            $0.userSettingsAdapter.string = { _ in "" }
             $0.date = .constant(fixedDate)
         }
         await store.send(.accessory(.delegate(.transactionExtracted(extracted))))

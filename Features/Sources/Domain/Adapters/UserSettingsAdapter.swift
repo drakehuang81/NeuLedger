@@ -108,20 +108,20 @@ public extension SettingsKey where Value == Date? {
     static let lastSyncedAt = SettingsKey<Date?>(rawValue: "syncClient.lastSyncedAt", defaultValue: nil)
 }
 
-// MARK: - UserSettingsRepository
+// MARK: - UserSettingsAdapter
 
 /// A client interface for type-safe UserDefaults access.
 ///
-/// Use `UserSettingsRepository` with `SettingsKey` to read and write
+/// Use `UserSettingsAdapter` with `SettingsKey` to read and write
 /// UserDefaults values in a testable, dependency-injectable way.
 ///
 /// ```swift
-/// @Dependency(\.userSettingsRepository) var userSettingsRepository
-/// let completed = userSettingsRepository.bool(.hasCompletedOnboarding)
-/// userSettingsRepository.setBool(true, .hasCompletedOnboarding)
+/// @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+/// let completed = userSettingsAdapter.bool(.hasCompletedOnboarding)
+/// userSettingsAdapter.setBool(true, .hasCompletedOnboarding)
 /// ```
 @DependencyClient
-public struct UserSettingsRepository: Sendable {
+public struct UserSettingsAdapter: Sendable {
     /// Reads a Bool value for the given key, returning `defaultValue` if unset.
     public var bool: @Sendable (_ key: SettingsKey<Bool>) -> Bool = { $0.defaultValue }
 
@@ -149,7 +149,7 @@ public struct UserSettingsRepository: Sendable {
 
 // MARK: - TestDependencyKey
 
-extension UserSettingsRepository: TestDependencyKey {
+extension UserSettingsAdapter: TestDependencyKey {
     public static let testValue = Self(
         bool: { $0.defaultValue },
         setBool: { _, _ in },
@@ -165,8 +165,8 @@ extension UserSettingsRepository: TestDependencyKey {
 // MARK: - DependencyValues
 
 public extension DependencyValues {
-    var userSettingsRepository: UserSettingsRepository {
-        get { self[UserSettingsRepository.self] }
-        set { self[UserSettingsRepository.self] = newValue }
+    var userSettingsAdapter: UserSettingsAdapter {
+        get { self[UserSettingsAdapter.self] }
+        set { self[UserSettingsAdapter.self] = newValue }
     }
 }

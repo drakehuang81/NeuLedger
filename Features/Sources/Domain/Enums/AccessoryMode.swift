@@ -2,7 +2,7 @@ import Foundation
 
 /// Mode of the floating accessory bar shown above the tab bar.
 ///
-/// Persisted via `UserSettingsRepository` under the `.accessoryMode`
+/// Persisted via `UserSettingsAdapter` under the `.accessoryMode`
 /// SettingsKey. Two values:
 /// - `.add` — quick-add transaction button.
 /// - `.ai` — AI assistant (text or voice input).

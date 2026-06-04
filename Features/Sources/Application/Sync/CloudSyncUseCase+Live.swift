@@ -6,22 +6,22 @@ import SwiftData
 extension CloudSyncUseCase: DependencyKey {
     public static var liveValue: CloudSyncUseCase {
         @Dependency(\.cloudKitSyncAdapter) var cloudKitSyncAdapter
-        @Dependency(\.userSettingsRepository) var userSettingsRepository
+        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         let isAvailable: @Sendable () -> Bool = {
             cloudKitSyncAdapter.isAvailable()
         }
 
         let isEnabled: @Sendable () -> Bool = {
-            userSettingsRepository.bool(.isSyncEnabled)
+            userSettingsAdapter.bool(.isSyncEnabled)
         }
 
         let lastSyncedAt: @Sendable () -> Date? = {
-            userSettingsRepository.date(.lastSyncedAt)
+            userSettingsAdapter.date(.lastSyncedAt)
         }
 
         let capturedCloudKitSyncAdapter = cloudKitSyncAdapter
-        let capturedUserSettingsRepository = userSettingsRepository
+        let capturedUserSettingsAdapter = userSettingsAdapter
 
         let enable: @Sendable () -> AsyncThrowingStream<Double, Error> = {
             AsyncThrowingStream { continuation in
@@ -31,8 +31,8 @@ extension CloudSyncUseCase: DependencyKey {
                         try await capturedCloudKitSyncAdapter.switchToCloudContainer()
                         continuation.yield(0.8)
 
-                        capturedUserSettingsRepository.setBool(true, .isSyncEnabled)
-                        capturedUserSettingsRepository.setDate(Date(), .lastSyncedAt)
+                        capturedUserSettingsAdapter.setBool(true, .isSyncEnabled)
+                        capturedUserSettingsAdapter.setDate(Date(), .lastSyncedAt)
 
                         continuation.yield(1.0)
                         continuation.finish()
@@ -46,7 +46,7 @@ extension CloudSyncUseCase: DependencyKey {
 
         let requestNow: @Sendable () async throws -> Void = {
             await cloudKitSyncAdapter.flushPendingChanges()
-            userSettingsRepository.setDate(Date(), .lastSyncedAt)
+            userSettingsAdapter.setDate(Date(), .lastSyncedAt)
         }
 
         let wipeAll: @Sendable () async throws -> Void = {
@@ -82,9 +82,9 @@ extension CloudSyncUseCase: DependencyKey {
                 DatabaseClient.container = localContainer
             }
 
-            capturedUserSettingsRepository.setBool(false, .isSyncEnabled)
-            capturedUserSettingsRepository.setBool(false, .hasCompletedOnboarding)
-            capturedUserSettingsRepository.setDate(nil, .lastSyncedAt)
+            capturedUserSettingsAdapter.setBool(false, .isSyncEnabled)
+            capturedUserSettingsAdapter.setBool(false, .hasCompletedOnboarding)
+            capturedUserSettingsAdapter.setDate(nil, .lastSyncedAt)
         }
 
         return CloudSyncUseCase(

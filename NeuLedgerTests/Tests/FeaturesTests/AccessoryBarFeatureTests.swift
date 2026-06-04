@@ -13,7 +13,7 @@ struct AccessoryBarFeatureLifecycleTests {
             AccessoryBarFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsRepository.string = { _ in "ai" }
+            $0.userSettingsAdapter.string = { _ in "ai" }
         }
         await store.send(.task)
         await store.receive(.aiAvailabilityLoaded(isAvailable: true))
@@ -28,7 +28,7 @@ struct AccessoryBarFeatureLifecycleTests {
             AccessoryBarFeature()
         } withDependencies: {
             $0.aiUseCase.isAvailable = { false }
-            $0.userSettingsRepository.string = { _ in "ai" }
+            $0.userSettingsAdapter.string = { _ in "ai" }
         }
         await store.send(.task)
         await store.receive(.aiAvailabilityLoaded(isAvailable: false)) {
@@ -158,7 +158,7 @@ struct AccessoryBarModeTests {
         let store = await TestStore(initialState: AccessoryBarFeature.State()) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.userSettingsRepository.setString = { value, key in
+            $0.userSettingsAdapter.setString = { value, key in
                 savedKey.setValue(key.rawValue)
                 savedValue.setValue(value)
             }
@@ -178,7 +178,7 @@ struct AccessoryBarModeTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.userSettingsRepository.setString = { value, _ in savedValue.setValue(value) }
+            $0.userSettingsAdapter.setString = { value, _ in savedValue.setValue(value) }
         }
         await store.send(.accessoryModeSwitched(.add)) {
             $0.accessoryMode = .add

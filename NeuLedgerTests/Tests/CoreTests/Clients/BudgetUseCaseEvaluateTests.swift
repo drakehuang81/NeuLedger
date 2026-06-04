@@ -66,13 +66,13 @@ struct BudgetUseCaseEvaluateTests {
         )
     }
 
-    /// Build a `UserSettingsRepository` whose bool/int reads return the
+    /// Build a `UserSettingsAdapter` whose bool/int reads return the
     /// supplied values; setters are no-ops.
     private static func settings(
         warningEnabled: Bool,
         threshold: Int
-    ) -> UserSettingsRepository {
-        UserSettingsRepository(
+    ) -> UserSettingsAdapter {
+        UserSettingsAdapter(
             bool: { key in
                 if key.rawValue == SettingsKey<Bool>.budgetWarningEnabled.rawValue {
                     return warningEnabled
@@ -127,7 +127,7 @@ struct BudgetUseCaseEvaluateTests {
             $0.budgetClient.fetchActive = { [testBudget] }
             $0.transactionClient.fetch = { _ in testTransactions }
             $0.notificationAdapter = Self.adapter(spy: spy)
-            $0.userSettingsRepository = Self.settings(warningEnabled: false, threshold: 80)
+            $0.userSettingsAdapter = Self.settings(warningEnabled: false, threshold: 80)
         } operation: { @Sendable in
             let useCase = BudgetUseCase.liveValue
             await useCase.evaluateAfterTransaction(testTransactions[0])
@@ -146,7 +146,7 @@ struct BudgetUseCaseEvaluateTests {
             $0.budgetClient.fetchActive = { [testBudget] }
             $0.transactionClient.fetch = { _ in testTransactions }
             $0.notificationAdapter = Self.adapter(spy: spy)
-            $0.userSettingsRepository = Self.settings(warningEnabled: true, threshold: 80)
+            $0.userSettingsAdapter = Self.settings(warningEnabled: true, threshold: 80)
         } operation: { @Sendable in
             let useCase = BudgetUseCase.liveValue
             await useCase.evaluateAfterTransaction(testTransactions[0])
@@ -165,7 +165,7 @@ struct BudgetUseCaseEvaluateTests {
             $0.budgetClient.fetchActive = { [testBudget] }
             $0.transactionClient.fetch = { _ in testTransactions }
             $0.notificationAdapter = Self.adapter(spy: spy, lastWarnedPercentReturn: nil)
-            $0.userSettingsRepository = Self.settings(warningEnabled: true, threshold: 80)
+            $0.userSettingsAdapter = Self.settings(warningEnabled: true, threshold: 80)
         } operation: { @Sendable in
             let useCase = BudgetUseCase.liveValue
             await useCase.evaluateAfterTransaction(testTransactions[0])
@@ -185,7 +185,7 @@ struct BudgetUseCaseEvaluateTests {
             $0.transactionClient.fetch = { _ in testTransactions }
             // The previous warning already covered the 80% threshold.
             $0.notificationAdapter = Self.adapter(spy: spy, lastWarnedPercentReturn: 80)
-            $0.userSettingsRepository = Self.settings(warningEnabled: true, threshold: 80)
+            $0.userSettingsAdapter = Self.settings(warningEnabled: true, threshold: 80)
         } operation: { @Sendable in
             let useCase = BudgetUseCase.liveValue
             await useCase.evaluateAfterTransaction(testTransactions[0])

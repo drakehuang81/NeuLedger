@@ -37,7 +37,7 @@ public enum WatchBootstrap {
         #endif
 
         // 3. Outbound: push a fresh snapshot whenever SwiftData saves.
-        @Dependency(\.userSettingsRepository) var userSettings
+        @Dependency(\.userSettingsAdapter) var userSettings
         let observer = WatchSyncObserver(defaultAccountIdProvider: { @Sendable in
             let raw = userSettings.string(.watchDefaultAccountId)
             return raw.isEmpty ? nil : raw

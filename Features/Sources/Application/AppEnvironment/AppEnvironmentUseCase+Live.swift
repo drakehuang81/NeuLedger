@@ -8,50 +8,50 @@ import UIKit
 
 extension AppEnvironmentUseCase: DependencyKey {
     public static var liveValue: AppEnvironmentUseCase {
-        @Dependency(\.userSettingsRepository) var userSettingsRepository
+        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
         @Dependency(\.notificationAdapter) var notificationAdapter
 
         return AppEnvironmentUseCase(
             // MARK: Preferences
             accessoryMode: {
-                let raw = userSettingsRepository.string(.accessoryMode)
+                let raw = userSettingsAdapter.string(.accessoryMode)
                 return AccessoryMode(rawValue: raw) ?? .add
             },
             setAccessoryMode: { mode in
-                userSettingsRepository.setString(mode.rawValue, .accessoryMode)
+                userSettingsAdapter.setString(mode.rawValue, .accessoryMode)
             },
             reminderTime: {
                 ReminderTime(
-                    hour: userSettingsRepository.int(.dailyReminderHour),
-                    minute: userSettingsRepository.int(.dailyReminderMinute)
+                    hour: userSettingsAdapter.int(.dailyReminderHour),
+                    minute: userSettingsAdapter.int(.dailyReminderMinute)
                 )
             },
             setReminderTime: { time in
-                userSettingsRepository.setInt(time.hour, .dailyReminderHour)
-                userSettingsRepository.setInt(time.minute, .dailyReminderMinute)
+                userSettingsAdapter.setInt(time.hour, .dailyReminderHour)
+                userSettingsAdapter.setInt(time.minute, .dailyReminderMinute)
             },
-            dailyReminderEnabled: { userSettingsRepository.bool(.dailyReminderEnabled) },
+            dailyReminderEnabled: { userSettingsAdapter.bool(.dailyReminderEnabled) },
             setDailyReminderEnabled: { enabled in
-                userSettingsRepository.setBool(enabled, .dailyReminderEnabled)
+                userSettingsAdapter.setBool(enabled, .dailyReminderEnabled)
             },
-            budgetWarningEnabled: { userSettingsRepository.bool(.budgetWarningEnabled) },
+            budgetWarningEnabled: { userSettingsAdapter.bool(.budgetWarningEnabled) },
             setBudgetWarningEnabled: { enabled in
-                userSettingsRepository.setBool(enabled, .budgetWarningEnabled)
+                userSettingsAdapter.setBool(enabled, .budgetWarningEnabled)
             },
-            budgetWarningThreshold: { userSettingsRepository.int(.budgetWarningThreshold) },
+            budgetWarningThreshold: { userSettingsAdapter.int(.budgetWarningThreshold) },
             setBudgetWarningThreshold: { percent in
-                userSettingsRepository.setInt(percent, .budgetWarningThreshold)
+                userSettingsAdapter.setInt(percent, .budgetWarningThreshold)
             },
             defaultAccountId: {
-                let raw = userSettingsRepository.string(.defaultAccountId)
+                let raw = userSettingsAdapter.string(.defaultAccountId)
                 return raw.isEmpty ? nil : raw
             },
             setDefaultAccountId: { id in
-                userSettingsRepository.setString(id ?? "", .defaultAccountId)
+                userSettingsAdapter.setString(id ?? "", .defaultAccountId)
             },
-            hasCompletedOnboarding: { userSettingsRepository.bool(.hasCompletedOnboarding) },
+            hasCompletedOnboarding: { userSettingsAdapter.bool(.hasCompletedOnboarding) },
             markOnboardingComplete: {
-                userSettingsRepository.setBool(true, .hasCompletedOnboarding)
+                userSettingsAdapter.setBool(true, .hasCompletedOnboarding)
             },
 
             // MARK: Notifications
@@ -59,8 +59,8 @@ extension AppEnvironmentUseCase: DependencyKey {
                 await notificationAdapter.requestAuthorization()
             },
             scheduleDailyReminder: {
-                let hour = userSettingsRepository.int(.dailyReminderHour)
-                let minute = userSettingsRepository.int(.dailyReminderMinute)
+                let hour = userSettingsAdapter.int(.dailyReminderHour)
+                let minute = userSettingsAdapter.int(.dailyReminderMinute)
                 try await notificationAdapter.scheduleDailyReminder(hour, minute)
             },
             cancelDailyReminder: {

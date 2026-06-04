@@ -54,7 +54,7 @@ struct AccessoryBarFeature {
 
     // MARK: - Dependencies
     @Dependency(\.aiUseCase) var aiUseCase
-    @Dependency(\.userSettingsRepository) var userSettingsRepository
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.speechAdapter) var speechAdapter
 
     private enum CancelID {
@@ -71,7 +71,7 @@ struct AccessoryBarFeature {
                 return .run { send in
                     let isAvailable = aiUseCase.isAvailable()
                     await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
-                    let rawMode = userSettingsRepository.string(.accessoryMode)
+                    let rawMode = userSettingsAdapter.string(.accessoryMode)
                     let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
                     let resolvedMode = isAvailable ? savedMode : .add
                     await send(.accessoryModeLoaded(resolvedMode))
@@ -179,7 +179,7 @@ struct AccessoryBarFeature {
 
             case let .accessoryModeSwitched(mode):
                 state.accessoryMode = mode
-                userSettingsRepository.setString(mode.rawValue, .accessoryMode)
+                userSettingsAdapter.setString(mode.rawValue, .accessoryMode)
                 return .none
 
             case .contextActionTapped:

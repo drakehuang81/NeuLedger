@@ -9,7 +9,7 @@ extension AccountClient: DependencyKey {
         let accountStore = SwiftDataStore<Account, SDAccount>()
         let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
 
-        @Dependency(\.userSettingsRepository) var userSettingsRepository
+        @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         return AccountClient(
             setupAccounts: { newAccount in
@@ -28,7 +28,7 @@ extension AccountClient: DependencyKey {
                 for account in dictionary.values {
                     try await accountStore.add(account)
                 }
-                userSettingsRepository.setBool(true, .hasCompletedOnboarding)
+                userSettingsAdapter.setBool(true, .hasCompletedOnboarding)
             },
             fetchAll: {
                 try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])

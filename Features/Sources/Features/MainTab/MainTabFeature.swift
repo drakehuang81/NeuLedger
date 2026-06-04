@@ -49,7 +49,7 @@ struct MainTabFeature {
     }
 
     // MARK: - Dependencies
-    @Dependency(\.userSettingsRepository) var userSettingsRepository
+    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.notificationAdapter) var notificationAdapter
     @Dependency(\.recurringTransactionClient) var recurringTransactionClient
 
@@ -78,7 +78,7 @@ struct MainTabFeature {
                 // so it runs regardless of whether the accessory is currently visible.
                 return .run { send in
                     await send(.accessory(.task))
-                    let showAccessoryBar = userSettingsRepository.bool(.showAccessoryBar)
+                    let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
                     await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
                 }
                 .cancellable(id: CancelID.task)

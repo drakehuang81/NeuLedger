@@ -46,13 +46,14 @@ struct SyncSettingsFeatureTests {
         await store.send(.enableSyncTapped) {
             $0.migrationState = .migrating(progress: 0)
         }
-        await store.receive(.migrationProgressUpdated(0.5)) {
+        // 寬限 timeout：全 scheme 高載時 effect 派送可能超過預設值（flaky 防治）
+        await store.receive(.migrationProgressUpdated(0.5), timeout: .seconds(5)) {
             $0.migrationState = .migrating(progress: 0.5)
         }
-        await store.receive(.migrationProgressUpdated(1.0)) {
+        await store.receive(.migrationProgressUpdated(1.0), timeout: .seconds(5)) {
             $0.migrationState = .migrating(progress: 1.0)
         }
-        await store.receive(.migrationCompleted) {
+        await store.receive(.migrationCompleted, timeout: .seconds(5)) {
             $0.migrationState = .completed
             $0.isSyncEnabled = true
         }
@@ -79,7 +80,8 @@ struct SyncSettingsFeatureTests {
         await store.send(.enableSyncTapped) {
             $0.migrationState = .migrating(progress: 0)
         }
-        await store.receive(.migrationFailed("iCloud not available")) {
+        // 寬限 timeout：全 scheme 高載時 effect 派送可能超過預設值（flaky 防治）
+        await store.receive(.migrationFailed("iCloud not available"), timeout: .seconds(5)) {
             $0.migrationState = .failed("iCloud not available")
         }
     }

@@ -14,10 +14,9 @@ struct MainTabFeatureTests {
         } withDependencies: {
             // forwarded to the scoped AccessoryBarFeature — its .task reads captureClient + accessoryMode
             $0.captureClient.isAvailable = { true }
-            $0.userSettingsAdapter.string = { _ in "add" }
-            $0.userSettingsAdapter.bool = { key in
-                key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
-            }
+            $0.platformClient.accessoryMode = { .add }
+            // MainTab's .task reads showAccessoryBar from platformClient
+            $0.platformClient.showAccessoryBar = { false }
         }
         await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)

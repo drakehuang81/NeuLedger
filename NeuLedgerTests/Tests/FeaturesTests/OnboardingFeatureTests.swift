@@ -142,6 +142,7 @@ struct OnboardingFeatureTests {
             $0.accountClient.setupAccounts = { accounts in
                 captured.withValue { $0 = accounts }
             }
+            $0.platformClient.markOnboardingComplete = {}
             $0.continuousClock = clock
         }
 
@@ -175,6 +176,7 @@ struct OnboardingFeatureTests {
             $0.accountClient.setupAccounts = { accounts in
                 captured.withValue { $0 = accounts }
             }
+            $0.platformClient.markOnboardingComplete = {}
             $0.continuousClock = clock
         }
 
@@ -184,5 +186,41 @@ struct OnboardingFeatureTests {
 
         #expect(captured.value.count == 1)
         #expect(captured.value.first?.type == .cash)
+    }
+
+    // ── Finish effect ordering (setupAccounts → markOnboardingComplete → delegate) ──
+
+    @Test("finishOnboarding marks onboarding complete after writing accounts and before completing")
+    func testFinishEffectOrdering() async {
+        // Records the sequence of side effects in the order they fire.
+        let events = LockIsolated<[String]>([])
+        let clock = TestClock()
+
+        let store = await TestStore(
+            initialState: OnboardingFeature.State(
+                currentStep: .done,
+                selectedTypes: [.cash]
+            )
+        ) {
+            OnboardingFeature()
+        } withDependencies: {
+            $0.accountClient.setupAccounts = { _ in
+                events.withValue { $0.append("setupAccounts") }
+            }
+            $0.platformClient.markOnboardingComplete = {
+                events.withValue { $0.append("markOnboardingComplete") }
+            }
+            $0.continuousClock = clock
+        }
+
+        await store.send(.finishOnboarding)
+        await clock.advance(by: .milliseconds(1600))
+        await store.receive(\.delegate.onboardingCompleted)
+
+        // setupAccounts runs first (awaited), then markOnboardingComplete runs
+        // synchronously right after, and only then the 1600ms sleep + delegate.
+        // The captured order proves both side effects fired exactly once, in
+        // that order, before completion.
+        #expect(events.value == ["setupAccounts", "markOnboardingComplete"])
     }
 }

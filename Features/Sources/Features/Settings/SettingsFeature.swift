@@ -137,7 +137,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.carrierClient) var carrierClient
-    @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
+    @Dependency(\.platformClient) var platformClient
     @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task; case wipeAll; case seedRandom }
@@ -187,7 +187,7 @@ public struct SettingsFeature: Sendable {
                 return .run { send in
                     async let accounts = accountClient.fetchActive()
                     let defaultId = userSettingsAdapter.string(.defaultAccountId)
-                    let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
+                    let showAccessoryBar = platformClient.showAccessoryBar()
                     let fetched = try await accounts
                     await send(.accountsLoaded(fetched))
                     await send(.defaultAccountSelected(defaultId))
@@ -328,7 +328,7 @@ public struct SettingsFeature: Sendable {
 
             case let .accessoryBarToggleChanged(value):
                 state.showAccessoryBar = value
-                userSettingsAdapter.setBool(value, .showAccessoryBar)
+                platformClient.setShowAccessoryBar(value)
                 return .send(.delegate(.accessoryBarVisibilityChanged(value)))
 
             case .privacyPolicyTapped:
@@ -370,9 +370,9 @@ public struct SettingsFeature: Sendable {
                 state.isConfirmingWipeAllData = false
                 state.isWipingAllData = true
                 state.wipeAllDataError = nil
-                return .run { [cloudSyncUseCase] send in
+                return .run { [platformClient] send in
                     do {
-                        try await cloudSyncUseCase.wipeAll()
+                        try await platformClient.wipeAllSyncData()
                         await send(.wipeAllDataCompleted)
                     } catch {
                         await send(.wipeAllDataFailed(error.localizedDescription))

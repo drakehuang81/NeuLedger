@@ -14,7 +14,7 @@ struct AppFeatureTests {
         ) {
             AppFeature()
         } withDependencies: {
-            $0.deeplinkClient.canSkipOnboarding = { true }
+            $0.platformClient.canSkipOnboarding = { true }
         }
 
         await store.send(\.splashCompleted)
@@ -30,7 +30,7 @@ struct AppFeatureTests {
         ) {
             AppFeature()
         } withDependencies: {
-            $0.deeplinkClient.canSkipOnboarding = { false }
+            $0.platformClient.canSkipOnboarding = { false }
         }
 
         await store.send(\.splashCompleted)
@@ -101,13 +101,13 @@ struct AppFeatureTests {
         let store = await TestStore(initialState: .main(MainTabFeature.State())) {
             AppFeature()
         } withDependencies: {
-            $0.notificationAdapter.pendingConfirmations = {
+            $0.platformClient.pendingRecurringConfirmations = {
                 AsyncStream { continuation in
                     continuation.yield(template.id)
                     continuation.finish()
                 }
             }
-            $0.deeplinkClient.resolveRecurringConfirmation = { _ in .recurringConfirmation(template) }
+            $0.platformClient.resolveRecurringConfirmation = { _ in .recurringConfirmation(template) }
         }
         await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)
@@ -126,13 +126,13 @@ struct AppFeatureTests {
         let store = await TestStore(initialState: .main(MainTabFeature.State())) {
             AppFeature()
         } withDependencies: {
-            $0.notificationAdapter.pendingConfirmations = {
+            $0.platformClient.pendingRecurringConfirmations = {
                 AsyncStream { continuation in
                     continuation.yield(UUID())
                     continuation.finish()
                 }
             }
-            $0.deeplinkClient.resolveRecurringConfirmation = { _ in .none }
+            $0.platformClient.resolveRecurringConfirmation = { _ in .none }
         }
         await store.send(.task)
         await store.receive(\.route)

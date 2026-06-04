@@ -54,7 +54,7 @@ struct AccessoryBarFeature {
 
     // MARK: - Dependencies
     @Dependency(\.captureClient) var captureClient
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.platformClient) var platformClient
 
     private enum CancelID {
         case aiExtraction
@@ -70,8 +70,7 @@ struct AccessoryBarFeature {
                 return .run { send in
                     let isAvailable = captureClient.isAvailable()
                     await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
-                    let rawMode = userSettingsAdapter.string(.accessoryMode)
-                    let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
+                    let savedMode = platformClient.accessoryMode()
                     let resolvedMode = isAvailable ? savedMode : .add
                     await send(.accessoryModeLoaded(resolvedMode))
                 }
@@ -178,7 +177,7 @@ struct AccessoryBarFeature {
 
             case let .accessoryModeSwitched(mode):
                 state.accessoryMode = mode
-                userSettingsAdapter.setString(mode.rawValue, .accessoryMode)
+                platformClient.setAccessoryMode(mode)
                 return .none
 
             case .contextActionTapped:

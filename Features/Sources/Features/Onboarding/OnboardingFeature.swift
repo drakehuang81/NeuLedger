@@ -52,6 +52,7 @@ struct OnboardingFeature {
     }
 
     @Dependency(\.accountClient) var accountClient
+    @Dependency(\.platformClient) var platformClient
     @Dependency(\.continuousClock) var clock
 
     private enum CancelID { case create }
@@ -94,6 +95,7 @@ struct OnboardingFeature {
                 return .run { send in
                     let accounts = types.map(\.new) + customs.map(\.new)
                     try await accountClient.setupAccounts(accounts)
+                    platformClient.markOnboardingComplete()
                     try await clock.sleep(for: .milliseconds(1600))
                     await send(.delegate(.onboardingCompleted))
                 }.cancellable(id: CancelID.create)

@@ -12,14 +12,9 @@ struct SyncSettingsFeatureTests {
         let store = await TestStore(initialState: SyncSettingsFeature.State()) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { key in
-                switch key.rawValue {
-                case "isSyncEnabled": return false
-                default: return key.defaultValue
-                }
-            }
-            $0.cloudSyncUseCase.isAvailable = { true }
-            $0.cloudSyncUseCase.lastSyncedAt = { nil }
+            $0.platformClient.syncEnabled = { false }
+            $0.platformClient.syncAvailable = { true }
+            $0.platformClient.lastSyncedAt = { nil }
         }
         await store.send(.task)
     }
@@ -31,16 +26,14 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.cloudSyncUseCase.enable = {
+            $0.platformClient.enableSync = {
                 AsyncThrowingStream { continuation in
                     continuation.yield(0.5)
                     continuation.yield(1.0)
                     continuation.finish()
                 }
             }
-            $0.userSettingsAdapter.bool = { _ in false }
-            $0.userSettingsAdapter.setBool = { _, _ in }
-            $0.cloudSyncUseCase.lastSyncedAt = { nil }
+            $0.platformClient.lastSyncedAt = { nil }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {
@@ -69,12 +62,11 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.cloudSyncUseCase.enable = {
+            $0.platformClient.enableSync = {
                 AsyncThrowingStream { continuation in
                     continuation.finish(throwing: SyncError())
                 }
             }
-            $0.userSettingsAdapter.bool = { _ in false }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {

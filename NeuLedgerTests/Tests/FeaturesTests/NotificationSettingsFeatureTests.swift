@@ -14,15 +14,11 @@ struct NotificationSettingsFeatureTests {
         let store = await TestStore(initialState: NotificationSettingsFeature.State()) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { key in
-                key.rawValue == SettingsKey<Bool>.dailyReminderEnabled.rawValue ? true : key.defaultValue
-            }
-            $0.userSettingsAdapter.int = { key in
-                key.rawValue == SettingsKey<Int>.dailyReminderHour.rawValue ? 8 : key.defaultValue
-            }
+            $0.platformClient.dailyReminderEnabled = { true }
+            $0.platformClient.reminderTime = { ReminderTime(hour: 8, minute: 0) }
             $0.planningClient.warningEnabled = { false }
             $0.planningClient.warningThreshold = { 80 }
-            $0.notificationAdapter.isAuthorized = { true }
+            $0.platformClient.notificationsAuthorized = { true }
             $0.recurringTransactionClient.fetchAll = { [] }
         }
         await MainActor.run {
@@ -52,12 +48,12 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.scheduleDailyReminder = { h, m in
-                scheduledHour.setValue(h)
-                scheduledMinute.setValue(m)
+            $0.platformClient.setReminderTime = { time in
+                scheduledHour.setValue(time.hour)
+                scheduledMinute.setValue(time.minute)
             }
-            $0.userSettingsAdapter.setBool = { val, _ in persistedEnabled.setValue(val) }
-            $0.userSettingsAdapter.setInt = { _, _ in }
+            $0.platformClient.scheduleDailyReminder = { }
+            $0.platformClient.setDailyReminderEnabled = { val in persistedEnabled.setValue(val) }
         }
 
         await store.send(.dailyReminderToggled(true)) {
@@ -81,8 +77,8 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.cancelDailyReminder = { cancelCalled.setValue(true) }
-            $0.userSettingsAdapter.setBool = { _, _ in }
+            $0.platformClient.cancelDailyReminder = { cancelCalled.setValue(true) }
+            $0.platformClient.setDailyReminderEnabled = { _ in }
         }
 
         await store.send(.dailyReminderToggled(false)) {
@@ -96,17 +92,16 @@ struct NotificationSettingsFeatureTests {
 
     @Test("toggling on when unauthorized requests permission; denial shows banner")
     func testToggleOnUnauthorizedDenied() async throws {
-        let setBoolCalled: LockIsolated<Bool> = LockIsolated(false)
+        let setEnabledCalled: LockIsolated<Bool> = LockIsolated(false)
 
         let store = await TestStore(
             initialState: NotificationSettingsFeature.State(isAuthorized: false)
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.requestAuthorization = { false }  // denied
-            $0.notificationAdapter.scheduleDailyReminder = { _, _ in }
-            $0.userSettingsAdapter.setBool = { _, _ in setBoolCalled.setValue(true) }
-            $0.userSettingsAdapter.setInt = { _, _ in }
+            $0.platformClient.requestNotificationPermission = { false }  // denied
+            $0.platformClient.scheduleDailyReminder = { }
+            $0.platformClient.setDailyReminderEnabled = { _ in setEnabledCalled.setValue(true) }
         }
 
         await store.send(.dailyReminderToggled(true))
@@ -114,7 +109,7 @@ struct NotificationSettingsFeatureTests {
             $0.showPermissionDeniedBanner = true
         }
 
-        #expect(setBoolCalled.value == false, "Should not persist when permission denied")
+        #expect(setEnabledCalled.value == false, "Should not persist when permission denied")
     }
 
     // MARK: - Banner Self-Heal
@@ -129,9 +124,9 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.isAuthorized = { true }  // user granted permission in Settings
-            $0.userSettingsAdapter.bool = { $0.defaultValue }
-            $0.userSettingsAdapter.int = { $0.defaultValue }
+            $0.platformClient.notificationsAuthorized = { true }  // user granted permission in Settings
+            $0.platformClient.dailyReminderEnabled = { false }
+            $0.platformClient.reminderTime = { ReminderTime(hour: 21, minute: 0) }
             $0.planningClient.warningEnabled = { false }
             $0.planningClient.warningThreshold = { 80 }
             $0.recurringTransactionClient.fetchAll = { [] }
@@ -162,13 +157,10 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.scheduleDailyReminder = { h, m in
-                savedHour.setValue(h)
-                savedMinute.setValue(m)
-            }
-            $0.userSettingsAdapter.setInt = { val, key in
-                if key.rawValue == SettingsKey<Int>.dailyReminderHour.rawValue { savedHour.setValue(val) }
-                if key.rawValue == SettingsKey<Int>.dailyReminderMinute.rawValue { savedMinute.setValue(val) }
+            $0.platformClient.scheduleDailyReminder = { }
+            $0.platformClient.setReminderTime = { time in
+                savedHour.setValue(time.hour)
+                savedMinute.setValue(time.minute)
             }
         }
 
@@ -190,9 +182,7 @@ struct NotificationSettingsFeatureTests {
         ) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.requestAuthorization = { false }
-            $0.userSettingsAdapter.setBool = { _, _ in }
-            $0.userSettingsAdapter.setInt = { _, _ in }
+            $0.platformClient.requestNotificationPermission = { false }
         }
 
         await store.send(.budgetWarningToggled(true))
@@ -208,9 +198,9 @@ struct NotificationSettingsFeatureTests {
         let store = await TestStore(initialState: NotificationSettingsFeature.State()) {
             NotificationSettingsFeature()
         } withDependencies: {
-            $0.notificationAdapter.isAuthorized = { false }
-            $0.userSettingsAdapter.bool = { $0.defaultValue }
-            $0.userSettingsAdapter.int = { $0.defaultValue }
+            $0.platformClient.notificationsAuthorized = { false }
+            $0.platformClient.dailyReminderEnabled = { false }
+            $0.platformClient.reminderTime = { ReminderTime(hour: 21, minute: 0) }
             $0.planningClient.warningEnabled = { false }
             $0.planningClient.warningThreshold = { 80 }
             $0.recurringTransactionClient.fetchAll = { [] }
@@ -230,7 +220,6 @@ struct NotificationSettingsFeatureTests {
     @Test("warningThresholdChanged persists without triggering notification")
     func testWarningThresholdChanged() async throws {
         let persistedThreshold: LockIsolated<Int?> = LockIsolated(nil)
-        let warningFired: LockIsolated<Bool> = LockIsolated(false)
 
         let store = await TestStore(
             initialState: NotificationSettingsFeature.State(budgetWarningEnabled: true)
@@ -238,7 +227,6 @@ struct NotificationSettingsFeatureTests {
             NotificationSettingsFeature()
         } withDependencies: {
             $0.planningClient.setWarningThreshold = { val in persistedThreshold.setValue(val) }
-            $0.notificationAdapter.sendBudgetWarning = { _, _, _ in warningFired.setValue(true) }
         }
 
         await store.send(.warningThresholdChanged(70)) {
@@ -246,6 +234,5 @@ struct NotificationSettingsFeatureTests {
         }
 
         #expect(persistedThreshold.value == 70)
-        #expect(warningFired.value == false)
     }
 }

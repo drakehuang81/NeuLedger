@@ -39,8 +39,7 @@ struct AppFeature {
         case task
     }
 
-    @Dependency(\.deeplinkClient) var deeplinkClient
-    @Dependency(\.notificationAdapter) var notificationAdapter
+    @Dependency(\.platformClient) var platformClient
 
     private enum CancelID { case recurringSubscription }
 
@@ -51,8 +50,8 @@ struct AppFeature {
             switch action {
             case .task:
                 return .run { send in
-                    for await id in notificationAdapter.pendingConfirmations() {
-                        let destination = (try? await deeplinkClient.resolveRecurringConfirmation(id)) ?? .none
+                    for await id in platformClient.pendingRecurringConfirmations() {
+                        let destination = (try? await platformClient.resolveRecurringConfirmation(id)) ?? .none
                         await send(.route(destination))
                     }
                 }
@@ -60,12 +59,12 @@ struct AppFeature {
 
             case .splashCompleted:
                 return .run { send in
-                    let canSkipOnboarding = try await deeplinkClient.canSkipOnboarding()
+                    let canSkipOnboarding = try await platformClient.canSkipOnboarding()
                     await send(.route(canSkipOnboarding ? .main : .onboarding))
                 }
             case let .deepLinkReceived(url):
                 return .run { send in
-                    let destination = try await deeplinkClient.parseLinkTo(url)
+                    let destination = try await platformClient.parseLink(url)
                     await send(.route(destination))
                 }
             case .onboarding(.delegate(.onboardingCompleted)):

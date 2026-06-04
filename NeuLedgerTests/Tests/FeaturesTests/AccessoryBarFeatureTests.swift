@@ -13,7 +13,7 @@ struct AccessoryBarFeatureLifecycleTests {
             AccessoryBarFeature()
         } withDependencies: {
             $0.captureClient.isAvailable = { true }
-            $0.userSettingsAdapter.string = { _ in "ai" }
+            $0.platformClient.accessoryMode = { .ai }
         }
         await store.send(.task)
         await store.receive(.aiAvailabilityLoaded(isAvailable: true))
@@ -28,7 +28,7 @@ struct AccessoryBarFeatureLifecycleTests {
             AccessoryBarFeature()
         } withDependencies: {
             $0.captureClient.isAvailable = { false }
-            $0.userSettingsAdapter.string = { _ in "ai" }
+            $0.platformClient.accessoryMode = { .ai }
         }
         await store.send(.task)
         await store.receive(.aiAvailabilityLoaded(isAvailable: false)) {
@@ -151,39 +151,34 @@ struct AccessoryBarModeTests {
         await store.send(.accessoryModeLoaded(.ai))
     }
 
-    @Test("accessoryModeSwitched updates state and persists to settings")
+    @Test("accessoryModeSwitched updates state and persists via platformClient")
     func modeSwitchedPersists() async {
-        let savedKey = LockIsolated<String?>(nil)
-        let savedValue = LockIsolated<String?>(nil)
+        let savedMode = LockIsolated<AccessoryMode?>(nil)
         let store = await TestStore(initialState: AccessoryBarFeature.State()) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { value, key in
-                savedKey.setValue(key.rawValue)
-                savedValue.setValue(value)
-            }
+            $0.platformClient.setAccessoryMode = { mode in savedMode.setValue(mode) }
         }
         await store.send(.accessoryModeSwitched(.ai)) {
             $0.accessoryMode = .ai
         }
-        #expect(savedKey.value == "accessoryMode")
-        #expect(savedValue.value == "ai")
+        #expect(savedMode.value == .ai)
     }
 
     @Test("accessoryModeSwitched to .add persists correctly")
     func modeSwitchedToAdd() async {
         var initial = AccessoryBarFeature.State()
         initial.accessoryMode = .ai
-        let savedValue = LockIsolated<String?>(nil)
+        let savedMode = LockIsolated<AccessoryMode?>(nil)
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { value, _ in savedValue.setValue(value) }
+            $0.platformClient.setAccessoryMode = { mode in savedMode.setValue(mode) }
         }
         await store.send(.accessoryModeSwitched(.add)) {
             $0.accessoryMode = .add
         }
-        #expect(savedValue.value == "add")
+        #expect(savedMode.value == .add)
     }
 }
 

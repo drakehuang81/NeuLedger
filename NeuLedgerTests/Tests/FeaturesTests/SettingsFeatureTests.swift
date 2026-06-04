@@ -49,7 +49,8 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in false }
+            $0.platformClient.showAccessoryBar = { false }
+            $0.platformClient.setShowAccessoryBar = { _ in }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
@@ -87,7 +88,8 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in true }
+            $0.platformClient.showAccessoryBar = { true }
+            $0.platformClient.setShowAccessoryBar = { _ in }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { [] }
@@ -344,9 +346,8 @@ struct SettingsAccessoryBarTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { key in
-                key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
-            }
+            $0.platformClient.showAccessoryBar = { false }
+            $0.platformClient.setShowAccessoryBar = { _ in }
             $0.userSettingsAdapter.string = { $0.defaultValue }
             $0.accountClient.fetchActive = { [] }
             $0.carrierClient.listAll = { [] }
@@ -377,8 +378,8 @@ struct SettingsAccessoryBarTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setBool = { value, key in
-                if key.rawValue == SettingsKey.showAccessoryBar.rawValue { persisted.setValue(value) }
+            $0.platformClient.setShowAccessoryBar = { value in
+                persisted.setValue(value)
             }
         }
         await store.send(.accessoryBarToggleChanged(false)) {
@@ -467,7 +468,8 @@ struct SettingsWidgetCarrierTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in false }
+            $0.platformClient.showAccessoryBar = { false }
+            $0.platformClient.setShowAccessoryBar = { _ in }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }

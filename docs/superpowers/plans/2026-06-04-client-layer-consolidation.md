@@ -20,7 +20,7 @@
 - [x] 步驟 1：Carrier 試點 — 1a `8addc18` / 1b `b24e5a6` / 1c `19053b2` / 1d `aa7ca8f`，完整 scheme 每 commit 全綠
 - [x] 步驟 2：Planning — 2a `5f02332` / 2b `ec0a060` / 2c `0e59bb4`，全綠。偵察驅動 fan-out 模式驗證成功（額外呼叫端：WatchContextBuilder、AnalyticsUseCase+Live、NotificationSettings 預算警告偏好）。行為微調：evaluate/currentStatus 的交易讀取改 fetchAll + inline 過濾（語意等價）。已知 flaky（與本 refactor 無關，留待專項）：SyncSettingsFeatureTests 兩條 enableSync 測試建議補顯式 timeout
 - [x] 步驟 3：AI 拆分 — 3a `3c3992e`+`ce34854` / 3b `37254ee`（含 MainTabFeatureTests scope 組合修復）/ 3c `6e0f1a6`，全綠 580 passed。CaptureClient 整檔包 `#if canImport(FoundationModels)`（簽名引用 ExtractedTransaction）；SyncSettings flaky 已加寬限 timeout 治理
-- [ ] 步驟 4：Platform
+- [x] 步驟 4：Platform — 4a `ec7cf44` / 4b `f494a18` / 4c `6c22427`，**新基準 603 passed / 0 failed**。RouteLinkDestination 搬至 `Domain/ValueObjects/`（AccessoryMode/ReminderTime 本就在獨立檔）；OnboardingUseCase 確認零呼叫端直接刪除；`Application/` 只剩 Ledger/Planning/Insights/Capture/Carrier/Platform 六個 context 資料夾
 - [ ] 步驟 5：Ledger（大魔王，含 Watch 特例 §E）
 - [ ] 步驟 6：收網（grep audit + `DatabaseClient` 改名 + architecture.md 回寫）
 
@@ -421,6 +421,11 @@ grep -rn "CarrierUseCase\|carrierUseCase" Features/Sources NeuLedgerTests && ech
 - [ ] 收縮刪：`Domain/UseCases/AppEnvironmentUseCase.swift`、`CloudSyncUseCase.swift`、`DeeplinkClient.swift`、`Application/AppEnvironment/`、`Application/Sync/`、`Application/Misc/OnboardingUseCase+Live.swift`、`Core/Adapters/DeeplinkClient+Live.swift`；`DeeplinkClientTests` 搬運
 
 ### 步驟 5：Ledger（大魔王）
+
+**步驟 4 偵察遺產（執行前必讀）**：
+- **onboarding 旗標雙寫入點**：`AccountClient+Live.setupAccounts` 結尾直接 `setBool(true, .hasCompletedOnboarding)`（跨域寫入），OnboardingFeature 現在又顯式呼叫 `platformClient.markOnboardingComplete()`——重複。`LedgerClient.setupAccounts` 吸收時**移除**旗標寫入（旗標歸 Platform，Feature 已顯式呼叫），屬行為微調，記錄並補測試斷言
+- MainTab 殘留的 `notificationAdapter.scheduleRecurringReminder/cancelRecurringReminder` + `recurringTransactionClient`（reschedule 那半）→ 併入 LedgerClient 的 recurring 區
+- Settings 的 `defaultAccountId`（userSettingsAdapter 直讀）與 `openURL`（隱私政策，View 層讓步條款）→ defaultAccountId 切 `ledgerClient`，openURL 不動
 
 按 §C 食譜 + §A.6 合約。範圍：`LedgerUseCase`/`AccountUseCase`/`MetadataUseCase`/`RecurringUseCase`/`ExportUseCase`（+Live 5 檔）、repo 5 件（Transaction/Account/Category/Tag/RecurringTransaction，+Live 5 檔）→ `LedgerClient`；§B 表步驟 5 的 17 個 Feature 檔；§E Watch 特例。
 特別注意：

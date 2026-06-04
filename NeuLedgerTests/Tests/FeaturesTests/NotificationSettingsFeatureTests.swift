@@ -19,7 +19,7 @@ struct NotificationSettingsFeatureTests {
             $0.planningClient.warningEnabled = { false }
             $0.planningClient.warningThreshold = { 80 }
             $0.platformClient.notificationsAuthorized = { true }
-            $0.recurringTransactionClient.fetchAll = { [] }
+            $0.ledgerClient.listRecurring = { [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -129,7 +129,7 @@ struct NotificationSettingsFeatureTests {
             $0.platformClient.reminderTime = { ReminderTime(hour: 21, minute: 0) }
             $0.planningClient.warningEnabled = { false }
             $0.planningClient.warningThreshold = { 80 }
-            $0.recurringTransactionClient.fetchAll = { [] }
+            $0.ledgerClient.listRecurring = { [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -203,7 +203,7 @@ struct NotificationSettingsFeatureTests {
             $0.platformClient.reminderTime = { ReminderTime(hour: 21, minute: 0) }
             $0.planningClient.warningEnabled = { false }
             $0.planningClient.warningThreshold = { 80 }
-            $0.recurringTransactionClient.fetchAll = { [] }
+            $0.ledgerClient.listRecurring = { [] }
         }
         await store.send(.task)
         await store.skipReceivedActions()

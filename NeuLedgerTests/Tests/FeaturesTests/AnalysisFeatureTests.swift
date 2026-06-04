@@ -55,9 +55,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -75,9 +75,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [Self.sampleCategory] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -107,9 +107,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -134,9 +134,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in throw URLError(.badServerResponse) }
+            $0.ledgerClient.listAll = { _ in throw URLError(.badServerResponse) }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -156,9 +156,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [Self.sampleCategory] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
             $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateAIInsight = { _ in insightText }
         }
@@ -184,9 +184,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [Self.sampleCategory] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
             $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateAIInsight = { _ in throw AIError() }
         }
@@ -234,9 +234,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in budgetTxns.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in budgetTxns.map { EnrichedTransaction(transaction: $0) } }
             $0.planningClient.listActive = { [budget] }
-            $0.ledger.listCategories = { _ in [Self.sampleCategory] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -274,7 +274,7 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in expectedTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in expectedTransactions.map { EnrichedTransaction(transaction: $0) } }
         }
 
         await store.send(.categoryTapped(proportion))
@@ -294,7 +294,7 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { filter in
+            $0.ledgerClient.listAll = { filter in
                 capturedFilter.setValue(filter)
                 return []
             }
@@ -317,7 +317,7 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in throw FetchError() }
+            $0.ledgerClient.listAll = { _ in throw FetchError() }
         }
 
         await store.send(.categoryTapped(proportion))
@@ -356,9 +356,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in txns.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in txns.map { EnrichedTransaction(transaction: $0) } }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -386,9 +386,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.planningClient.listActive = { [budget] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -412,10 +412,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listActiveAccounts = { accounts }
-            $0.ledger.listAll = { _ in [] }
+            $0.ledgerClient.listActiveAccounts = { accounts }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -432,9 +432,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -457,12 +457,12 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initial) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { filter in
+            $0.ledgerClient.listAll = { filter in
                 capturedFilter.setValue(filter)
                 return []
             }
             $0.planningClient.listActive = { [] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
@@ -500,9 +500,9 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initial) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledger.listAll = { _ in [accountTxn].map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listAll = { _ in [accountTxn].map { EnrichedTransaction(transaction: $0) } }
             $0.planningClient.listActive = { [relevantBudget, irrelevantBudget] }
-            $0.ledger.listCategories = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {

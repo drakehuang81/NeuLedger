@@ -32,7 +32,7 @@ struct WatchSettingsFeatureTests {
         let store = TestStore(initialState: WatchSettingsFeature.State()) {
             WatchSettingsFeature()
         } withDependencies: {
-            $0.ledger.listActiveAccounts = { @Sendable in
+            $0.ledgerClient.listActiveAccounts = { @Sendable in
                 [cash, card]
             }
             $0.userSettingsAdapter.string = { @Sendable _ in

@@ -214,6 +214,31 @@ public struct LedgerClient: Sendable {
 
 **死亡名單**：`TransactionClient.weeklySpending`/`statsSnapshot`/`detailStats`（kernel pass-through）不進 Ledger 合約——呼叫端一律改 `insightsClient`。
 
+**Live 漸進組裝策略（每 commit 全綠的機制）**：採「**先 delegate、再內化**」：
+1. 擴張 commit 1：完整介面 + Live 全部 closure **先 delegate 既有 UseCase/repo Live**（`LedgerUseCase`/`AccountUseCase`/`MetadataUseCase`/`RecurringUseCase`/`ExportUseCase` 此時還活著）——編譯綠、行為零變
+2. 後續 commit 逐分區內化：Transactions → Accounts → Catalog → Recurring → Export，各分區改為 `SwiftDataStore` 直用 + 上收 post-condition（鏡像推送、recurring 通知排程在對應分區內化時加入，連同新測試）
+3. 全部內化後才進切換/收縮 phase
+
+過渡期 LedgerClient → 舊 UseCase 的暫時依賴**不需** §3.1 註解（生命週期僅限擴張期，收縮時消滅）。
+
+### A.7 `WatchLedgerClient`（步驟 5，watchOS target 專用）
+
+> 原 §E 草案名 `WatchSnapshotClient`——盤點後發現 Watch 還有**寫入路徑**（`transactionClient.add` 經 WatchConnectivity gateway 轉送 iPhone），故更名為 `WatchLedgerClient`：手錶端的帳本視圖。
+
+```swift
+@DependencyClient
+public struct WatchLedgerClient: Sendable {
+    // 快照讀取（cache-backed，資料來自 iPhone 推送的 WatchCacheStore）
+    public var activeAccounts: @Sendable () async throws -> [Account]
+    public var categories: @Sendable (_ type: TransactionType) async throws -> [Category]
+    // 轉送記帳（經 WatchSessionGateway 送回 iPhone，非本地寫入）
+    public var record: @Sendable (_ transaction: Transaction) async throws -> Void
+}
+// keypath: \.watchLedgerClient（只在 WatchFeatures target 註冊 live）
+```
+
+**Live 組裝**：搬運自 `WatchFeatures/Clients/` 現行三個 `.watchLive` extension（`WatchAccountClient`/`WatchCategoryClient`/`WatchTransactionClient`），`WatchDependencies.register` 改註冊單一 client。`WatchRecordFeature` 三個呼叫點對應：`accountClient.fetchActive→activeAccounts`、`categoryClient.fetchByType→categories`、`transactionClient.add→record`。
+
 ---
 
 ## §B 注入點盤點（2026-06-04 現況，57 處）
@@ -411,7 +436,7 @@ ls Features/Sources/Domain/Repositories Features/Sources/Core/Repositories 2>&1 
 2. `Core/Adapters/Watch/` 三檔（`WatchContextBuilder`/`WatchSyncObserver`/`WatchMidnightTimer`，iPhone 端）注入 `\.accountClient` 讀帳戶
 
 **裁定**（步驟 5 內執行）：
-- [ ] **E.1** WatchFeatures 建立**自己的小 Client**：`WatchSnapshotClient`（`activeAccounts`、`categories`，cache-backed Live 搬自 `.watchLive` 實作）——Watch 是獨立 Presentation context，它讀的是同步快照而非帳本本體，不應綁定 30 方法的 `LedgerClient`。`WatchRecordFeatureTests` 覆寫對應更新
+- [ ] **E.1** WatchFeatures 建立**自己的小 Client**：`WatchLedgerClient`（合約見 §A.7：快照讀 ×2 + gateway 轉送記帳 ×1，Live 搬自 `WatchFeatures/Clients/` 三個 `.watchLive` extension）——Watch 是獨立 Presentation context，不應綁定 30 方法的 `LedgerClient`。`WatchDependencies.register` 改註冊單一 client；`WatchRecordFeatureTests` 覆寫對應更新
 - [ ] **E.2** iPhone 端三檔屬 Watch 同步管線的 Infrastructure 內部協作者：`WatchContextBuilder` 改用 `SwiftDataStore` 直讀（同層合法）；`WatchSyncObserver`/`WatchMidnightTimer` 同樣處理。在 architecture.md §10 加註此例外（Infrastructure 內部讀 store 合法，因其本身就是鏡像推送管線的一部分）
 - [ ] **E.3** 驗證需跑 Watch scheme 建置：`xcodebuild build -project NeuLedger.xcodeproj -scheme "NeuLedgerWatch Watch App" -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'`（裝置名以本機可用 simulator 為準）+ `NeuLedgerWatchTests`
 

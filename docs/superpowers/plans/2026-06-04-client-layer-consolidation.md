@@ -19,7 +19,7 @@
 - [x] 步驟 0：`UserSettingsRepository` → `UserSettingsAdapter` 機械改名 — `af94202`
 - [x] 步驟 1：Carrier 試點 — 1a `8addc18` / 1b `b24e5a6` / 1c `19053b2` / 1d `aa7ca8f`，完整 scheme 每 commit 全綠
 - [x] 步驟 2：Planning — 2a `5f02332` / 2b `ec0a060` / 2c `0e59bb4`，全綠。偵察驅動 fan-out 模式驗證成功（額外呼叫端：WatchContextBuilder、AnalyticsUseCase+Live、NotificationSettings 預算警告偏好）。行為微調：evaluate/currentStatus 的交易讀取改 fetchAll + inline 過濾（語意等價）。已知 flaky（與本 refactor 無關，留待專項）：SyncSettingsFeatureTests 兩條 enableSync 測試建議補顯式 timeout
-- [ ] 步驟 3：AI 拆分（Insights + Capture）
+- [x] 步驟 3：AI 拆分 — 3a `3c3992e`+`ce34854` / 3b `37254ee`（含 MainTabFeatureTests scope 組合修復）/ 3c `6e0f1a6`，全綠 580 passed。CaptureClient 整檔包 `#if canImport(FoundationModels)`（簽名引用 ExtractedTransaction）；SyncSettings flaky 已加寬限 timeout 治理
 - [ ] 步驟 4：Platform
 - [ ] 步驟 5：Ledger（大魔王，含 Watch 特例 §E）
 - [ ] 步驟 6：收網（grep audit + `DatabaseClient` 改名 + architecture.md 回寫）
@@ -31,6 +31,8 @@
 3. **Agent 中斷會留下 staged index**：workflow agent 失敗時可能留下 staged 變更；任何 commit 前必先 `git status` 確認 index 只含自己要的東西。
 4. **Subagent 必須以 StructuredOutput 結尾 + xcodebuild 輸出必 tail 限縮**——否則長輸出撐爆 context 後 agent 無法回報，整條 workflow 失敗。
 5. **上收 post-condition 時的語意微調要逐條記錄**（見下「行為微調」）。CoreTests 並非每個 repo 都有測試檔——以現場 grep 為準，別信計畫裡的檔案清單。
+6. **TCA `Scope` 組合的 parent 測試是切換盲區**（步驟 3 教訓）：切 Feature X 的注入時，凡以 `Scope` 掛載 X 的 parent feature 測試也會走到 X 的新依賴（MainTabFeatureTests 因 AccessoryBar 切 captureClient 而紅）。切換前先 grep「誰 Scope 了這個 feature」，把 parent 測試檔納入允許清單。**步驟 5（17 檔）執行前必做此盤點**。
+7. **環境級 flaky 的放行政策**（已實施）：完整 scheme 若有 ≤2 個失敗且伴隨 simulator IPC 噪音（`ipc/mig server died`），對失敗 suite 單獨 `-only-testing` 重跑；單跑綠即視為環境 flaky，記錄後放行。SyncSettingsFeatureTests 已加 `timeout: .seconds(5)` 寬限治理。
 
 **1c 行為微調紀錄**（上收 widget reload 進 CarrierClient Live 的連帶）：
 - read（`.task` 載入）不再觸發 widget reload（原 Feature 載入時手動 syncAllCarriers）——mutation 才 reload
@@ -149,6 +151,8 @@ public struct PlatformClient: Sendable {
     public var setDailyReminderEnabled: @Sendable (_ enabled: Bool) -> Void
     public var hasCompletedOnboarding: @Sendable () -> Bool = { false }
     public var markOnboardingComplete: @Sendable () -> Void
+    public var showAccessoryBar: @Sendable () -> Bool = { true }
+    public var setShowAccessoryBar: @Sendable (_ visible: Bool) -> Void
     // MARK: - Notification
     public var requestNotificationPermission: @Sendable () async -> Bool = { false }
     public var notificationsAuthorized: @Sendable () async -> Bool = { false }
@@ -412,7 +416,7 @@ grep -rn "CarrierUseCase\|carrierUseCase" Features/Sources NeuLedgerTests && ech
 特別注意：
 - [ ] `AppFeature` 改訂閱 `platformClient.pendingRecurringConfirmations` + `platformClient.resolveRecurringConfirmation`（notificationAdapter 注入移除）
 - [ ] **Onboarding 溶解**：先 grep `OnboardingUseCase|onboardingUseCase` 呼叫端（盤點時 OnboardingFeature 只注入 accountClient，OnboardingUseCase 疑似已無注入點——若確認無人用直接刪）；`OnboardingFeature` 改注入 `\.platformClient`（markOnboardingComplete）——`accountClient.setupAccounts` 注入暫留，步驟 5 換 `ledgerClient.setupAccounts`；`OnboardingUseCase` + Live 此步驟刪除；TestStore 補「完成時兩個 effect 順序」案例
-- [ ] `defaultAccountId`/`setDefaultAccountId` 暫留 AppEnvironmentUseCase？**否**——AppEnvironmentUseCase 本步驟整個退役，這兩個方法先搬進 PlatformClient 並標 `// TODO(step5): move to LedgerClient`，步驟 5 再搬（避免跨步驟懸空）
+- [ ] `defaultAccountId` **不進 PlatformClient**（修訂 2026-06-04）：Feature 端（Dashboard/AddTransaction/Settings）的 defaultAccountId 是經 `userSettingsAdapter` 直讀，不經 AppEnvironmentUseCase——留在原樣到步驟 5 直接切 `ledgerClient`，避免二次搬家；AppEnvironmentUseCase 的 defaultAccountId 方法若 grep 無呼叫端，隨 UseCase 一起刪
 - [ ] `wipeAll` → `wipeAllSyncData` 改名照 §A.5
 - [ ] 收縮刪：`Domain/UseCases/AppEnvironmentUseCase.swift`、`CloudSyncUseCase.swift`、`DeeplinkClient.swift`、`Application/AppEnvironment/`、`Application/Sync/`、`Application/Misc/OnboardingUseCase+Live.swift`、`Core/Adapters/DeeplinkClient+Live.swift`；`DeeplinkClientTests` 搬運
 

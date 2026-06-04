@@ -129,8 +129,8 @@ struct TransactionDetailFeatureTests {
         ) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.accountClient.fetchAll = { [account, toAccount] }
-            $0.categoryClient.fetchAll = { [category] }
+            $0.ledgerClient.listAccounts = { [account, toAccount] }
+            $0.ledgerClient.listCategories = { _ in [category] }
             $0.insightsClient.detailStats = { _ in stubInsight }
         }
         await MainActor.run {
@@ -162,7 +162,7 @@ struct TransactionDetailFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.ledger.delete = { deletedId.setValue($0) }
+            $0.ledgerClient.delete = { deletedId.setValue($0) }
             $0.continuousClock = clock
             $0.dismiss = DismissEffect { }
         }

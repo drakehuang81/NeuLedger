@@ -84,10 +84,8 @@ public struct AnalysisFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.planningClient) var planningClient
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.categoryClient) var categoryClient
     @Dependency(\.insightsClient) var insightsClient
 
     private enum CancelID { case budgets }
@@ -101,8 +99,8 @@ public struct AnalysisFeature: Sendable {
 
             case .task:
                 return .merge(
-                    .run { [accountClient] send in
-                        let accounts = (try? await accountClient.fetchActive()) ?? []
+                    .run { [ledger] send in
+                        let accounts = (try? await ledger.listActiveAccounts()) ?? []
                         await send(.accountsLoaded(accounts))
                     },
                     .send(.loadData)
@@ -125,14 +123,14 @@ public struct AnalysisFeature: Sendable {
                 let period = state.selectedPeriod
                 let selectedAccountId = state.selectedAccountId
                 return .merge(
-                    .run { [transactionClient, categoryClient, insightsClient] send in
+                    .run { [ledger, insightsClient] send in
                         do {
                         let dateRange = Self.dateRange(for: period)
                         let filter = TransactionFilter(
                             accountIds: selectedAccountId.map { Set([$0]) },
                             dateRange: dateRange
                         )
-                        let transactions = try await transactionClient.fetch(filter)
+                        let transactions = try await ledger.listAll(filter).map(\.transaction)
 
                         guard !transactions.isEmpty else {
                             await send(.loadedData(.success(nil)))
@@ -152,7 +150,7 @@ public struct AnalysisFeature: Sendable {
                         )
 
                         // Category proportions (expenses only)
-                        let categories = try await categoryClient.fetchAll()
+                        let categories = try await ledger.listCategories(nil)
                         let categoryMap = Dictionary(
                             categories.map { ($0.id, $0.name) },
                             uniquingKeysWith: { first, _ in first }
@@ -220,11 +218,10 @@ public struct AnalysisFeature: Sendable {
                             await send(.loadedData(.failure(error)))
                         }
                     },
-                    .run { [planningClient, transactionClient, categoryClient] send in
+                    .run { [planningClient, ledger] send in
                         let metrics = await Self.computeBudgetMetrics(
                             planningClient: planningClient,
-                            transactionClient: transactionClient,
-                            categoryClient: categoryClient,
+                            ledger: ledger,
                             accountId: selectedAccountId
                         )
                         await send(.budgetMetricsLoaded(metrics))
@@ -244,8 +241,8 @@ public struct AnalysisFeature: Sendable {
                     dateRange: Self.dateRange(for: state.selectedPeriod)
                 )
                 let name = proportion.name
-                return .run { [transactionClient] send in
-                    let transactions = (try? await transactionClient.fetch(filter)) ?? []
+                return .run { [ledger] send in
+                    let transactions = ((try? await ledger.listAll(filter)) ?? []).map(\.transaction)
                     await send(.categoryTransactionsLoaded(categoryName: name, transactions))
                 }
 
@@ -296,8 +293,7 @@ public struct AnalysisFeature: Sendable {
 
     static func computeBudgetMetrics(
         planningClient: PlanningClient,
-        transactionClient: TransactionClient,
-        categoryClient: CategoryClient,
+        ledger: LedgerClient,
         accountId: Account.ID? = nil
     ) async -> [BudgetGaugeMetrics] {
         do {
@@ -310,7 +306,7 @@ public struct AnalysisFeature: Sendable {
                     accountIds: Set([accountId]),
                     types: [.expense]
                 )
-                if let fetchedTransactions = try? await transactionClient.fetch(accountFilter) {
+                if let fetchedTransactions = try? await ledger.listAll(accountFilter).map(\.transaction) {
                     let relevantCategoryIds = Set(fetchedTransactions.compactMap(\.categoryId))
                     filteredBudgets = activeBudgets.filter { budget in
                         guard let catId = budget.categoryId else { return true }
@@ -320,7 +316,7 @@ public struct AnalysisFeature: Sendable {
                 // If fetch fails, filteredBudgets stays as activeBudgets (no filtering)
             }
 
-            let categories = try await categoryClient.fetchAll()
+            let categories = try await ledger.listCategories(nil)
             let categoryMap = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
 
             var metrics: [BudgetGaugeMetrics] = []
@@ -332,7 +328,7 @@ public struct AnalysisFeature: Sendable {
                     types: [.expense],
                     dateRange: dateRange
                 )
-                let transactions = try await transactionClient.fetch(filter)
+                let transactions = try await ledger.listAll(filter).map(\.transaction)
                 let spent = transactions.reduce(Decimal.zero) { $0 + $1.amount }
 
                 let label: String

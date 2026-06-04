@@ -225,8 +225,8 @@ private enum PreviewFixtures {
         return Store(initialState: state) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.accountClient.fetchAll = { [bankAccount, cashAccount, ewalletAccount] }
-            $0.categoryClient.fetchAll = { [foodCategory, salaryCategory] }
+            $0.ledgerClient.listAccounts = { [bankAccount, cashAccount, ewalletAccount] }
+            $0.ledgerClient.listCategories = { _ in [foodCategory, salaryCategory] }
             $0.insightsClient.detailStats = { _ in
                 TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
             }

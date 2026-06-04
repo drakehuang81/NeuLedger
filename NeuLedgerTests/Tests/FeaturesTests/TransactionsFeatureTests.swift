@@ -29,7 +29,7 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: TransactionsFeature.State()) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { [Self.sampleTransaction] }
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
         }
 
         await store.send(.task) {
@@ -48,8 +48,8 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: TransactionsFeature.State()) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { [] }
-            $0.transactionClient.search = { _ in [Self.sampleTransaction] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.search = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -68,7 +68,7 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { [Self.sampleTransaction] }
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
         }
 
         await store.send(.searchTextChanged("")) {
@@ -86,10 +86,10 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: TransactionsFeature.State()) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.accountClient.fetchAll = { [] }
-            $0.tagClient.fetchAll = { [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listTags = { [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -110,7 +110,7 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
         }
 
         await store.send(.filter(.presented(.delegate(.filterApplied(filter))))) {
@@ -129,7 +129,7 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { [Self.sampleTransaction] }
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -163,8 +163,8 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionsFeature()
         } withDependencies: {
-            $0.ledger.delete = { _ in }
-            $0.transactionClient.fetchAll = { [Self.sampleTransaction] }
+            $0.ledgerClient.delete = { _ in }
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
         }
 
         await store.send(.deleteConfirmed) {
@@ -182,11 +182,10 @@ struct TransactionsFeatureTests {
         let store = await TestStore(initialState: TransactionsFeature.State()) {
             TransactionsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { [] }
-            $0.transactionClient.fetch = { _ in [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.accountClient.fetchAll = { [] }
-            $0.tagClient.fetchAll = { [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listTags = { [] }
         }
         await MainActor.run {
             store.exhaustivity = .off

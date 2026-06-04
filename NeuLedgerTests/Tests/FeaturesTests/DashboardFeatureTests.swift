@@ -88,16 +88,16 @@ struct DashboardFeatureTests {
             DashboardFeature()
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
-            $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.accountClient.computeBalance = { id in
+            $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
+            $0.ledgerClient.balance = { id in
                 if id == Self.sampleAccounts[0].id { return 45000 }
                 if id == Self.sampleAccounts[1].id { return 1200 }
                 return 0
             }
-            $0.transactionClient.fetchRecent = { Self.sampleTransactions }
+            $0.ledgerClient.listRecent = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
             $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateAIInsight = { _ in "Test insight" }
             $0.insightsClient.generateInsights = { _ in [] }
@@ -219,12 +219,12 @@ struct DashboardFeatureTests {
             DashboardFeature()
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
-            $0.accountClient.fetchActive = { [] }
-            $0.accountClient.computeBalance = { _ in 0 }
-            $0.transactionClient.fetchRecent = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.balance = { _ in 0 }
+            $0.ledgerClient.listRecent = { _ in [] }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
             $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateAIInsight = { _ in "" }
             $0.insightsClient.generateInsights = { _ in [] }
@@ -264,12 +264,12 @@ struct DashboardFeatureTests {
             DashboardFeature()
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
-            $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.accountClient.computeBalance = { _ in 1000 }
-            $0.transactionClient.fetchRecent = { Array(Self.sampleTransactions.prefix(3)) }
+            $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
+            $0.ledgerClient.balance = { _ in 1000 }
+            $0.ledgerClient.listRecent = { _ in Array(Self.sampleTransactions.prefix(3)).map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.categoryClient.fetchAll = { Self.sampleCategories }
+            $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
             $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateAIInsight = { _ in "Fresh insight" }
             $0.insightsClient.generateInsights = { _ in [] }
@@ -421,9 +421,9 @@ struct DashboardFeatureTests {
         let store = await TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.accountClient.fetchAll = { [] }
-            $0.transactionClient.fetchRecent = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listRecent = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateAIInsight = { _ in "" }
             $0.date = .constant(fixedDate)

@@ -139,7 +139,7 @@ struct OnboardingFeatureTests {
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.accountClient.setupAccounts = { accounts in
+            $0.ledger.setupAccounts = { accounts in
                 captured.withValue { $0 = accounts }
             }
             $0.platformClient.markOnboardingComplete = {}
@@ -173,7 +173,7 @@ struct OnboardingFeatureTests {
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.accountClient.setupAccounts = { accounts in
+            $0.ledger.setupAccounts = { accounts in
                 captured.withValue { $0 = accounts }
             }
             $0.platformClient.markOnboardingComplete = {}
@@ -204,7 +204,7 @@ struct OnboardingFeatureTests {
         ) {
             OnboardingFeature()
         } withDependencies: {
-            $0.accountClient.setupAccounts = { _ in
+            $0.ledger.setupAccounts = { _ in
                 events.withValue { $0.append("setupAccounts") }
             }
             $0.platformClient.markOnboardingComplete = {

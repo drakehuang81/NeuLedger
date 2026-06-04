@@ -14,11 +14,11 @@ struct DashboardFeatureSectionPhaseTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.insightsClient.weeklySparkline = { _ in [10, 20, 30, 40, 50, 60, 70] }
-            $0.transactionClient.fetchRecent = { [] }
-            $0.transactionClient.fetchAll = { [] }
+            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateInsights = { _ in [] }
         }
@@ -43,11 +43,11 @@ struct DashboardFeatureSectionPhaseTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.insightsClient.weeklySparkline = { _ in throw Boom() }
-            $0.transactionClient.fetchRecent = { [] }
-            $0.transactionClient.fetchAll = { [] }
+            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateInsights = { _ in [] }
         }

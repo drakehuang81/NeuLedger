@@ -148,13 +148,7 @@ public struct AddTransactionFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.ledger) var ledger
-    @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-    @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.captureClient) var captureClient
 
@@ -192,8 +186,8 @@ public struct AddTransactionFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    async let accounts = accountClient.fetchActive()
-                    async let categories = categoryClient.fetchAll()
+                    async let accounts = ledger.listActiveAccounts()
+                    async let categories = ledger.listCategories(nil)
                     let (a, c) = try await (accounts, categories)
                     await send(.optionsLoaded(accounts: a, categories: c))
                 }
@@ -204,8 +198,7 @@ public struct AddTransactionFeature: Sendable {
                 state.accounts = accounts
                 state.categories = categories
                 if case .add = state.mode, state.accountId == nil {
-                    let defaultId = userSettingsAdapter.string(.defaultAccountId)
-                    if !defaultId.isEmpty,
+                    if let defaultId = ledger.defaultAccountId(),
                        let match = accounts.first(where: { $0.id == defaultId }) {
                         state.accountId = match.id
                     } else {
@@ -317,13 +310,7 @@ public struct AddTransactionFeature: Sendable {
                                 isActive: true,
                                 createdAt: date
                             )
-                            try await recurringTransactionClient.add(template)
-                            try await notificationAdapter.scheduleRecurringReminder(
-                                template.id,
-                                template.nextDueDate,
-                                String(localized: "recurring_transaction_notification_title"),
-                                String(localized: "recurring_transaction_notification_body")
-                            )
+                            try await ledger.createRecurring(template)
                         }
 
                     case let .edit(existing):

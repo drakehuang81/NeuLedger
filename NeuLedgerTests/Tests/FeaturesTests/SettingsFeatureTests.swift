@@ -51,9 +51,9 @@ struct SettingsFeatureTests {
         } withDependencies: {
             $0.platformClient.showAccessoryBar = { false }
             $0.platformClient.setShowAccessoryBar = { _ in }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.accountClient.fetchActive = { Self.sampleAccounts }
+            $0.ledger.defaultAccountId = { nil }
+            $0.ledger.setDefaultAccountId = { _ in }
+            $0.ledger.listActiveAccounts = { Self.sampleAccounts }
             $0.carrierClient.listAll = { [] }
             $0.carrierClient.activeForWidget = { nil }
         }
@@ -90,9 +90,9 @@ struct SettingsFeatureTests {
         } withDependencies: {
             $0.platformClient.showAccessoryBar = { true }
             $0.platformClient.setShowAccessoryBar = { _ in }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.accountClient.fetchActive = { [] }
+            $0.ledger.defaultAccountId = { nil }
+            $0.ledger.setDefaultAccountId = { _ in }
+            $0.ledger.listActiveAccounts = { [] }
             $0.carrierClient.listAll = { [] }
             $0.carrierClient.activeForWidget = { nil }
         }
@@ -159,8 +159,8 @@ struct SettingsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { value, _ in
-                savedValues.withValue { $0.append(value) }
+            $0.ledger.setDefaultAccountId = { value in
+                savedValues.withValue { $0.append(value ?? "") }
             }
         }
 
@@ -186,9 +186,9 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { transactions }
-            $0.categoryClient.fetchAll = { Self.sampleCategories }
-            $0.accountClient.fetchAll = { Self.sampleAccounts }
+            $0.ledger.listAll = { _ in transactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledger.listCategories = { _ in Self.sampleCategories }
+            $0.ledger.listAccounts = { Self.sampleAccounts }
         }
 
         await store.send(.exportCSVTapped) {
@@ -241,7 +241,7 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { transactions }
+            $0.ledger.listAll = { _ in transactions.map { EnrichedTransaction(transaction: $0) } }
         }
 
         await store.send(.exportJSONTapped) {
@@ -274,9 +274,9 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { throw TestError(message: "fetch failed") }
-            $0.categoryClient.fetchAll = { [] }
-            $0.accountClient.fetchAll = { [] }
+            $0.ledger.listAll = { _ in throw TestError(message: "fetch failed") }
+            $0.ledger.listCategories = { _ in [] }
+            $0.ledger.listAccounts = { [] }
         }
 
         await store.send(.exportCSVTapped) {
@@ -348,8 +348,9 @@ struct SettingsAccessoryBarTests {
         } withDependencies: {
             $0.platformClient.showAccessoryBar = { false }
             $0.platformClient.setShowAccessoryBar = { _ in }
-            $0.userSettingsAdapter.string = { $0.defaultValue }
-            $0.accountClient.fetchActive = { [] }
+            $0.ledger.defaultAccountId = { nil }
+            $0.ledger.setDefaultAccountId = { _ in }
+            $0.ledger.listActiveAccounts = { [] }
             $0.carrierClient.listAll = { [] }
             $0.carrierClient.activeForWidget = { nil }
         }
@@ -470,9 +471,9 @@ struct SettingsWidgetCarrierTests {
         } withDependencies: {
             $0.platformClient.showAccessoryBar = { false }
             $0.platformClient.setShowAccessoryBar = { _ in }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.accountClient.fetchActive = { Self.sampleAccounts }
+            $0.ledger.defaultAccountId = { nil }
+            $0.ledger.setDefaultAccountId = { _ in }
+            $0.ledger.listActiveAccounts = { Self.sampleAccounts }
             $0.carrierClient.listAll = { Self.sampleCarriers }
             $0.carrierClient.activeForWidget = { carrier.id }
         }

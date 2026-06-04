@@ -25,7 +25,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
             TransactionDetailFeature()
         } withDependencies: {
             $0.continuousClock = clock
-            $0.ledger.delete = { _ in deleteCalled.setValue(true) }
+            $0.ledgerClient.delete = { _ in deleteCalled.setValue(true) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -53,7 +53,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
             TransactionDetailFeature()
         } withDependencies: {
             $0.continuousClock = clock
-            $0.ledger.delete = { deletedId.setValue($0) }
+            $0.ledgerClient.delete = { deletedId.setValue($0) }
             $0.dismiss = DismissEffect { dismissed.setValue(true) }
         }
 
@@ -84,7 +84,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
             TransactionDetailFeature()
         } withDependencies: {
             $0.continuousClock = clock
-            $0.ledger.delete = { _ in throw DeleteFailed() }
+            $0.ledgerClient.delete = { _ in throw DeleteFailed() }
             $0.dismiss = DismissEffect { dismissed.setValue(true) }
         }
 

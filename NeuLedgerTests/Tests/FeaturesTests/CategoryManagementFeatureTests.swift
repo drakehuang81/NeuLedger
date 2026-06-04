@@ -37,7 +37,7 @@ struct CategoryManagementFeatureTests {
         ) {
             CategoryManagementFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { allCategories }
+            $0.ledgerClient.listCategories = { _ in allCategories }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -95,7 +95,7 @@ struct CategoryManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             CategoryManagementFeature()
         } withDependencies: {
-            $0.categoryClient.update = { cat in
+            $0.ledgerClient.updateCategory = { cat in
                 updatedCategories.withValue { $0.append(cat) }
             }
         }

@@ -51,7 +51,7 @@ struct OnboardingFeature {
         }
     }
 
-    @Dependency(\.accountClient) var accountClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.platformClient) var platformClient
     @Dependency(\.continuousClock) var clock
 
@@ -94,7 +94,7 @@ struct OnboardingFeature {
                 let customs = state.customAccounts
                 return .run { send in
                     let accounts = types.map(\.new) + customs.map(\.new)
-                    try await accountClient.setupAccounts(accounts)
+                    try await ledger.setupAccounts(accounts)
                     platformClient.markOnboardingComplete()
                     try await clock.sleep(for: .milliseconds(1600))
                     await send(.delegate(.onboardingCompleted))

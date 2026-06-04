@@ -29,7 +29,7 @@ struct TagManagementFeatureTests {
         ) {
             TagManagementFeature()
         } withDependencies: {
-            $0.tagClient.fetchAll = { tags }
+            $0.ledgerClient.listTags = { tags }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -144,8 +144,8 @@ struct TagManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TagManagementFeature()
         } withDependencies: {
-            $0.tagClient.delete = { tagId in deletedId.setValue(tagId) }
-            $0.tagClient.fetchAll = { [Self.tagB] }
+            $0.ledgerClient.deleteTag = { tagId in deletedId.setValue(tagId) }
+            $0.ledgerClient.listTags = { [Self.tagB] }
         }
 
         await store.send(.deleteRequested(id)) {

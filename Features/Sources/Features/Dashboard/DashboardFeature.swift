@@ -160,11 +160,8 @@ public struct DashboardFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.insightsClient) var insightsClient
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.date.now) var now
 
     // MARK: - Body
@@ -216,7 +213,7 @@ public struct DashboardFeature: Sendable {
                     await withTaskGroup(of: (Account.ID, Decimal).self) { group in
                         for account in accounts {
                             group.addTask {
-                                let balance = (try? await accountClient.computeBalance(account.id)) ?? 0
+                                let balance = (try? await ledger.balance(account.id)) ?? 0
                                 return (account.id, balance)
                             }
                         }
@@ -294,7 +291,7 @@ public struct DashboardFeature: Sendable {
                     state.accountsPhase = .loading
                     return .run { send in
                         do {
-                            let accounts = try await accountClient.fetchActive()
+                            let accounts = try await ledger.listActiveAccounts()
                             await send(.accountsUpdated(accounts))
                         } catch {
                             await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -305,7 +302,7 @@ public struct DashboardFeature: Sendable {
                     state.transactionsPhase = .loading
                     return .run { send in
                         do {
-                            let txs = try await transactionClient.fetchRecent()
+                            let txs = try await ledger.listRecent(limit: 20).map(\.transaction)
                             await send(.transactionsUpdated(txs))
                         } catch {
                             await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -448,10 +445,10 @@ public struct DashboardFeature: Sendable {
                  .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
                 return .merge(
                     .run { send in
-                        async let transactions = transactionClient.fetchRecent()
-                        async let accounts = accountClient.fetchActive()
+                        async let transactions = ledger.listRecent(limit: 20)
+                        async let accounts = ledger.listActiveAccounts()
                         let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t))
+                        await send(.transactionsUpdated(t.map(\.transaction)))
                         await send(.accountsUpdated(a))
                     },
                     statsEffect(cancelInFlight: true),
@@ -469,10 +466,10 @@ public struct DashboardFeature: Sendable {
             case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
                 return .merge(
                     .run { send in
-                        async let transactions = transactionClient.fetchRecent()
-                        async let accounts = accountClient.fetchActive()
+                        async let transactions = ledger.listRecent(limit: 20)
+                        async let accounts = ledger.listActiveAccounts()
                         let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t))
+                        await send(.transactionsUpdated(t.map(\.transaction)))
                         await send(.accountsUpdated(a))
                     },
                     statsEffect(cancelInFlight: true),
@@ -498,10 +495,10 @@ public struct DashboardFeature: Sendable {
                  .detail(.presented(.delegate(.updated))):
                 return .merge(
                     .run { send in
-                        async let transactions = transactionClient.fetchRecent()
-                        async let accounts = accountClient.fetchActive()
+                        async let transactions = ledger.listRecent(limit: 20)
+                        async let accounts = ledger.listActiveAccounts()
                         let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t))
+                        await send(.transactionsUpdated(t.map(\.transaction)))
                         await send(.accountsUpdated(a))
                     },
                     statsEffect(cancelInFlight: true),
@@ -545,7 +542,7 @@ public struct DashboardFeature: Sendable {
         .merge(
             .run { send in
                 do {
-                    let accounts = try await accountClient.fetchActive()
+                    let accounts = try await ledger.listActiveAccounts()
                     await send(.accountsUpdated(accounts))
                 } catch {
                     await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -555,7 +552,7 @@ public struct DashboardFeature: Sendable {
 
             .run { send in
                 do {
-                    let transactions = try await transactionClient.fetchRecent()
+                    let transactions = try await ledger.listRecent(limit: 20).map(\.transaction)
                     await send(.transactionsUpdated(transactions))
                 } catch {
                     await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -565,7 +562,7 @@ public struct DashboardFeature: Sendable {
 
             .run { send in
                 do {
-                    let categories = try await categoryClient.fetchAll()
+                    let categories = try await ledger.listCategories(nil)
                     await send(.categoriesLoaded(categories))
                 } catch {
                     // Categories feed UI styling; failure leaves the cached map intact.

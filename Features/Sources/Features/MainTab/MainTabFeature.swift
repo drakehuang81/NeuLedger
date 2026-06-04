@@ -50,8 +50,7 @@ struct MainTabFeature {
 
     // MARK: - Dependencies
     @Dependency(\.platformClient) var platformClient
-    @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.recurringTransactionClient) var recurringTransactionClient
+    @Dependency(\.ledgerClient) var ledger
 
     private enum CancelID {
         case task
@@ -119,16 +118,12 @@ struct MainTabFeature {
             case let .dashboard(.delegate(.savedRecurringConfirmation(id, newNextDueDate))):
                 return .run { _ in
                     do {
-                        let all = try await recurringTransactionClient.fetchAll()
+                        let all = try await ledger.listRecurring()
                         if var template = all.first(where: { $0.id == id }) {
                             template.nextDueDate = newNextDueDate
-                            try await recurringTransactionClient.update(template)
-                            try await notificationAdapter.scheduleRecurringReminder(
-                                template.id,
-                                newNextDueDate,
-                                String(localized: "recurring_transaction_notification_title"),
-                                String(localized: "recurring_transaction_notification_body")
-                            )
+                            // Reminder rescheduling is a post-condition of updateRecurring
+                            // (internalised into LedgerClient).
+                            try await ledger.updateRecurring(template)
                         }
                     } catch {
                         // silently ignore

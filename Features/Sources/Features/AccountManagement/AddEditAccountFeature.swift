@@ -70,7 +70,7 @@ public struct AddEditAccountFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
 
     // MARK: - Body
@@ -121,7 +121,7 @@ public struct AddEditAccountFeature: Sendable {
                             icon: icon,
                             color: colorHex
                         )
-                        try await accountClient.add(account)
+                        try await ledger.createAccount(account)
                     case let .edit(existing):
                         let updated = Account(
                             id: existing.id,
@@ -133,7 +133,7 @@ public struct AddEditAccountFeature: Sendable {
                             isArchived: existing.isArchived,
                             createdAt: existing.createdAt
                         )
-                        try await accountClient.update(updated)
+                        try await ledger.updateAccount(updated)
                     }
                     await send(.savedSuccessfully)
                 }

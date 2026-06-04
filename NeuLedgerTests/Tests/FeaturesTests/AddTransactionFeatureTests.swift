@@ -37,10 +37,10 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [cash, bank] }
-            $0.categoryClient.fetchAll = { [food] }
+            $0.ledgerClient.listActiveAccounts = { [cash, bank] }
+            $0.ledgerClient.listCategories = { _ in [food] }
             // defaultAccountId set to bank.id → state.accountId should match bank.id
-            $0.userSettingsAdapter.string = { _ in bank.id }
+            $0.ledgerClient.defaultAccountId = { bank.id }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -65,9 +65,9 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [cash] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }   // empty = no default
+            $0.ledgerClient.listActiveAccounts = { [cash] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }   // nil = no default
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -106,7 +106,7 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: state) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.ledger.record = { _ in }
+            $0.ledgerClient.record = { _ in }
         }
 
         await store.send(.saveTapped)
@@ -165,9 +165,9 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
             $0.captureClient.isAvailable = { aiAvailable }
             if aiAvailable {
                 $0.captureClient.extractFromText = { _ in ExtractedTransaction() }
@@ -195,11 +195,11 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [account] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.ledgerClient.listActiveAccounts = { [account] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
             $0.captureClient.isAvailable = { false }
-            $0.ledger.record = { saved.setValue($0) }
+            $0.ledgerClient.record = { saved.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -241,9 +241,9 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
             $0.captureClient.isAvailable = { false }
         }
         await store.send(.backgroundExtractionCompleted(nil)) {
@@ -260,8 +260,8 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -279,8 +279,8 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -310,9 +310,9 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.ledger.record = { addedTransaction.setValue($0) }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.record = { addedTransaction.setValue($0) }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -345,11 +345,11 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: state) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [Self.account1] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
+            $0.ledgerClient.listActiveAccounts = { [Self.account1] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
             $0.captureClient.isAvailable = { false }
-            $0.ledger.update = { updatedCapture.setValue($0) }
+            $0.ledgerClient.update = { updatedCapture.setValue($0) }
         }
 
         await store.send(.saveTapped)

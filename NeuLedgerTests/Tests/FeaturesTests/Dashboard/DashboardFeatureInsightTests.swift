@@ -22,10 +22,10 @@ struct DashboardFeatureInsightTests {
             $0.insightsClient.generateAIInsight = { _ in "" }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.transactionClient.fetchRecent = { [] }
-            $0.transactionClient.fetchAll = { [] }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off

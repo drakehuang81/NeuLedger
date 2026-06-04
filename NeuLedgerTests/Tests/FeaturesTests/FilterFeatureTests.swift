@@ -28,9 +28,9 @@ struct FilterFeatureTests {
         ) {
             FilterFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.accountClient.fetchAll = { [Self.sampleAccount] }
-            $0.tagClient.fetchAll = { [Self.sampleTag] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.ledgerClient.listAccounts = { [Self.sampleAccount] }
+            $0.ledgerClient.listTags = { [Self.sampleTag] }
             $0.dismiss = DismissEffect { }
         }
     }

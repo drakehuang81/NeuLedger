@@ -53,7 +53,7 @@ struct SettingsFeatureTests {
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.carrierClient.fetchAll = { [] }
+            $0.carrierRepository.fetchAll = { [] }
         }
 
         await store.send(.task)
@@ -90,7 +90,7 @@ struct SettingsFeatureTests {
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { [] }
-            $0.carrierClient.fetchAll = { [] }
+            $0.carrierRepository.fetchAll = { [] }
         }
 
         await store.send(.task)
@@ -347,7 +347,7 @@ struct SettingsAccessoryBarTests {
             }
             $0.userSettingsAdapter.string = { $0.defaultValue }
             $0.accountClient.fetchActive = { [] }
-            $0.carrierClient.fetchAll = { [] }
+            $0.carrierRepository.fetchAll = { [] }
         }
         await store.send(.task)
         await store.receive(\.accountsLoaded) {
@@ -473,7 +473,7 @@ struct SettingsWidgetCarrierTests {
             }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.carrierClient.fetchAll = { Self.sampleCarriers }
+            $0.carrierRepository.fetchAll = { Self.sampleCarriers }
         }
 
         await store.send(.task)

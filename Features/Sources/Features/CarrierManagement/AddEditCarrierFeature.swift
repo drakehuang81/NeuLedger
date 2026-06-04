@@ -58,7 +58,7 @@ public struct AddEditCarrierFeature: Sendable {
         }
     }
 
-    @Dependency(\.carrierClient) var carrierClient
+    @Dependency(\.carrierRepository) var carrierRepository
     @Dependency(\.dismiss) var dismiss
 
     public var body: some ReducerOf<Self> {
@@ -93,7 +93,7 @@ public struct AddEditCarrierFeature: Sendable {
                     switch mode {
                     case .add:
                         let carrier = Carrier(name: effectiveName, type: type, barcode: barcode)
-                        try await carrierClient.add(carrier)
+                        try await carrierRepository.add(carrier)
                     case let .edit(existing):
                         let updated = Carrier(
                             id: existing.id,
@@ -102,7 +102,7 @@ public struct AddEditCarrierFeature: Sendable {
                             barcode: barcode,
                             createdAt: existing.createdAt
                         )
-                        try await carrierClient.update(updated)
+                        try await carrierRepository.update(updated)
                     }
                     await send(.savedSuccessfully)
                 } catch: { error, send in

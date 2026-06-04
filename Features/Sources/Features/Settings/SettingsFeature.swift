@@ -136,7 +136,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.carrierClient) var carrierClient
+    @Dependency(\.carrierRepository) var carrierRepository
     @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
     @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
     @Dependency(\.openURL) var openURL
@@ -196,7 +196,7 @@ public struct SettingsFeature: Sendable {
                     let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
                     await send(.languageLoaded(displayName))
                     await send(.accessoryBarToggleChanged(showAccessoryBar))
-                    let fetchedCarriers = try await carrierClient.fetchAll()
+                    let fetchedCarriers = try await carrierRepository.fetchAll()
                     await send(.widgetCarriersLoaded(fetchedCarriers))
                 }
                 .cancellable(id: CancelID.task)

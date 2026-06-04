@@ -1,59 +1,59 @@
-// Features/Tests/DomainTests/Clients/CarrierClientTests.swift
+// Features/Tests/DomainTests/Clients/CarrierRepositoryTests.swift
 import Foundation
 import Testing
 import Dependencies
 @testable import Domain
 
-@Suite("CarrierClient Tests")
-struct CarrierClientTests {
+@Suite("CarrierRepository Tests")
+struct CarrierRepositoryTests {
 
-    @Test("CarrierClient dependency key injection")
+    @Test("CarrierRepository dependency key injection")
     func testDependencyKey() {
-        @Dependency(\.carrierClient) var client
-        #expect(true, "CarrierClient injected successfully")
+        @Dependency(\.carrierRepository) var client
+        #expect(true, "CarrierRepository injected successfully")
     }
 
-    @Test("CarrierClient fetchAll mock override")
+    @Test("CarrierRepository fetchAll mock override")
     func testFetchAllMock() async throws {
         let expected = [Carrier(name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234")]
         try await withDependencies {
-            $0.carrierClient.fetchAll = { expected }
+            $0.carrierRepository.fetchAll = { expected }
         } operation: {
-            @Dependency(\.carrierClient) var client
+            @Dependency(\.carrierRepository) var client
             let result = try await client.fetchAll()
             #expect(result == expected)
         }
     }
 
-    @Test("CarrierClient add mock override")
+    @Test("CarrierRepository add mock override")
     func testAddMock() async throws {
         try await withDependencies {
-            $0.carrierClient.add = { _ in }
+            $0.carrierRepository.add = { _ in }
         } operation: {
-            @Dependency(\.carrierClient) var client
+            @Dependency(\.carrierRepository) var client
             let carrier = Carrier(name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234")
             try await client.add(carrier)
         }
     }
 
-    @Test("CarrierClient update mock override")
+    @Test("CarrierRepository update mock override")
     func testUpdateMock() async throws {
         try await withDependencies {
-            $0.carrierClient.update = { _ in }
+            $0.carrierRepository.update = { _ in }
         } operation: {
-            @Dependency(\.carrierClient) var client
+            @Dependency(\.carrierRepository) var client
             let carrier = Carrier(name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234")
             try await client.update(carrier)
         }
     }
 
-    @Test("CarrierClient delete mock override")
+    @Test("CarrierRepository delete mock override")
     func testDeleteMock() async throws {
         let id = UUID()
         try await withDependencies {
-            $0.carrierClient.delete = { _ in }
+            $0.carrierRepository.delete = { _ in }
         } operation: {
-            @Dependency(\.carrierClient) var client
+            @Dependency(\.carrierRepository) var client
             try await client.delete(id)
         }
     }

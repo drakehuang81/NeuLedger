@@ -4,10 +4,10 @@ import DependenciesMacros
 
 /// A client interface for managing the user's stored e-invoice carriers.
 ///
-/// Use `CarrierClient` to create, retrieve, update, and remove ``Carrier`` records that the user
+/// Use `CarrierRepository` to create, retrieve, update, and remove ``Carrier`` records that the user
 /// keeps on file for quick selection when logging transactions linked to a government carrier.
 @DependencyClient
-public struct CarrierClient: Sendable {
+public struct CarrierRepository: Sendable {
     /// Fetches all stored carriers.
     ///
     /// - Returns: An array of all persisted ``Carrier`` entities.
@@ -29,13 +29,13 @@ public struct CarrierClient: Sendable {
     public var delete: @Sendable (Carrier.ID) async throws -> Void
 }
 
-extension CarrierClient: TestDependencyKey {
+extension CarrierRepository: TestDependencyKey {
     public static let testValue = Self()
 }
 
 public extension DependencyValues {
-    var carrierClient: CarrierClient {
-        get { self[CarrierClient.self] }
-        set { self[CarrierClient.self] = newValue }
+    var carrierRepository: CarrierRepository {
+        get { self[CarrierRepository.self] }
+        set { self[CarrierRepository.self] = newValue }
     }
 }

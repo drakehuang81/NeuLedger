@@ -3,12 +3,12 @@ import SwiftData
 import Domain
 import Dependencies
 
-/// Live implementation of `CarrierClient` backed by `SwiftDataStore`.
-extension CarrierClient: DependencyKey {
-    public static var liveValue: CarrierClient {
+/// Live implementation of `CarrierRepository` backed by `SwiftDataStore`.
+extension CarrierRepository: DependencyKey {
+    public static var liveValue: CarrierRepository {
         let store = SwiftDataStore<Carrier, SDCarrier>()
 
-        return CarrierClient(
+        return CarrierRepository(
             fetchAll: {
                 try await store.fetchAll(sortBy: [SortDescriptor(\.createdAt)])
             },

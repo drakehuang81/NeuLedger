@@ -88,7 +88,7 @@ struct AddEditCarrierFeatureTests {
         // No state change expected — canSave is false, action is no-op
     }
 
-    @Test("saveTapped with valid barcode calls carrierClient.add")
+    @Test("saveTapped with valid barcode calls carrierRepository.add")
     func testSaveTappedAdd() async {
         var initial = AddEditCarrierFeature.State(mode: .add)
         initial.name = "手機載具"
@@ -99,7 +99,7 @@ struct AddEditCarrierFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddEditCarrierFeature()
         } withDependencies: {
-            $0.carrierClient.add = { carrier in addedCarrier.setValue(carrier) }
+            $0.carrierRepository.add = { carrier in addedCarrier.setValue(carrier) }
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
@@ -120,7 +120,7 @@ struct AddEditCarrierFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddEditCarrierFeature()
         } withDependencies: {
-            $0.carrierClient.add = { carrier in addedCarrier.setValue(carrier) }
+            $0.carrierRepository.add = { carrier in addedCarrier.setValue(carrier) }
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
@@ -142,7 +142,7 @@ struct AddEditCarrierFeatureTests {
         #expect(store.state.barcode == "/ABC1234")
     }
 
-    @Test("saveTapped in edit mode calls carrierClient.update")
+    @Test("saveTapped in edit mode calls carrierRepository.update")
     func testSaveTappedUpdate() async {
         var initial = AddEditCarrierFeature.State(mode: .edit(Self.sampleCarrier))
         initial.name = "更新後名稱"
@@ -151,7 +151,7 @@ struct AddEditCarrierFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddEditCarrierFeature()
         } withDependencies: {
-            $0.carrierClient.update = { carrier in updatedCarrier.setValue(carrier) }
+            $0.carrierRepository.update = { carrier in updatedCarrier.setValue(carrier) }
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
@@ -185,7 +185,7 @@ struct CarrierManagementFeatureTests {
         ) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { carriers }
+            $0.carrierRepository.fetchAll = { carriers }
             $0.widgetSyncAdapter.syncAllCarriers = { _ in }
         }
 
@@ -264,8 +264,8 @@ struct CarrierManagementFeatureTests {
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.delete = { id in deletedId.setValue(id) }
-            $0.carrierClient.fetchAll = { [Self.carrierB] }
+            $0.carrierRepository.delete = { id in deletedId.setValue(id) }
+            $0.carrierRepository.fetchAll = { [Self.carrierB] }
             // carrierA is the current widget carrier
             $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
             $0.userSettingsAdapter.setString = { _, _ in }
@@ -313,8 +313,8 @@ struct CarrierManagementFeatureTests {
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.delete = { id in deletedId.setValue(id) }
-            $0.carrierClient.fetchAll = { [Self.carrierB] }
+            $0.carrierRepository.delete = { id in deletedId.setValue(id) }
+            $0.carrierRepository.fetchAll = { [Self.carrierB] }
             // carrierB is the widget carrier, not carrierA
             $0.userSettingsAdapter.string = { _ in Self.carrierB.id.uuidString }
             $0.widgetSyncAdapter.clearCarrier = { clearCarrierCalled.setValue(true) }
@@ -359,7 +359,7 @@ struct CarrierManagementFeatureTests {
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [Self.carrierA, Self.carrierB] }
+            $0.carrierRepository.fetchAll = { [Self.carrierA, Self.carrierB] }
             // carrierA is the current widget carrier
             $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
             $0.widgetSyncAdapter.syncCarrier = { barcode, _, _ in syncBarcode.setValue(barcode) }
@@ -383,7 +383,7 @@ struct CarrierManagementFeatureTests {
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [Self.carrierA] }
+            $0.carrierRepository.fetchAll = { [Self.carrierA] }
             // No widget carrier set yet — empty string triggers auto-assign path
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
@@ -413,7 +413,7 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             // carrierA is returned as the first-ever carrier
-            $0.carrierClient.fetchAll = { [Self.carrierA] }
+            $0.carrierRepository.fetchAll = { [Self.carrierA] }
             // No widget carrier set yet
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { value, _ in savedId.setValue(value) }
@@ -453,7 +453,7 @@ struct CarrierManagementFeatureTests {
         ) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [sample] }
+            $0.carrierRepository.fetchAll = { [sample] }
             $0.widgetSyncAdapter.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)
             }
@@ -485,8 +485,8 @@ struct CarrierManagementFeatureTests {
         ) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.delete = { _ in }
-            $0.carrierClient.fetchAll = { [remaining] }
+            $0.carrierRepository.delete = { _ in }
+            $0.carrierRepository.fetchAll = { [remaining] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.widgetSyncAdapter.syncAllCarriers = { carriers in
                 syncedCarriers.setValue(carriers)
@@ -533,7 +533,7 @@ struct CarrierManagementFeatureTests {
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [saved] }
+            $0.carrierRepository.fetchAll = { [saved] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.widgetSyncAdapter.syncCarrier = { _, _, _ in }

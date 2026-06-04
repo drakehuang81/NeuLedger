@@ -39,7 +39,7 @@ public struct CarrierManagementFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.carrierClient) var carrierClient
+    @Dependency(\.carrierRepository) var carrierRepository
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
 
@@ -53,7 +53,7 @@ public struct CarrierManagementFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { [widgetSyncAdapter] send in
-                    let carriers = try await carrierClient.fetchAll()
+                    let carriers = try await carrierRepository.fetchAll()
                     await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 }
@@ -99,8 +99,8 @@ public struct CarrierManagementFeature: Sendable {
             case let .alert(.presented(.deleteConfirmed(id))):
                 state.expandedCarrierId = nil
                 return .run { [userSettingsAdapter, widgetSyncAdapter] send in
-                    try await carrierClient.delete(id)
-                    let carriers = try await carrierClient.fetchAll()
+                    try await carrierRepository.delete(id)
+                    let carriers = try await carrierRepository.fetchAll()
                     // If the deleted carrier was the active widget carrier, clear App Group
                     let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
                     if widgetCarrierId == id.uuidString {
@@ -110,7 +110,7 @@ public struct CarrierManagementFeature: Sendable {
                     await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 } catch: { _, send in
-                    let carriers = (try? await carrierClient.fetchAll()) ?? []
+                    let carriers = (try? await carrierRepository.fetchAll()) ?? []
                     await send(.carriersLoaded(carriers))
                 }
 
@@ -120,7 +120,7 @@ public struct CarrierManagementFeature: Sendable {
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
                 return .run { [userSettingsAdapter, widgetSyncAdapter] send in
-                    let carriers = try await carrierClient.fetchAll()
+                    let carriers = try await carrierRepository.fetchAll()
                     let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
 
                     if widgetCarrierId.isEmpty, let first = carriers.first {

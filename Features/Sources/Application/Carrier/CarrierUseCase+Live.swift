@@ -4,14 +4,14 @@ import Domain
 
 extension CarrierUseCase: DependencyKey {
     public static var liveValue: CarrierUseCase {
-        @Dependency(\.carrierClient) var carrierClient
+        @Dependency(\.carrierRepository) var carrierRepository
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
         return CarrierUseCase(
-            listAll: { try await carrierClient.fetchAll() },
-            create: { try await carrierClient.add($0) },
-            update: { try await carrierClient.update($0) },
-            delete: { try await carrierClient.delete($0) },
+            listAll: { try await carrierRepository.fetchAll() },
+            create: { try await carrierRepository.add($0) },
+            update: { try await carrierRepository.update($0) },
+            delete: { try await carrierRepository.delete($0) },
             setActiveForWidget: { id in
                 userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
             },

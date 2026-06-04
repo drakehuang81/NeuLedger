@@ -1,18 +1,9 @@
 import Foundation
-import CasePaths
 import Dependencies
 import DependenciesMacros
 
-// MARK: - RouteLinkDestination
-
-@CasePathable
-public enum RouteLinkDestination: Sendable, Equatable {
-    case carrierManagement
-    case recurringConfirmation(RecurringTransaction)
-    case main
-    case onboarding
-    case none
-}
+// `RouteLinkDestination` relocated to
+// `Domain/ValueObjects/RouteLinkDestination.swift` (same module).
 
 // MARK: - DeeplinkClient
 

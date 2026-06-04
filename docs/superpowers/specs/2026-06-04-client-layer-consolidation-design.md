@@ -244,6 +244,15 @@ d. 驗證：完整 test scheme 全綠 → commit（PR 級可獨立合入單位�
 - [ ] 完整 test scheme 全綠；每個遷移 commit 可獨立建置
 - [ ] `docs/architecture.md` 回寫完成
 
+## 7.1 附錄：Watch 特例（2026-06-04 計畫期間發現）
+
+`WatchFeatures`（watchOS target）注入 `accountClient`/`categoryClient` 且有 cache-backed `.watchLive` 替代實作；`Core/Adapters/Watch/` 三檔（iPhone 端）也注入 repo。裁定：
+- WatchFeatures 建自己的 `WatchSnapshotClient`（讀同步快照，不綁 30 方法的 LedgerClient）
+- iPhone 端 Watch 管線三檔屬 Infrastructure 內部協作者，改 `SwiftDataStore` 直讀（同層合法，§10 加註）
+- 步驟 5 驗證 gate 須含 Watch scheme 建置
+
+細節見 plan §E（`docs/superpowers/plans/2026-06-04-client-layer-consolidation.md`）。
+
 ## 8. 範圍外（明確不做）
 
 - 任何行為變更或新功能

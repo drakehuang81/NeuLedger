@@ -12,8 +12,8 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            // forwarded to the scoped AccessoryBarFeature — its .task reads aiUseCase + accessoryMode
-            $0.aiUseCase.isAvailable = { true }
+            // forwarded to the scoped AccessoryBarFeature — its .task reads captureClient + accessoryMode
+            $0.captureClient.isAvailable = { true }
             $0.userSettingsAdapter.string = { _ in "add" }
             $0.userSettingsAdapter.bool = { key in
                 key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue

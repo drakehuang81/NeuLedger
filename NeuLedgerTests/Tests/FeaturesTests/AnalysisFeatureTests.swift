@@ -58,7 +58,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in [] }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -78,7 +78,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in Self.sampleTransactions }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -110,7 +110,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in [] }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -137,7 +137,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in throw URLError(.badServerResponse) }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -159,8 +159,8 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in Self.sampleTransactions }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.generateInsight = { _ in insightText }
+            $0.insightsClient.isAIAvailable = { true }
+            $0.insightsClient.generateAIInsight = { _ in insightText }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -187,8 +187,8 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in Self.sampleTransactions }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.generateInsight = { _ in throw AIError() }
+            $0.insightsClient.isAIAvailable = { true }
+            $0.insightsClient.generateAIInsight = { _ in throw AIError() }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -237,7 +237,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in budgetTxns }
             $0.planningClient.listActive = { [budget] }
             $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -359,7 +359,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in txns }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -389,7 +389,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in [] }
             $0.planningClient.listActive = { [budget] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -416,7 +416,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in [] }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -435,7 +435,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in [] }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -463,7 +463,7 @@ struct AnalysisFeatureTests {
             }
             $0.planningClient.listActive = { [] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -503,7 +503,7 @@ struct AnalysisFeatureTests {
             $0.transactionClient.fetch = { _ in [accountTxn] }
             $0.planningClient.listActive = { [relevantBudget, irrelevantBudget] }
             $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off

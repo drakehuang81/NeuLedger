@@ -12,7 +12,7 @@ struct AccessoryBarFeatureLifecycleTests {
         let store = await TestStore(initialState: AccessoryBarFeature.State()) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
+            $0.captureClient.isAvailable = { true }
             $0.userSettingsAdapter.string = { _ in "ai" }
         }
         await store.send(.task)
@@ -27,7 +27,7 @@ struct AccessoryBarFeatureLifecycleTests {
         let store = await TestStore(initialState: AccessoryBarFeature.State()) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.isAvailable = { false }
             $0.userSettingsAdapter.string = { _ in "ai" }
         }
         await store.send(.task)
@@ -61,7 +61,7 @@ struct AccessoryBarAIInputTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
+            $0.captureClient.stopVoiceSession = { }
         }
         await store.send(.aiInputDismissed) {
             $0.isAIInputExpanded = false
@@ -198,9 +198,9 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: AccessoryBarFeature.State()) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.requestPermission = { true }
-            $0.speechAdapter.startRecording = { stream }
-            $0.speechAdapter.stopRecording = { }
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
         }
 
         await store.send(.recordingTapped)
@@ -219,7 +219,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
         }
 
         await store.send(.recordingTapped) {
@@ -233,7 +233,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: AccessoryBarFeature.State()) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.requestPermission = { false }
+            $0.captureClient.requestVoicePermission = { false }
         }
 
         await store.send(.recordingTapped)
@@ -250,7 +250,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
+            $0.captureClient.stopVoiceSession = { }
         }
 
         await store.send(.transcriptionUpdated("早餐五十五元")) {
@@ -267,7 +267,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
+            $0.captureClient.stopVoiceSession = { }
         }
 
         await store.send(.transcriptionUpdated("早餐五十五元")) {
@@ -283,7 +283,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
+            $0.captureClient.stopVoiceSession = { }
         }
 
         await store.send(.transcriptionFailed) {
@@ -301,7 +301,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
+            $0.captureClient.stopVoiceSession = { }
         }
 
         // Should be a no-op — isRecording guard prevents extraction
@@ -319,7 +319,7 @@ struct AccessoryBarRecordingTests {
         let store = await TestStore(initialState: initial) {
             AccessoryBarFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
         }
 
         await store.send(.aiInputDismissed) {

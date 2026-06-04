@@ -88,7 +88,7 @@ public struct AnalysisFeature: Sendable {
     @Dependency(\.planningClient) var planningClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.aiUseCase) var aiUseCase
+    @Dependency(\.insightsClient) var insightsClient
 
     private enum CancelID { case budgets }
 
@@ -125,7 +125,7 @@ public struct AnalysisFeature: Sendable {
                 let period = state.selectedPeriod
                 let selectedAccountId = state.selectedAccountId
                 return .merge(
-                    .run { [transactionClient, categoryClient, aiUseCase] send in
+                    .run { [transactionClient, categoryClient, insightsClient] send in
                         do {
                         let dateRange = Self.dateRange(for: period)
                         let filter = TransactionFilter(
@@ -189,7 +189,7 @@ public struct AnalysisFeature: Sendable {
 
                         // AI insight
                         var insight: InsightDetail? = nil
-                        if aiUseCase.isAvailable() {
+                        if insightsClient.isAIAvailable() {
                             let breakdownByName = Dictionary(
                                 categoryTotals.values.map { ($0.name, $0.amount) },
                                 uniquingKeysWith: { lhs, rhs in lhs + rhs }
@@ -200,7 +200,7 @@ public struct AnalysisFeature: Sendable {
                                 categoryBreakdown: breakdownByName,
                                 periodDescription: period.displayName
                             )
-                            if let text = try? await aiUseCase.generateInsight(spendingSummary) {
+                            if let text = try? await insightsClient.generateAIInsight(spendingSummary) {
                                 insight = InsightDetail(
                                     title: String(localized: "analysis_ai_insight_title"),
                                     description: text

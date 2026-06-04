@@ -163,7 +163,7 @@ public struct DashboardFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.aiUseCase) var aiUseCase
+    @Dependency(\.insightsClient) var insightsClient
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
     @Dependency(\.date.now) var now
 
@@ -283,7 +283,7 @@ public struct DashboardFeature: Sendable {
                     state.heroPhase = .loading
                     return .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -331,7 +331,7 @@ public struct DashboardFeature: Sendable {
                 state.heroPhase = .loading
                 return .run { [accountID] send in
                     do {
-                        let v = try await transactionClient.weeklySpending(accountID, 7)
+                        let v = try await insightsClient.weeklySparkline(accountID)
                         await send(.weeklySpendingComputed(v))
                     } catch {
                         await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -364,7 +364,7 @@ public struct DashboardFeature: Sendable {
             // MARK: AI Insight
 
             case .fetchAIInsight:
-                guard aiUseCase.isAvailable() else { return .none }
+                guard insightsClient.isAIAvailable() else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
                     let totalExpense = transactions
@@ -380,7 +380,7 @@ public struct DashboardFeature: Sendable {
                         periodDescription: String(localized: "dashboard_period_recent", bundle: .main)
                     )
 
-                    let insight = try await aiUseCase.generateInsight(summary)
+                    let insight = try await insightsClient.generateAIInsight(summary)
                     await send(.aiInsightResponse(.success(insight)))
                 } catch: { error, send in
                     await send(.aiInsightResponse(.failure(error)))
@@ -457,7 +457,7 @@ public struct DashboardFeature: Sendable {
                     statsEffect(cancelInFlight: true),
                     .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -478,7 +478,7 @@ public struct DashboardFeature: Sendable {
                     statsEffect(cancelInFlight: true),
                     .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -507,7 +507,7 @@ public struct DashboardFeature: Sendable {
                     statsEffect(cancelInFlight: true),
                     .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -575,7 +575,7 @@ public struct DashboardFeature: Sendable {
 
             .run { [accountID] send in
                 do {
-                    let values = try await transactionClient.weeklySpending(accountID, 7)
+                    let values = try await insightsClient.weeklySparkline(accountID)
                     await send(.weeklySpendingComputed(values))
                 } catch {
                     await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -594,7 +594,7 @@ public struct DashboardFeature: Sendable {
         .run { send in
             do {
                 let summary = SpendingSummary(monthTotal: 0, weekTotal: 0)
-                let list = try await aiUseCase.generateInsights(summary)
+                let list = try await insightsClient.generateInsights(summary)
                 await send(.insightsLoaded(list))
             } catch {
                 await send(.sectionFailed(.insight, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -606,9 +606,9 @@ public struct DashboardFeature: Sendable {
     /// Loads `StatsSnapshot` and routes success/failure into the
     /// stats section phase machine.
     private func statsEffect(cancelInFlight: Bool) -> Effect<Action> {
-        .run { send in
+        .run { [now] send in
             do {
-                let snapshot = try await transactionClient.statsSnapshot()
+                let snapshot = try await insightsClient.todayStats(now)
                 await send(.statsComputed(
                     today: snapshot.today,
                     week: snapshot.week,

@@ -168,10 +168,10 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { aiAvailable }
+            $0.captureClient.isAvailable = { aiAvailable }
             if aiAvailable {
-                $0.aiUseCase.extractFromText = { _ in ExtractedTransaction() }
-                $0.aiUseCase.suggestCategories = { _, _ in
+                $0.captureClient.extractFromText = { _ in ExtractedTransaction() }
+                $0.captureClient.suggestCategories = { _, _ in
                     CategorySuggestions(suggestions: [], confidence: "low")
                 }
             }
@@ -198,7 +198,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [account] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.isAvailable = { false }
             $0.ledger.record = { saved.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
@@ -244,7 +244,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.isAvailable = { false }
         }
         await store.send(.backgroundExtractionCompleted(nil)) {
             $0.isBackgroundParsingNote = false
@@ -348,7 +348,7 @@ struct AddTransactionFeatureTests {
             $0.accountClient.fetchActive = { [Self.account1] }
             $0.categoryClient.fetchAll = { [] }
             $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.isAvailable = { false }
             $0.ledger.update = { updatedCapture.setValue($0) }
         }
 
@@ -371,8 +371,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: AddTransactionFeature.State()) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.requestPermission = { false }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.requestVoicePermission = { false }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.recordingTapped)
@@ -394,10 +394,10 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.requestPermission = { true }
-            $0.speechAdapter.startRecording = { stream }
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.recordingTapped)
@@ -421,8 +421,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.transcriptionUpdated("五十五元")) {
@@ -439,8 +439,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.transcriptionUpdated("午餐便當")) {
@@ -458,8 +458,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         // SpeechAdapter emits FULL transcript each time (not delta).
@@ -481,8 +481,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.transcriptionFailed) {
@@ -504,8 +504,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.recordingTapped) {
@@ -526,8 +526,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
+            $0.captureClient.isAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off

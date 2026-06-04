@@ -44,7 +44,7 @@ public struct AIAssistantFeature: Sendable {
         case dismissError
     }
 
-    @Dependency(\.aiUseCase) var aiUseCase
+    @Dependency(\.insightsClient) var insightsClient
 
     private enum CancelID { case ask }
 
@@ -52,7 +52,7 @@ public struct AIAssistantFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
-                state.isAvailable = aiUseCase.isAvailable()
+                state.isAvailable = insightsClient.isAIAvailable()
                 return .none
 
             case .expandTapped:
@@ -72,7 +72,7 @@ public struct AIAssistantFeature: Sendable {
                 state.errorMessage = nil
                 return .run { send in
                     do {
-                        let answer = try await aiUseCase.answerFinancialQuestion(question)
+                        let answer = try await insightsClient.answerFinancialQuestion(question)
                         await send(.answerReceived(answer))
                     } catch {
                         await send(.answerFailed(String(localized: "ai_assistant_error")))

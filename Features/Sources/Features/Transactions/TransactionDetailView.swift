@@ -227,7 +227,7 @@ private enum PreviewFixtures {
         } withDependencies: {
             $0.accountClient.fetchAll = { [bankAccount, cashAccount, ewalletAccount] }
             $0.categoryClient.fetchAll = { [foodCategory, salaryCategory] }
-            $0.transactionClient.detailStats = { _ in
+            $0.insightsClient.detailStats = { _ in
                 TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
             }
         }

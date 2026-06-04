@@ -53,9 +53,8 @@ struct AccessoryBarFeature {
     }
 
     // MARK: - Dependencies
-    @Dependency(\.aiUseCase) var aiUseCase
+    @Dependency(\.captureClient) var captureClient
     @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.speechAdapter) var speechAdapter
 
     private enum CancelID {
         case aiExtraction
@@ -69,7 +68,7 @@ struct AccessoryBarFeature {
             switch action {
             case .task:
                 return .run { send in
-                    let isAvailable = aiUseCase.isAvailable()
+                    let isAvailable = captureClient.isAvailable()
                     await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
                     let rawMode = userSettingsAdapter.string(.accessoryMode)
                     let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
@@ -101,7 +100,7 @@ struct AccessoryBarFeature {
                 if wasRecording {
                     return .merge(
                         .cancel(id: CancelID.speechRecording),
-                        .run { _ in speechAdapter.stopRecording() }
+                        .run { _ in captureClient.stopVoiceSession() }
                     )
                 }
                 return .none
@@ -113,7 +112,7 @@ struct AccessoryBarFeature {
                 let text = state.aiInputText
                 return .run { send in
                     await send(.aiExtractionCompleted(
-                        TaskResult { try await aiUseCase.extractFromText(text) }
+                        TaskResult { try await captureClient.extractFromText(text) }
                     ))
                 }
                 .cancellable(id: CancelID.aiExtraction, cancelInFlight: true)
@@ -134,18 +133,18 @@ struct AccessoryBarFeature {
                     state.isRecording = false
                     return .merge(
                         .cancel(id: CancelID.speechRecording),
-                        .run { _ in speechAdapter.stopRecording() }
+                        .run { _ in captureClient.stopVoiceSession() }
                     )
                 } else {
                     return .run { send in
-                        let granted = await speechAdapter.requestPermission()
+                        let granted = await captureClient.requestVoicePermission()
                         guard granted else {
                             await send(.permissionDenied)
                             return
                         }
                         await send(.recordingStarted)
                         do {
-                            for try await text in speechAdapter.startRecording() {
+                            for try await text in captureClient.startVoiceSession() {
                                 await send(.transcriptionUpdated(text))
                             }
                         } catch {

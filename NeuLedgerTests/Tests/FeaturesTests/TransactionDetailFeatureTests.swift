@@ -131,7 +131,7 @@ struct TransactionDetailFeatureTests {
         } withDependencies: {
             $0.accountClient.fetchAll = { [account, toAccount] }
             $0.categoryClient.fetchAll = { [category] }
-            $0.transactionClient.detailStats = { _ in stubInsight }
+            $0.insightsClient.detailStats = { _ in stubInsight }
         }
         await MainActor.run {
             store.exhaustivity = .off

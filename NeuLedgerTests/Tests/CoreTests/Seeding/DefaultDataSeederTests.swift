@@ -9,7 +9,7 @@ struct DatabaseSeedingTests {
     var context: ModelContext
 
     init() {
-        let client = DatabaseClient.testValue
+        let client = PersistenceBootstrap.testValue
         self.context = ModelContext(client.modelContainer())
     }
 

@@ -15,6 +15,6 @@ public extension DependencyValues {
 }
 
 private enum ModelContainerKey: DependencyKey {
-    static var liveValue: ModelContainer { DatabaseClient.container }
-    static var testValue: ModelContainer { DatabaseClient.testContainer }
+    static var liveValue: ModelContainer { PersistenceBootstrap.container }
+    static var testValue: ModelContainer { PersistenceBootstrap.testContainer }
 }

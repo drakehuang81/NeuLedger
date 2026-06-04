@@ -28,7 +28,7 @@ struct NeuLedgerApp: App {
     }
 
     // `.modelContainer(_:)` is intentionally NOT applied here: feature views
-    // reach persistence via `@Dependency(\.databaseClient)` instead of
+    // reach persistence via `@Dependency(\.persistenceBootstrap)` instead of
     // SwiftData's `@Environment(\.modelContext)`, and the Features layer must
     // not `import SwiftData`.
     var body: some Scene {

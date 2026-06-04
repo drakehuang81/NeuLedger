@@ -29,10 +29,10 @@ struct LedgerClientLiveTests {
         let _container = try ModelContainer(for: schema, configurations: [configuration])
         self.container = _container
 
-        let testDatabaseClient = DatabaseClient(modelContainer: { _container })
+        let testPersistenceBootstrap = PersistenceBootstrap(modelContainer: { _container })
 
         self.sut = withDependencies {
-            $0.databaseClient = testDatabaseClient
+            $0.persistenceBootstrap = testPersistenceBootstrap
             $0.modelContainer = _container
             // Silence the budget post-condition so record/update don't reach
             // into PlanningClient's live store reads — behaviour of that
@@ -363,14 +363,14 @@ struct LedgerClientLiveTests {
     @Test("setupAccounts no longer writes the hasCompletedOnboarding flag (behaviour micro-adjustment)")
     func testSetupAccountsDoesNotWriteOnboardingFlag() async throws {
         let spy = BoolWriteSpy()
-        let testDatabaseClient = DatabaseClient(modelContainer: { container })
+        let testPersistenceBootstrap = PersistenceBootstrap(modelContainer: { container })
 
         // Build a dedicated client whose userSettingsAdapter spies on setBool,
         // so we can assert the old cross-domain `.hasCompletedOnboarding` write
         // (formerly in AccountClient+Live.setupAccounts) is gone. The flag now
         // belongs to Platform and OnboardingFeature sets it explicitly.
         let spyClient = withDependencies {
-            $0.databaseClient = testDatabaseClient
+            $0.persistenceBootstrap = testPersistenceBootstrap
             $0.modelContainer = container
             $0.planningClient.evaluateAfterTransaction = { _ in }
             $0.userSettingsAdapter.setBool = { _, key in

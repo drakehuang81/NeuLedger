@@ -74,7 +74,7 @@ struct LedgerClientRecurringTests {
         let _container = try ModelContainer(for: schema, configurations: [configuration])
         self.container = _container
 
-        let testDatabaseClient = DatabaseClient(modelContainer: { _container })
+        let testPersistenceBootstrap = PersistenceBootstrap(modelContainer: { _container })
         let spy = self.spy
         let evaluatedSpy = self.evaluatedSpy
         // Extract to a local so the `withDependencies` operation closure does not
@@ -82,7 +82,7 @@ struct LedgerClientRecurringTests {
         let fixedNow = self.fixedNow
 
         self.sut = withDependencies {
-            $0.databaseClient = testDatabaseClient
+            $0.persistenceBootstrap = testPersistenceBootstrap
             $0.modelContainer = _container
             $0.date = .constant(fixedNow)
             // Spy on the §3.1 post-condition instead of reaching PlanningClient's

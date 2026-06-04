@@ -101,10 +101,10 @@ struct LedgerClientMirrorTests {
         self.container = _container
         self.coordinator = Self.captureCoordinator(_container)
 
-        let testDatabaseClient = DatabaseClient(modelContainer: { _container })
+        let testPersistenceBootstrap = PersistenceBootstrap(modelContainer: { _container })
 
         self.sut = withDependencies {
-            $0.databaseClient = testDatabaseClient
+            $0.persistenceBootstrap = testPersistenceBootstrap
             $0.modelContainer = _container
             // Keep the budget post-condition a no-op so the only save observed
             // is the one performed by the transaction store itself.

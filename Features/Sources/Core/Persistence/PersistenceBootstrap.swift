@@ -5,14 +5,14 @@ import Domain
 
 /// A TCA dependency that provides access to the SwiftData `ModelContainer`.
 ///
-/// Use `DatabaseClient` to obtain the shared `ModelContainer` from which
+/// Use `PersistenceBootstrap` to obtain the shared `ModelContainer` from which
 /// live client implementations derive their `ModelContext` instances.
 ///
 /// ```swift
-/// @Dependency(\.databaseClient) var databaseClient
-/// let container = databaseClient.modelContainer()
+/// @Dependency(\.persistenceBootstrap) var persistenceBootstrap
+/// let container = persistenceBootstrap.modelContainer()
 /// ```
-public struct DatabaseClient: Sendable {
+public struct PersistenceBootstrap: Sendable {
     /// Returns the configured `ModelContainer` for the application.
     public var modelContainer: @Sendable () -> ModelContainer
 
@@ -23,7 +23,7 @@ public struct DatabaseClient: Sendable {
 
 // MARK: - Live Value
 
-extension DatabaseClient: DependencyKey {
+extension PersistenceBootstrap: DependencyKey {
     public static let schema = Schema([
         SDTransaction.self,
         SDAccount.self,
@@ -91,11 +91,11 @@ extension DatabaseClient: DependencyKey {
         }
     }()
 
-    public static let liveValue = DatabaseClient(
-        modelContainer: { DatabaseClient.container }
+    public static let liveValue = PersistenceBootstrap(
+        modelContainer: { PersistenceBootstrap.container }
     )
 
-    /// In-memory `ModelContainer` shared by `DatabaseClient.testValue` and
+    /// In-memory `ModelContainer` shared by `PersistenceBootstrap.testValue` and
     /// `\.modelContainer`'s testValue. Created once per process so tests
     /// running in the same target share seeded default data.
     public static let testContainer: ModelContainer = {
@@ -112,24 +112,24 @@ extension DatabaseClient: DependencyKey {
         }
     }()
 
-    /// An in-memory `DatabaseClient` suitable for unit tests.
-    public static let testValue = DatabaseClient(
-        modelContainer: { DatabaseClient.testContainer }
+    /// An in-memory `PersistenceBootstrap` suitable for unit tests.
+    public static let testValue = PersistenceBootstrap(
+        modelContainer: { PersistenceBootstrap.testContainer }
     )
 }
 
 // Analytics aggregation moved to `TransactionAnalyticsKernel` (Phase 5.5)
 // so `AnalyticsUseCase+Live` owns the read-side semantic boundary and
-// `DatabaseClient` returns to a focused role: container lifecycle +
+// `PersistenceBootstrap` returns to a focused role: container lifecycle +
 // seed data.
 
 // MARK: - DependencyValues Registration
 
 public extension DependencyValues {
-    /// The database client providing access to the SwiftData `ModelContainer`.
-    var databaseClient: DatabaseClient {
-        get { self[DatabaseClient.self] }
-        set { self[DatabaseClient.self] = newValue }
+    /// The persistence bootstrap providing access to the SwiftData `ModelContainer`.
+    var persistenceBootstrap: PersistenceBootstrap {
+        get { self[PersistenceBootstrap.self] }
+        set { self[PersistenceBootstrap.self] = newValue }
     }
 }
 
@@ -218,7 +218,7 @@ extension SeedCategory {
 
 // MARK: - Seeding
 
-private extension DatabaseClient {
+private extension PersistenceBootstrap {
     static func seedIfNeeded(in context: ModelContext) {
         do {
             try insertMissingDefaults(SeedCategory.defaultExpenseCategories,

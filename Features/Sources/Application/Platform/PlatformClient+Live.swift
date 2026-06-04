@@ -136,7 +136,7 @@ extension PlatformClient: DependencyKey {
                 try await capturedCloudKitSyncAdapter.wipeCloudRecords()
 
                 try await MainActor.run {
-                    let context = ModelContext(DatabaseClient.container)
+                    let context = ModelContext(PersistenceBootstrap.container)
                     try context.delete(model: SDTransaction.self)
                     try context.delete(model: SDAccount.self)
                     try context.delete(model: SDCategory.self)
@@ -149,10 +149,10 @@ extension PlatformClient: DependencyKey {
                     // Rebuild as a local-only container so the next
                     // `seedIfNeeded` runs without re-pulling stale cloud rows.
                     let localContainer = try ModelContainer(
-                        for: DatabaseClient.schema,
-                        configurations: [DatabaseClient.localConfiguration]
+                        for: PersistenceBootstrap.schema,
+                        configurations: [PersistenceBootstrap.localConfiguration]
                     )
-                    DatabaseClient.container = localContainer
+                    PersistenceBootstrap.container = localContainer
                 }
 
                 capturedUserSettingsAdapter.setBool(false, .isSyncEnabled)

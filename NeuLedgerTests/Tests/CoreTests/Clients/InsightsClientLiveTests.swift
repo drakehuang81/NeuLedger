@@ -35,7 +35,7 @@ struct InsightsClientLiveTests {
     /// `AIAdapter` override.
     private func sut(_ container: ModelContainer, aiAdapter: AIAdapter? = nil) -> InsightsClient {
         withDependencies {
-            $0.databaseClient = DatabaseClient(modelContainer: { container })
+            $0.persistenceBootstrap = PersistenceBootstrap(modelContainer: { container })
             $0.modelContainer = container
             if let aiAdapter { $0.aiAdapter = aiAdapter }
         } operation: {

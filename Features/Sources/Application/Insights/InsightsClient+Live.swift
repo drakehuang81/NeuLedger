@@ -83,7 +83,7 @@ private struct QueryTransactionsTool: Tool {
 ///
 /// The six statistical projections delegate to
 /// `TransactionAnalyticsKernel` (migrated unchanged from
-/// `AnalyticsUseCase+Live`; container reached via `\.databaseClient`).
+/// `AnalyticsUseCase+Live`; container reached via `\.persistenceBootstrap`).
 /// `budgetGauges` reads active budgets through
 /// `SwiftDataStore<Budget, SDBudget>` directly (Insights is a read-only
 /// projection and must not depend on `PlanningClient`); category names
@@ -107,10 +107,10 @@ extension InsightsClient: DependencyKey {
     }
 
     public static var liveValue: InsightsClient {
-        // Container is reached via `DatabaseClient` rather than
+        // Container is reached via `PersistenceBootstrap` rather than
         // `\.modelContainer` directly — architecture.md §4.2 reserves
         // `@Dependency(\.modelContainer)` for `SwiftDataStore` only.
-        @Dependency(\.databaseClient) var databaseClient
+        @Dependency(\.persistenceBootstrap) var persistenceBootstrap
         @Dependency(\.aiAdapter) var aiAdapter
 
         let budgetStore = SwiftDataStore<Budget, SDBudget>()
@@ -121,20 +121,20 @@ extension InsightsClient: DependencyKey {
             todayStats: { referenceDate in
                 try TransactionAnalyticsKernel.statsSnapshot(
                     referenceDate: referenceDate,
-                    container: databaseClient.modelContainer()
+                    container: persistenceBootstrap.modelContainer()
                 )
             },
             weeklySparkline: { accountID in
                 try TransactionAnalyticsKernel.weeklySpending(
                     accountID: accountID,
                     days: 7,
-                    container: databaseClient.modelContainer()
+                    container: persistenceBootstrap.modelContainer()
                 )
             },
             dailyBars: { range in
                 try TransactionAnalyticsKernel.dailyBars(
                     range: range,
-                    container: databaseClient.modelContainer()
+                    container: persistenceBootstrap.modelContainer()
                 )
             },
             categoryProportions: { range in
@@ -142,7 +142,7 @@ extension InsightsClient: DependencyKey {
                 let names = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
                 return try TransactionAnalyticsKernel.categoryProportions(
                     range: range,
-                    container: databaseClient.modelContainer(),
+                    container: persistenceBootstrap.modelContainer(),
                     categoryNamesById: names
                 )
             },
@@ -155,7 +155,7 @@ extension InsightsClient: DependencyKey {
                         accountId: accountId,
                         activeBudgets: active,
                         categoryNamesById: names,
-                        container: databaseClient.modelContainer()
+                        container: persistenceBootstrap.modelContainer()
                     )
                 } catch {
                     return []
@@ -164,7 +164,7 @@ extension InsightsClient: DependencyKey {
             detailStats: { transaction in
                 try TransactionAnalyticsKernel.detailStats(
                     for: transaction,
-                    container: databaseClient.modelContainer()
+                    container: persistenceBootstrap.modelContainer()
                 )
             },
 

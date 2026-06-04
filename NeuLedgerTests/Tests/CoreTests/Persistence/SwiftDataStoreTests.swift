@@ -9,7 +9,7 @@ import Domain
 struct SwiftDataStoreTests {
 
     /// Fresh in-memory container holding only the schema needed for these tests.
-    /// Avoids the default-data seeding inside `DatabaseClient.testContainer`,
+    /// Avoids the default-data seeding inside `PersistenceBootstrap.testContainer`,
     /// which would put 14 seed categories into `fetchAll` results and break
     /// equality assertions.
     private func freshAccountContainer() throws -> ModelContainer {

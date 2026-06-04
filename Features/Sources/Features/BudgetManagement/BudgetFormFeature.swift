@@ -78,7 +78,7 @@ public struct BudgetFormFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.planningClient) var planningClient
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
 
     // MARK: - Body
@@ -88,7 +88,7 @@ public struct BudgetFormFeature: Sendable {
             switch action {
             case .task:
                 return .run { send in
-                    let categories = try await categoryClient.fetchAll()
+                    let categories = try await ledger.listCategories(nil)
                     await send(.categoriesLoaded(categories))
                 }
 

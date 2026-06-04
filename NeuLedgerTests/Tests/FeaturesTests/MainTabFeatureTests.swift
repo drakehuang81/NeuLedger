@@ -66,8 +66,8 @@ struct MainTabFeatureTests {
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.date = .constant(fixedDate)
         }

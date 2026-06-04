@@ -1,9 +1,10 @@
 import Foundation
 import Dependencies
 import Domain
+import SwiftData
 
 /// Receives inbound payloads from the watchOS companion app and commits
-/// them into SwiftData via `transactionClient`. Uses
+/// them into SwiftData via `SwiftDataStore`. Uses
 /// `ProcessedDraftIdsStore` to discard retried sends of the same draft.
 ///
 /// Wire-format (must stay in sync with the Watch sender, added in Phase 2):
@@ -28,8 +29,8 @@ public final class WatchSessionDelegate: @unchecked Sendable {
             // Only a fully-typed Sendable `Transaction` enters the async Task.
             guard let transaction = self?.parse(payload) else { return }
             Task {
-                @Dependency(\.transactionClient) var transactionClient
-                try? await transactionClient.add(transaction)
+                let store = SwiftDataStore<Transaction, SDTransaction>()
+                try? await store.add(transaction)
             }
         }
     }

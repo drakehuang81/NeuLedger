@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import SwiftData
 import Dependencies
 import ComposableArchitecture
 import Domain
@@ -23,6 +24,29 @@ struct WatchSessionDelegateTests {
         func deliver(_ payload: [String: Any]) { handler?(payload) }
     }
 
+    /// Fresh in-memory SwiftData container per test so the delegate's direct
+    /// `SwiftDataStore<Transaction, SDTransaction>` writes can be asserted by
+    /// reading rows back out. Mirrors the pattern in `LedgerClientLiveTests`.
+    private func makeContainer() throws -> ModelContainer {
+        let schema = Schema([
+            SDTransaction.self,
+            SDAccount.self,
+            SDCategory.self,
+            SDBudget.self,
+            SDTag.self,
+        ])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        return try ModelContainer(for: schema, configurations: [configuration])
+    }
+
+    private func storedTransactions(in container: ModelContainer) async throws -> [Transaction] {
+        try await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            try await SwiftDataStore<Transaction, SDTransaction>().fetchAll()
+        }
+    }
+
     private func makeDedupStore() -> ProcessedDraftIdsStore {
         let suite = "WatchSessionDelegateTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
@@ -38,22 +62,19 @@ struct WatchSessionDelegateTests {
         ]
     }
 
-    @Test("Valid draft is forwarded to transactionClient.add as an expense")
-    func validDraftIsForwardedToTransactionClient() async throws {
+    @Test("Valid draft is forwarded to the SwiftData store as an expense")
+    func validDraftIsForwardedToStore() async throws {
         let transport = FakeTransport()
         let dedup = makeDedupStore()
+        let container = try makeContainer()
         let draft = TransactionDraft(
             categoryId: UUID(),
             accountId: UUID().uuidString,
             amount: 480
         )
 
-        let added = LockIsolated<[Transaction]>([])
-
         await withDependencies {
-            $0.transactionClient.add = { @Sendable transaction in
-                added.withValue { $0.append(transaction) }
-            }
+            $0.modelContainer = container
         } operation: {
             let delegate = WatchSessionDelegate(transport: transport, dedupStore: dedup)
             delegate.start()
@@ -61,7 +82,7 @@ struct WatchSessionDelegateTests {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
 
-        let committed = added.value
+        let committed = try await storedTransactions(in: container)
         #expect(committed.count == 1)
         #expect(committed.first?.id == draft.id)
         #expect(committed.first?.amount == 480)
@@ -74,18 +95,15 @@ struct WatchSessionDelegateTests {
     func duplicateDraftIsIgnored() async throws {
         let transport = FakeTransport()
         let dedup = makeDedupStore()
+        let container = try makeContainer()
         let draft = TransactionDraft(
             categoryId: UUID(),
             accountId: UUID().uuidString,
             amount: 100
         )
 
-        let callCount = LockIsolated(0)
-
         await withDependencies {
-            $0.transactionClient.add = { @Sendable _ in
-                callCount.withValue { $0 += 1 }
-            }
+            $0.modelContainer = container
         } operation: {
             let delegate = WatchSessionDelegate(transport: transport, dedupStore: dedup)
             delegate.start()
@@ -95,19 +113,18 @@ struct WatchSessionDelegateTests {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
 
-        #expect(callCount.value == 1)
+        let committed = try await storedTransactions(in: container)
+        #expect(committed.count == 1)
     }
 
     @Test("Malformed payload (non-Data) is silently ignored")
     func invalidPayloadIsIgnored() async throws {
         let transport = FakeTransport()
         let dedup = makeDedupStore()
-        let callCount = LockIsolated(0)
+        let container = try makeContainer()
 
         await withDependencies {
-            $0.transactionClient.add = { @Sendable _ in
-                callCount.withValue { $0 += 1 }
-            }
+            $0.modelContainer = container
         } operation: {
             let delegate = WatchSessionDelegate(transport: transport, dedupStore: dedup)
             delegate.start()
@@ -115,6 +132,7 @@ struct WatchSessionDelegateTests {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
 
-        #expect(callCount.value == 0)
+        let committed = try await storedTransactions(in: container)
+        #expect(committed.isEmpty)
     }
 }

@@ -22,12 +22,6 @@ public struct AppEnvironmentUseCase: Sendable {
     public var dailyReminderEnabled: @Sendable () -> Bool = { false }
     public var setDailyReminderEnabled: @Sendable (_ enabled: Bool) -> Void
 
-    public var budgetWarningEnabled: @Sendable () -> Bool = { false }
-    public var setBudgetWarningEnabled: @Sendable (_ enabled: Bool) -> Void
-
-    public var budgetWarningThreshold: @Sendable () -> Int = { 80 }
-    public var setBudgetWarningThreshold: @Sendable (_ percent: Int) -> Void
-
     /// User's preferred default account for new transactions. `nil` if
     /// none selected (first launch or the stored id is unparseable).
     public var defaultAccountId: @Sendable () -> Account.ID? = { nil }

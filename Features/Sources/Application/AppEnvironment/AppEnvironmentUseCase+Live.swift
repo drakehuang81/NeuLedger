@@ -34,14 +34,6 @@ extension AppEnvironmentUseCase: DependencyKey {
             setDailyReminderEnabled: { enabled in
                 userSettingsAdapter.setBool(enabled, .dailyReminderEnabled)
             },
-            budgetWarningEnabled: { userSettingsAdapter.bool(.budgetWarningEnabled) },
-            setBudgetWarningEnabled: { enabled in
-                userSettingsAdapter.setBool(enabled, .budgetWarningEnabled)
-            },
-            budgetWarningThreshold: { userSettingsAdapter.int(.budgetWarningThreshold) },
-            setBudgetWarningThreshold: { percent in
-                userSettingsAdapter.setInt(percent, .budgetWarningThreshold)
-            },
             defaultAccountId: {
                 let raw = userSettingsAdapter.string(.defaultAccountId)
                 return raw.isEmpty ? nil : raw

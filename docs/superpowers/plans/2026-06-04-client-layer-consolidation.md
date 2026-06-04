@@ -34,7 +34,7 @@
 
 **1c 行為微調紀錄**（上收 widget reload 進 CarrierClient Live 的連帶）：
 - read（`.task` 載入）不再觸發 widget reload（原 Feature 載入時手動 syncAllCarriers）——mutation 才 reload
-- 刪除 active 載具：原行為「清空 widget」→ 新行為「重新指向第一個剩餘載具」（**待使用者確認**：保留新行為或在 Live 內恢復清空）
+- 刪除 active 載具：原行為「清空 widget」→ 新行為「重新指向第一個剩餘載具」（**已裁定 2026-06-04：保留新行為**。通則：上收 post-condition 遇語意分岔時允許合理微調，但必須逐條記錄於本區並於回報中標明，由使用者最終裁定）
 - 編輯後的單筆 syncCarrier → Live 統一 syncAllCarriers（語意等價偏廣）
 
 ---

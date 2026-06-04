@@ -136,8 +136,7 @@ public struct SettingsFeature: Sendable {
     @Dependency(\.accountClient) var accountClient
     @Dependency(\.transactionClient) var transactionClient
     @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.carrierRepository) var carrierRepository
-    @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
+    @Dependency(\.carrierClient) var carrierClient
     @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
     @Dependency(\.openURL) var openURL
 
@@ -196,7 +195,7 @@ public struct SettingsFeature: Sendable {
                     let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
                     await send(.languageLoaded(displayName))
                     await send(.accessoryBarToggleChanged(showAccessoryBar))
-                    let fetchedCarriers = try await carrierRepository.fetchAll()
+                    let fetchedCarriers = try await carrierClient.listAll()
                     await send(.widgetCarriersLoaded(fetchedCarriers))
                 }
                 .cancellable(id: CancelID.task)
@@ -339,9 +338,9 @@ public struct SettingsFeature: Sendable {
 
             case let .widgetCarriersLoaded(carriers):
                 state.carriers = carriers
-                let savedId = userSettingsAdapter.string(.widgetCarrierId)
-                state.widgetCarrierId = savedId
-                if let carrier = carriers.first(where: { $0.id.uuidString == savedId }) {
+                let activeId = carrierClient.activeForWidget()
+                state.widgetCarrierId = activeId?.uuidString ?? ""
+                if let activeId, let carrier = carriers.first(where: { $0.id == activeId }) {
                     state.widgetCarrierName = carrier.name
                 } else {
                     state.widgetCarrierName = ""
@@ -351,18 +350,12 @@ public struct SettingsFeature: Sendable {
             case let .widgetCarrierSelected(id):
                 state.widgetCarrierId = id.uuidString
                 state.isPickingWidgetCarrier = false
-                userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name
-                    return .run { [widgetSyncAdapter] _ in
-                        await widgetSyncAdapter.syncCarrier(
-                            carrier.barcode,
-                            carrier.type.rawValue,
-                            carrier.name
-                        )
-                    }
                 }
-                return .none
+                return .run { [carrierClient] _ in
+                    await carrierClient.setActiveForWidget(id)
+                }
 
             case .wipeAllDataTapped:
                 state.wipeAllDataError = nil

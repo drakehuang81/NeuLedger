@@ -39,9 +39,7 @@ public struct CarrierManagementFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.carrierRepository) var carrierRepository
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
+    @Dependency(\.carrierClient) var carrierClient
 
     private enum CancelID { case task }
 
@@ -52,9 +50,8 @@ public struct CarrierManagementFeature: Sendable {
             switch action {
             case .task:
                 state.isLoading = true
-                return .run { [widgetSyncAdapter] send in
-                    let carriers = try await carrierRepository.fetchAll()
-                    await widgetSyncAdapter.syncAllCarriers(carriers)
+                return .run { send in
+                    let carriers = try await carrierClient.listAll()
                     await send(.carriersLoaded(carriers))
                 }
                 .cancellable(id: CancelID.task)
@@ -98,19 +95,19 @@ public struct CarrierManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 state.expandedCarrierId = nil
-                return .run { [userSettingsAdapter, widgetSyncAdapter] send in
-                    try await carrierRepository.delete(id)
-                    let carriers = try await carrierRepository.fetchAll()
-                    // If the deleted carrier was the active widget carrier, clear App Group
-                    let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
-                    if widgetCarrierId == id.uuidString {
-                        userSettingsAdapter.setString("", .widgetCarrierId)
-                        await widgetSyncAdapter.clearCarrier()
+                return .run { send in
+                    // CarrierClient.delete reloads the widget (syncAllCarriers) internally.
+                    let wasActiveWidgetCarrier = carrierClient.activeForWidget() == id
+                    try await carrierClient.delete(id)
+                    let carriers = try await carrierClient.listAll()
+                    // If the deleted carrier was the active widget carrier, re-point the
+                    // widget at the first remaining carrier (or leave it if none remain).
+                    if wasActiveWidgetCarrier, let first = carriers.first {
+                        await carrierClient.setActiveForWidget(first.id)
                     }
-                    await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 } catch: { _, send in
-                    let carriers = (try? await carrierRepository.fetchAll()) ?? []
+                    let carriers = (try? await carrierClient.listAll()) ?? []
                     await send(.carriersLoaded(carriers))
                 }
 
@@ -119,31 +116,14 @@ public struct CarrierManagementFeature: Sendable {
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { [userSettingsAdapter, widgetSyncAdapter] send in
-                    let carriers = try await carrierRepository.fetchAll()
-                    let widgetCarrierId = userSettingsAdapter.string(.widgetCarrierId)
-
-                    if widgetCarrierId.isEmpty, let first = carriers.first {
-                        // P0: Auto-assign the first ever carrier as the widget carrier
-                        userSettingsAdapter.setString(first.id.uuidString, .widgetCarrierId)
-                        await widgetSyncAdapter.syncCarrier(
-                            first.barcode,
-                            first.type.rawValue,
-                            first.name
-                        )
-                    } else if !widgetCarrierId.isEmpty,
-                              let carrier = carriers.first(where: {
-                                  $0.id.uuidString == widgetCarrierId
-                              }) {
-                        // If the widget carrier was edited, update App Group
-                        await widgetSyncAdapter.syncCarrier(
-                            carrier.barcode,
-                            carrier.type.rawValue,
-                            carrier.name
-                        )
+                return .run { send in
+                    // CarrierClient.create/update reloads the widget (syncAllCarriers)
+                    // internally; AddEditCarrierFeature already performed the mutation.
+                    let carriers = try await carrierClient.listAll()
+                    if carrierClient.activeForWidget() == nil, let first = carriers.first {
+                        // P0: Auto-assign the first ever carrier as the widget carrier.
+                        await carrierClient.setActiveForWidget(first.id)
                     }
-
-                    await widgetSyncAdapter.syncAllCarriers(carriers)
                     await send(.carriersLoaded(carriers))
                 }
 

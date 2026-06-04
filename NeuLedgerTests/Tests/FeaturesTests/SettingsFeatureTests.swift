@@ -53,7 +53,8 @@ struct SettingsFeatureTests {
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.carrierRepository.fetchAll = { [] }
+            $0.carrierClient.listAll = { [] }
+            $0.carrierClient.activeForWidget = { nil }
         }
 
         await store.send(.task)
@@ -90,7 +91,8 @@ struct SettingsFeatureTests {
             $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { [] }
-            $0.carrierRepository.fetchAll = { [] }
+            $0.carrierClient.listAll = { [] }
+            $0.carrierClient.activeForWidget = { nil }
         }
 
         await store.send(.task)
@@ -347,7 +349,8 @@ struct SettingsAccessoryBarTests {
             }
             $0.userSettingsAdapter.string = { $0.defaultValue }
             $0.accountClient.fetchActive = { [] }
-            $0.carrierRepository.fetchAll = { [] }
+            $0.carrierClient.listAll = { [] }
+            $0.carrierClient.activeForWidget = { nil }
         }
         await store.send(.task)
         await store.receive(\.accountsLoaded) {
@@ -465,15 +468,11 @@ struct SettingsWidgetCarrierTests {
             SettingsFeature()
         } withDependencies: {
             $0.userSettingsAdapter.bool = { _ in false }
-            $0.userSettingsAdapter.string = { key in
-                if key.rawValue == "widgetCarrierId" {
-                    return carrier.id.uuidString
-                }
-                return ""
-            }
+            $0.userSettingsAdapter.string = { _ in "" }
             $0.userSettingsAdapter.setString = { _, _ in }
             $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.carrierRepository.fetchAll = { Self.sampleCarriers }
+            $0.carrierClient.listAll = { Self.sampleCarriers }
+            $0.carrierClient.activeForWidget = { carrier.id }
         }
 
         await store.send(.task)
@@ -499,27 +498,19 @@ struct SettingsWidgetCarrierTests {
         }
     }
 
-    @Test("widgetCarrierSelected writes to UserSettings and calls widgetSyncAdapter.syncCarrier")
+    @Test("widgetCarrierSelected updates state and calls carrierClient.setActiveForWidget")
     func testWidgetCarrierSelected() async throws {
         let carriers = Self.sampleCarriers
         let target = carriers[1]
-        let savedId: LockIsolated<String?> = LockIsolated(nil)
-        let syncedBarcode: LockIsolated<String?> = LockIsolated(nil)
-        let syncedType: LockIsolated<String?> = LockIsolated(nil)
-        let syncedName: LockIsolated<String?> = LockIsolated(nil)
+        let activatedId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
 
         let store = await TestStore(
             initialState: SettingsFeature.State(carriers: carriers)
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { value, key in
-                if key.rawValue == "widgetCarrierId" { savedId.setValue(value) }
-            }
-            $0.widgetSyncAdapter.syncCarrier = { barcode, type, name in
-                syncedBarcode.setValue(barcode)
-                syncedType.setValue(type)
-                syncedName.setValue(name)
+            $0.carrierClient.setActiveForWidget = { id in
+                activatedId.setValue(id)
             }
         }
 
@@ -528,9 +519,6 @@ struct SettingsWidgetCarrierTests {
             $0.widgetCarrierName = "自然人憑證"
         }
 
-        #expect(savedId.value == target.id.uuidString)
-        #expect(syncedBarcode.value == target.barcode)
-        #expect(syncedType.value == target.type.rawValue)
-        #expect(syncedName.value == target.name)
+        #expect(activatedId.value == target.id)
     }
 }

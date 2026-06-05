@@ -39,7 +39,7 @@
 
 ```
 ┌─ NeuLedger app target ───────────────────────────────────┐
-│  NeuLedger/Resources/GoogleService-Info.plist（新增，commit 進 repo）│
+│  NeuLedger/Resources/GoogleService-Info.plist（git-ignored，注入式 §3.4）│
 │  NeuLedger/Info.plist ── 加 FirebaseCrashlyticsCollectionEnabled=NO │
 └───────────────────────────────────────────────────────────┘
 Features/Sources/
@@ -64,6 +64,7 @@ ci_scripts/ci_post_xcodebuild.sh（新檔）── archive 後上傳 dSYM
 `Features/Sources/Core/Adapters/CrashReporting/CrashReportingBootstrap.swift`，完全比照 `WatchBootstrap` 慣例（`@MainActor enum`、冪等、composition root 由 `App.init()` 呼叫）：
 
 ```swift
+import Foundation
 import FirebaseCore
 import FirebaseCrashlytics
 
@@ -74,6 +75,11 @@ public enum CrashReportingBootstrap {
     public static func start() {
         guard !started else { return }
         started = true
+        // plist 為注入式（見 §3.4）：bundle 內缺檔 → 靜默停用 crash
+        // reporting，不讓 FirebaseApp.configure() crash on launch
+        guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else {
+            return
+        }
         FirebaseApp.configure()
         #if !DEBUG
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
@@ -96,10 +102,14 @@ public var recordError: @Sendable (_ error: any Error, _ userInfo: [String: Stri
 
 `Application/Platform/PlatformClient+Live.swift` 加 `import FirebaseCrashlytics`，live 實作轉呼叫 `Crashlytics.crashlytics().record(error:userInfo:)`。
 
-### 3.4 GoogleService-Info.plist
+### 3.4 GoogleService-Info.plist（注入式，2026-06-05 改版）
 
-- 放 `NeuLedger/Resources/GoogleService-Info.plist`，加入 app target 資源
-- **commit 進 repo**：Xcode Cloud 建置與 dSYM 上傳腳本都需要它；Firebase iOS 設定檔非機密（API key 不是 secret，安全靠 Firebase 後台規則），官方亦以 commit 為標準做法
+> 原設計為 commit 進 repo（Firebase 官方標準做法），但本 repo 為 **public**，改採注入模型。歷史已重寫，plist 不在任何 commit 中。
+
+- 路徑仍為 `NeuLedger/Resources/GoogleService-Info.plist`（synchronized folder，檔案存在即入 bundle），但**永不 commit**——已加入 `.gitignore`
+- **本地開發**：手動放置一份在該路徑（不放也能跑，見 §5 guard）
+- **Xcode Cloud**：三個 workflow 各設 secret 環境變數 `GOOGLE_SERVICE_INFO_PLIST_B64`（plist 內容的 base64），`ci_scripts/ci_post_clone.sh` 解碼寫檔
+- 已公開暴露的 API key：PR #16（已關閉）的 commit 在 GitHub 仍可達——應在 Google Cloud Console 對該 key 加 iOS app（bundle ID `com.drake.NeuLedger`）限制
 
 ### 3.5 DEBUG 停用收集
 
@@ -114,8 +124,9 @@ public var recordError: @Sendable (_ error: any Error, _ userInfo: [String: Stri
 
 ## 5. 錯誤處理
 
-- plist 缺失時 `FirebaseApp.configure()` 會 crash on launch —— plist 直接 commit 進 repo，CI 與本地建置行為一致，不存在「執行期找不到」的路徑
-- `recordError` 簽名無 `throws`、無回傳值，呼叫端零錯誤處理負擔
+- plist 缺失時 `FirebaseApp.configure()` 會 crash on launch —— bootstrap 以 `Bundle.main.path(forResource:ofType:)` guard：缺檔（新 clone、未設 secret 的 CI）→ 靜默跳過 configure，app 照常運行、crash reporting 停用。PR workflow 的模擬器測試會啟動 app，此 guard 是測試不掛的前提
+- TestFlight/Release workflow 若忘設 `GOOGLE_SERVICE_INFO_PLIST_B64`：app 可建置，但 `ci_post_xcodebuild.sh` 的 `-gsp` 找不到檔案會讓 build fail——**刻意 fail loud**，避免靜默出貨一個沒有崩潰回報的版本
+- `recordError` 簽名無 `throws`、無回傳值，呼叫端零錯誤處理負擔；plist 未注入時 Crashlytics 未 configure，呼叫為 no-op（SDK 容忍）
 
 ## 6. dSYM 上傳（Xcode Cloud）
 
@@ -144,5 +155,7 @@ fi
 
 ## 8. 使用者後續行動（非本次程式碼範圍）
 
+- **App Store Connect → Xcode Cloud：三個 workflow（PR / TestFlight / Release）的 Environment Variables 各加 `GOOGLE_SERVICE_INFO_PLIST_B64`（勾選 Secret）**，值為 plist 的 base64（產生指令：`base64 -i ~/Downloads/GoogleService-Info.plist | pbcopy`）
+- Google Cloud Console → 對外洩過的 API key 加 iOS app 限制（bundle ID `com.drake.NeuLedger`）
 - App Store Connect → App Privacy 申報「崩潰資料」收集（Firebase SDK 已內建 privacy manifest，build 端不用動）
 - 上 TestFlight 後在 Firebase Console 確認首批 dSYM 與崩潰回報進得來

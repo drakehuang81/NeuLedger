@@ -402,3 +402,17 @@ Expected: 無輸出（所有變更都已分批 commit）。
 
 - PR 走 `commit-commands:commit-push-pr`（`feature/*` push 會觸發 Xcode Cloud PR workflow——是否讓 CI 跑由使用者決定）
 - 使用者後續行動（spec §8）：ASC App Privacy 申報崩潰資料；首次 TestFlight 後到 Firebase Console 確認 dSYM 與崩潰回報進得來
+
+---
+
+## 附錄：注入模型改版（2026-06-05，PR #16 取消後）
+
+原 Task 4.3「plist commit 進 repo」因 repo 為 public 改為注入模型（使用者裁定）。PR #16 已關閉、遠端分支已刪、本地歷史已重寫（plist 不在任何 commit）。執行紀錄：
+
+1. 歷史重寫：`d325cbb` → `e5669de`（移除 plist）、丟棄空 CI trigger commit、`803f899` cherry-pick 自 `d192d5e`
+2. `.gitignore` 加 `NeuLedger/Resources/GoogleService-Info.plist`（commit `3439448`）
+3. `ci_post_clone.sh` 加 `GOOGLE_SERVICE_INFO_PLIST_B64` secret env var 解碼寫檔（round-trip 驗證 byte-identical）
+4. `CrashReportingBootstrap.start()` 加 `Bundle.main` 缺檔 guard——無 plist 環境（新 clone、未設 secret 的 CI）靜默停用 crash reporting，模擬器測試不會 crash
+5. 另一個排序修正：原 Task 2/3 因 `@DependencyClient` memberwise init 必填參數無法分開編譯，合併為單一 commit `7c617df`
+
+執行差異與 spec 對應：spec §3.2/§3.4/§5/§8 已同步更新。

@@ -143,3 +143,6 @@ firebase-debug.*.log
 # Xcode Cloud artifacts downloaded for local triage
 NeuLedger Build*/
 *.xcresult/
+
+# Firebase config — injected via Xcode Cloud env var, never committed (see docs/superpowers/specs/2026-06-05-firebase-crashlytics-design.md)
+NeuLedger/Resources/GoogleService-Info.plist

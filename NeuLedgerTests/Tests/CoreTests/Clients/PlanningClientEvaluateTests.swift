@@ -9,7 +9,7 @@ import Domain
 /// migrated from `BudgetUseCaseEvaluateTests`. Covers the full chain:
 ///
 /// Ledger.record → PlanningClient.evaluateAfterTransaction
-///   → BudgetWarningPolicy.evaluate → NotificationAdapter.sendBudgetWarning
+///   → Budget.evaluate → NotificationAdapter.sendBudgetWarning
 ///
 /// Unlike the former `BudgetUseCase+Live` (which fetched via injected
 /// `budgetClient` / `transactionClient`), `PlanningClient+Live` reads
@@ -137,8 +137,8 @@ struct PlanningClientEvaluateTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            let budgetStore = SwiftDataStore<Budget, SDBudget>()
-            let txStore = SwiftDataStore<Transaction, SDTransaction>()
+            let budgetStore = BudgetStore()
+            let txStore = TransactionStore()
             try await budgetStore.add(budget)
             for tx in expenses {
                 try await txStore.add(tx)

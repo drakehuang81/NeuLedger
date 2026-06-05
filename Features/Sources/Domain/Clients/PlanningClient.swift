@@ -38,7 +38,7 @@ public struct PlanningClient: Sendable {
     ///
     /// Run the budget-warning evaluation after a transaction is recorded or
     /// modified. Reads active budgets, computes spent-in-period via
-    /// `BudgetWarningPolicy`, and fires a notification if a threshold is
+    /// `Budget.evaluate`, and fires a notification if a threshold is
     /// crossed for the first time in the current period.
     ///
     /// Pure side-effect; no return value. Errors are swallowed —

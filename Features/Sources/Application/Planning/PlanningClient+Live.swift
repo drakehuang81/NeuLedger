@@ -5,19 +5,20 @@ import Domain
 /// Live implementation of `PlanningClient`.
 ///
 /// Budget persistence (CRUD + `listActive`) goes directly through
-/// `SwiftDataStore<Budget, SDBudget>` (no repository indirection).
+/// `BudgetStore` (no repository indirection).
 /// `currentStatus` and `evaluateAfterTransaction` read in-period
-/// transactions through `SwiftDataStore<Transaction, SDTransaction>` —
+/// transactions through `TransactionStore` —
 /// filtered inline by date range / category / type, mirroring what the
 /// former `BudgetUseCase+Live` obtained via `transactionClient.fetch(_:)`.
-/// Warning fired through `BudgetWarningPolicy` + `\.notificationAdapter`.
+/// Warning decision via `Budget.evaluate` (pure entity rule) +
+/// `\.notificationAdapter` for delivery.
 /// The four budget-warning preferences round-trip through
 /// `\.userSettingsAdapter` under the existing `.budgetWarningEnabled` /
 /// `.budgetWarningThreshold` keys.
 extension PlanningClient: DependencyKey {
     public static var liveValue: PlanningClient {
-        let budgetStore = SwiftDataStore<Budget, SDBudget>()
-        let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
+        let budgetStore = BudgetStore()
+        let transactionStore = TransactionStore()
         @Dependency(\.notificationAdapter) var notificationAdapter
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
@@ -78,8 +79,7 @@ extension PlanningClient: DependencyKey {
                     let bidStr = budget.id.uuidString
                     let lastWarned = notificationAdapter.lastWarnedPercent(bidStr, pKey)
 
-                    let outcome = BudgetWarningPolicy.evaluate(
-                        budget: budget,
+                    let outcome = budget.evaluate(
                         transactionsInPeriod: inPeriod,
                         threshold: threshold,
                         lastWarnedPercent: lastWarned

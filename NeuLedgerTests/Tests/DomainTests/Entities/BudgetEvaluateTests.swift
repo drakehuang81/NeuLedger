@@ -2,8 +2,10 @@ import Testing
 import Foundation
 @testable import Domain
 
-@Suite("BudgetWarningPolicy")
-struct BudgetWarningPolicyTests {
+/// 純函數測試：`Budget.evaluate(transactionsInPeriod:threshold:lastWarnedPercent:)`
+/// （前身為 BudgetWarningPolicy；2026-06-05 改為 rich-entity 方法，案例語意不變。）
+@Suite("Budget.evaluate")
+struct BudgetEvaluateTests {
 
     private func makeBudget(
         amount: Decimal,
@@ -32,8 +34,7 @@ struct BudgetWarningPolicyTests {
 
     @Test("zero-amount budget returns shouldWarn=false, usedPercent=0")
     func testZeroAmountBudget() {
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 0),
+        let outcome = makeBudget(amount: 0).evaluate(
             transactionsInPeriod: [expense(500)],
             threshold: 80,
             lastWarnedPercent: nil
@@ -43,8 +44,7 @@ struct BudgetWarningPolicyTests {
 
     @Test("usedPercent below threshold does not warn")
     func testBelowThreshold() {
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000),
+        let outcome = makeBudget(amount: 1000).evaluate(
             transactionsInPeriod: [expense(500)],
             threshold: 80,
             lastWarnedPercent: nil
@@ -55,8 +55,7 @@ struct BudgetWarningPolicyTests {
 
     @Test("usedPercent at or above threshold warns when no prior warning")
     func testFirstCrossing() {
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000),
+        let outcome = makeBudget(amount: 1000).evaluate(
             transactionsInPeriod: [expense(850)],
             threshold: 80,
             lastWarnedPercent: nil
@@ -67,8 +66,7 @@ struct BudgetWarningPolicyTests {
 
     @Test("already-warned at same threshold does not re-fire")
     func testAlreadyWarned() {
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000),
+        let outcome = makeBudget(amount: 1000).evaluate(
             transactionsInPeriod: [expense(900)],
             threshold: 80,
             lastWarnedPercent: 85
@@ -79,8 +77,7 @@ struct BudgetWarningPolicyTests {
 
     @Test("warned at older lower threshold does re-fire at new threshold")
     func testThresholdRaised() {
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000),
+        let outcome = makeBudget(amount: 1000).evaluate(
             transactionsInPeriod: [expense(900)],
             threshold: 80,
             lastWarnedPercent: 50
@@ -103,8 +100,7 @@ struct BudgetWarningPolicyTests {
             toAccountId: UUID().uuidString,
             type: .transfer
         )
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000),
+        let outcome = makeBudget(amount: 1000).evaluate(
             transactionsInPeriod: [income, transfer, expense(500)],
             threshold: 80,
             lastWarnedPercent: nil
@@ -117,8 +113,7 @@ struct BudgetWarningPolicyTests {
     func testCategoryScoped() {
         let foodCategory = UUID()
         let otherCategory = UUID()
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000, categoryId: foodCategory),
+        let outcome = makeBudget(amount: 1000, categoryId: foodCategory).evaluate(
             transactionsInPeriod: [
                 expense(500, categoryId: foodCategory),
                 expense(2000, categoryId: otherCategory),
@@ -132,8 +127,7 @@ struct BudgetWarningPolicyTests {
 
     @Test("unscoped budget (categoryId == nil) sums all expense rows")
     func testUnscopedSumsAll() {
-        let outcome = BudgetWarningPolicy.evaluate(
-            budget: makeBudget(amount: 1000, categoryId: nil),
+        let outcome = makeBudget(amount: 1000, categoryId: nil).evaluate(
             transactionsInPeriod: [
                 expense(500, categoryId: UUID()),
                 expense(500, categoryId: UUID()),

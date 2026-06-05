@@ -29,7 +29,7 @@ public final class WatchSessionDelegate: @unchecked Sendable {
             // Only a fully-typed Sendable `Transaction` enters the async Task.
             guard let transaction = self?.parse(payload) else { return }
             Task {
-                let store = SwiftDataStore<Transaction, SDTransaction>()
+                let store = TransactionStore()
                 try? await store.add(transaction)
             }
         }

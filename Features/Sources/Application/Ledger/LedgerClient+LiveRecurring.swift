@@ -38,7 +38,7 @@ import Domain
 /// advanced via `template.nextDate(after:)`.
 extension LedgerClient {
     static func makeListRecurring(
-        _ store: SwiftDataStore<RecurringTransaction, SDRecurringTransaction>
+        _ store: RecurringTransactionStore
     ) -> @Sendable () async throws -> [RecurringTransaction] {
         {
             try await store.fetchAll()
@@ -46,7 +46,7 @@ extension LedgerClient {
     }
 
     static func makeCreateRecurring(
-        _ store: SwiftDataStore<RecurringTransaction, SDRecurringTransaction>,
+        _ store: RecurringTransactionStore,
         _ notificationAdapter: NotificationAdapter
     ) -> @Sendable (RecurringTransaction) async throws -> Void {
         { template in
@@ -61,7 +61,7 @@ extension LedgerClient {
     }
 
     static func makeUpdateRecurring(
-        _ store: SwiftDataStore<RecurringTransaction, SDRecurringTransaction>,
+        _ store: RecurringTransactionStore,
         _ notificationAdapter: NotificationAdapter
     ) -> @Sendable (RecurringTransaction) async throws -> Void {
         { template in
@@ -76,7 +76,7 @@ extension LedgerClient {
     }
 
     static func makeDeleteRecurring(
-        _ store: SwiftDataStore<RecurringTransaction, SDRecurringTransaction>,
+        _ store: RecurringTransactionStore,
         _ notificationAdapter: NotificationAdapter
     ) -> @Sendable (RecurringTransaction.ID) async throws -> Void {
         { id in
@@ -86,7 +86,7 @@ extension LedgerClient {
     }
 
     static func makeTick(
-        _ store: SwiftDataStore<RecurringTransaction, SDRecurringTransaction>,
+        _ store: RecurringTransactionStore,
         _ recordTransaction: @escaping @Sendable (Transaction) async throws -> Void
     ) -> @Sendable () async throws -> Void {
         // Resolve the clock at assembly time, matching `RecurringUseCase+Live`

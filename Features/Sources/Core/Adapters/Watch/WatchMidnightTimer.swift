@@ -44,7 +44,7 @@ public final class WatchMidnightTimer {
         // directly via `SwiftDataStore` (same-layer, legal — see
         // docs/architecture.md §10). Mirrors the former
         // accountClient.fetchActive() (sorted, non-archived).
-        let accountStore = SwiftDataStore<Account, SDAccount>()
+        let accountStore = AccountStore()
         do {
             let resolvedDefaultId: Account.ID
             if let chosen = defaultAccountIdProvider() {

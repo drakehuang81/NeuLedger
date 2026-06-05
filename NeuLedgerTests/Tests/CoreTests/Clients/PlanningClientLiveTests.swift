@@ -151,7 +151,7 @@ struct PlanningClientLiveTests {
         let txStore = withDependencies {
             $0.modelContainer = container
         } operation: {
-            SwiftDataStore<Transaction, SDTransaction>()
+            TransactionStore()
         }
         let now = Date()
         for amount in [Decimal(300), Decimal(200)] {

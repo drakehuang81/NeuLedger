@@ -68,7 +68,7 @@ struct LedgerClientLiveTests {
     /// `createCategory`) so the Transactions enrichment join has something to
     /// resolve against.
     private func seedCategory(_ category: Domain.Category) async throws {
-        let store = SwiftDataStore<Domain.Category, SDCategory>()
+        let store = CategoryStore()
         try await withDependencies {
             $0.modelContainer = container
         } operation: {

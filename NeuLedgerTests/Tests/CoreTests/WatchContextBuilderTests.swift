@@ -30,9 +30,9 @@ struct WatchContextBuilderTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            let categoryStore = SwiftDataStore<Domain.Category, SDCategory>()
-            let accountStore = SwiftDataStore<Account, SDAccount>()
-            let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
+            let categoryStore = CategoryStore()
+            let accountStore = AccountStore()
+            let transactionStore = TransactionStore()
             for category in categories { try await categoryStore.add(category) }
             for account in accounts { try await accountStore.add(account) }
             for transaction in transactions { try await transactionStore.add(transaction) }

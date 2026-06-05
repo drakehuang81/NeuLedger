@@ -16,21 +16,21 @@ import Domain
 /// reminders) + `userSettingsAdapter` (`.defaultAccountId`).
 ///
 /// Section → implementation (plan 5a3 mapping):
-/// - Transactions → `SwiftDataStore<Transaction, SDTransaction>` directly, with
+/// - Transactions → `TransactionStore` directly, with
 ///   the `EnrichedTransaction` join + filter/search lifted from
 ///   `LedgerUseCase+Live`. `record`/`update` keep the `// INVARIANT(§3.1)`
 ///   budget-evaluation post-condition via `\.planningClient`. The shared
 ///   `recordTransaction` closure carries that invariant so `tick` reuses the
 ///   exact same record path (SAGA internalised — see Recurring below).
-/// - Accounts → `SwiftDataStore<Account, SDAccount>` directly, with
+/// - Accounts → `AccountStore` directly, with
 ///   `computeBalance`, the archive rule, the synthesized `unarchive`, and the
 ///   `balances` aggregate lifted from `AccountClient+Live`/`AccountUseCase+Live`.
 ///   `\.userSettingsAdapter` (`.defaultAccountId` key) backs the default account.
-/// - Catalog → `SwiftDataStore<Category, SDCategory>` + `<Tag, SDTag>` directly
+/// - Catalog → `CategoryStore` + `<Tag, SDTag>` directly
 ///   (factory in `+LiveCatalog.swift`), preserving the default-category delete
 ///   guard and the many-to-many tag disassociation (handled inside
 ///   `SDTag.prepareForDelete()`).
-/// - Recurring → `SwiftDataStore<RecurringTransaction, SDRecurringTransaction>`
+/// - Recurring → `RecurringTransactionStore`
 ///   directly (factory in `+LiveRecurring.swift`). **Notification scheduling is
 ///   now owned here (new behaviour, 5a3 上收)**: `createRecurring`/
 ///   `updateRecurring` schedule a due-date reminder via
@@ -72,11 +72,11 @@ extension LedgerClient: DependencyKey {
         @Dependency(\.notificationAdapter) var notificationAdapter
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
 
-        let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
-        let accountStore = SwiftDataStore<Account, SDAccount>()
-        let categoryStore = SwiftDataStore<Domain.Category, SDCategory>()
-        let tagStore = SwiftDataStore<Tag, SDTag>()
-        let recurringStore = SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
+        let transactionStore = TransactionStore()
+        let accountStore = AccountStore()
+        let categoryStore = CategoryStore()
+        let tagStore = TagStore()
+        let recurringStore = RecurringTransactionStore()
 
         // Domain join from id → resolved entity. Categories and accounts are
         // fetched once per call so listAll / search return enriched rows in

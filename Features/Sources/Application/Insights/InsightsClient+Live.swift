@@ -27,8 +27,8 @@ private struct QueryTransactionsTool: Tool {
         var endDate: String?
     }
 
-    let transactionStore: SwiftDataStore<Transaction, SDTransaction>
-    let categoryStore: SwiftDataStore<Domain.Category, SDCategory>
+    let transactionStore: TransactionStore
+    let categoryStore: CategoryStore
 
     func call(arguments: Arguments) async throws -> String {
         let allCategories = try await categoryStore.fetchAll()
@@ -85,10 +85,10 @@ private struct QueryTransactionsTool: Tool {
 /// `TransactionAnalyticsKernel` (migrated unchanged from
 /// `AnalyticsUseCase+Live`; container reached via `\.persistenceBootstrap`).
 /// `budgetGauges` reads active budgets through
-/// `SwiftDataStore<Budget, SDBudget>` directly (Insights is a read-only
+/// `BudgetStore` directly (Insights is a read-only
 /// projection and must not depend on `PlanningClient`); category names
 /// for `categoryProportions` / `budgetGauges` come from
-/// `SwiftDataStore<Category, SDCategory>`.
+/// `CategoryStore`.
 ///
 /// The AI features are migrated from `AIUseCase+Live`:
 /// `generateAIInsight` is the de-duplicated single entry point
@@ -113,9 +113,9 @@ extension InsightsClient: DependencyKey {
         @Dependency(\.persistenceBootstrap) var persistenceBootstrap
         @Dependency(\.aiAdapter) var aiAdapter
 
-        let budgetStore = SwiftDataStore<Budget, SDBudget>()
-        let categoryStore = SwiftDataStore<Domain.Category, SDCategory>()
-        let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
+        let budgetStore = BudgetStore()
+        let categoryStore = CategoryStore()
+        let transactionStore = TransactionStore()
 
         return InsightsClient(
             todayStats: { referenceDate in

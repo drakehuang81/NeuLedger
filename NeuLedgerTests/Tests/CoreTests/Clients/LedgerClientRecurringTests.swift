@@ -208,7 +208,7 @@ struct LedgerClientRecurringTests {
         let inactive = makeTemplate(id: inactiveId, nextDueDate: fixedNow.addingTimeInterval(-86400), isActive: false)
         // Insert directly via the store so we don't schedule a reminder for an
         // inactive template (createRecurring would still schedule).
-        let store = SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
+        let store = RecurringTransactionStore()
         try await withDependencies {
             $0.modelContainer = container
         } operation: {

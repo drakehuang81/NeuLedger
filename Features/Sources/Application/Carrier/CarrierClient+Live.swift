@@ -5,7 +5,7 @@ import Dependencies
 
 /// Live implementation of `CarrierClient`.
 ///
-/// Persistence goes directly through `SwiftDataStore<Carrier, SDCarrier>` (no repository
+/// Persistence goes directly through `CarrierStore` (no repository
 /// indirection). The active-widget-carrier selection is stored via `\.userSettingsAdapter`
 /// under the existing `.widgetCarrierId` key. Every mutation (`create` / `update` / `delete`
 /// / `setActiveForWidget`) finishes by reloading the carrier widget through
@@ -13,7 +13,7 @@ import Dependencies
 /// manual reload calls.
 extension CarrierClient: DependencyKey {
     public static var liveValue: CarrierClient {
-        let store = SwiftDataStore<Carrier, SDCarrier>()
+        let store = CarrierStore()
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
         @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
 

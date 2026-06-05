@@ -13,7 +13,7 @@ import UIKit
 /// notifications, app-settings), `CloudSyncUseCase+Live` (iCloud sync), and
 /// `DeeplinkClient+Live` (link routing). Persistence-backed routing reads
 /// recurring templates directly through
-/// `SwiftDataStore<RecurringTransaction, SDRecurringTransaction>` (no
+/// `RecurringTransactionStore` (no
 /// repository indirection). All preference round-trips go through
 /// `\.userSettingsAdapter` under their existing `SettingsKey`s; notification
 /// work delegates to `\.notificationAdapter`; iCloud lifecycle delegates to
@@ -25,7 +25,7 @@ extension PlatformClient: DependencyKey {
         @Dependency(\.cloudKitSyncAdapter) var cloudKitSyncAdapter
         @Dependency(\.watchBridgeAdapter) var watchBridgeAdapter
 
-        let recurringStore = SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
+        let recurringStore = RecurringTransactionStore()
 
         let capturedCloudKitSyncAdapter = cloudKitSyncAdapter
         let capturedUserSettingsAdapter = userSettingsAdapter

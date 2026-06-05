@@ -18,7 +18,7 @@ import Domain
 ///   instance, so `deleteTag` is a plain store delete.
 extension LedgerClient {
     static func makeListCategories(
-        _ store: SwiftDataStore<Domain.Category, SDCategory>
+        _ store: CategoryStore
     ) -> @Sendable (TransactionType?) async throws -> [Domain.Category] {
         { type in
             let all = try await store.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
@@ -28,7 +28,7 @@ extension LedgerClient {
     }
 
     static func makeCreateCategory(
-        _ store: SwiftDataStore<Domain.Category, SDCategory>
+        _ store: CategoryStore
     ) -> @Sendable (Domain.Category) async throws -> Void {
         { category in
             try await store.add(category)
@@ -36,7 +36,7 @@ extension LedgerClient {
     }
 
     static func makeUpdateCategory(
-        _ store: SwiftDataStore<Domain.Category, SDCategory>
+        _ store: CategoryStore
     ) -> @Sendable (Domain.Category) async throws -> Void {
         { category in
             try await store.update(category)
@@ -44,7 +44,7 @@ extension LedgerClient {
     }
 
     static func makeDeleteCategory(
-        _ store: SwiftDataStore<Domain.Category, SDCategory>
+        _ store: CategoryStore
     ) -> @Sendable (Domain.Category.ID) async throws -> Void {
         { id in
             guard let existing = try await store.fetch(id: id) else {
@@ -60,7 +60,7 @@ extension LedgerClient {
     }
 
     static func makeListTags(
-        _ store: SwiftDataStore<Tag, SDTag>
+        _ store: TagStore
     ) -> @Sendable () async throws -> [Tag] {
         {
             try await store.fetchAll(sortBy: [SortDescriptor(\.name)])
@@ -68,7 +68,7 @@ extension LedgerClient {
     }
 
     static func makeCreateTag(
-        _ store: SwiftDataStore<Tag, SDTag>
+        _ store: TagStore
     ) -> @Sendable (Tag) async throws -> Void {
         { tag in
             try await store.add(tag)
@@ -76,7 +76,7 @@ extension LedgerClient {
     }
 
     static func makeUpdateTag(
-        _ store: SwiftDataStore<Tag, SDTag>
+        _ store: TagStore
     ) -> @Sendable (Tag) async throws -> Void {
         { tag in
             try await store.update(tag)
@@ -84,7 +84,7 @@ extension LedgerClient {
     }
 
     static func makeDeleteTag(
-        _ store: SwiftDataStore<Tag, SDTag>
+        _ store: TagStore
     ) -> @Sendable (Tag.ID) async throws -> Void {
         { id in
             // Many-to-many disassociation happens inside SDTag.prepareForDelete().

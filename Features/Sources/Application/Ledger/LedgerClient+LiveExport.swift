@@ -11,9 +11,9 @@ import Domain
 /// `csvField` escaping and the `yyyy/MM/dd` date format are unchanged.
 extension LedgerClient {
     static func makeExportCSV(
-        _ transactionStore: SwiftDataStore<Transaction, SDTransaction>,
-        _ categoryStore: SwiftDataStore<Domain.Category, SDCategory>,
-        _ accountStore: SwiftDataStore<Account, SDAccount>
+        _ transactionStore: TransactionStore,
+        _ categoryStore: CategoryStore,
+        _ accountStore: AccountStore
     ) -> @Sendable () async throws -> URL {
         {
             let transactions = try await transactionStore.fetchAll()

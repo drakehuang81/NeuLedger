@@ -56,7 +56,7 @@ public final class WatchSyncObserver {
         // directly via `SwiftDataStore` (same-layer, legal — see
         // docs/architecture.md §10). Mirrors the former
         // accountClient.fetchActive() (sorted, non-archived).
-        let accountStore = SwiftDataStore<Account, SDAccount>()
+        let accountStore = AccountStore()
         do {
             // Prefer the Watch-specific default account chosen in Settings →
             // Watch; fall back to the first active account so the Watch app

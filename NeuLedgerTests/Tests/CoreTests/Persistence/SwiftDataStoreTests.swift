@@ -24,7 +24,7 @@ struct SwiftDataStoreTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            let store = SwiftDataStore<Account, SDAccount>()
+            let store = AccountStore()
             let acc = Account(name: "Cash", type: .cash, icon: "", color: "#000000")
             try await store.add(acc)
             let fetched = try await store.fetch(id: acc.id)
@@ -39,7 +39,7 @@ struct SwiftDataStoreTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            let store = SwiftDataStore<Account, SDAccount>()
+            let store = AccountStore()
             let acc = Account(name: "Old", type: .cash, icon: "", color: "#000000")
             try await store.add(acc)
 
@@ -60,7 +60,7 @@ struct SwiftDataStoreTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            let store = SwiftDataStore<Account, SDAccount>()
+            let store = AccountStore()
             let acc = Account(name: "X", type: .cash, icon: "", color: "#000000")
             try await store.add(acc)
             try await store.delete(id: acc.id)
@@ -75,7 +75,7 @@ struct SwiftDataStoreTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            let store = SwiftDataStore<Account, SDAccount>()
+            let store = AccountStore()
             try await store.add(Account(name: "B", type: .bank, icon: "", color: "#000"))
             try await store.add(Account(name: "A", type: .cash, icon: "", color: "#000"))
             let all = try await store.fetchAll(sortBy: [SortDescriptor(\.name)])
@@ -89,7 +89,7 @@ struct SwiftDataStoreTests {
         await withDependencies {
             $0.modelContainer = container
         } operation: { @Sendable in
-            let store = SwiftDataStore<Account, SDAccount>()
+            let store = AccountStore()
             let phantom = Account(name: "phantom", type: .cash, icon: "", color: "#000")
             await #expect(throws: CoreError.self) {
                 try await store.update(phantom)
@@ -103,7 +103,7 @@ struct SwiftDataStoreTests {
         await withDependencies {
             $0.modelContainer = container
         } operation: { @Sendable in
-            let store = SwiftDataStore<Account, SDAccount>()
+            let store = AccountStore()
             await #expect(throws: CoreError.self) {
                 try await store.delete(id: UUID().uuidString)
             }

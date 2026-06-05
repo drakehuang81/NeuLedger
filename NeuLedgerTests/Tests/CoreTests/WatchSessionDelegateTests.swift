@@ -25,7 +25,7 @@ struct WatchSessionDelegateTests {
     }
 
     /// Fresh in-memory SwiftData container per test so the delegate's direct
-    /// `SwiftDataStore<Transaction, SDTransaction>` writes can be asserted by
+    /// `TransactionStore` writes can be asserted by
     /// reading rows back out. Mirrors the pattern in `LedgerClientLiveTests`.
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema([
@@ -43,7 +43,7 @@ struct WatchSessionDelegateTests {
         try await withDependencies {
             $0.modelContainer = container
         } operation: {
-            try await SwiftDataStore<Transaction, SDTransaction>().fetchAll()
+            try await TransactionStore().fetchAll()
         }
     }
 

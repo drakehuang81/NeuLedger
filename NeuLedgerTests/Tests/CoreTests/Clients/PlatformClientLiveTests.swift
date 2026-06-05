@@ -125,7 +125,7 @@ struct PlatformClientLiveTests {
         let store = withDependencies {
             $0.modelContainer = container
         } operation: {
-            SwiftDataStore<RecurringTransaction, SDRecurringTransaction>()
+            RecurringTransactionStore()
         }
         let template = RecurringTransaction(
             id: UUID(),

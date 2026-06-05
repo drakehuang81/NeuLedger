@@ -22,9 +22,9 @@ public enum WatchContextBuilder {
         // categoryClient/accountClient/transactionClient `fetchAll`/`fetchActive`
         // closures (identical sort + active filter). `planningClient.listActive`
         // stays as a dependency — it crosses into the Application layer.
-        let categoryStore = SwiftDataStore<Domain.Category, SDCategory>()
-        let accountStore = SwiftDataStore<Account, SDAccount>()
-        let transactionStore = SwiftDataStore<Transaction, SDTransaction>()
+        let categoryStore = CategoryStore()
+        let accountStore = AccountStore()
+        let transactionStore = TransactionStore()
 
         let categories = try await categoryStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
         let accounts = try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])

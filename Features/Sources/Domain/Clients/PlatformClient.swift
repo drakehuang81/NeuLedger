@@ -103,6 +103,10 @@ public struct PlatformClient: Sendable {
     /// Opens the iOS system Settings app at this app's preferences page.
     /// Fire-and-forget — call sites do not await.
     public var openAppSettings: @Sendable () -> Void
+
+    /// Records a non-fatal error to the crash-reporting backend.
+    /// Fire-and-forget — call sites do not await.
+    public var recordError: @Sendable (_ error: any Error, _ userInfo: [String: String]) -> Void
 }
 
 // MARK: - TestDependencyKey

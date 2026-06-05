@@ -45,6 +45,10 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-case-paths",
             from: "1.5.0"
         ),
+        .package(
+            url: "https://github.com/firebase/firebase-ios-sdk",
+            from: "12.14.0"
+        ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -71,6 +75,7 @@ let package = Package(
             dependencies: [
                 "Domain",
                 .dependencies,
+                .firebaseCrashlytics,
             ],
             path: "Sources",
             // Sources/Application holds the UseCase+Live orchestrators
@@ -114,5 +119,9 @@ extension Target.Dependency {
     static let casePaths: Target.Dependency = .product(
         name: "CasePaths",
         package: "swift-case-paths"
+    )
+    static let firebaseCrashlytics: Target.Dependency = .product(
+        name: "FirebaseCrashlytics",
+        package: "firebase-ios-sdk"
     )
 }

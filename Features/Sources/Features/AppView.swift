@@ -20,6 +20,10 @@ struct NeuLedgerApp: App {
     }
 
     init() {
+        // Composition Root: crash reporting first — `FirebaseApp.configure()`
+        // must be the earliest launch work so Crashlytics can pick up the
+        // previous run's crash report before anything else executes.
+        CrashReportingBootstrap.start()
         // Composition Root: wire the Watch bridge before any UI exists so
         // background-delivered WatchConnectivity payloads are caught on
         // the very first delegate dispatch after launch.

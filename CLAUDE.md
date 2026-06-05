@@ -58,8 +58,10 @@ Three workflows, each triggered by a distinct mechanism — **no `developer` pus
 | Workflow | Trigger | Action |
 |---|---|---|
 | **PR** | Push to `feature/*`, `fix/*`, `PR/*` | Build + Test (no archive) |
-| **TestFlight** | Tag push matching `v*.*.*-beta*` (e.g. `v1.2.0-beta1`) | Archive + upload to TestFlight |
-| **Release** | Tag push matching `v*.*.*` or manual trigger from App Store Connect | Archive + App Store submission |
+| **TestFlight** | Push to a branch named `TestFlight*` (prefix match) | Archive + upload to TestFlight |
+| **Release** | Push to a branch named `Release*` (prefix match), or manual trigger from App Store Connect | Archive + App Store submission |
+
+`TestFlight*` / `Release*` are **deployment branches**, not work branches — never develop on them. Tags like `v*.*.*` are version bookkeeping only; **tag pushes trigger nothing** (verified against the live workflow start conditions, 2026-06-05).
 
 ### `[ci skip]` convention
 
@@ -71,9 +73,20 @@ When the user opts in, drop `[ci skip]` from **that specific commit's** subject 
 
 **Never** strip `[ci skip]` from a commit someone else authored without asking.
 
+**PR titles must NOT carry `[ci skip]`.** GitHub writes the PR title into the merge commit message; a skip marker there silently suppresses Xcode Cloud when that merge commit later becomes the HEAD of a `TestFlight*` / `Release*` push (this bit us on 2026-06-05). Skip markers belong on individual commit subjects only — pushing a `fix/*` / `feature/*` branch triggers off its HEAD commit message, so the commit-level default already covers CI skipping.
+
 ### Release / TestFlight
 
-I do **not** push tags matching `v*.*.*-beta*` or `v*.*.*`, and do **not** manually trigger the Release workflow from App Store Connect. Those are version-cut decisions for the user.
+I do **not** push `TestFlight*` / `Release*` branches or version tags on my own, and do **not** manually trigger workflows from App Store Connect. Those are version-cut decisions for the user — I act only on their explicit instruction.
+
+Standard TestFlight cut (when instructed): push the target `developer` commit to `refs/heads/TestFlight`. If that commit's message contains a skip marker (e.g. a merge commit that inherited one from a PR title), stack a zero-change trigger commit on top instead of amending history:
+
+```bash
+newc=$(git commit-tree '<sha>^{tree}' -p <sha> -m "ci: trigger testflight build")
+git push origin "${newc}:refs/heads/TestFlight"
+```
+
+Xcode Cloud assigns the archive's `CFBundleVersion` from its own auto-incrementing build counter — no local `CURRENT_PROJECT_VERSION` bump is needed for CI-built uploads.
 
 ### Misc
 

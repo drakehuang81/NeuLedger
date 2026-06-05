@@ -3,6 +3,7 @@ import SwiftData
 import Foundation
 import CoreData
 import Dependencies
+import ConcurrencyExtras
 @testable import Core
 import Domain
 
@@ -122,19 +123,19 @@ struct LedgerClientMirrorTests {
     /// save cannot be mistaken for ours.
     private static func captureCoordinator(_ container: ModelContainer) -> NSPersistentStoreCoordinator? {
         let probeId = UUID()
-        var captured: NSPersistentStoreCoordinator?
-        var capturing = false
+        let captured = LockIsolated<NSPersistentStoreCoordinator?>(nil)
+        let capturing = LockIsolated(false)
         let token = NotificationCenter.default.addObserver(
             forName: .NSManagedObjectContextDidSave,
             object: nil,
             queue: nil
         ) { note in
-            guard capturing, captured == nil,
+            guard capturing.value, captured.value == nil,
                   let context = note.object as? NSManagedObjectContext else { return }
             // Confirm this save is the probe by matching the inserted object's id.
             let inserted = (note.userInfo?[NSInsertedObjectsKey] as? Set<NSManagedObject>) ?? []
             let isProbe = inserted.contains { ($0.value(forKey: "id") as? UUID) == probeId }
-            if isProbe { captured = context.persistentStoreCoordinator }
+            if isProbe { captured.setValue(context.persistentStoreCoordinator) }
         }
         defer { NotificationCenter.default.removeObserver(token) }
 
@@ -143,12 +144,12 @@ struct LedgerClientMirrorTests {
             id: probeId, amount: 0, date: Date(), accountId: "probe", type: "expense"
         )
         probeContext.insert(probe)
-        capturing = true
+        capturing.setValue(true)
         try? probeContext.save()
-        capturing = false
+        capturing.setValue(false)
         probeContext.delete(probe)
         try? probeContext.save()
-        return captured
+        return captured.value
     }
 
     private func makeTransaction(id: UUID = UUID()) -> Transaction {

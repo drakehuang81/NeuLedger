@@ -205,8 +205,11 @@ struct NotificationSettingsFeatureTests {
             $0.planningClient.warningThreshold = { 80 }
             $0.ledgerClient.listRecurring = { [] }
         }
+        await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)
-        await store.skipReceivedActions()
+        // 測試主旨：.task 必須轉發給內嵌的 RecurringManagement（其餘載入動作不在斷言範圍）
+        await store.receive(\.recurringManagement.task)
+        await store.finish()
     }
 
     @Test("recurringManagement state is default-initialized with empty items")

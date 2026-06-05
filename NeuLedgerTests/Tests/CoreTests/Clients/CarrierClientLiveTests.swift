@@ -218,7 +218,7 @@ struct CarrierClientLiveTests {
     func testActiveForWidgetNilWhenUnset() async throws {
         let container = try freshCarrierContainer()
         let spy = WidgetSpy()
-        await withDependencies {
+        withDependencies {
             $0.modelContainer = container
             $0.widgetSyncAdapter = spyWidgetAdapter(spy)
             $0.userSettingsAdapter = inMemorySettings(SettingsBox())

@@ -70,7 +70,7 @@ struct CarrierClientTests {
     @Test("CarrierClient activeForWidget mock override")
     func testActiveForWidgetMock() async {
         let id = UUID()
-        await withDependencies {
+        withDependencies {
             $0.carrierClient.activeForWidget = { id }
         } operation: {
             @Dependency(\.carrierClient) var client

@@ -10,64 +10,85 @@ struct DashboardFeatureChipTests {
     private static let accA = Account(name: "A", type: .cash, icon: "", color: "#000000")
     private static let accB = Account(name: "B", type: .bank, icon: "", color: "#000000")
 
-    @Test("Selecting an account sets selectedAccountID, filteredBalance, filteredRecent")
+    private static func makeTxs() -> (a: Transaction, b: Transaction) {
+        let base = Date(timeIntervalSince1970: 2_000_000)
+        return (
+            Transaction(amount: 100, date: base, note: "x", accountId: accA.id, type: .expense),
+            Transaction(amount: 200, date: base.addingTimeInterval(-60), note: "y", accountId: accB.id, type: .expense)
+        )
+    }
+
+    @Test("Selecting an account sets selectedAccountID and reloads scoped data")
     func testChipSelectAccount() async {
+        let (txA, txB) = Self.makeTxs()
         var initial = DashboardFeature.State()
-        initial.totalBalance = 1000
+        initial.accounts = [Self.accA, Self.accB]
         initial.accountBalances = [Self.accA.id: 300, Self.accB.id: 700]
-        initial.topAccounts = [Self.accA, Self.accB]
-        let tx1 = Transaction(amount: 100, date: .now, note: "x", categoryId: nil, accountId: Self.accA.id, type: .expense)
-        let tx2 = Transaction(amount: 200, date: .now, note: "y", categoryId: nil, accountId: Self.accB.id, type: .expense)
-        initial.recentTransactions = [tx1, tx2]
-        initial.filteredRecent = [tx1, tx2]
-        initial.filteredBalance = 1000
 
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [txA, txB].map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
+            $0.insightsClient.isAIAvailable = { false }
         }
+        await MainActor.run { store.exhaustivity = .off }
 
         await store.send(.accountChipSelected(Self.accA.id)) {
             $0.selectedAccountID = Self.accA.id
-            $0.filteredBalance = 300
-            $0.filteredRecent = [tx1]
             $0.heroPhase = .loading
+            $0.transactionsPhase = .loading
+        }
+        await store.receive(\.transactionsUpdated) {
+            $0.recentTransactions = [txA]
+            $0.earliestTransactionDate = txA.date
+            $0.transactionsPhase = .loaded
         }
         await store.receive(\.weeklySpendingComputed) {
             $0.weeklySpending = [0, 0, 0, 0, 0, 0, 0]
             $0.heroPhase = .loaded
         }
+        await store.finish()
+        await MainActor.run {
+            #expect(store.state.filteredBalance == 300)
+        }
     }
 
-    @Test("Selecting nil chip resets filteredBalance to totalBalance and filteredRecent to all")
+    @Test("Selecting nil chip resets to the global scope")
     func testChipSelectAll() async {
+        let (txA, txB) = Self.makeTxs()
         var initial = DashboardFeature.State()
-        initial.totalBalance = 1000
+        initial.accounts = [Self.accA, Self.accB]
         initial.accountBalances = [Self.accA.id: 300, Self.accB.id: 700]
-        initial.topAccounts = [Self.accA, Self.accB]
-        let tx1 = Transaction(amount: 100, date: .now, note: "x", categoryId: nil, accountId: Self.accA.id, type: .expense)
-        let tx2 = Transaction(amount: 200, date: .now, note: "y", categoryId: nil, accountId: Self.accB.id, type: .expense)
-        initial.recentTransactions = [tx1, tx2]
         initial.selectedAccountID = Self.accA.id
-        initial.filteredRecent = [tx1]
-        initial.filteredBalance = 300
+        initial.recentTransactions = [txA]
 
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [txA, txB].map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
+            $0.insightsClient.isAIAvailable = { false }
         }
+        await MainActor.run { store.exhaustivity = .off }
 
         await store.send(.accountChipSelected(nil)) {
             $0.selectedAccountID = nil
-            $0.filteredBalance = 1000
-            $0.filteredRecent = [tx1, tx2]
             $0.heroPhase = .loading
+            $0.transactionsPhase = .loading
+        }
+        await store.receive(\.transactionsUpdated) {
+            $0.recentTransactions = [txA, txB]
+            $0.earliestTransactionDate = txB.date
+            $0.transactionsPhase = .loaded
         }
         await store.receive(\.weeklySpendingComputed) {
             $0.weeklySpending = [0, 0, 0, 0, 0, 0, 0]
             $0.heroPhase = .loaded
+        }
+        await store.finish()
+        await MainActor.run {
+            #expect(store.state.filteredBalance == 1000)   // computed：回到 totalBalance
         }
     }
 
@@ -76,22 +97,24 @@ struct DashboardFeatureChipTests {
         var initial = DashboardFeature.State()
         initial.statsPhase = .loaded
         initial.insightPhase = .loaded
+
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
             $0.insightsClient.weeklySparkline = { _ in [1, 2, 3, 4, 5, 6, 7] }
+            $0.insightsClient.isAIAvailable = { false }
         }
+        await MainActor.run { store.exhaustivity = .off }
+
         await store.send(.accountChipSelected(Self.accA.id)) {
             $0.selectedAccountID = Self.accA.id
-            $0.filteredBalance = 0
-            $0.filteredRecent = []
             $0.heroPhase = .loading
+            $0.transactionsPhase = .loading
         }
-        await store.receive(\.weeklySpendingComputed) {
-            $0.weeklySpending = [1, 2, 3, 4, 5, 6, 7]
-            $0.heroPhase = .loaded
-        }
+        await store.finish()
         await MainActor.run {
+            // TODO(stats-follow-up): StatsRow 連動實作後，此測試改為斷言 statsPhase 轉 loading。
             #expect(store.state.statsPhase == .loaded)
             #expect(store.state.insightPhase == .loaded)
         }

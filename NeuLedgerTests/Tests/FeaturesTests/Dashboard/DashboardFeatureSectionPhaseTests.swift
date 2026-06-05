@@ -14,8 +14,8 @@ struct DashboardFeatureSectionPhaseTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.insightsClient.weeklySparkline = { _ in [10, 20, 30, 40, 50, 60, 70] }
-            $0.ledgerClient.listRecent = { _ in [] }
             $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
@@ -43,8 +43,8 @@ struct DashboardFeatureSectionPhaseTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.insightsClient.weeklySparkline = { _ in throw Boom() }
-            $0.ledgerClient.listRecent = { _ in [] }
             $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }

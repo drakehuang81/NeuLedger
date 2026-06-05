@@ -37,6 +37,7 @@ public struct DashboardFeature: Sendable {
     private enum CancelID {
         case accountObservation
         case transactionObservation
+        case balances
         case categoryFetch
         case aiInsightFetch
         case weeklySpending
@@ -48,40 +49,36 @@ public struct DashboardFeature: Sendable {
 
     @ObservableState
     public struct State: Equatable {
-        // Aggregated data
-        public var totalBalance: Decimal = 0
-        public var accountBalances: [Account.ID: Decimal] = [:]
-        public var topAccounts: [Account] = []
-        public var recentTransactions: [Transaction] = []
-        public var categoryMap: [Domain.Category.ID: Domain.Category] = [:]
+        // ═══ 查詢參數（chip 唯一控制的東西）═══
+        public var selectedAccountID: Account.ID? = nil
+
+        // ═══ 查詢結果 —— 每個欄位只有一個寫入 action ═══
+        public var accounts: [Account] = []                                  // accountsUpdated
+        /// 餘額是全帳本 fold（`ledger.balances()`），recent 20 推導不出來，必須 stored。
+        public var accountBalances: [Account.ID: Decimal] = [:]              // accountBalancesComputed
+        /// 當前 scope（selectedAccountID）的近期 20 筆，已按日期降冪。
+        public var recentTransactions: [Transaction] = []                    // transactionsUpdated
+        /// 當前 scope「真正」最早一筆的日期（非 recent 20 的 min）——驅動 sparkline 暖身判斷。
+        public var earliestTransactionDate: Date? = nil                      // transactionsUpdated
+        public var categoryMap: [Domain.Category.ID: Domain.Category] = [:]  // categoriesLoaded
+        public var weeklySpending: [Decimal] = []                            // weeklySpendingComputed
 
         // AI Insight
         public var aiInsight: String?
         public var isLoadingInsight: Bool = false
         public var lastInsightTransactionCount: Int?
 
-        // Loading & empty-state flags
-        public var isLoading: Bool = false
-        public var hasAccounts: Bool = false
-        public var hasTransactions: Bool = false
-
-        // Chip filter
-        public var selectedAccountID: Account.ID? = nil
-        public var filteredBalance: Decimal = 0
-        public var weeklySpending: [Decimal] = []
-        public var earliestTransactionDate: Date? = nil
-        public var filteredRecent: [Transaction] = []
-
-        // Stats (populated by Slice 5)
+        // Stats（全域數字 —— TODO(stats-follow-up): 連動需 todayStats 增加 accountId 參數）
         public var todaySpending: Decimal = 0
         public var weekSpending: Decimal = 0
         public var savingsPercentage: Double = 0
 
-        // Insight (populated by Slice 7)
+        // Insight carousel（populated by Slice 7）
         public var insights: [InsightData] = []
         public var insightIndex: Int = 0
 
-        // Transaction row expansion (populated by Slice 6)
+        // Loading & UI state
+        public var isLoading: Bool = false
         public var expandedTransactionID: Transaction.ID? = nil
 
         // Per-section view state
@@ -98,6 +95,23 @@ public struct DashboardFeature: Sendable {
         @Presents var addTransaction: AddTransactionFeature.State?
         @Presents var detail: TransactionDetailFeature.State?
 
+        // ═══ Computed 衍生 —— 禁止為這些值新增 stored 影子 ═══
+        /// Chip 顯示順序（sortOrder 升冪）。
+        public var orderedAccounts: [Account] {
+            accounts.sorted { $0.sortOrder < $1.sortOrder }
+        }
+        public var totalBalance: Decimal {
+            accountBalances.values.reduce(0, +)
+        }
+        /// Hero 卡顯示的餘額：選中帳戶的餘額，未選則總額。
+        ///
+        /// 已知行為：若 `selectedAccountID` 指向的帳戶已被封存（如另一裝置同步），
+        /// `balances()` 不會回傳該 key，此處回退顯示總額。stale selection 的清理
+        /// 屬帳戶生命週期決策 —— TODO(stats-follow-up) 一併處理。
+        public var filteredBalance: Decimal {
+            selectedAccountID.flatMap { accountBalances[$0] } ?? totalBalance
+        }
+
         public init() {}
     }
 
@@ -111,8 +125,8 @@ public struct DashboardFeature: Sendable {
 
         // Data responses
         case accountsUpdated([Account])
-        case accountBalancesComputed([Account.ID: Decimal], total: Decimal)
-        case transactionsUpdated([Transaction])
+        case accountBalancesComputed([Account.ID: Decimal])                     // total 參數刪除（改 computed）
+        case transactionsUpdated(recent: [Transaction], earliestDate: Date?)    // scope 查詢結果
         case categoriesLoaded([Domain.Category])
 
         // B1 Warm Redesign — section-scoped actions
@@ -204,46 +218,35 @@ public struct DashboardFeature: Sendable {
             // MARK: Data responses
 
             case let .accountsUpdated(accounts):
-                state.hasAccounts = !accounts.isEmpty
-                state.topAccounts = accounts.sorted { $0.sortOrder < $1.sortOrder }
+                state.accounts = accounts
                 state.accountsPhase = .loaded
-
-                return .run { [accounts] send in
-                    var balances: [Account.ID: Decimal] = [:]
-                    await withTaskGroup(of: (Account.ID, Decimal).self) { group in
-                        for account in accounts {
-                            group.addTask {
-                                let balance = (try? await ledger.balance(account.id)) ?? 0
-                                return (account.id, balance)
-                            }
-                        }
-                        for await (id, balance) in group {
-                            balances[id] = balance
-                        }
+                // 餘額一次查回 —— `ledger.balances()` 本就存在，
+                // 取代原本手刻的 per-account task group。
+                return .run { send in
+                    do {
+                        let balances = try await ledger.balances()
+                        await send(.accountBalancesComputed(balances))
+                    } catch {
+                        await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
                     }
-                    let total = balances.values.reduce(0, +)
-                    await send(.accountBalancesComputed(balances, total: total))
                 }
+                .cancellable(id: CancelID.balances, cancelInFlight: true)
 
-            case let .accountBalancesComputed(balances, total: total):
+            case let .accountBalancesComputed(balances):
                 state.accountBalances = balances
-                state.totalBalance = total
-                state.filteredBalance = state.selectedAccountID.flatMap { balances[$0] } ?? total
                 return .none
 
-            case let .transactionsUpdated(transactions):
-                state.hasTransactions = !transactions.isEmpty
-                let sorted = transactions.sorted { $0.date > $1.date }
-                state.recentTransactions = Array(sorted.prefix(3))
-                state.filteredRecent = state.selectedAccountID
-                    .map { id in sorted.filter { $0.accountId == id } }
-                    ?? sorted
-                state.earliestTransactionDate = transactions.map(\.date).min()
+            case let .transactionsUpdated(recent, earliestDate):
+                state.recentTransactions = recent
+                state.earliestTransactionDate = earliestDate
                 state.transactionsPhase = .loaded
                 state.isLoading = false
 
-                let currentCount = transactions.count
-                if state.lastInsightTransactionCount != currentCount {
+                // AI insight 失效判斷：比較與寫回（aiInsightResponse.success）
+                // 都用 recentTransactions.count —— 同一來源（Bug 3 fix）。
+                // 已知限制：等量編輯（筆數不變、金額變）不會觸發重打，
+                // 沿用舊行為 —— TODO(insights-follow-up) 一併重新設計。
+                if state.lastInsightTransactionCount != recent.count {
                     return .send(.fetchAIInsight)
                 }
                 return .none
@@ -278,37 +281,13 @@ public struct DashboardFeature: Sendable {
                 switch section {
                 case .hero:
                     state.heroPhase = .loading
-                    return .run { [accountID = state.selectedAccountID] send in
-                        do {
-                            let values = try await insightsClient.weeklySparkline(accountID)
-                            await send(.weeklySpendingComputed(values))
-                        } catch {
-                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                        }
-                    }
-                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+                    return sparklineEffect(accountID: state.selectedAccountID, cancelInFlight: true)
                 case .accounts:
                     state.accountsPhase = .loading
-                    return .run { send in
-                        do {
-                            let accounts = try await ledger.listActiveAccounts()
-                            await send(.accountsUpdated(accounts))
-                        } catch {
-                            await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                        }
-                    }
-                    .cancellable(id: CancelID.accountObservation, cancelInFlight: true)
+                    return accountsEffect(cancelInFlight: true)
                 case .transactions:
                     state.transactionsPhase = .loading
-                    return .run { send in
-                        do {
-                            let txs = try await ledger.listRecent(limit: 20).map(\.transaction)
-                            await send(.transactionsUpdated(txs))
-                        } catch {
-                            await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                        }
-                    }
-                    .cancellable(id: CancelID.transactionObservation, cancelInFlight: true)
+                    return transactionsEffect(accountID: state.selectedAccountID, cancelInFlight: true)
                 case .stats:
                     state.statsPhase = .loading
                     return statsEffect(cancelInFlight: true)
@@ -319,22 +298,19 @@ public struct DashboardFeature: Sendable {
 
             case let .accountChipSelected(accountID):
                 state.selectedAccountID = accountID
-                state.filteredBalance = accountID.flatMap { state.accountBalances[$0] } ?? state.totalBalance
-                if let id = accountID {
-                    state.filteredRecent = state.recentTransactions.filter { $0.accountId == id }
-                } else {
-                    state.filteredRecent = state.recentTransactions
-                }
                 state.heroPhase = .loading
-                return .run { [accountID] send in
-                    do {
-                        let v = try await insightsClient.weeklySparkline(accountID)
-                        await send(.weeklySpendingComputed(v))
-                    } catch {
-                        await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                    }
-                }
-                .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
+                state.transactionsPhase = .loading
+                // filteredBalance / 交易列表不需手動重算 —— 前者是 computed，
+                // 後者由 scope 查詢寫回。
+                // TODO(stats-follow-up): StatsRow 連動 —— `insightsClient.todayStats`
+                //   需要 accountId 參數（Domain 介面 + Application 實作變更，另開單）。
+                //   屆時在此 merge statsEffect 並將 statsPhase 轉 loading。
+                // TODO(insights-follow-up): InsightCarousel 連動 —— generateInsights
+                //   實作後帶 selectedAccountID 重查，並重新設計 AI insight 失效策略。
+                return .merge(
+                    transactionsEffect(accountID: accountID, cancelInFlight: true),
+                    sparklineEffect(accountID: accountID, cancelInFlight: true)
+                )
 
             case let .statsComputed(today, week, savings):
                 state.todaySpending = today
@@ -443,45 +419,11 @@ public struct DashboardFeature: Sendable {
             // MARK: Child features
             case .addTransaction(.presented(.delegate(.saved))),
                  .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
-                return .merge(
-                    .run { send in
-                        async let transactions = ledger.listRecent(limit: 20)
-                        async let accounts = ledger.listActiveAccounts()
-                        let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t.map(\.transaction)))
-                        await send(.accountsUpdated(a))
-                    },
-                    statsEffect(cancelInFlight: true),
-                    .run { [accountID = state.selectedAccountID] send in
-                        do {
-                            let values = try await insightsClient.weeklySparkline(accountID)
-                            await send(.weeklySpendingComputed(values))
-                        } catch {
-                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                        }
-                    }
-                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
-                )
+                return refreshAfterMutation(accountID: state.selectedAccountID)
 
             case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
                 return .merge(
-                    .run { send in
-                        async let transactions = ledger.listRecent(limit: 20)
-                        async let accounts = ledger.listActiveAccounts()
-                        let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t.map(\.transaction)))
-                        await send(.accountsUpdated(a))
-                    },
-                    statsEffect(cancelInFlight: true),
-                    .run { [accountID = state.selectedAccountID] send in
-                        do {
-                            let values = try await insightsClient.weeklySparkline(accountID)
-                            await send(.weeklySpendingComputed(values))
-                        } catch {
-                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                        }
-                    }
-                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true),
+                    refreshAfterMutation(accountID: state.selectedAccountID),
                     .send(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))
                 )
 
@@ -493,25 +435,7 @@ public struct DashboardFeature: Sendable {
 
             case .detail(.presented(.delegate(.deleted))),
                  .detail(.presented(.delegate(.updated))):
-                return .merge(
-                    .run { send in
-                        async let transactions = ledger.listRecent(limit: 20)
-                        async let accounts = ledger.listActiveAccounts()
-                        let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t.map(\.transaction)))
-                        await send(.accountsUpdated(a))
-                    },
-                    statsEffect(cancelInFlight: true),
-                    .run { [accountID = state.selectedAccountID] send in
-                        do {
-                            let values = try await insightsClient.weeklySparkline(accountID)
-                            await send(.weeklySpendingComputed(values))
-                        } catch {
-                            await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                        }
-                    }
-                    .cancellable(id: CancelID.weeklySpending, cancelInFlight: true)
-                )
+                return refreshAfterMutation(accountID: state.selectedAccountID)
 
             case .detail:
                 return .none
@@ -532,6 +456,80 @@ public struct DashboardFeature: Sendable {
 
     // MARK: - Helpers
 
+    /// Loads active accounts; routes failure into the accounts section phase.
+    private func accountsEffect(cancelInFlight: Bool) -> Effect<Action> {
+        .run { send in
+            do {
+                let accounts = try await ledger.listActiveAccounts()
+                await send(.accountsUpdated(accounts))
+            } catch {
+                await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
+            }
+        }
+        .cancellable(id: CancelID.accountObservation, cancelInFlight: cancelInFlight)
+    }
+
+    /// Per-selection transactions query: fetch the ledger, scope it to the
+    /// selected account（雙向：轉出 `accountId` / 轉入 `toAccountId`，與
+    /// `ledger.balance` 的雙向語意對齊），sort desc, keep the recent 20.
+    ///
+    /// Also derives the scope's TRUE earliest date（Bug 4 fix —— 取 recent 20
+    /// 的 min 會把「3 天記 20 筆」的活躍使用者誤判成新用戶而藏掉 sparkline）。
+    /// 全取後本地過濾是專案慣例（fetchAll + Swift 過濾，瓶頸才下推）。
+    private func transactionsEffect(
+        accountID: Account.ID?,
+        cancelInFlight: Bool
+    ) -> Effect<Action> {
+        .run { send in
+            do {
+                let all = try await ledger.listAll(TransactionFilter()).map(\.transaction)
+                let scoped = accountID.map { id in
+                    all.filter { $0.accountId == id || $0.toAccountId == id }
+                } ?? all
+                let sorted = scoped.sorted { $0.date > $1.date }
+                await send(.transactionsUpdated(
+                    recent: Array(sorted.prefix(20)),
+                    earliestDate: sorted.last?.date
+                ))
+            } catch {
+                await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
+            }
+        }
+        .cancellable(id: CancelID.transactionObservation, cancelInFlight: cancelInFlight)
+    }
+
+    /// Loads the 7-day expense sparkline for the selected scope.
+    private func sparklineEffect(
+        accountID: Account.ID?,
+        cancelInFlight: Bool
+    ) -> Effect<Action> {
+        .run { send in
+            do {
+                let values = try await insightsClient.weeklySparkline(accountID)
+                await send(.weeklySpendingComputed(values))
+            } catch {
+                await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
+            }
+        }
+        .cancellable(id: CancelID.weeklySpending, cancelInFlight: cancelInFlight)
+    }
+
+    /// 任何帳本異動（新增 / 編輯 / 刪除交易）後的統一重載：
+    /// 帳戶＋餘額、scope 交易、stats、sparkline。
+    /// 取代原本在 saved / savedRecurringConfirmation / detail-updated 三處
+    /// 重複且無錯誤處理的 inline effect。
+    ///
+    /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）與
+    /// insights carousel（AI insight 由 `transactionsUpdated` 的 count diff 間接觸發）。
+    private func refreshAfterMutation(accountID: Account.ID?) -> Effect<Action> {
+        .merge(
+            accountsEffect(cancelInFlight: true),
+            transactionsEffect(accountID: accountID, cancelInFlight: true),
+            statsEffect(cancelInFlight: true),
+            sparklineEffect(accountID: accountID, cancelInFlight: true)
+        )
+    }
+
     /// Loads all dashboard sections concurrently. Each loader has its own
     /// do/catch translating failures into `.sectionFailed(...)` (or, for
     /// categories, swallowing them silently — categories only feed styling).
@@ -540,26 +538,8 @@ public struct DashboardFeature: Sendable {
         cancelInFlight: Bool
     ) -> Effect<Action> {
         .merge(
-            .run { send in
-                do {
-                    let accounts = try await ledger.listActiveAccounts()
-                    await send(.accountsUpdated(accounts))
-                } catch {
-                    await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                }
-            }
-            .cancellable(id: CancelID.accountObservation, cancelInFlight: cancelInFlight),
-
-            .run { send in
-                do {
-                    let transactions = try await ledger.listRecent(limit: 20).map(\.transaction)
-                    await send(.transactionsUpdated(transactions))
-                } catch {
-                    await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                }
-            }
-            .cancellable(id: CancelID.transactionObservation, cancelInFlight: cancelInFlight),
-
+            accountsEffect(cancelInFlight: cancelInFlight),
+            transactionsEffect(accountID: accountID, cancelInFlight: cancelInFlight),
             .run { send in
                 do {
                     let categories = try await ledger.listCategories(nil)
@@ -569,19 +549,8 @@ public struct DashboardFeature: Sendable {
                 }
             }
             .cancellable(id: CancelID.categoryFetch, cancelInFlight: cancelInFlight),
-
-            .run { [accountID] send in
-                do {
-                    let values = try await insightsClient.weeklySparkline(accountID)
-                    await send(.weeklySpendingComputed(values))
-                } catch {
-                    await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
-                }
-            }
-            .cancellable(id: CancelID.weeklySpending, cancelInFlight: cancelInFlight),
-
+            sparklineEffect(accountID: accountID, cancelInFlight: cancelInFlight),
             statsEffect(cancelInFlight: cancelInFlight),
-
             insightsEffect(cancelInFlight: cancelInFlight)
         )
     }

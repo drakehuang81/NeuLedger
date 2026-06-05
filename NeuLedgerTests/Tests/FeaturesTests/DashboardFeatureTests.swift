@@ -89,12 +89,8 @@ struct DashboardFeatureTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
-            $0.ledgerClient.balance = { id in
-                if id == Self.sampleAccounts[0].id { return 45000 }
-                if id == Self.sampleAccounts[1].id { return 1200 }
-                return 0
-            }
-            $0.ledgerClient.listRecent = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.balances = { [Self.sampleAccounts[0].id: 45000, Self.sampleAccounts[1].id: 1200] }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
@@ -117,17 +113,15 @@ struct DashboardFeatureTests {
 
         // Accounts updated
         await store.receive(\.accountsUpdated) {
-            $0.hasAccounts = true
-            $0.topAccounts = Self.sampleAccounts.sorted { $0.sortOrder < $1.sortOrder }
+            $0.accounts = Self.sampleAccounts
             $0.accountsPhase = .loaded
         }
 
         // Transactions arrive before balance computation completes (concurrent effects)
         await store.receive(\.transactionsUpdated) {
-            $0.hasTransactions = true
             let sorted = Self.sampleTransactions.sorted { $0.date > $1.date }
-            $0.recentTransactions = Array(sorted.prefix(3))
-            $0.filteredRecent = sorted
+            $0.recentTransactions = sorted
+            $0.earliestTransactionDate = sorted.last?.date
             $0.transactionsPhase = .loaded
             $0.isLoading = false
         }
@@ -137,20 +131,18 @@ struct DashboardFeatureTests {
             $0.isLoadingInsight = true
         }
 
-        // Per-account balances and total computed (balance effect from accountsUpdated)
+        // Per-account balances computed (balance effect from accountsUpdated)
         await store.receive(\.accountBalancesComputed) {
             $0.accountBalances = [
                 Self.sampleAccounts[0].id: 45000,
                 Self.sampleAccounts[1].id: 1200,
             ]
-            $0.totalBalance = 46200 // 45000 + 1200
-            $0.filteredBalance = 46200
         }
 
         await store.receive(\.aiInsightResponse.success) {
             $0.isLoadingInsight = false
             $0.aiInsight = "Test insight"
-            $0.lastInsightTransactionCount = 3
+            $0.lastInsightTransactionCount = 4
         }
     }
 
@@ -162,7 +154,6 @@ struct DashboardFeatureTests {
         var initialState = DashboardFeature.State()
         initialState.lastInsightTransactionCount = 3
         initialState.aiInsight = "Old insight"
-        initialState.hasTransactions = true
         initialState.recentTransactions = Array(Self.sampleTransactions.prefix(3))
 
         let store = await TestStore(
@@ -175,11 +166,11 @@ struct DashboardFeatureTests {
         }
 
         // Simulate receiving an updated list with 4 transactions (different count).
-        // top-3 are identical to initial state, but transactionsPhase and filteredRecent update.
-        await store.send(.transactionsUpdated(Self.sampleTransactions)) {
+        let sorted = Self.sampleTransactions.sorted { $0.date > $1.date }
+        await store.send(.transactionsUpdated(recent: sorted, earliestDate: sorted.last?.date)) {
+            $0.recentTransactions = sorted
+            $0.earliestTransactionDate = sorted.last?.date
             $0.transactionsPhase = .loaded
-            $0.filteredRecent = Self.sampleTransactions.sorted { $0.date > $1.date }
-            $0.earliestTransactionDate = Self.sampleTransactions.map(\.date).min()
         }
 
         // Cache invalidated — fetch triggered
@@ -190,7 +181,7 @@ struct DashboardFeatureTests {
         await store.receive(\.aiInsightResponse.success) {
             $0.isLoadingInsight = false
             $0.aiInsight = "Updated insight"
-            $0.lastInsightTransactionCount = 3
+            $0.lastInsightTransactionCount = 4
         }
     }
 
@@ -220,8 +211,8 @@ struct DashboardFeatureTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.ledgerClient.listActiveAccounts = { [] }
-            $0.ledgerClient.balance = { _ in 0 }
-            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
@@ -256,7 +247,6 @@ struct DashboardFeatureTests {
         var initialState = DashboardFeature.State()
         initialState.lastInsightTransactionCount = 3
         initialState.aiInsight = "Old insight"
-        initialState.hasTransactions = true
 
         let store = await TestStore(
             initialState: initialState
@@ -265,8 +255,8 @@ struct DashboardFeatureTests {
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
-            $0.ledgerClient.balance = { _ in 1000 }
-            $0.ledgerClient.listRecent = { _ in Array(Self.sampleTransactions.prefix(3)).map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.balances = { [Self.sampleAccounts[0].id: 1000, Self.sampleAccounts[1].id: 1000] }
+            $0.ledgerClient.listAll = { _ in Array(Self.sampleTransactions.prefix(3)).map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
@@ -297,17 +287,16 @@ struct DashboardFeatureTests {
 
         // Accounts updated
         await store.receive(\.accountsUpdated) {
-            $0.hasAccounts = true
-            $0.topAccounts = Self.sampleAccounts.sorted { $0.sortOrder < $1.sortOrder }
+            $0.accounts = Self.sampleAccounts
+            $0.accountsPhase = .loaded
         }
 
         // Transactions updated
         await store.receive(\.transactionsUpdated) {
-            $0.hasTransactions = true
-            $0.recentTransactions = Array(
-                Self.sampleTransactions.prefix(3)
-                    .sorted { $0.date > $1.date }
-            )
+            let sorted = Array(Self.sampleTransactions.prefix(3)).sorted { $0.date > $1.date }
+            $0.recentTransactions = sorted
+            $0.earliestTransactionDate = sorted.last?.date
+            $0.transactionsPhase = .loaded
             $0.isLoading = false
         }
 
@@ -316,13 +305,12 @@ struct DashboardFeatureTests {
             $0.isLoadingInsight = true
         }
 
-        // Per-account balances and total computed (balance effect from accountsUpdated)
+        // Per-account balances computed (balance effect from accountsUpdated)
         await store.receive(\.accountBalancesComputed) {
             $0.accountBalances = [
                 Self.sampleAccounts[0].id: 1000,
                 Self.sampleAccounts[1].id: 1000,
             ]
-            $0.totalBalance = 2000 // 1000 * 2 accounts
         }
 
         await store.receive(\.aiInsightResponse.success) {
@@ -423,7 +411,7 @@ struct DashboardFeatureTests {
         } withDependencies: {
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listAccounts = { [] }
-            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateAIInsight = { _ in "" }
             $0.date = .constant(fixedDate)

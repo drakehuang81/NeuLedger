@@ -28,7 +28,7 @@ struct AccountChipsStrip: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 allChip
-                ForEach(store.topAccounts) { account in
+                ForEach(store.orderedAccounts) { account in
                     accountChip(account)
                 }
             }

@@ -29,6 +29,7 @@
 9. **驗證 agent 禁用萬用字元讀 log**：5b 驗證 agent 用 `tail /tmp/verify_*.log` glob 讀到舊綠 log 假放行，54 行 keypath 回歸混進 commit。驗證 log 一律唯一檔名、只讀自己的。
 10. **Scope parent 陷阱三度發作**：MainTab→AccessoryBar（步驟 3）、NotificationSettings→RecurringManagement（5b）、MainTab→Dashboard prefill（5c-pre）。切 child 依賴前必 grep「誰 Scope 了它」。
 11. **模擬器衰竭**：一日多輪測試累積 805 個 CoreSimulator 進程，引發系統性 flake（假超時、ipc/mig 死亡、suite 假死 20 分鐘）。長 session 定期 `xcrun simctl --set testing delete all`。
+13. **`test-without-building` 的假綠模式**：build 失敗時它不會跟著失敗，而是拿上一次成功建置的舊產物跑測試（舊碼全綠）。驗證鏈必須把測試步驟用 `&&` 鎖在 build 成功之後，且以 BUILD_OK sentinel 齊全為綠燈判準，不能只看測試 exit code。
 12. **Subagent 不可把驗證丟背景就交棒**：背景任務生命週期綁定 agent，提前結束 = 驗證夭折。prompt 必須明令「等驗證完成才回報」。
 
 **5 期行為微調紀錄**：①setupAccounts 不再寫 onboarding 旗標（雙寫入點解除）②鏡像推送 post-condition 顯式化 ③recurring 通知排程上收 ④exportCSV 寫入唯一子目錄（檔名不變）⑤Watch record 保留交易日期（原 Date() 預設）⑥**待裁定**：WatchSessionDelegate 入站記帳仍直寫 store（沿用原行為），是否應改走 ledgerClient.record 吃完整 invariant 鏈（預算警告+鏡像）留收網後與使用者討論

@@ -30,9 +30,10 @@ budget-warning invariant + mirror push is an open product decision.
 │                   │ composes                           │
 │                   ├─▶ SwiftDataStore<Domain, SD>       │
 │                   ├─▶ XxxAdapter (system APIs)         │
-│                   ├─▶ XxxPolicy (pure logic)           │
+│                   ├─▶ Entity rules (pure logic)        │
 │                   └─▶ another Client (§3.1 only)       │
-│ Domain          Entity / ValueObject / Policy          │
+│ Domain          Entity / ValueObject (rich: pure       │
+│                 domain rules live as entity methods)   │
 │                 + Client / Adapter interfaces.         │
 │                 Zero external imports.                 │
 │ Infrastructure  SwiftDataStore + Mappers + Adapter     │
@@ -54,7 +55,7 @@ Dependency direction: **outer → inner, never reversed.**
 | Adapter | `XxxAdapter` | `\.xxxAdapter` |
 | Entity / Value Object | `Xxx` | — |
 | SwiftData Model | `SDXxx` | — |
-| Domain Policy | `XxxPolicy` (enum w/ static funcs) | — |
+| Domain rule | entity/VO method (pure, e.g. `Budget.evaluate`) | — |
 
 There is no `Repository` and no `UseCase` suffix anymore. A new `XxxClient`
 file is legitimate **only** as a domain-shaped Application surface (see §5
@@ -68,10 +69,10 @@ APIs through an `XxxAdapter`.
 | Who | May depend on | May NOT depend on |
 |---|---|---|
 | **Feature** | Clients (any number), TCA built-ins (`\.dismiss`, `\.continuousClock`, `\.uuid`, `\.openURL`, `\.date`) | Adapters, `SwiftDataStore`, `\.modelContainer`, system APIs |
-| **Client Live** | `SwiftDataStore`, Adapters, Policies, Domain types, another Client (§3.1 whitelist only) | `ModelContext` / SwiftData primitives, UIKit/WidgetKit/etc. directly |
+| **Client Live** | `SwiftDataStore`, Adapters, Domain types (incl. entity rules), another Client (§3.1 whitelist only) | `ModelContext` / SwiftData primitives, UIKit/WidgetKit/etc. directly |
 | **Adapter** | System APIs, Domain types | Other Adapters, Clients, `SwiftDataStore` |
 | **SwiftDataStore / Mapper** | `\.modelContainer`, `ModelContext` | Business logic |
-| **Policy** | Pure Swift (Foundation OK) | Anything async / throws IO |
+| **Entity rule** | Pure Swift (Foundation OK) | Anything async / throws IO |
 
 **Rationale for strict Feature → Client only:** every screen-driven mutation
 or composed query funnels through a Client. Cross-cutting changes (audit
@@ -109,7 +110,7 @@ Everything else: refuse and refactor.
 |---|---|
 | Another Client to read entity data | Read `SwiftDataStore` directly (Application layer is allowed to) |
 | Another Client to read a setting | Read `userSettingsAdapter` directly |
-| Another Client to reuse a calculation | Extract the calculation to a Policy |
+| Another Client to reuse a calculation | Extract it to a pure entity/VO method |
 | Another Client to coordinate two steps for one screen | Let the Reducer coordinate via two `.run` effects |
 
 Historical note: the former `RecurringUseCase.tick → LedgerUseCase.record`
@@ -131,7 +132,12 @@ Three building blocks; `ModelContext` never escapes them.
    (e.g., tag disassociation on delete).
 3. **`SwiftDataStore<Domain, SD>`** — generic CRUD struct
    (`fetchAll(sortBy:)`, `fetch(id:)`, `add`, `update`, `delete(id:)`).
-   Client Lives instantiate it with zero arguments.
+   Client Lives instantiate it with zero arguments — via the
+   **per-aggregate aliases** in `Core/Persistence/Stores.swift`
+   (`TransactionStore`, `AccountStore`, `CategoryStore`, `TagStore`,
+   `BudgetStore`, `CarrierStore`, `RecurringTransactionStore`): the
+   Domain ↔ SD pairing is declared once, and call sites never spell
+   SwiftData vocabulary.
 
 Custom queries start as `store.fetchAll()` + Swift-side filtering. If
 profiling shows a bottleneck, add a `SwiftDataStore where SD == X`
@@ -190,7 +196,7 @@ Live dependencies: `SwiftDataStore` ×5, `planningClient` (invariant),
 ### 💰 `PlanningClient` — constraints on future spending
 
 `listAll` / `listActive` / CRUD / `currentStatus(of:)` /
-`evaluateAfterTransaction` (BudgetWarningPolicy + notificationAdapter) /
+`evaluateAfterTransaction` (`Budget.evaluate` entity rule + notificationAdapter) /
 warning prefs (`warningEnabled` / `warningThreshold` + setters — owns its
 own settings keys).
 
@@ -261,7 +267,7 @@ the iPhone via `WatchSessionGateway`). Registered by
 ```
 Features/Sources/
 ├── Domain/                      # Pure. No external imports.
-│   ├── Entities/  ValueObjects/  Enums/  Policies/
+│   ├── Entities/  ValueObjects/  Enums/
 │   ├── Clients/                 # 6 Client interfaces
 │   └── Adapters/                # 7 Adapter interfaces
 │
@@ -310,19 +316,19 @@ records:
 | Client named after a screen (`DashboardClient`) | Name around a domain concept |
 | Client A calls Client B without a §3.1 invariant comment | Read the store/adapter directly, extract a Policy, or let the Reducer coordinate |
 | Adapter calls another Adapter / a Client | Compose inside a Client Live |
-| Policy is `async throws` | It's Client logic, not a Policy |
+| Entity method does IO / `async throws` | That's Client logic — entities stay pure |
 | New ambiguous `XxxClient` outside §5 catalog | Decide: does it belong to an existing context? New contexts need a spec note |
 | `@Dependency(\.modelContainer)` outside `SwiftDataStore` | Instantiate `SwiftDataStore<Domain, SD>()` instead |
 | `ModelContext` outside the §4 closed list | Move the work into a Store method or constrained extension |
 | `FetchDescriptor<SD>` / SD types crossing above Infrastructure | Return Domain types only |
-| Mapper performs business logic | Mappers translate shape only; rules go in Policy / Client |
+| Mapper performs business logic | Mappers translate shape only; rules go on the entity / in a Client |
 | Fixed shared temp-file paths | Unique subdirectory per operation (see `exportCSV`) |
 
 ---
 
 ## 10. Testability
 
-- **Policy**: pure function tests — fastest, no setup
+- **Entity rules** (e.g. `Budget.evaluate`): pure function tests — fastest, no setup
 - **Client Live**: in-memory `\.modelContainer` (seed via `SwiftDataStore`)
   + adapter spies via `withDependencies` — see `LedgerClientLiveTests`
 - **Adapter Live**: integration tests against real system APIs (sparingly)

@@ -86,7 +86,7 @@ The project uses **Clean Architecture + TCA (v1.23.1)** with a local SPM package
 
 ```
 Features/Sources/
-├── Domain/         # Pure Swift entities/VOs/policies + Client/Adapter interfaces. Zero external imports.
+├── Domain/         # Pure Swift entities/VOs（純領域規則以 entity 方法承載，如 Budget.evaluate）+ Client/Adapter interfaces. Zero external imports.
 ├── Core/           # Infrastructure: SwiftData (SD-prefixed models), SwiftDataStore, mappers, Adapter lives.
 ├── Application/    # Client live implementations（與 Core 同一 SPM target），一個 bounded context 一個資料夾.
 ├── Common/         # Design system, extensions, shared SwiftUI components. No dependencies.
@@ -130,7 +130,7 @@ Features/Sources/
 - Domain enums are stored as raw `String` values; mappers convert via `init(rawValue:)`
 - `SDTransaction` has a `@Relationship` to `[SDTag]` (many-to-many); `SDTag` has the inverse `@Relationship` back
 - All SD models conform to `PersistentDomainModel`（`+Mapping.swift`）：`toDomain()` / `from(_:context:)` / `applyChanges(from:context:)` / `prepareForDelete()` / `idPredicate(_:)`——關聯生命週期（如刪 Tag 解除交易關聯）住在 mapper
-- **持久化唯一磚塊是 `SwiftDataStore<Domain, SD>`**（零參數建構；只有它可 `@Dependency(\.modelContainer)`）。Client Live 直接實例化使用；自訂查詢先 `fetchAll()` + Swift 過濾，瓶頸才加 constrained extension
+- **持久化唯一磚塊是 `SwiftDataStore<Domain, SD>`**（零參數建構；只有它可 `@Dependency(\.modelContainer)`）。呼叫端一律用 `Core/Persistence/Stores.swift` 的 per-aggregate 別名（`TransactionStore` / `AccountStore` / `CategoryStore` / `TagStore` / `BudgetStore` / `CarrierStore` / `RecurringTransactionStore`）——Domain↔SD 配對只宣告一次；自訂查詢先 `fetchAll()` + Swift 過濾，瓶頸才加 constrained extension
 - `ModelContext` 合法出現位置（封閉清單）：`SwiftDataStore`、mappers、`PersistenceBootstrap`（seeding）、`CloudKitSyncAdapter`、`TransactionAnalyticsKernel`、`Core/Adapters/Watch/` 管線
 - `CoreError.notFound` / `.operationDenied` are the only error types thrown from the Core layer
 - Default data seeding（`PersistenceBootstrap` 的 `seedIfNeeded(in:)`）populates default categories and the default "Cash" account on first launch (only when `SDCategory` count == 0)

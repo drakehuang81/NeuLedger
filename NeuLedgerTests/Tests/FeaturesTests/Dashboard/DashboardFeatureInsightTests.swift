@@ -22,8 +22,8 @@ struct DashboardFeatureInsightTests {
             $0.insightsClient.generateAIInsight = { _ in "" }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.ledgerClient.listRecent = { _ in [] }
             $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
         }

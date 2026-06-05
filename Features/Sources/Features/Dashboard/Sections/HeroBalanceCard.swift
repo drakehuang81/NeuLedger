@@ -101,7 +101,7 @@ private func heroPreviewState(
 ) -> DashboardFeature.State {
     var state = DashboardFeature.State()
     state.heroPhase = phase
-    state.filteredBalance = balance
+    state.accountBalances = ["preview-account": balance]   // filteredBalance（computed）由此推導
     state.weeklySpending = weekly
     state.earliestTransactionDate = earliestTransactionDate
     return state

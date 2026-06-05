@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Dashboard "recent transactions" section.
 ///
-/// Renders up to 6 rows from `store.filteredRecent`. Each row can expand to
+/// Renders up to 6 rows from `store.recentTransactions`. Each row can expand to
 /// reveal its tags via `FlowLayout` of `TagPill`s; the active expanded row is
 /// driven by `state.expandedTransactionID`.
 struct TransactionsSection: View {
@@ -36,7 +36,7 @@ struct TransactionsSection: View {
 
     @ViewBuilder
     private var content: some View {
-        let rows = Array(store.filteredRecent.prefix(6))
+        let rows = Array(store.recentTransactions.prefix(6))
         if rows.isEmpty {
             EmptyStateView(
                 icon: "tray",

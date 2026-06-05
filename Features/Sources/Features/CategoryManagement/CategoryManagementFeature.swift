@@ -47,7 +47,7 @@ public struct CategoryManagementFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.ledgerClient) var ledger
 
     private enum CancelID {
         case task
@@ -64,7 +64,7 @@ public struct CategoryManagementFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    let categories = try await categoryClient.fetchAll()
+                    let categories = try await ledger.listCategories(nil)
                     let sorted = categories.sorted { $0.sortOrder < $1.sortOrder }
                     await send(.categoriesLoaded(sorted))
                 }
@@ -118,7 +118,7 @@ public struct CategoryManagementFeature: Sendable {
 
                 return .run { _ in
                     for category in reordered {
-                        try await categoryClient.update(category)
+                        try await ledger.updateCategory(category)
                     }
                 }
                 .cancellable(id: CancelID.reorder, cancelInFlight: true)
@@ -145,8 +145,8 @@ public struct CategoryManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 return .run { send in
-                    try await categoryClient.delete(id)
-                    let categories = try await categoryClient.fetchAll()
+                    try await ledger.deleteCategory(id)
+                    let categories = try await ledger.listCategories(nil)
                     let sorted = categories.sorted { $0.sortOrder < $1.sortOrder }
                     await send(.categoriesLoaded(sorted))
                 }
@@ -158,7 +158,7 @@ public struct CategoryManagementFeature: Sendable {
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
                 return .run { send in
-                    let categories = try await categoryClient.fetchAll()
+                    let categories = try await ledger.listCategories(nil)
                     let sorted = categories.sorted { $0.sortOrder < $1.sortOrder }
                     await send(.categoriesLoaded(sorted))
                 }

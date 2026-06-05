@@ -80,9 +80,7 @@ public struct FilterFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.tagClient) var tagClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
 
     private enum CancelID { case task }
@@ -95,9 +93,9 @@ public struct FilterFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    async let categories = categoryClient.fetchAll()
-                    async let accounts = accountClient.fetchAll()
-                    async let tags = tagClient.fetchAll()
+                    async let categories = ledger.listCategories(nil)
+                    async let accounts = ledger.listAccounts()
+                    async let tags = ledger.listTags()
                     let (c, a, t) = try await (categories, accounts, tags)
                     await send(.optionsLoaded(categories: c, accounts: a, tags: t))
                 }

@@ -80,10 +80,8 @@ public struct TransactionDetailFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.ledger) var ledger
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.insightsClient) var insightsClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.continuousClock) var clock
     @Dependency(\.dismiss) var dismiss
 
@@ -98,8 +96,8 @@ public struct TransactionDetailFeature: Sendable {
                 let txn = state.transaction
                 return .merge(
                     .run { send in
-                        async let accounts = accountClient.fetchAll()
-                        async let categories = categoryClient.fetchAll()
+                        async let accounts = ledger.listAccounts()
+                        async let categories = ledger.listCategories(nil)
                         let (a, c) = try await (accounts, categories)
                         let account = a.first { $0.id == txn.accountId }
                         let toAccount = txn.toAccountId.flatMap { id in a.first { $0.id == id } }
@@ -114,7 +112,7 @@ public struct TransactionDetailFeature: Sendable {
                     },
                     .run { send in
                         do {
-                            let insight = try await transactionClient.detailStats(txn)
+                            let insight = try await insightsClient.detailStats(txn)
                             await send(.insightLoaded(insight))
                         } catch {
                             await send(.insightFailed)

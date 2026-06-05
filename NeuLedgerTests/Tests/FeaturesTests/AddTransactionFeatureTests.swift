@@ -8,11 +8,11 @@ import Domain
 struct AddTransactionFeatureTests {
 
     private static let account1 = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: "00000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759"
     )
     private static let account2 = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+        id: "00000000-0000-0000-0000-000000000002",
         name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
     )
 
@@ -20,11 +20,11 @@ struct AddTransactionFeatureTests {
     @Test(".task loads accounts and categories and sets default accountId from userSettings")
     func testTaskLoadsOptionsAndAppliesDefaultAccount() async {
         let cash = Account(
-            id: UUID(uuidString: "AA000000-0000-0000-0000-000000000001")!,
+            id: "AA000000-0000-0000-0000-000000000001",
             name: "現金", type: .cash, icon: "banknote", color: "#34C759"
         )
         let bank = Account(
-            id: UUID(uuidString: "AA000000-0000-0000-0000-000000000002")!,
+            id: "AA000000-0000-0000-0000-000000000002",
             name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
         )
         let food = Domain.Category(
@@ -37,10 +37,10 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [cash, bank] }
-            $0.categoryClient.fetchAll = { [food] }
+            $0.ledgerClient.listActiveAccounts = { [cash, bank] }
+            $0.ledgerClient.listCategories = { _ in [food] }
             // defaultAccountId set to bank.id → state.accountId should match bank.id
-            $0.userSettingsAdapter.string = { _ in bank.id.uuidString }
+            $0.ledgerClient.defaultAccountId = { bank.id }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -56,7 +56,7 @@ struct AddTransactionFeatureTests {
     @Test(".task falls back to first account when userSettings has no defaultAccountId")
     func testTaskFallsBackToFirstAccountWhenNoDefault() async {
         let cash = Account(
-            id: UUID(uuidString: "AB000000-0000-0000-0000-000000000001")!,
+            id: "AB000000-0000-0000-0000-000000000001",
             name: "現金", type: .cash, icon: "banknote", color: "#34C759"
         )
 
@@ -65,9 +65,9 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [cash] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }   // empty = no default
+            $0.ledgerClient.listActiveAccounts = { [cash] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }   // nil = no default
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -106,7 +106,7 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: state) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.ledger.record = { _ in }
+            $0.ledgerClient.record = { _ in }
         }
 
         await store.send(.saveTapped)
@@ -165,13 +165,13 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { aiAvailable }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { aiAvailable }
             if aiAvailable {
-                $0.aiUseCase.extractFromText = { _ in ExtractedTransaction() }
-                $0.aiUseCase.suggestCategories = { _, _ in
+                $0.captureClient.extractFromText = { _ in ExtractedTransaction() }
+                $0.captureClient.suggestCategories = { _, _ in
                     CategorySuggestions(suggestions: [], confidence: "low")
                 }
             }
@@ -182,7 +182,7 @@ struct AddTransactionFeatureTests {
     func saveTappedPrefilledCreatesTransaction() async {
         let saved = LockIsolated<Transaction?>(nil)
         let account = Account(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
+            id: "00000000-0000-0000-0000-000000000010",
             name: "現金", type: .cash, icon: "banknote", color: "#00FF00"
         )
         // Use .transfer type to skip category validation; manually set both accountId and toAccountId
@@ -195,11 +195,11 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [account] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { false }
-            $0.ledger.record = { saved.setValue($0) }
+            $0.ledgerClient.listActiveAccounts = { [account] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+            $0.ledgerClient.record = { saved.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -241,10 +241,10 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
         }
         await store.send(.backgroundExtractionCompleted(nil)) {
             $0.isBackgroundParsingNote = false
@@ -260,8 +260,8 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -279,8 +279,8 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -294,7 +294,7 @@ struct AddTransactionFeatureTests {
     @Test("saveTapped in addRecurringConfirmation mode emits savedRecurringConfirmation delegate")
     func testSaveTappedRecurringConfirmationEmitsDelegate() async {
         let recurringId = UUID()
-        let accountId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let accountId = "00000000-0000-0000-0000-000000000001"
         let categoryId = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
         let template = RecurringTransaction(
             id: recurringId, amount: 500, note: "房租",
@@ -310,9 +310,9 @@ struct AddTransactionFeatureTests {
         ) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.ledger.record = { addedTransaction.setValue($0) }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.record = { addedTransaction.setValue($0) }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -345,11 +345,11 @@ struct AddTransactionFeatureTests {
         let store = await TestStore(initialState: state) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [Self.account1] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.aiUseCase.isAvailable = { false }
-            $0.ledger.update = { updatedCapture.setValue($0) }
+            $0.ledgerClient.listActiveAccounts = { [Self.account1] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+            $0.ledgerClient.update = { updatedCapture.setValue($0) }
         }
 
         await store.send(.saveTapped)
@@ -371,8 +371,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: AddTransactionFeature.State()) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.requestPermission = { false }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.requestVoicePermission = { false }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.recordingTapped)
@@ -394,10 +394,10 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.requestPermission = { true }
-            $0.speechAdapter.startRecording = { stream }
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.recordingTapped)
@@ -421,8 +421,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.transcriptionUpdated("五十五元")) {
@@ -439,8 +439,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.transcriptionUpdated("午餐便當")) {
@@ -458,8 +458,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { }
+            $0.captureClient.isAvailable = { false }
         }
 
         // SpeechAdapter emits FULL transcript each time (not delta).
@@ -481,8 +481,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.transcriptionFailed) {
@@ -504,8 +504,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
+            $0.captureClient.isAvailable = { false }
         }
 
         await store.send(.recordingTapped) {
@@ -526,8 +526,8 @@ struct AddTransactionVoiceTests {
         let store = await TestStore(initialState: initial) {
             AddTransactionFeature()
         } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-            $0.aiUseCase.isAvailable = { false }
+            $0.captureClient.stopVoiceSession = { stopCalled.setValue(true) }
+            $0.captureClient.isAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off

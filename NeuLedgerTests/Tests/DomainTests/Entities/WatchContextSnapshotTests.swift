@@ -6,7 +6,7 @@ import Testing
 struct WatchContextSnapshotTests {
 
     private func makeSampleSnapshot(monthBudgetProgress: Double?) -> WatchContextSnapshot {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let category = Category(
             name: "Food",
             icon: "fork.knife",

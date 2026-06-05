@@ -53,8 +53,7 @@ public struct AccountManagementFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.transactionClient) var transactionClient
+    @Dependency(\.ledgerClient) var ledger
 
     private enum CancelID { case task, reorder }
 
@@ -66,7 +65,7 @@ public struct AccountManagementFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    let accounts = try await accountClient.fetchAll()
+                    let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
                 }
                 .cancellable(id: CancelID.task)
@@ -80,7 +79,7 @@ public struct AccountManagementFeature: Sendable {
                     await withTaskGroup(of: (Account.ID, Decimal).self) { group in
                         for id in ids {
                             group.addTask {
-                                let balance = (try? await accountClient.computeBalance(id)) ?? 0
+                                let balance = (try? await ledger.balance(id)) ?? 0
                                 return (id, balance)
                             }
                         }
@@ -129,7 +128,7 @@ public struct AccountManagementFeature: Sendable {
 
             case let .deleteRequested(id):
                 return .run { send in
-                    let transactions = try await transactionClient.fetch(
+                    let transactions = try await ledger.listAll(
                         TransactionFilter(accountIds: [id])
                     )
                     if transactions.isEmpty {
@@ -171,15 +170,15 @@ public struct AccountManagementFeature: Sendable {
 
             case let .alert(.presented(.archiveConfirmed(id))):
                 return .run { send in
-                    try await accountClient.archive(id)
-                    let accounts = try await accountClient.fetchAll()
+                    try await ledger.archiveAccount(id)
+                    let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
                 }
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 return .run { send in
-                    try await accountClient.delete(id)
-                    let accounts = try await accountClient.fetchAll()
+                    try await ledger.deleteAccount(id)
+                    let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
                 }
 
@@ -197,8 +196,8 @@ public struct AccountManagementFeature: Sendable {
                 updated.isArchived = false
                 let toUpdate = updated
                 return .run { send in
-                    try await accountClient.update(toUpdate)
-                    let accounts = try await accountClient.fetchAll()
+                    try await ledger.updateAccount(toUpdate)
+                    let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
                 }
 
@@ -227,7 +226,7 @@ public struct AccountManagementFeature: Sendable {
 
                 return .run { _ in
                     for account in reordered {
-                        try await accountClient.update(account)
+                        try await ledger.updateAccount(account)
                     }
                 }
                 .cancellable(id: CancelID.reorder, cancelInFlight: true)
@@ -235,7 +234,7 @@ public struct AccountManagementFeature: Sendable {
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
                 return .run { send in
-                    let accounts = try await accountClient.fetchAll()
+                    let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
                 }
 

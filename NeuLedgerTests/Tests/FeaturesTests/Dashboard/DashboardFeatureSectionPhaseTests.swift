@@ -12,14 +12,15 @@ struct DashboardFeatureSectionPhaseTests {
         let store = await TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.weeklySpending = { _, _ in [10, 20, 30, 40, 50, 60, 70] }
-            $0.transactionClient.fetchRecent = { [] }
-            $0.transactionClient.fetchAll = { [] }
-            $0.transactionClient.statsSnapshot = { .zero }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
-            $0.aiUseCase.generateInsights = { _ in [] }
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.insightsClient.weeklySparkline = { _ in [10, 20, 30, 40, 50, 60, 70] }
+            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
+            $0.insightsClient.generateInsights = { _ in [] }
         }
 
         await MainActor.run {
@@ -40,14 +41,15 @@ struct DashboardFeatureSectionPhaseTests {
         let store = await TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.weeklySpending = { _, _ in throw Boom() }
-            $0.transactionClient.fetchRecent = { [] }
-            $0.transactionClient.fetchAll = { [] }
-            $0.transactionClient.statsSnapshot = { .zero }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
-            $0.aiUseCase.generateInsights = { _ in [] }
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.insightsClient.weeklySparkline = { _ in throw Boom() }
+            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
+            $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -67,7 +69,7 @@ struct DashboardFeatureSectionPhaseTests {
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.weeklySpending = { _, _ in [1, 2, 3, 4, 5, 6, 7] }
+            $0.insightsClient.weeklySparkline = { _ in [1, 2, 3, 4, 5, 6, 7] }
         }
         await store.send(.retrySection(.hero)) {
             $0.heroPhase = .loading
@@ -85,7 +87,8 @@ struct DashboardFeatureSectionPhaseTests {
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.statsSnapshot = { StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.insightsClient.todayStats = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
         }
         await store.send(.retrySection(.stats)) {
             $0.statsPhase = .loading

@@ -40,8 +40,7 @@ public enum WatchBootstrap {
         @Dependency(\.userSettingsAdapter) var userSettings
         let observer = WatchSyncObserver(defaultAccountIdProvider: { @Sendable in
             let raw = userSettings.string(.watchDefaultAccountId)
-            guard !raw.isEmpty else { return nil }
-            return UUID(uuidString: raw)
+            return raw.isEmpty ? nil : raw
         })
         observer.start()
         syncObserver = observer

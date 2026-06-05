@@ -160,11 +160,8 @@ public struct DashboardFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.aiUseCase) var aiUseCase
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.ledgerClient) var ledger
+    @Dependency(\.insightsClient) var insightsClient
     @Dependency(\.date.now) var now
 
     // MARK: - Body
@@ -216,7 +213,7 @@ public struct DashboardFeature: Sendable {
                     await withTaskGroup(of: (Account.ID, Decimal).self) { group in
                         for account in accounts {
                             group.addTask {
-                                let balance = (try? await accountClient.computeBalance(account.id)) ?? 0
+                                let balance = (try? await ledger.balance(account.id)) ?? 0
                                 return (account.id, balance)
                             }
                         }
@@ -283,7 +280,7 @@ public struct DashboardFeature: Sendable {
                     state.heroPhase = .loading
                     return .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -294,7 +291,7 @@ public struct DashboardFeature: Sendable {
                     state.accountsPhase = .loading
                     return .run { send in
                         do {
-                            let accounts = try await accountClient.fetchActive()
+                            let accounts = try await ledger.listActiveAccounts()
                             await send(.accountsUpdated(accounts))
                         } catch {
                             await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -305,7 +302,7 @@ public struct DashboardFeature: Sendable {
                     state.transactionsPhase = .loading
                     return .run { send in
                         do {
-                            let txs = try await transactionClient.fetchRecent()
+                            let txs = try await ledger.listRecent(limit: 20).map(\.transaction)
                             await send(.transactionsUpdated(txs))
                         } catch {
                             await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -331,7 +328,7 @@ public struct DashboardFeature: Sendable {
                 state.heroPhase = .loading
                 return .run { [accountID] send in
                     do {
-                        let v = try await transactionClient.weeklySpending(accountID, 7)
+                        let v = try await insightsClient.weeklySparkline(accountID)
                         await send(.weeklySpendingComputed(v))
                     } catch {
                         await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -364,7 +361,7 @@ public struct DashboardFeature: Sendable {
             // MARK: AI Insight
 
             case .fetchAIInsight:
-                guard aiUseCase.isAvailable() else { return .none }
+                guard insightsClient.isAIAvailable() else { return .none }
                 state.isLoadingInsight = true
                 return .run { [transactions = state.recentTransactions] send in
                     let totalExpense = transactions
@@ -380,7 +377,7 @@ public struct DashboardFeature: Sendable {
                         periodDescription: String(localized: "dashboard_period_recent", bundle: .main)
                     )
 
-                    let insight = try await aiUseCase.generateInsight(summary)
+                    let insight = try await insightsClient.generateAIInsight(summary)
                     await send(.aiInsightResponse(.success(insight)))
                 } catch: { error, send in
                     await send(.aiInsightResponse(.failure(error)))
@@ -448,16 +445,16 @@ public struct DashboardFeature: Sendable {
                  .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
                 return .merge(
                     .run { send in
-                        async let transactions = transactionClient.fetchRecent()
-                        async let accounts = accountClient.fetchActive()
+                        async let transactions = ledger.listRecent(limit: 20)
+                        async let accounts = ledger.listActiveAccounts()
                         let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t))
+                        await send(.transactionsUpdated(t.map(\.transaction)))
                         await send(.accountsUpdated(a))
                     },
                     statsEffect(cancelInFlight: true),
                     .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -469,16 +466,16 @@ public struct DashboardFeature: Sendable {
             case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
                 return .merge(
                     .run { send in
-                        async let transactions = transactionClient.fetchRecent()
-                        async let accounts = accountClient.fetchActive()
+                        async let transactions = ledger.listRecent(limit: 20)
+                        async let accounts = ledger.listActiveAccounts()
                         let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t))
+                        await send(.transactionsUpdated(t.map(\.transaction)))
                         await send(.accountsUpdated(a))
                     },
                     statsEffect(cancelInFlight: true),
                     .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -498,16 +495,16 @@ public struct DashboardFeature: Sendable {
                  .detail(.presented(.delegate(.updated))):
                 return .merge(
                     .run { send in
-                        async let transactions = transactionClient.fetchRecent()
-                        async let accounts = accountClient.fetchActive()
+                        async let transactions = ledger.listRecent(limit: 20)
+                        async let accounts = ledger.listActiveAccounts()
                         let (t, a) = try await (transactions, accounts)
-                        await send(.transactionsUpdated(t))
+                        await send(.transactionsUpdated(t.map(\.transaction)))
                         await send(.accountsUpdated(a))
                     },
                     statsEffect(cancelInFlight: true),
                     .run { [accountID = state.selectedAccountID] send in
                         do {
-                            let values = try await transactionClient.weeklySpending(accountID, 7)
+                            let values = try await insightsClient.weeklySparkline(accountID)
                             await send(.weeklySpendingComputed(values))
                         } catch {
                             await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -545,7 +542,7 @@ public struct DashboardFeature: Sendable {
         .merge(
             .run { send in
                 do {
-                    let accounts = try await accountClient.fetchActive()
+                    let accounts = try await ledger.listActiveAccounts()
                     await send(.accountsUpdated(accounts))
                 } catch {
                     await send(.sectionFailed(.accounts, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -555,7 +552,7 @@ public struct DashboardFeature: Sendable {
 
             .run { send in
                 do {
-                    let transactions = try await transactionClient.fetchRecent()
+                    let transactions = try await ledger.listRecent(limit: 20).map(\.transaction)
                     await send(.transactionsUpdated(transactions))
                 } catch {
                     await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -565,7 +562,7 @@ public struct DashboardFeature: Sendable {
 
             .run { send in
                 do {
-                    let categories = try await categoryClient.fetchAll()
+                    let categories = try await ledger.listCategories(nil)
                     await send(.categoriesLoaded(categories))
                 } catch {
                     // Categories feed UI styling; failure leaves the cached map intact.
@@ -575,7 +572,7 @@ public struct DashboardFeature: Sendable {
 
             .run { [accountID] send in
                 do {
-                    let values = try await transactionClient.weeklySpending(accountID, 7)
+                    let values = try await insightsClient.weeklySparkline(accountID)
                     await send(.weeklySpendingComputed(values))
                 } catch {
                     await send(.sectionFailed(.hero, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -594,7 +591,7 @@ public struct DashboardFeature: Sendable {
         .run { send in
             do {
                 let summary = SpendingSummary(monthTotal: 0, weekTotal: 0)
-                let list = try await aiUseCase.generateInsights(summary)
+                let list = try await insightsClient.generateInsights(summary)
                 await send(.insightsLoaded(list))
             } catch {
                 await send(.sectionFailed(.insight, String(localized: "dashboard_section_load_failed", bundle: .main)))
@@ -606,9 +603,9 @@ public struct DashboardFeature: Sendable {
     /// Loads `StatsSnapshot` and routes success/failure into the
     /// stats section phase machine.
     private func statsEffect(cancelInFlight: Bool) -> Effect<Action> {
-        .run { send in
+        .run { [now] send in
             do {
-                let snapshot = try await transactionClient.statsSnapshot()
+                let snapshot = try await insightsClient.todayStats(now)
                 await send(.statsComputed(
                     today: snapshot.today,
                     week: snapshot.week,

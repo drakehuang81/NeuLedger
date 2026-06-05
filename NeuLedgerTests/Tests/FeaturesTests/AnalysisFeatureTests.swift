@@ -10,7 +10,7 @@ struct AnalysisFeatureTests {
     // MARK: - Shared Helpers
 
     private static let categoryId = UUID()
-    private static let accountId = UUID()
+    private static let accountId = UUID().uuidString
 
     private static let sampleCategory = Category(
         id: categoryId,
@@ -31,7 +31,7 @@ struct AnalysisFeatureTests {
         Transaction(amount: 300, date: day1, note: "午餐", categoryId: categoryId, accountId: accountId, type: .expense),
         Transaction(amount: 200, date: day1, note: "咖啡", categoryId: categoryId, accountId: accountId, type: .expense),
         Transaction(amount: 5000, date: day1, note: "薪資", accountId: accountId, type: .income),
-        Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID(), type: .transfer),
+        Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID().uuidString, type: .transfer),
     ]
 
     // MARK: - Dismiss Insight
@@ -55,10 +55,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -75,10 +75,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in Self.sampleTransactions }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -107,10 +107,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -134,10 +134,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in throw URLError(.badServerResponse) }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in throw URLError(.badServerResponse) }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -156,11 +156,11 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in Self.sampleTransactions }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.generateInsight = { _ in insightText }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.insightsClient.isAIAvailable = { true }
+            $0.insightsClient.generateAIInsight = { _ in insightText }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -184,11 +184,11 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in Self.sampleTransactions }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.generateInsight = { _ in throw AIError() }
+            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.insightsClient.isAIAvailable = { true }
+            $0.insightsClient.generateAIInsight = { _ in throw AIError() }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -234,10 +234,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in budgetTxns }
-            $0.budgetClient.fetchActive = { [budget] }
-            $0.categoryClient.fetchAll = { [Self.sampleCategory] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in budgetTxns.map { EnrichedTransaction(transaction: $0) } }
+            $0.planningClient.listActive = { [budget] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -263,8 +263,8 @@ struct AnalysisFeatureTests {
         let categoryId = UUID()
         let proportion = CategoryProportion(id: categoryId.uuidString, name: "飲食", amount: 500)
         let expectedTransactions: [Transaction] = [
-            Transaction(amount: 300, date: Date(), note: "午餐", categoryId: categoryId, accountId: UUID(), type: .expense),
-            Transaction(amount: 200, date: Date(), note: "晚餐", categoryId: categoryId, accountId: UUID(), type: .expense),
+            Transaction(amount: 300, date: Date(), note: "午餐", categoryId: categoryId, accountId: UUID().uuidString, type: .expense),
+            Transaction(amount: 200, date: Date(), note: "晚餐", categoryId: categoryId, accountId: UUID().uuidString, type: .expense),
         ]
 
         var initialState = AnalysisFeature.State()
@@ -274,7 +274,7 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in expectedTransactions }
+            $0.ledgerClient.listAll = { _ in expectedTransactions.map { EnrichedTransaction(transaction: $0) } }
         }
 
         await store.send(.categoryTapped(proportion))
@@ -294,7 +294,7 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { filter in
+            $0.ledgerClient.listAll = { filter in
                 capturedFilter.setValue(filter)
                 return []
             }
@@ -317,7 +317,7 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in throw FetchError() }
+            $0.ledgerClient.listAll = { _ in throw FetchError() }
         }
 
         await store.send(.categoryTapped(proportion))
@@ -356,10 +356,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in txns }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in txns.map { EnrichedTransaction(transaction: $0) } }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -386,10 +386,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [budget] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.planningClient.listActive = { [budget] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -412,11 +412,11 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { accounts }
-            $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listActiveAccounts = { accounts }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -428,14 +428,14 @@ struct AnalysisFeatureTests {
 
     @Test("accountSelected updates selectedAccountId and triggers loadData")
     func testAccountSelected() async {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let store = await TestStore(initialState: AnalysisFeature.State()) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [] }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -449,7 +449,7 @@ struct AnalysisFeatureTests {
 
     @Test("loadData passes accountIds filter when selectedAccountId is set")
     func testLoadDataPassesAccountFilter() async {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         var initial = AnalysisFeature.State()
         initial.selectedAccountId = accountId
 
@@ -457,13 +457,13 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initial) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { filter in
+            $0.ledgerClient.listAll = { filter in
                 capturedFilter.setValue(filter)
                 return []
             }
-            $0.budgetClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.planningClient.listActive = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -477,7 +477,7 @@ struct AnalysisFeatureTests {
 
     @Test("computeBudgetMetrics filters budgets to account-relevant categories")
     func testBudgetMetricsAccountFilter() async {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let relevantCategoryId = UUID()
         let irrelevantCategoryId = UUID()
 
@@ -500,10 +500,10 @@ struct AnalysisFeatureTests {
         let store = await TestStore(initialState: initial) {
             AnalysisFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [accountTxn] }
-            $0.budgetClient.fetchActive = { [relevantBudget, irrelevantBudget] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.aiUseCase.isAvailable = { false }
+            $0.ledgerClient.listAll = { _ in [accountTxn].map { EnrichedTransaction(transaction: $0) } }
+            $0.planningClient.listActive = { [relevantBudget, irrelevantBudget] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run {
             store.exhaustivity = .off

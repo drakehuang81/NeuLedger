@@ -4,406 +4,91 @@ import Foundation
 import Testing
 @testable import Features
 
-@Suite("MainTabFeature — AI input")
+@Suite("MainTabFeature — task & accessory routing")
 struct MainTabFeatureTests {
 
-    @Test("task stores AI availability")
-    func taskStoresAvailability() async {
-        // Initial state has aiUnavailable = false; receiving isAvailable: true keeps it false (no change).
+    @Test("task forwards lifecycle to accessory and loads showAccessoryBar")
+    func taskForwardsLifecycleAndLoadsAccessoryBar() async {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.string = { _ in "add" }
-            $0.notificationAdapter.pendingConfirmations = {
-                AsyncStream { $0.finish() }
-            }
+            // forwarded to the scoped AccessoryBarFeature — its .task reads captureClient + accessoryMode
+            $0.captureClient.isAvailable = { true }
+            $0.platformClient.accessoryMode = { .add }
+            // MainTab's .task reads showAccessoryBar from platformClient
+            $0.platformClient.showAccessoryBar = { false }
         }
+        await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)
-        await store.receive(.aiAvailabilityLoaded(isAvailable: true))
-        await store.receive(.accessoryBarVisibilityLoaded(true))
-        await store.receive(.accessoryModeLoaded(.add))
+        await store.receive(\.accessory.task)
+        await store.receive(\.accessoryBarVisibilityLoaded) {
+            $0.showAccessoryBar = false
+        }
+        await store.finish()
     }
 
-    @Test("task marks AI unavailable when not available")
-    func taskMarksUnavailable() async {
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { false }
-            $0.userSettingsAdapter.string = { _ in "ai" }
-            $0.notificationAdapter.pendingConfirmations = {
-                AsyncStream { $0.finish() }
-            }
-        }
-        await store.send(.task)
-        await store.receive(.aiAvailabilityLoaded(isAvailable: false)) {
-            $0.aiUnavailable = true
-        }
-        await store.receive(.accessoryBarVisibilityLoaded(true))
-        // AI is unavailable → mode falls back to .add even though "ai" was stored
-        await store.receive(.accessoryModeLoaded(.add))
-    }
-
-    @Test("AI input button expands the input bar")
-    func aiInputButtonExpands() async {
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { false }
-        }
-        await store.send(.aiInputButtonTapped) {
-            $0.isAIInputExpanded = true
-        }
-    }
-
-    @Test("dismiss resets all AI input state")
-    func dismissResetsState() async {
-        var initial = MainTabFeature.State()
-        initial.isAIInputExpanded = true
-        initial.aiInputText = "午餐150"
-        initial.aiInputError = "some error"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { false }
-            $0.speechAdapter.stopRecording = { }
-        }
-        await store.send(.aiInputDismissed) {
-            $0.isAIInputExpanded = false
-            $0.aiInputText = ""
-            $0.isAIInputLoading = false
-            $0.aiInputError = nil
-        }
-    }
-
-    @Test("successful extraction on dashboard tab opens AddTransaction")
-    func successfulExtractionRoutesDashboard() async {
-        let extracted = ExtractedTransaction(amount: 150, suggestedCategory: "食物", description: "午餐", type: "expense")
-        let fixedDate = Date(timeIntervalSince1970: 0)
-
+    @Test("contextActionRequested on dashboard routes to dashboard add")
+    func contextActionRoutesDashboard() async {
         var initial = MainTabFeature.State()
         initial.selectedTab = .dashboard
-        initial.isAIInputExpanded = true
-        initial.aiInputText = "午餐150"
-        initial.isAIInputLoading = true
-
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
         } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.extractFromText = { _ in extracted }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+        }
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.accessory(.delegate(.contextActionRequested)))
+        await store.receive(\.dashboard.addTransactionButtonTapped) { state in
+            #expect(state.dashboard.addTransaction?.mode == .add(.expense))
+        }
+    }
+
+    @Test("contextActionRequested on transactions routes to transactions add")
+    func contextActionRoutesTransactions() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .transactions
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.accessory(.delegate(.contextActionRequested)))
+        await store.receive(\.transactions.contextActionTapped) { state in
+            #expect(state.transactions.addTransaction?.mode == .add(.expense))
+        }
+    }
+
+    @Test("transactionExtracted delegate on dashboard opens AddTransaction")
+    func transactionExtractedRoutesDashboard() async {
+        let extracted = ExtractedTransaction(amount: 150, suggestedCategory: "食物", description: "午餐", type: "expense")
+        let fixedDate = Date(timeIntervalSince1970: 0)
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.userSettingsAdapter.string = { _ in "" }
             $0.date = .constant(fixedDate)
         }
-        await store.send(.aiExtractionCompleted(.success(extracted))) {
-            $0.isAIInputExpanded = false
-            $0.aiInputText = ""
-            $0.isAIInputLoading = false
-        }
-        await store.receive(.dashboard(.addTransactionWithPrefilledData(extracted))) {
+        await store.send(.accessory(.delegate(.transactionExtracted(extracted))))
+        await store.receive(\.dashboard.addTransactionWithPrefilledData) {
             $0.dashboard.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted), date: fixedDate)
         }
     }
 
-    @Test("failed extraction shows error and keeps input open")
-    func failedExtractionShowsError() async {
-        struct FakeError: Error {}
+    @Test("transactionExtracted delegate on transactions opens AddTransaction")
+    func transactionExtractedRoutesTransactions() async {
+        let extracted = ExtractedTransaction(amount: 150, suggestedCategory: "食物", description: "午餐", type: "expense")
         var initial = MainTabFeature.State()
-        initial.isAIInputExpanded = true
-        initial.isAIInputLoading = true
-
+        initial.selectedTab = .transactions
         let store = await TestStore(initialState: initial) {
             MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { false }
         }
-        await store.send(.aiExtractionCompleted(.failure(FakeError()))) {
-            $0.isAIInputLoading = false
-            $0.aiInputError = String(localized: "ai_extraction_error")
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.accessory(.delegate(.transactionExtracted(extracted))))
+        await store.receive(\.transactions.addTransactionWithPrefilledData) { state in
+            #expect(state.transactions.addTransaction?.mode == .addPrefilled(extracted))
         }
-    }
-}
-
-@Suite("MainTabFeature — recurring confirmation")
-struct MainTabRecurringConfirmationTests {
-
-    @Test("pendingRecurringConfirmationReceived pre-fills dashboard and switches tab")
-    func testPendingRecurringConfirmationReceived() async {
-        let recurringId = UUID()
-        let template = RecurringTransaction(
-            id: recurringId, amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(), isActive: true, createdAt: Date()
-        )
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.recurringTransactionClient.fetchAll = { [template] }
-            $0.aiUseCase.isAvailable = { false }
-            $0.userSettingsAdapter.bool = { _ in false }
-            $0.notificationAdapter.pendingConfirmations = {
-                AsyncStream { continuation in
-                    continuation.finish()
-                }
-            }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.pendingRecurringConfirmationReceived(recurringId))
-        await store.receive(\.recurringTemplateFetched) { state in
-            #expect(state.dashboard.addTransaction != nil)
-            #expect(state.selectedTab == .dashboard)
-            #expect(state.pendingRecurringConfirmationId == recurringId)
-        }
-    }
-}
-
-@Suite("MainTabFeature — accessory bar")
-struct MainTabAccessoryBarTests {
-
-    @Test("task reads showAccessoryBar=false and stores it")
-    func taskReadsAccessoryBarFalse() async {
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.bool = { key in
-                key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
-            }
-            $0.userSettingsAdapter.string = { _ in "add" }
-            $0.notificationAdapter.pendingConfirmations = {
-                AsyncStream { $0.finish() }
-            }
-        }
-        await store.send(.task)
-        await store.receive(.aiAvailabilityLoaded(isAvailable: true))
-        await store.receive(.accessoryBarVisibilityLoaded(false)) {
-            $0.showAccessoryBar = false
-        }
-        await store.receive(.accessoryModeLoaded(.add))
-    }
-}
-
-@Suite("MainTabFeature — accessory mode")
-struct MainTabAccessoryModeTests {
-
-    @Test("accessoryModeLoaded sets mode when AI is available")
-    func modeLoadedAIAvailable() async {
-        var initial = MainTabFeature.State()
-        initial.aiUnavailable = false
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-        }
-        await store.send(.accessoryModeLoaded(.ai)) {
-            $0.accessoryMode = .ai
-        }
-    }
-
-    @Test("accessoryModeLoaded falls back to .add when AI unavailable")
-    func modeLoadedAIUnavailable() async {
-        var initial = MainTabFeature.State()
-        initial.aiUnavailable = true
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { false }
-        }
-        // AI unavailable — reducer ignores the .ai value and keeps .add
-        await store.send(.accessoryModeLoaded(.ai))
-        // state.accessoryMode remains .add (default)
-    }
-
-    @Test("accessoryModeSwitched updates state and persists to settings")
-    func modeSwitchedPersists() async {
-        let savedKey: LockIsolated<String?> = LockIsolated(nil)
-        let savedValue: LockIsolated<String?> = LockIsolated(nil)
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.setString = { value, key in
-                savedKey.setValue(key.rawValue)
-                savedValue.setValue(value)
-            }
-        }
-        await store.send(.accessoryModeSwitched(.ai)) {
-            $0.accessoryMode = .ai
-        }
-        #expect(savedKey.value == "accessoryMode")
-        #expect(savedValue.value == "ai")
-    }
-
-    @Test("accessoryModeSwitched to .add persists correctly")
-    func modeSwitchedToAdd() async {
-        var initial = MainTabFeature.State()
-        initial.accessoryMode = .ai
-        let savedValue: LockIsolated<String?> = LockIsolated(nil)
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-            $0.userSettingsAdapter.setString = { value, _ in savedValue.setValue(value) }
-        }
-        await store.send(.accessoryModeSwitched(.add)) {
-            $0.accessoryMode = .add
-        }
-        #expect(savedValue.value == "add")
-    }
-}
-
-@Suite("MainTabFeature — recording")
-struct MainTabRecordingTests {
-
-    @Test("recordingTapped requests permission then starts recording")
-    func recordingTappedStartsWhenPermitted() async {
-        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
-        continuation.finish()   // empty stream so the effect completes immediately
-
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.requestPermission = { true }
-            $0.speechAdapter.startRecording = { stream }
-            $0.speechAdapter.stopRecording = { }
-        }
-
-        await store.send(.recordingTapped)
-        await store.receive(.recordingStarted) {
-            $0.isRecording = true
-            $0.aiInputError = nil
-        }
-        // stream finished immediately — no transcriptionUpdated expected
-    }
-
-    @Test("recordingTapped stops recording when already recording")
-    func recordingTappedStopsWhenRecording() async {
-        var initial = MainTabFeature.State()
-        initial.isRecording = true
-
-        let stopCalled = LockIsolated(false)
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-        }
-
-        await store.send(.recordingTapped) {
-            $0.isRecording = false
-        }
-        #expect(stopCalled.value)
-    }
-
-    @Test("recordingTapped shows permission error when denied")
-    func recordingTappedDeniedPermission() async {
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.requestPermission = { false }
-        }
-
-        await store.send(.recordingTapped)
-        await store.receive(.permissionDenied) {
-            $0.aiInputError = String(localized: "speech_permission_denied_error")
-        }
-    }
-
-    @Test("transcriptionUpdated sets aiInputText")
-    func transcriptionUpdatedSetsText() async {
-        var initial = MainTabFeature.State()
-        initial.isRecording = true
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-        }
-
-        await store.send(.transcriptionUpdated("早餐五十五元")) {
-            $0.aiInputText = "早餐五十五元"
-        }
-    }
-
-    @Test("transcriptionUpdated overwrites previous partial result")
-    func transcriptionUpdatedOverwrites() async {
-        var initial = MainTabFeature.State()
-        initial.isRecording = true
-        initial.aiInputText = "早餐"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-        }
-
-        await store.send(.transcriptionUpdated("早餐五十五元")) {
-            $0.aiInputText = "早餐五十五元"
-        }
-    }
-
-    @Test("transcriptionFailed clears recording state and shows error")
-    func transcriptionFailedShowsError() async {
-        var initial = MainTabFeature.State()
-        initial.isRecording = true
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-        }
-
-        await store.send(.transcriptionFailed) {
-            $0.isRecording = false
-            $0.aiInputError = String(localized: "speech_recognition_failed_error")
-        }
-    }
-
-    @Test("aiInputSubmitted is ignored while recording is active")
-    func submitIgnoredWhileRecording() async {
-        var initial = MainTabFeature.State()
-        initial.isRecording = true
-        initial.aiInputText = "早餐"
-
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.stopRecording = { }
-        }
-
-        // Should be a no-op — isRecording guard prevents extraction
-        await store.send(.aiInputSubmitted)
-        // No isAIInputLoading change, no aiExtractionCompleted expected
-    }
-
-    @Test("aiInputDismissed stops active recording")
-    func dismissStopsActiveRecording() async {
-        var initial = MainTabFeature.State()
-        initial.isAIInputExpanded = true
-        initial.isRecording = true
-        initial.aiInputText = "早餐"
-
-        let stopCalled = LockIsolated(false)
-        let store = await TestStore(initialState: initial) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.speechAdapter.stopRecording = { stopCalled.setValue(true) }
-        }
-
-        await store.send(.aiInputDismissed) {
-            $0.isAIInputExpanded = false
-            $0.aiInputText = ""
-            $0.isAIInputLoading = false
-            $0.aiInputError = nil
-            $0.isRecording = false
-        }
-        #expect(stopCalled.value)
     }
 }

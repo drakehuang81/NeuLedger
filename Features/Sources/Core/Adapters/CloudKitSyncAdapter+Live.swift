@@ -17,10 +17,10 @@ extension CloudKitSyncAdapter: DependencyKey {
             // SwiftData starts mirroring existing rows up to iCloud.
             try await MainActor.run {
                 let cloudContainer = try ModelContainer(
-                    for: DatabaseClient.schema,
-                    configurations: [DatabaseClient.cloudConfiguration]
+                    for: PersistenceBootstrap.schema,
+                    configurations: [PersistenceBootstrap.cloudConfiguration]
                 )
-                DatabaseClient.container = cloudContainer
+                PersistenceBootstrap.container = cloudContainer
             }
         },
         flushPendingChanges: {
@@ -32,7 +32,7 @@ extension CloudKitSyncAdapter: DependencyKey {
             // user sees something happened. CloudKit itself will run
             // whether we call this or not.
             await MainActor.run {
-                let context = ModelContext(DatabaseClient.container)
+                let context = ModelContext(PersistenceBootstrap.container)
                 if context.hasChanges {
                     try? context.save()
                 }

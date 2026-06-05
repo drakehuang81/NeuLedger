@@ -11,14 +11,14 @@ import ComposableArchitecture
 struct WatchSettingsFeatureTests {
 
     private static let cashAccount = Account(
-        id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
+        id: "33333333-3333-3333-3333-333333333333",
         name: "Cash", type: .cash, icon: "banknote", color: "#34C759",
         sortOrder: 0, isArchived: false,
         createdAt: Date(timeIntervalSince1970: 0)
     )
 
     private static let cardAccount = Account(
-        id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+        id: "44444444-4444-4444-4444-444444444444",
         name: "Card", type: .creditCard, icon: "creditcard",
         color: "#5E5CE6", sortOrder: 1, isArchived: false,
         createdAt: Date(timeIntervalSince1970: 0)
@@ -32,14 +32,12 @@ struct WatchSettingsFeatureTests {
         let store = TestStore(initialState: WatchSettingsFeature.State()) {
             WatchSettingsFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { @Sendable in
+            $0.ledgerClient.listActiveAccounts = { @Sendable in
                 [cash, card]
             }
-            $0.userSettingsAdapter.string = { @Sendable _ in
-                card.id.uuidString
-            }
-            $0.watchBridgeAdapter.isPaired = { true }
-            $0.watchBridgeAdapter.isWatchAppInstalled = { true }
+            $0.platformClient.watchDefaultAccountId = { card.id }
+            $0.platformClient.watchPaired = { true }
+            $0.platformClient.watchAppInstalled = { true }
         }
 
         await store.send(.task)
@@ -51,11 +49,11 @@ struct WatchSettingsFeatureTests {
         }
     }
 
-    @Test("Selecting an account writes the UUID to userSettingsAdapter")
+    @Test("Selecting an account writes the UUID via platformClient")
     func selectingAccountPersists() async {
         let cash = Self.cashAccount
         let card = Self.cardAccount
-        let captured = LockIsolated<String?>(nil)
+        let captured = LockIsolated<Account.ID?>(nil)
 
         let store = TestStore(
             initialState: WatchSettingsFeature.State(
@@ -67,8 +65,8 @@ struct WatchSettingsFeatureTests {
         ) {
             WatchSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { @Sendable value, _ in
-                captured.setValue(value)
+            $0.platformClient.setWatchDefaultAccountId = { @Sendable id in
+                captured.setValue(id)
             }
         }
 
@@ -76,6 +74,6 @@ struct WatchSettingsFeatureTests {
             $0.selectedAccountId = card.id
         }
 
-        #expect(captured.value == card.id.uuidString)
+        #expect(captured.value == card.id)
     }
 }

@@ -10,15 +10,15 @@ struct AccountManagementFeatureTests {
     // MARK: - Helpers
 
     private static let cashAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: "00000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759", sortOrder: 0
     )
     private static let bankAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+        id: "00000000-0000-0000-0000-000000000002",
         name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6", sortOrder: 1
     )
     private static let archivedAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+        id: "00000000-0000-0000-0000-000000000003",
         name: "舊帳戶", type: .cash, icon: "creditcard", color: "#8E8E93", sortOrder: 2,
         isArchived: true
     )
@@ -34,8 +34,8 @@ struct AccountManagementFeatureTests {
         ) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.accountClient.fetchAll = { accounts }
-            $0.accountClient.computeBalance = { id in
+            $0.ledgerClient.listAccounts = { accounts }
+            $0.ledgerClient.balance = { id in
                 id == Self.cashAccount.id ? 1000 : 5000
             }
         }
@@ -129,8 +129,10 @@ struct AccountManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in
-                [Transaction(amount: 100, date: Date(), accountId: id, type: .expense)]
+            $0.ledgerClient.listAll = { _ in
+                [EnrichedTransaction(
+                    transaction: Transaction(amount: 100, date: Date(), accountId: id, type: .expense)
+                )]
             }
         }
 
@@ -162,7 +164,7 @@ struct AccountManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.transactionClient.fetch = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
         }
 
         await store.send(.deleteRequested(id))
@@ -208,10 +210,10 @@ struct AccountManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.accountClient.delete = { deletedId.setValue($0) }
+            $0.ledgerClient.deleteAccount = { deletedId.setValue($0) }
             // After delete, fetchAll returns only the bank account (1 remaining)
-            $0.accountClient.fetchAll = { [Self.bankAccount] }
-            $0.accountClient.computeBalance = { _ in 5000 }
+            $0.ledgerClient.listAccounts = { [Self.bankAccount] }
+            $0.ledgerClient.balance = { _ in 5000 }
         }
 
         await store.send(.alert(.presented(.deleteConfirmed(id)))) {
@@ -260,9 +262,9 @@ struct AccountManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.accountClient.archive = { archivedId.setValue($0) }
-            $0.accountClient.fetchAll = { afterArchive }
-            $0.accountClient.computeBalance = { _ in 0 }
+            $0.ledgerClient.archiveAccount = { archivedId.setValue($0) }
+            $0.ledgerClient.listAccounts = { afterArchive }
+            $0.ledgerClient.balance = { _ in 0 }
         }
 
         await store.send(.alert(.presented(.archiveConfirmed(id)))) {
@@ -293,9 +295,9 @@ struct AccountManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.accountClient.update = { account in calledUpdate.setValue(account) }
-            $0.accountClient.fetchAll = { [Self.cashAccount] }
-            $0.accountClient.computeBalance = { _ in 0 }
+            $0.ledgerClient.updateAccount = { account in calledUpdate.setValue(account) }
+            $0.ledgerClient.listAccounts = { [Self.cashAccount] }
+            $0.ledgerClient.balance = { _ in 0 }
         }
 
         await store.send(.unarchiveTapped(id))
@@ -324,7 +326,7 @@ struct AccountManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             AccountManagementFeature()
         } withDependencies: {
-            $0.accountClient.update = { account in
+            $0.ledgerClient.updateAccount = { account in
                 updatedAccounts.withValue { $0.append(account) }
             }
         }

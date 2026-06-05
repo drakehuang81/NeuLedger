@@ -13,7 +13,7 @@ public extension Category {
     }
 
     /// English seed name → i18n key. Mirrors the SeedCategory entries
-    /// in `Features/Sources/Core/Persistence/DatabaseClient.swift`.
+    /// in `Features/Sources/Core/Persistence/PersistenceBootstrap.swift`.
     /// Keep in sync if seeds change.
     private static let seedLocalizationMap: [String: String] = [
         "Food":            "category_seed_food",

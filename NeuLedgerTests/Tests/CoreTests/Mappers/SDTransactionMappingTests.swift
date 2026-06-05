@@ -20,7 +20,7 @@ struct SDTransactionMappingTests {
     func testApplyChangesScalarFields() throws {
         let originalId = UUID()
         let originalCreatedAt = Date(timeIntervalSince1970: 1_000)
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let original = Transaction(
             id: originalId,
             amount: 100,
@@ -37,7 +37,7 @@ struct SDTransactionMappingTests {
         try context.save()
 
         let newCategoryId = UUID()
-        let newToAccountId = UUID()
+        let newToAccountId = UUID().uuidString
         let newDate = Date(timeIntervalSince1970: 9_999)
         let edited = Transaction(
             id: originalId,
@@ -72,7 +72,7 @@ struct SDTransactionMappingTests {
         let original = Transaction(
             amount: 100,
             date: Date(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             type: .expense
         )
         let sd = SDTransaction.from(original, context: context)
@@ -99,8 +99,8 @@ struct SDTransactionMappingTests {
 
     @Test("idPredicate matches only the given id")
     func testIdPredicate() throws {
-        let a = Transaction(amount: 100, date: Date(), accountId: UUID(), type: .expense)
-        let b = Transaction(amount: 200, date: Date(), accountId: UUID(), type: .income)
+        let a = Transaction(amount: 100, date: Date(), accountId: UUID().uuidString, type: .expense)
+        let b = Transaction(amount: 200, date: Date(), accountId: UUID().uuidString, type: .income)
         SDTransaction.from(a, context: context)
         SDTransaction.from(b, context: context)
         try context.save()

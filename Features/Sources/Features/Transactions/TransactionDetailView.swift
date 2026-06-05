@@ -135,15 +135,15 @@ public struct TransactionDetailView: View {
 #if DEBUG
 private enum PreviewFixtures {
     static let cashAccount = Account(
-        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000001")!,
+        id: "AA000000-0000-0000-0000-000000000001",
         name: "Cash 現金", type: .cash, icon: "banknote", color: "#8E8E93"
     )
     static let bankAccount = Account(
-        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000002")!,
+        id: "AA000000-0000-0000-0000-000000000002",
         name: "玉山銀行", type: .bank, icon: "building.columns.fill", color: "#0A84FF"
     )
     static let ewalletAccount = Account(
-        id: UUID(uuidString: "AA000000-0000-0000-0000-000000000003")!,
+        id: "AA000000-0000-0000-0000-000000000003",
         name: "悠遊卡", type: .eWallet, icon: "iphone.gen3", color: "#5E5CE6"
     )
 
@@ -225,9 +225,9 @@ private enum PreviewFixtures {
         return Store(initialState: state) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.accountClient.fetchAll = { [bankAccount, cashAccount, ewalletAccount] }
-            $0.categoryClient.fetchAll = { [foodCategory, salaryCategory] }
-            $0.transactionClient.detailStats = { _ in
+            $0.ledgerClient.listAccounts = { [bankAccount, cashAccount, ewalletAccount] }
+            $0.ledgerClient.listCategories = { _ in [foodCategory, salaryCategory] }
+            $0.insightsClient.detailStats = { _ in
                 TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
             }
         }

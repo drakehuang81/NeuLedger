@@ -18,18 +18,11 @@ struct MainTabFeature {
         var transactions = TransactionsFeature.State()
         var settings = SettingsFeature.State()
 
-        // AI input bar state
-        var isAIInputExpanded: Bool = false
-        var aiInputText: String = ""
-        var isAIInputLoading: Bool = false
-        var aiInputError: String? = nil      // shown inline below the text field
-        var aiUnavailable: Bool = false      // set once on .task; drives all AI UI
-        var isRecording: Bool = false
-        var showAccessoryBar: Bool = true
-        var accessoryMode: AccessoryMode = .add
+        // Floating accessory bar (AI input / quick-add)
+        var accessory = AccessoryBarFeature.State()
 
-        // Recurring transaction confirmation routing
-        var pendingRecurringConfirmationId: RecurringTransaction.ID? = nil
+        // Accessory bar visibility — depends on tab + child nav, so it stays here.
+        var showAccessoryBar: Bool = true
 
         var isAccessoryVisible: Bool {
             guard showAccessoryBar else { return false }
@@ -44,45 +37,30 @@ struct MainTabFeature {
     // MARK: - Action
     enum Action: Equatable {
         case tabSelected(Tab)
-        case contextActionTapped
 
         // Lifecycle
         case task
-
-        // AI input bar
-        case aiAvailabilityLoaded(isAvailable: Bool)   // Bool = true means AI IS available
-        case aiInputButtonTapped
-        case aiInputTextChanged(String)
-        case aiInputSubmitted
-        case aiInputDismissed
-        case aiExtractionCompleted(TaskResult<ExtractedTransaction>)
-        case recordingTapped
-        case recordingStarted
-        case permissionDenied
-        case transcriptionUpdated(String)
-        case transcriptionFailed
         case accessoryBarVisibilityLoaded(Bool)
-        case accessoryModeLoaded(AccessoryMode)
-        case accessoryModeSwitched(AccessoryMode)
 
-        case pendingRecurringConfirmationReceived(RecurringTransaction.ID)
-        case recurringTemplateFetched(RecurringTransaction)
-
+        case accessory(AccessoryBarFeature.Action)
         case dashboard(DashboardFeature.Action)
         case transactions(TransactionsFeature.Action)
         case settings(SettingsFeature.Action)
     }
 
     // MARK: - Dependencies
-    @Dependency(\.aiUseCase) var aiUseCase
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-    @Dependency(\.speechAdapter) var speechAdapter
-    private enum CancelID { case aiExtraction; case task; case speechRecording }
+    @Dependency(\.platformClient) var platformClient
+    @Dependency(\.ledgerClient) var ledger
+
+    private enum CancelID {
+        case task
+    }
 
     // MARK: - Body
     var body: some ReducerOf<Self> {
+        Scope(state: \.accessory, action: \.accessory) {
+            AccessoryBarFeature()
+        }
         Scope(state: \.dashboard, action: \.dashboard) {
             DashboardFeature()
         }
@@ -95,151 +73,25 @@ struct MainTabFeature {
         Reduce { state, action in
             switch action {
             case .task:
+                // Forward to the accessory bar's own load (availability + mode) when MainTabView appears,
+                // so it runs regardless of whether the accessory is currently visible.
                 return .run { send in
-                    await withTaskGroup(of: Void.self) { group in
-                        // Check AI availability once at launch — stored in state so all AI UI reads a single flag.
-                        group.addTask {
-                            let isAvailable = aiUseCase.isAvailable()
-                            await send(.aiAvailabilityLoaded(isAvailable: isAvailable))
-                            let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
-                            await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
-                            let rawMode = userSettingsAdapter.string(.accessoryMode)
-                            let savedMode = AccessoryMode(rawValue: rawMode) ?? .add
-                            let resolvedMode = isAvailable ? savedMode : .add
-                            await send(.accessoryModeLoaded(resolvedMode))
-                        }
-                        // Subscribe to recurring notification taps
-                        group.addTask {
-                            for await recurringId in notificationAdapter.pendingConfirmations() {
-                                await send(.pendingRecurringConfirmationReceived(recurringId))
-                            }
-                        }
-                    }
+                    await send(.accessory(.task))
+                    let showAccessoryBar = platformClient.showAccessoryBar()
+                    await send(.accessoryBarVisibilityLoaded(showAccessoryBar))
                 }
                 .cancellable(id: CancelID.task)
 
-            case let .aiAvailabilityLoaded(isAvailable):
-                // isAvailable=true  → AI works → aiUnavailable=false
-                // isAvailable=false → AI broken → aiUnavailable=true
-                state.aiUnavailable = !isAvailable
-                return .none
-
-            case .aiInputButtonTapped:
-                state.isAIInputExpanded = true
-                state.aiInputError = nil
-                return .none
-
-            case let .aiInputTextChanged(text):
-                state.aiInputText = text
-                return .none
-
-            case .aiInputDismissed:
-                let wasRecording = state.isRecording
-                state.isAIInputExpanded = false
-                state.aiInputText = ""
-                state.isAIInputLoading = false
-                state.aiInputError = nil
-                state.isRecording = false
-                if wasRecording {
-                    return .merge(
-                        .cancel(id: CancelID.speechRecording),
-                        .run { _ in speechAdapter.stopRecording() }
-                    )
-                }
-                return .none
-
-            case .aiInputSubmitted:
-                guard !state.aiInputText.isEmpty, !state.isRecording else { return .none }
-                state.isAIInputLoading = true
-                state.aiInputError = nil
-                let text = state.aiInputText
-                return .run { send in
-                    await send(.aiExtractionCompleted(
-                        TaskResult { try await aiUseCase.extractFromText(text) }
-                    ))
-                }
-                .cancellable(id: CancelID.aiExtraction, cancelInFlight: true)
-
-            case let .aiExtractionCompleted(.success(extracted)):
-                // Reset input bar
-                state.isAIInputExpanded = false
-                state.aiInputText = ""
-                state.isAIInputLoading = false
-                // Route to the correct child feature based on selected tab
-                switch state.selectedTab {
-                case .transactions:
-                    return .send(.transactions(.addTransactionWithPrefilledData(extracted)))
-                default:
-                    return .send(.dashboard(.addTransactionWithPrefilledData(extracted)))
-                }
-
-            case .aiExtractionCompleted(.failure):
-                state.isAIInputLoading = false
-                state.aiInputError = String(localized: "ai_extraction_error")
-                return .none
-
-            case .recordingTapped:
-                if state.isRecording {
-                    state.isRecording = false
-                    return .merge(
-                        .cancel(id: CancelID.speechRecording),
-                        .run { _ in speechAdapter.stopRecording() }
-                    )
-                } else {
-                    return .run { send in
-                        let granted = await speechAdapter.requestPermission()
-                        guard granted else {
-                            await send(.permissionDenied)
-                            return
-                        }
-                        await send(.recordingStarted)
-                        do {
-                            for try await text in speechAdapter.startRecording() {
-                                await send(.transcriptionUpdated(text))
-                            }
-                        } catch {
-                            await send(.transcriptionFailed)
-                        }
-                    }
-                    .cancellable(id: CancelID.speechRecording)
-                }
-
-            case .recordingStarted:
-                state.isRecording = true
-                state.aiInputError = nil
-                return .none
-
-            case .permissionDenied:
-                state.aiInputError = String(localized: "speech_permission_denied_error")
-                return .none
-
-            case let .transcriptionUpdated(text):
-                state.aiInputText = text
-                return .none
-
-            case .transcriptionFailed:
-                state.isRecording = false
-                state.aiInputError = String(localized: "speech_recognition_failed_error")
-                return .none
-
             case let .accessoryBarVisibilityLoaded(visible):
                 state.showAccessoryBar = visible
-                return .none
-
-            case let .accessoryModeLoaded(mode):
-                state.accessoryMode = state.aiUnavailable ? .add : mode
-                return .none
-
-            case let .accessoryModeSwitched(mode):
-                state.accessoryMode = mode
-                userSettingsAdapter.setString(mode.rawValue, .accessoryMode)
                 return .none
 
             case let .tabSelected(tab):
                 state.selectedTab = tab
                 return .none
 
-            case .contextActionTapped:
+            // MARK: Accessory routing (depends on selectedTab — a tab-shell concern)
+            case .accessory(.delegate(.contextActionRequested)):
                 switch state.selectedTab {
                 case .transactions:
                     return .send(.transactions(.contextActionTapped))
@@ -247,43 +99,31 @@ struct MainTabFeature {
                     return .send(.dashboard(.addTransactionButtonTapped))
                 }
 
-            case let .pendingRecurringConfirmationReceived(id):
-                return .run { send in
-                    do {
-                        let all = try await recurringTransactionClient.fetchAll()
-                        guard let template = all.first(where: { $0.id == id }) else { return }
-                        await send(.recurringTemplateFetched(template))
-                    } catch {
-                        // silently ignore — template may have been deleted
-                    }
+            case let .accessory(.delegate(.transactionExtracted(extracted))):
+                switch state.selectedTab {
+                case .transactions:
+                    return .send(.transactions(.addTransactionWithPrefilledData(extracted)))
+                default:
+                    return .send(.dashboard(.addTransactionWithPrefilledData(extracted)))
                 }
 
-            case let .recurringTemplateFetched(template):
-                state.pendingRecurringConfirmationId = template.id
-                state.dashboard.addTransaction = AddTransactionFeature.State(
-                    mode: .addRecurringConfirmation(template)
-                )
-                state.selectedTab = .dashboard
+            case .accessory:
                 return .none
 
+            // MARK: Child delegates
             case .dashboard(.delegate(.seeAllTransactionsTapped)):
                 state.selectedTab = .transactions
                 return .none
 
             case let .dashboard(.delegate(.savedRecurringConfirmation(id, newNextDueDate))):
-                state.pendingRecurringConfirmationId = nil
-                return .run { send in
+                return .run { _ in
                     do {
-                        let all = try await recurringTransactionClient.fetchAll()
+                        let all = try await ledger.listRecurring()
                         if var template = all.first(where: { $0.id == id }) {
                             template.nextDueDate = newNextDueDate
-                            try await recurringTransactionClient.update(template)
-                            try await notificationAdapter.scheduleRecurringReminder(
-                                template.id,
-                                newNextDueDate,
-                                String(localized: "recurring_transaction_notification_title"),
-                                String(localized: "recurring_transaction_notification_body")
-                            )
+                            // Reminder rescheduling is a post-condition of updateRecurring
+                            // (internalised into LedgerClient).
+                            try await ledger.updateRecurring(template)
                         }
                     } catch {
                         // silently ignore

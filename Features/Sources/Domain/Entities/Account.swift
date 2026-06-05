@@ -5,7 +5,7 @@ import Foundation
 /// Use `Account` to represent where funds are held, such as physical cash, bank accounts, or digital wallets.
 public struct Account: Identifiable, Equatable, Hashable, Codable, Sendable {
     /// The unique identifier of the account.
-    public let id: UUID
+    public let id: String
     
     /// The display name of the account, such as "Daily Wallet" or "Credit Card".
     public var name: String
@@ -31,7 +31,7 @@ public struct Account: Identifiable, Equatable, Hashable, Codable, Sendable {
     public var createdAt: Date
     
     public init(
-        id: UUID = UUID(),
+        id: String = UUID().uuidString,
         name: String,
         type: AccountType,
         icon: String,
@@ -51,10 +51,3 @@ public struct Account: Identifiable, Equatable, Hashable, Codable, Sendable {
     }
 }
 
-public extension Account {
-    /// Stable identifier for the Cash account Onboarding seeds when the user
-    /// skips account customization. Pinning it to a known UUID lets us detect
-    /// a previously seeded copy after a delete-and-reinstall (or on a second
-    /// device) and skip re-creating it, avoiding CloudKit-mirrored duplicates.
-    static let defaultCashID = UUID(uuidString: "9E0FED11-AAAA-0000-0000-00000000CA54")!
-}

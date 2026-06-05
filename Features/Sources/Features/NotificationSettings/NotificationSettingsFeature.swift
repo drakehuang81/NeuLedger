@@ -58,9 +58,8 @@ public struct NotificationSettingsFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.openURL) var openURL
+    @Dependency(\.platformClient) var platformClient
+    @Dependency(\.planningClient) var planningClient
 
     // MARK: - Reducer
 
@@ -72,22 +71,21 @@ public struct NotificationSettingsFeature: Sendable {
             switch action {
 
             case .task:
-                let reminderEnabled = userSettingsAdapter.bool(.dailyReminderEnabled)
-                let warningEnabled = userSettingsAdapter.bool(.budgetWarningEnabled)
-                let hour = userSettingsAdapter.int(.dailyReminderHour)
-                let minute = userSettingsAdapter.int(.dailyReminderMinute)
-                let threshold = userSettingsAdapter.int(.budgetWarningThreshold)
+                let reminderEnabled = platformClient.dailyReminderEnabled()
+                let warningEnabled = planningClient.warningEnabled()
+                let time = platformClient.reminderTime()
+                let threshold = planningClient.warningThreshold()
 
                 state.dailyReminderEnabled = reminderEnabled
                 state.budgetWarningEnabled = warningEnabled
                 state.warningThreshold = threshold
                 state.reminderDate = Calendar.current.date(
-                    from: DateComponents(hour: hour, minute: minute)
+                    from: DateComponents(hour: time.hour, minute: time.minute)
                 ) ?? state.reminderDate
 
                 return .merge(
                     .run { send in
-                        let authorized = await notificationAdapter.isAuthorized()
+                        let authorized = await platformClient.notificationsAuthorized()
                         await send(.authorizationStatusLoaded(authorized))
                     }
                     .cancellable(id: CancelID.task),
@@ -104,19 +102,20 @@ public struct NotificationSettingsFeature: Sendable {
             case let .dailyReminderToggled(enabled):
                 if !enabled {
                     state.dailyReminderEnabled = false
-                    userSettingsAdapter.setBool(false, .dailyReminderEnabled)
-                    return .run { _ in await notificationAdapter.cancelDailyReminder() }
+                    platformClient.setDailyReminderEnabled(false)
+                    return .run { _ in await platformClient.cancelDailyReminder() }
                 }
                 // Enabling — request permission if needed
                 if state.isAuthorized {
                     state.dailyReminderEnabled = true
-                    userSettingsAdapter.setBool(true, .dailyReminderEnabled)
+                    platformClient.setDailyReminderEnabled(true)
                     let hour = Calendar.current.component(.hour, from: state.reminderDate)
                     let minute = Calendar.current.component(.minute, from: state.reminderDate)
-                    return .run { _ in try await notificationAdapter.scheduleDailyReminder(hour, minute) }
+                    platformClient.setReminderTime(ReminderTime(hour: hour, minute: minute))
+                    return .run { _ in try await platformClient.scheduleDailyReminder() }
                 } else {
                     return .run { send in
-                        let granted = await notificationAdapter.requestAuthorization()
+                        let granted = await platformClient.requestNotificationPermission()
                         if granted {
                             await send(.authorizationStatusLoaded(true))
                             await send(.dailyReminderToggled(true))  // retry with auth
@@ -130,24 +129,23 @@ public struct NotificationSettingsFeature: Sendable {
                 state.reminderDate = date
                 let hour = Calendar.current.component(.hour, from: date)
                 let minute = Calendar.current.component(.minute, from: date)
-                userSettingsAdapter.setInt(hour, .dailyReminderHour)
-                userSettingsAdapter.setInt(minute, .dailyReminderMinute)
+                platformClient.setReminderTime(ReminderTime(hour: hour, minute: minute))
                 guard state.dailyReminderEnabled else { return .none }
-                return .run { _ in try await notificationAdapter.scheduleDailyReminder(hour, minute) }
+                return .run { _ in try await platformClient.scheduleDailyReminder() }
 
             case let .budgetWarningToggled(enabled):
                 if !enabled {
                     state.budgetWarningEnabled = false
-                    userSettingsAdapter.setBool(false, .budgetWarningEnabled)
+                    planningClient.setWarningEnabled(false)
                     return .none
                 }
                 if state.isAuthorized {
                     state.budgetWarningEnabled = true
-                    userSettingsAdapter.setBool(true, .budgetWarningEnabled)
+                    planningClient.setWarningEnabled(true)
                     return .none
                 } else {
                     return .run { send in
-                        let granted = await notificationAdapter.requestAuthorization()
+                        let granted = await platformClient.requestNotificationPermission()
                         if granted {
                             await send(.authorizationStatusLoaded(true))
                             await send(.budgetWarningToggled(true))
@@ -159,7 +157,7 @@ public struct NotificationSettingsFeature: Sendable {
 
             case let .warningThresholdChanged(threshold):
                 state.warningThreshold = threshold
-                userSettingsAdapter.setInt(threshold, .budgetWarningThreshold)
+                planningClient.setWarningThreshold(threshold)
                 return .none
 
             case .permissionDenied:
@@ -167,11 +165,8 @@ public struct NotificationSettingsFeature: Sendable {
                 return .none
 
             case .openSystemSettingsTapped:
-                return .run { _ in
-                    if let url = URL(string: "app-settings:") {
-                        await openURL(url)
-                    }
-                }
+                platformClient.openAppSettings()
+                return .none
 
             case .recurringManagement:
                 return .none

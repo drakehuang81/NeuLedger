@@ -23,11 +23,12 @@ struct NeuLedgerApp: App {
         // Composition Root: wire the Watch bridge before any UI exists so
         // background-delivered WatchConnectivity payloads are caught on
         // the very first delegate dispatch after launch.
+        // TODO: Dependency injection
         WatchBootstrap.start()
     }
 
     // `.modelContainer(_:)` is intentionally NOT applied here: feature views
-    // reach persistence via `@Dependency(\.databaseClient)` instead of
+    // reach persistence via `@Dependency(\.persistenceBootstrap)` instead of
     // SwiftData's `@Environment(\.modelContext)`, and the Features layer must
     // not `import SwiftData`.
     var body: some Scene {
@@ -56,18 +57,16 @@ struct NeuLedgerApp: App {
             case .main:
                 if let mainStore = Self.store.scope(state: \.main, action: \.main) {
                     MainTabView(store: mainStore)
-                        .transition(
-                            .asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            )
-                        )
+                        .transition(.opacity)
                 }
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: Self.store.state)
+        .animation(.easeInOut(duration: 0.35), value: Self.store.state)
         .onOpenURL { url in
             Self.store.send(.deepLinkReceived(url))
+        }
+        .task {
+            await Self.store.send(.task).finish()
         }
     }
 }

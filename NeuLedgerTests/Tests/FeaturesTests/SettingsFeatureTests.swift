@@ -49,11 +49,13 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in false }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.carrierClient.fetchAll = { [] }
+            $0.platformClient.showAccessoryBar = { false }
+            $0.platformClient.setShowAccessoryBar = { _ in }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.ledgerClient.setDefaultAccountId = { _ in }
+            $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
+            $0.carrierClient.listAll = { [] }
+            $0.carrierClient.activeForWidget = { nil }
         }
 
         await store.send(.task)
@@ -86,11 +88,13 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in true }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.accountClient.fetchActive = { [] }
-            $0.carrierClient.fetchAll = { [] }
+            $0.platformClient.showAccessoryBar = { true }
+            $0.platformClient.setShowAccessoryBar = { _ in }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.ledgerClient.setDefaultAccountId = { _ in }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.carrierClient.listAll = { [] }
+            $0.carrierClient.activeForWidget = { nil }
         }
 
         await store.send(.task)
@@ -155,12 +159,12 @@ struct SettingsFeatureTests {
         let store = await TestStore(initialState: initialState) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { value, _ in
-                savedValues.withValue { $0.append(value) }
+            $0.ledgerClient.setDefaultAccountId = { value in
+                savedValues.withValue { $0.append(value ?? "") }
             }
         }
 
-        let targetId = Self.sampleAccounts[1].id.uuidString
+        let targetId = Self.sampleAccounts[1].id
         await store.send(.defaultAccountSelected(targetId)) {
             $0.selectedDefaultAccountId = targetId
             $0.defaultAccountName = "銀行帳戶"
@@ -182,9 +186,9 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { transactions }
-            $0.categoryClient.fetchAll = { Self.sampleCategories }
-            $0.accountClient.fetchAll = { Self.sampleAccounts }
+            $0.ledgerClient.listAll = { _ in transactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
+            $0.ledgerClient.listAccounts = { Self.sampleAccounts }
         }
 
         await store.send(.exportCSVTapped) {
@@ -237,7 +241,7 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { transactions }
+            $0.ledgerClient.listAll = { _ in transactions.map { EnrichedTransaction(transaction: $0) } }
         }
 
         await store.send(.exportJSONTapped) {
@@ -270,9 +274,9 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.transactionClient.fetchAll = { throw TestError(message: "fetch failed") }
-            $0.categoryClient.fetchAll = { [] }
-            $0.accountClient.fetchAll = { [] }
+            $0.ledgerClient.listAll = { _ in throw TestError(message: "fetch failed") }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.listAccounts = { [] }
         }
 
         await store.send(.exportCSVTapped) {
@@ -342,12 +346,13 @@ struct SettingsAccessoryBarTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { key in
-                key.rawValue == SettingsKey.showAccessoryBar.rawValue ? false : key.defaultValue
-            }
-            $0.userSettingsAdapter.string = { $0.defaultValue }
-            $0.accountClient.fetchActive = { [] }
-            $0.carrierClient.fetchAll = { [] }
+            $0.platformClient.showAccessoryBar = { false }
+            $0.platformClient.setShowAccessoryBar = { _ in }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.ledgerClient.setDefaultAccountId = { _ in }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.carrierClient.listAll = { [] }
+            $0.carrierClient.activeForWidget = { nil }
         }
         await store.send(.task)
         await store.receive(\.accountsLoaded) {
@@ -374,8 +379,8 @@ struct SettingsAccessoryBarTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setBool = { value, key in
-                if key.rawValue == SettingsKey.showAccessoryBar.rawValue { persisted.setValue(value) }
+            $0.platformClient.setShowAccessoryBar = { value in
+                persisted.setValue(value)
             }
         }
         await store.send(.accessoryBarToggleChanged(false)) {
@@ -464,16 +469,13 @@ struct SettingsWidgetCarrierTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { _ in false }
-            $0.userSettingsAdapter.string = { key in
-                if key.rawValue == "widgetCarrierId" {
-                    return carrier.id.uuidString
-                }
-                return ""
-            }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.accountClient.fetchActive = { Self.sampleAccounts }
-            $0.carrierClient.fetchAll = { Self.sampleCarriers }
+            $0.platformClient.showAccessoryBar = { false }
+            $0.platformClient.setShowAccessoryBar = { _ in }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.ledgerClient.setDefaultAccountId = { _ in }
+            $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
+            $0.carrierClient.listAll = { Self.sampleCarriers }
+            $0.carrierClient.activeForWidget = { carrier.id }
         }
 
         await store.send(.task)
@@ -499,27 +501,19 @@ struct SettingsWidgetCarrierTests {
         }
     }
 
-    @Test("widgetCarrierSelected writes to UserSettings and calls widgetSyncAdapter.syncCarrier")
+    @Test("widgetCarrierSelected updates state and calls carrierClient.setActiveForWidget")
     func testWidgetCarrierSelected() async throws {
         let carriers = Self.sampleCarriers
         let target = carriers[1]
-        let savedId: LockIsolated<String?> = LockIsolated(nil)
-        let syncedBarcode: LockIsolated<String?> = LockIsolated(nil)
-        let syncedType: LockIsolated<String?> = LockIsolated(nil)
-        let syncedName: LockIsolated<String?> = LockIsolated(nil)
+        let activatedId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
 
         let store = await TestStore(
             initialState: SettingsFeature.State(carriers: carriers)
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.setString = { value, key in
-                if key.rawValue == "widgetCarrierId" { savedId.setValue(value) }
-            }
-            $0.widgetSyncAdapter.syncCarrier = { barcode, type, name in
-                syncedBarcode.setValue(barcode)
-                syncedType.setValue(type)
-                syncedName.setValue(name)
+            $0.carrierClient.setActiveForWidget = { id in
+                activatedId.setValue(id)
             }
         }
 
@@ -528,9 +522,6 @@ struct SettingsWidgetCarrierTests {
             $0.widgetCarrierName = "自然人憑證"
         }
 
-        #expect(savedId.value == target.id.uuidString)
-        #expect(syncedBarcode.value == target.barcode)
-        #expect(syncedType.value == target.type.rawValue)
-        #expect(syncedName.value == target.name)
+        #expect(activatedId.value == target.id)
     }
 }

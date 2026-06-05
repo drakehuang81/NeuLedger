@@ -16,15 +16,16 @@ struct DashboardFeatureInsightTests {
         let store = await TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
         } withDependencies: {
-            $0.aiUseCase.isAvailable = { true }
-            $0.aiUseCase.generateInsights = { _ in mock }
-            $0.aiUseCase.generateInsight = { _ in "" }
-            $0.transactionClient.weeklySpending = { _, _ in [] }
-            $0.transactionClient.statsSnapshot = { .zero }
-            $0.transactionClient.fetchRecent = { [] }
-            $0.transactionClient.fetchAll = { [] }
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.insightsClient.isAIAvailable = { true }
+            $0.insightsClient.generateInsights = { _ in mock }
+            $0.insightsClient.generateAIInsight = { _ in "" }
+            $0.insightsClient.weeklySparkline = { _ in [] }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.ledgerClient.listRecent = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -69,7 +70,7 @@ struct DashboardFeatureInsightTests {
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.aiUseCase.generateInsights = { _ in mock }
+            $0.insightsClient.generateInsights = { _ in mock }
         }
         await store.send(.retrySection(.insight)) {
             $0.insightPhase = .loading

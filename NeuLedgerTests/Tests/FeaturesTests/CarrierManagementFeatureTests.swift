@@ -88,7 +88,7 @@ struct AddEditCarrierFeatureTests {
         // No state change expected — canSave is false, action is no-op
     }
 
-    @Test("saveTapped with valid barcode calls carrierClient.add")
+    @Test("saveTapped with valid barcode calls carrierClient.create")
     func testSaveTappedAdd() async {
         var initial = AddEditCarrierFeature.State(mode: .add)
         initial.name = "手機載具"
@@ -99,7 +99,7 @@ struct AddEditCarrierFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddEditCarrierFeature()
         } withDependencies: {
-            $0.carrierClient.add = { carrier in addedCarrier.setValue(carrier) }
+            $0.carrierClient.create = { carrier in addedCarrier.setValue(carrier) }
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
@@ -120,7 +120,7 @@ struct AddEditCarrierFeatureTests {
         let store = await TestStore(initialState: initial) {
             AddEditCarrierFeature()
         } withDependencies: {
-            $0.carrierClient.add = { carrier in addedCarrier.setValue(carrier) }
+            $0.carrierClient.create = { carrier in addedCarrier.setValue(carrier) }
         }
 
         await store.send(.saveTapped) { $0.isSaving = true }
@@ -185,8 +185,7 @@ struct CarrierManagementFeatureTests {
         ) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { carriers }
-            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.carrierClient.listAll = { carriers }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -252,10 +251,10 @@ struct CarrierManagementFeatureTests {
         }
     }
 
-    @Test("deleteTapped clears widget when deleted carrier was the widget carrier")
+    @Test("deleteTapped re-points widget when deleted carrier was the widget carrier")
     func testDeleteTappedClearsWidget() async {
         let deletedId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
-        let clearCarrierCalled: LockIsolated<Bool> = LockIsolated(false)
+        let setActiveId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
 
         var initial = CarrierManagementFeature.State()
         initial.carriers = [Self.carrierA, Self.carrierB]
@@ -265,12 +264,10 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             $0.carrierClient.delete = { id in deletedId.setValue(id) }
-            $0.carrierClient.fetchAll = { [Self.carrierB] }
-            // carrierA is the current widget carrier
-            $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.widgetSyncAdapter.clearCarrier = { clearCarrierCalled.setValue(true) }
-            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.carrierClient.listAll = { [Self.carrierB] }
+            // carrierA is the current active widget carrier
+            $0.carrierClient.activeForWidget = { Self.carrierA.id }
+            $0.carrierClient.setActiveForWidget = { id in setActiveId.setValue(id) }
         }
 
         // deleteTapped now shows a confirmation alert
@@ -298,13 +295,14 @@ struct CarrierManagementFeatureTests {
         }
 
         #expect(deletedId.value == Self.carrierA.id)
-        #expect(clearCarrierCalled.value == true)
+        // Deleted carrier was the active widget carrier → re-point to first remaining
+        #expect(setActiveId.value == Self.carrierB.id)
     }
 
     @Test("deleteTapped with expanded row collapses and removes carrier (non-widget carrier)")
     func testDeleteTapped() async {
         let deletedId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
-        let clearCarrierCalled: LockIsolated<Bool> = LockIsolated(false)
+        let setActiveCalled: LockIsolated<Bool> = LockIsolated(false)
 
         var initial = CarrierManagementFeature.State()
         initial.carriers = [Self.carrierA, Self.carrierB]
@@ -314,11 +312,10 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             $0.carrierClient.delete = { id in deletedId.setValue(id) }
-            $0.carrierClient.fetchAll = { [Self.carrierB] }
-            // carrierB is the widget carrier, not carrierA
-            $0.userSettingsAdapter.string = { _ in Self.carrierB.id.uuidString }
-            $0.widgetSyncAdapter.clearCarrier = { clearCarrierCalled.setValue(true) }
-            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.carrierClient.listAll = { [Self.carrierB] }
+            // carrierB is the active widget carrier, not carrierA
+            $0.carrierClient.activeForWidget = { Self.carrierB.id }
+            $0.carrierClient.setActiveForWidget = { _ in setActiveCalled.setValue(true) }
         }
 
         // deleteTapped now shows a confirmation alert
@@ -346,24 +343,28 @@ struct CarrierManagementFeatureTests {
         }
 
         #expect(deletedId.value == Self.carrierA.id)
-        // Widget carrier was NOT deleted, so clearCarrier must NOT be called
-        #expect(clearCarrierCalled.value == false)
+        // Active widget carrier was NOT deleted, so it must NOT be re-pointed
+        #expect(setActiveCalled.value == false)
     }
 
-    @Test("saved delegate reloads carriers and syncs widget when edited carrier is widget carrier")
+    @Test("saved delegate reloads carriers without re-assigning when widget carrier already set")
     func testEditTappedSyncsWidget() async {
-        let syncBarcode: LockIsolated<String?> = LockIsolated(nil)
+        let listAllCalled: LockIsolated<Bool> = LockIsolated(false)
+        let setActiveCalled: LockIsolated<Bool> = LockIsolated(false)
         var initial = CarrierManagementFeature.State()
         initial.addEdit = AddEditCarrierFeature.State(mode: .edit(Self.carrierA))
 
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [Self.carrierA, Self.carrierB] }
-            // carrierA is the current widget carrier
-            $0.userSettingsAdapter.string = { _ in Self.carrierA.id.uuidString }
-            $0.widgetSyncAdapter.syncCarrier = { barcode, _, _ in syncBarcode.setValue(barcode) }
-            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.carrierClient.listAll = {
+                listAllCalled.setValue(true)
+                return [Self.carrierA, Self.carrierB]
+            }
+            // carrierA is already the active widget carrier — no auto-assign expected.
+            // The widget sync for the edited carrier happens inside carrierClient.update.
+            $0.carrierClient.activeForWidget = { Self.carrierA.id }
+            $0.carrierClient.setActiveForWidget = { _ in setActiveCalled.setValue(true) }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -373,7 +374,8 @@ struct CarrierManagementFeatureTests {
             $0.carriers = [Self.carrierA, Self.carrierB]
         }
 
-        #expect(syncBarcode.value == Self.carrierA.barcode)
+        #expect(listAllCalled.value == true)
+        #expect(setActiveCalled.value == false)
     }
 
     @Test("saved delegate reloads carriers")
@@ -383,12 +385,10 @@ struct CarrierManagementFeatureTests {
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [Self.carrierA] }
-            // No widget carrier set yet — empty string triggers auto-assign path
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.widgetSyncAdapter.syncCarrier = { _, _, _ in }
-            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.carrierClient.listAll = { [Self.carrierA] }
+            // No widget carrier set yet — nil triggers auto-assign path
+            $0.carrierClient.activeForWidget = { nil }
+            $0.carrierClient.setActiveForWidget = { _ in }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -401,10 +401,7 @@ struct CarrierManagementFeatureTests {
 
     @Test("addFirstCarrier auto-sets as widget carrier when no widget carrier exists")
     func testAddFirstCarrierAutoSetsWidget() async {
-        let savedId: LockIsolated<String?> = LockIsolated(nil)
-        let syncedBarcode: LockIsolated<String?> = LockIsolated(nil)
-        let syncedType: LockIsolated<String?> = LockIsolated(nil)
-        let syncedName: LockIsolated<String?> = LockIsolated(nil)
+        let setActiveId: LockIsolated<Carrier.ID?> = LockIsolated(nil)
 
         var initial = CarrierManagementFeature.State()
         initial.addEdit = AddEditCarrierFeature.State(mode: .add)
@@ -413,16 +410,10 @@ struct CarrierManagementFeatureTests {
             CarrierManagementFeature()
         } withDependencies: {
             // carrierA is returned as the first-ever carrier
-            $0.carrierClient.fetchAll = { [Self.carrierA] }
-            // No widget carrier set yet
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { value, _ in savedId.setValue(value) }
-            $0.widgetSyncAdapter.syncCarrier = { barcode, type, name in
-                syncedBarcode.setValue(barcode)
-                syncedType.setValue(type)
-                syncedName.setValue(name)
-            }
-            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.carrierClient.listAll = { [Self.carrierA] }
+            // No widget carrier set yet → auto-assign path
+            $0.carrierClient.activeForWidget = { nil }
+            $0.carrierClient.setActiveForWidget = { id in setActiveId.setValue(id) }
         }
 
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
@@ -432,13 +423,12 @@ struct CarrierManagementFeatureTests {
             $0.carriers = [Self.carrierA]
         }
 
-        #expect(savedId.value == Self.carrierA.id.uuidString)
-        #expect(syncedBarcode.value == Self.carrierA.barcode)
-        #expect(syncedType.value == Self.carrierA.type.rawValue)
-        #expect(syncedName.value == Self.carrierA.name)
+        // First-ever carrier becomes the active widget carrier; the actual App Group
+        // write + widget reload is performed inside carrierClient.setActiveForWidget.
+        #expect(setActiveId.value == Self.carrierA.id)
     }
 
-    @Test("task triggers syncAllCarriers with fetched list")
+    @Test("task loads carriers via carrierClient.listAll")
     func testTaskTriggersSyncAllCarriers() async {
         let sample = Carrier(
             id: UUID(uuidString: "40000000-0000-0000-0000-000000000001")!,
@@ -447,15 +437,17 @@ struct CarrierManagementFeatureTests {
             barcode: "/ABC1234",
             createdAt: Date(timeIntervalSince1970: 0)
         )
-        let syncedCarriers = LockIsolated<[Carrier]?>(nil)
+        let listAllCalled = LockIsolated<Bool>(false)
         let store = await TestStore(
             initialState: CarrierManagementFeature.State()
         ) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [sample] }
-            $0.widgetSyncAdapter.syncAllCarriers = { carriers in
-                syncedCarriers.setValue(carriers)
+            // Widget reload on read is no longer a Feature concern — listAll is the
+            // only carrierClient call the task makes (mutations sync inside the Client).
+            $0.carrierClient.listAll = {
+                listAllCalled.setValue(true)
+                return [sample]
             }
         }
 
@@ -466,10 +458,10 @@ struct CarrierManagementFeatureTests {
             $0.isLoading = false
             $0.carriers = [sample]
         }
-        #expect(syncedCarriers.value == [sample])
+        #expect(listAllCalled.value == true)
     }
 
-    @Test("deleteTapped triggers syncAllCarriers with refreshed list")
+    @Test("deleteTapped removes carrier via carrierClient.delete")
     func testDeleteTappedTriggersSyncAllCarriers() async {
         let remaining = Carrier(
             id: UUID(uuidString: "40000000-0000-0000-0000-000000000002")!,
@@ -479,18 +471,16 @@ struct CarrierManagementFeatureTests {
             createdAt: Date(timeIntervalSince1970: 0)
         )
         let deletedId = UUID(uuidString: "40000000-0000-0000-0000-000000000003")!
-        let syncedCarriers = LockIsolated<[Carrier]?>(nil)
+        let deletedSpy = LockIsolated<Carrier.ID?>(nil)
         let store = await TestStore(
             initialState: CarrierManagementFeature.State()
         ) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.delete = { _ in }
-            $0.carrierClient.fetchAll = { [remaining] }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.widgetSyncAdapter.syncAllCarriers = { carriers in
-                syncedCarriers.setValue(carriers)
-            }
+            // The widget reload after delete is now internal to carrierClient.delete.
+            $0.carrierClient.delete = { id in deletedSpy.setValue(id) }
+            $0.carrierClient.listAll = { [remaining] }
+            $0.carrierClient.activeForWidget = { nil }
         }
 
         // deleteTapped now shows a confirmation alert
@@ -515,10 +505,10 @@ struct CarrierManagementFeatureTests {
         await store.receive(\.carriersLoaded) {
             $0.carriers = [remaining]
         }
-        #expect(syncedCarriers.value == [remaining])
+        #expect(deletedSpy.value == deletedId)
     }
 
-    @Test("save delegate triggers syncAllCarriers with refreshed list")
+    @Test("save delegate reloads carriers via carrierClient.listAll")
     func testSaveDelegateTriggersSyncAllCarriers() async {
         let saved = Carrier(
             id: UUID(uuidString: "40000000-0000-0000-0000-000000000004")!,
@@ -527,19 +517,20 @@ struct CarrierManagementFeatureTests {
             barcode: "/ZZZ9999",
             createdAt: Date(timeIntervalSince1970: 0)
         )
-        let syncedCarriers = LockIsolated<[Carrier]?>(nil)
+        let listAllCalled = LockIsolated<Bool>(false)
         var initial = CarrierManagementFeature.State()
         initial.addEdit = AddEditCarrierFeature.State(mode: .add)
         let store = await TestStore(initialState: initial) {
             CarrierManagementFeature()
         } withDependencies: {
-            $0.carrierClient.fetchAll = { [saved] }
-            $0.userSettingsAdapter.string = { _ in "" }
-            $0.userSettingsAdapter.setString = { _, _ in }
-            $0.widgetSyncAdapter.syncCarrier = { _, _, _ in }
-            $0.widgetSyncAdapter.syncAllCarriers = { carriers in
-                syncedCarriers.setValue(carriers)
+            // The widget reload after create is internal to carrierClient.create
+            // (invoked by AddEditCarrierFeature); the parent only reloads + auto-assigns.
+            $0.carrierClient.listAll = {
+                listAllCalled.setValue(true)
+                return [saved]
             }
+            $0.carrierClient.activeForWidget = { nil }
+            $0.carrierClient.setActiveForWidget = { _ in }
         }
 
         await store.send(\.addEdit.presented.delegate.saved) {
@@ -548,6 +539,6 @@ struct CarrierManagementFeatureTests {
         await store.receive(\.carriersLoaded) {
             $0.carriers = [saved]
         }
-        #expect(syncedCarriers.value == [saved])
+        #expect(listAllCalled.value == true)
     }
 }

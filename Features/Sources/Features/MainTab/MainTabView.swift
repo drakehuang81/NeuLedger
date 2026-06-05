@@ -14,13 +14,13 @@ struct MainTabView: View {
         if #available(iOS 26.1, *) {
             tabViewBase
                 .tabViewBottomAccessory(isEnabled: store.isAccessoryVisible) {
-                    AccessoryView(store: store)
+                    AccessoryView(store: store.scope(state: \.accessory, action: \.accessory))
                 }
         } else {
             tabViewBase
                 .tabViewBottomAccessory {
                     if store.isAccessoryVisible {
-                        AccessoryView(store: store)
+                        AccessoryView(store: store.scope(state: \.accessory, action: \.accessory))
                     }
                 }
         }

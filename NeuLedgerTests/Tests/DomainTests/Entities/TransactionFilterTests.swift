@@ -48,7 +48,7 @@ struct TransactionFilterTests {
 
     @Test("TransactionFilter with accountIds")
     func testAccountIds() {
-        let accId = UUID()
+        let accId = UUID().uuidString
 
         let f = TransactionFilter(accountIds: [accId])
         #expect(f.accountIds?.contains(accId) == true)
@@ -87,7 +87,7 @@ struct TransactionFilterTests {
     @Test("TransactionFilter combined filters Equatable")
     func testCombinedFilters() {
         let catId = UUID()
-        let accId = UUID()
+        let accId = UUID().uuidString
 
         let f1 = TransactionFilter(
             categoryIds: [catId],

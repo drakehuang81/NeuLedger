@@ -18,7 +18,7 @@ public struct WatchContextSnapshot: Equatable, Codable, Sendable {
     /// The account id used when the user records on Watch without
     /// explicitly selecting one (the long-press-to-pick path overrides
     /// per-draft).
-    public let defaultAccountId: UUID
+    public let defaultAccountId: Account.ID
 
     /// Sum of today's expenses, used by the Watch app header and the
     /// `TodayExpenseComplication`.
@@ -37,7 +37,7 @@ public struct WatchContextSnapshot: Equatable, Codable, Sendable {
     public init(
         categories: [Category],
         accounts: [Account],
-        defaultAccountId: UUID,
+        defaultAccountId: Account.ID,
         todayTotal: Decimal,
         todayCount: Int,
         monthBudgetProgress: Double?,

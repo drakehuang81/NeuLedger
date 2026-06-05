@@ -25,7 +25,7 @@ struct DashboardFeatureChipTests {
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.weeklySpending = { _, _ in [0, 0, 0, 0, 0, 0, 0] }
+            $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
         }
 
         await store.send(.accountChipSelected(Self.accA.id)) {
@@ -56,7 +56,7 @@ struct DashboardFeatureChipTests {
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.weeklySpending = { _, _ in [0, 0, 0, 0, 0, 0, 0] }
+            $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
         }
 
         await store.send(.accountChipSelected(nil)) {
@@ -79,7 +79,7 @@ struct DashboardFeatureChipTests {
         let store = await TestStore(initialState: initial) {
             DashboardFeature()
         } withDependencies: {
-            $0.transactionClient.weeklySpending = { _, _ in [1, 2, 3, 4, 5, 6, 7] }
+            $0.insightsClient.weeklySparkline = { _ in [1, 2, 3, 4, 5, 6, 7] }
         }
         await store.send(.accountChipSelected(Self.accA.id)) {
             $0.selectedAccountID = Self.accA.id

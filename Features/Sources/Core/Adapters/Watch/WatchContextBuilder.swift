@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Dependencies
 import Domain
 
@@ -10,18 +11,26 @@ public enum WatchContextBuilder {
 
     public static func build(
         now: Date = Date(),
-        defaultAccountId: UUID
+        defaultAccountId: Account.ID
     ) async throws -> WatchContextSnapshot {
         @Dependency(\.calendar) var calendar
-        @Dependency(\.transactionClient) var transactionClient
-        @Dependency(\.categoryClient) var categoryClient
-        @Dependency(\.accountClient) var accountClient
-        @Dependency(\.budgetClient) var budgetClient
+        @Dependency(\.planningClient) var planningClient
 
-        let categories = try await categoryClient.fetchAll()
-        let accounts = try await accountClient.fetchActive()
-        let allTxns = try await transactionClient.fetchAll()
-        let activeBudgets = try await budgetClient.fetchActive()
+        // Infrastructure-layer collaborator in the Watch sync pipeline:
+        // reads SwiftData directly via `SwiftDataStore` (same-layer, legal —
+        // see docs/architecture.md §10). Behaviour mirrors the former
+        // categoryClient/accountClient/transactionClient `fetchAll`/`fetchActive`
+        // closures (identical sort + active filter). `planningClient.listActive`
+        // stays as a dependency — it crosses into the Application layer.
+        let categoryStore = CategoryStore()
+        let accountStore = AccountStore()
+        let transactionStore = TransactionStore()
+
+        let categories = try await categoryStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
+        let accounts = try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
+            .filter { !$0.isArchived }
+        let allTxns = try await transactionStore.fetchAll(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        let activeBudgets = try await planningClient.listActive()
 
         let startOfToday = calendar.startOfDay(for: now)
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) else {

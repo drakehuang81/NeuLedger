@@ -83,10 +83,7 @@ public struct RecurringTransactionFormFeature: Sendable {
         }
     }
 
-    @Dependency(\.recurringTransactionClient) var client
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.notificationAdapter) var notificationAdapter
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.date.now) var now
     @Dependency(\.dismiss) var dismiss
 
@@ -97,8 +94,8 @@ public struct RecurringTransactionFormFeature: Sendable {
             switch action {
             case .task:
                 return .run { send in
-                    async let accounts = (try? await accountClient.fetchActive()) ?? []
-                    async let categories = (try? await categoryClient.fetchAll()) ?? []
+                    async let accounts = (try? await ledger.listActiveAccounts()) ?? []
+                    async let categories = (try? await ledger.listCategories(nil)) ?? []
                     await send(.optionsLoaded(accounts: accounts, categories: categories))
                 }
                 .cancellable(id: CancelID.task)
@@ -127,7 +124,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                 // Build a temporary RecurringTransaction to use the domain helper
                 let temp = RecurringTransaction(
                     id: UUID(), amount: 0, note: nil,
-                    categoryId: nil, accountId: UUID(), toAccountId: nil,
+                    categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
                     type: .expense, tags: [], frequency: freq,
                     nextDueDate: now, isActive: true, createdAt: now
                 )
@@ -226,18 +223,14 @@ public struct RecurringTransactionFormFeature: Sendable {
 
                 return .run { [template, isEdit] send in
                     // P0-3: Use try await + do-catch instead of try?
+                    // Reminder scheduling is a post-condition of create/updateRecurring
+                    // (internalised into LedgerClient).
                     do {
                         if isEdit {
-                            try await client.update(template)
+                            try await ledger.updateRecurring(template)
                         } else {
-                            try await client.add(template)
+                            try await ledger.createRecurring(template)
                         }
-                        try await notificationAdapter.scheduleRecurringReminder(
-                            template.id,
-                            template.nextDueDate,
-                            String(localized: "recurring_transaction_notification_title"),
-                            String(localized: "recurring_transaction_notification_body")
-                        )
                         await send(.delegate(.saved))
                         await dismiss()
                     } catch {

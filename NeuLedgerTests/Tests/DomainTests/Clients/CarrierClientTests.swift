@@ -1,38 +1,37 @@
-// Features/Tests/DomainTests/Clients/CarrierClientTests.swift
 import Foundation
 import Testing
 import Dependencies
 @testable import Domain
 
-@Suite("CarrierClient Tests")
+@Suite("CarrierClient Domain Tests")
 struct CarrierClientTests {
 
-    @Test("CarrierClient dependency key injection")
+    @Test("CarrierClient testValue is accessible via DependencyValues")
     func testDependencyKey() {
         @Dependency(\.carrierClient) var client
         #expect(true, "CarrierClient injected successfully")
     }
 
-    @Test("CarrierClient fetchAll mock override")
-    func testFetchAllMock() async throws {
+    @Test("CarrierClient listAll mock override")
+    func testListAllMock() async throws {
         let expected = [Carrier(name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234")]
         try await withDependencies {
-            $0.carrierClient.fetchAll = { expected }
+            $0.carrierClient.listAll = { expected }
         } operation: {
             @Dependency(\.carrierClient) var client
-            let result = try await client.fetchAll()
+            let result = try await client.listAll()
             #expect(result == expected)
         }
     }
 
-    @Test("CarrierClient add mock override")
-    func testAddMock() async throws {
+    @Test("CarrierClient create mock override")
+    func testCreateMock() async throws {
         try await withDependencies {
-            $0.carrierClient.add = { _ in }
+            $0.carrierClient.create = { _ in }
         } operation: {
             @Dependency(\.carrierClient) var client
             let carrier = Carrier(name: "手機載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234")
-            try await client.add(carrier)
+            try await client.create(carrier)
         }
     }
 
@@ -55,6 +54,28 @@ struct CarrierClientTests {
         } operation: {
             @Dependency(\.carrierClient) var client
             try await client.delete(id)
+        }
+    }
+
+    @Test("CarrierClient setActiveForWidget mock override")
+    func testSetActiveForWidgetMock() async {
+        await withDependencies {
+            $0.carrierClient.setActiveForWidget = { _ in }
+        } operation: {
+            @Dependency(\.carrierClient) var client
+            await client.setActiveForWidget(UUID())
+        }
+    }
+
+    @Test("CarrierClient activeForWidget mock override")
+    func testActiveForWidgetMock() async {
+        let id = UUID()
+        withDependencies {
+            $0.carrierClient.activeForWidget = { id }
+        } operation: {
+            @Dependency(\.carrierClient) var client
+            let result = client.activeForWidget()
+            #expect(result == id)
         }
     }
 }

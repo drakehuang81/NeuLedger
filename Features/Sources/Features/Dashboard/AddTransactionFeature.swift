@@ -148,16 +148,9 @@ public struct AddTransactionFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.ledger) var ledger
-    @Dependency(\.recurringTransactionClient) var recurringTransactionClient
-    @Dependency(\.notificationAdapter) var notificationAdapter
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
-    @Dependency(\.aiUseCase) var aiUseCase
-    @Dependency(\.speechAdapter) var speechAdapter
+    @Dependency(\.captureClient) var captureClient
 
     private enum CancelID { case task; case noteDebounce; case categorySuggest; case speechRecording }
 
@@ -178,11 +171,11 @@ public struct AddTransactionFeature: Sendable {
                 }
                 let note = state.note
                 return .run { send in
-                    guard aiUseCase.isAvailable() else {
+                    guard captureClient.isAvailable() else {
                         await send(.backgroundExtractionCompleted(nil))
                         return
                     }
-                    let result = try? await aiUseCase.extractFromText(note)
+                    let result = try? await captureClient.extractFromText(note)
                     await send(.backgroundExtractionCompleted(result))
                 }
                 .debounce(id: CancelID.noteDebounce, for: .milliseconds(500), scheduler: RunLoop.main)
@@ -193,8 +186,8 @@ public struct AddTransactionFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    async let accounts = accountClient.fetchActive()
-                    async let categories = categoryClient.fetchAll()
+                    async let accounts = ledger.listActiveAccounts()
+                    async let categories = ledger.listCategories(nil)
                     let (a, c) = try await (accounts, categories)
                     await send(.optionsLoaded(accounts: a, categories: c))
                 }
@@ -205,9 +198,8 @@ public struct AddTransactionFeature: Sendable {
                 state.accounts = accounts
                 state.categories = categories
                 if case .add = state.mode, state.accountId == nil {
-                    let defaultId = userSettingsAdapter.string(.defaultAccountId)
-                    if !defaultId.isEmpty,
-                       let match = accounts.first(where: { $0.id.uuidString == defaultId }) {
+                    if let defaultId = ledger.defaultAccountId(),
+                       let match = accounts.first(where: { $0.id == defaultId }) {
                         state.accountId = match.id
                     } else {
                         state.accountId = accounts.first?.id
@@ -318,13 +310,7 @@ public struct AddTransactionFeature: Sendable {
                                 isActive: true,
                                 createdAt: date
                             )
-                            try await recurringTransactionClient.add(template)
-                            try await notificationAdapter.scheduleRecurringReminder(
-                                template.id,
-                                template.nextDueDate,
-                                String(localized: "recurring_transaction_notification_title"),
-                                String(localized: "recurring_transaction_notification_body")
-                            )
+                            try await ledger.createRecurring(template)
                         }
 
                     case let .edit(existing):
@@ -392,7 +378,7 @@ public struct AddTransactionFeature: Sendable {
             case .dismiss:
                 if state.isRecording {
                     state.isRecording = false
-                    speechAdapter.stopRecording()
+                    captureClient.stopVoiceSession()
                 }
                 return .concatenate(
                     .cancel(id: CancelID.speechRecording),
@@ -437,7 +423,7 @@ public struct AddTransactionFeature: Sendable {
             case .suggestCategoryTapped:
                 // Guard in reducer — the View disables the button, but this prevents subtle bugs
                 // if isAvailable state drifts between the .task check and the tap.
-                guard aiUseCase.isAvailable() else {
+                guard captureClient.isAvailable() else {
                     state.categorySuggestionError = String(localized: "add_transaction_ai_unavailable")
                     return .none
                 }
@@ -447,7 +433,7 @@ public struct AddTransactionFeature: Sendable {
                 let categoryNames = state.filteredCategories.map(\.name)
                 return .run { send in
                     await send(.categorySuggestionsReceived(
-                        TaskResult { try await aiUseCase.suggestCategories(description, categoryNames) }
+                        TaskResult { try await captureClient.suggestCategories(description, categoryNames) }
                     ))
                 }
                 .cancellable(id: CancelID.categorySuggest, cancelInFlight: true)
@@ -471,12 +457,12 @@ public struct AddTransactionFeature: Sendable {
                 guard !state.isRecording else {
                     // Stop branch
                     state.isRecording = false
-                    speechAdapter.stopRecording()
+                    captureClient.stopVoiceSession()
                     return .cancel(id: CancelID.speechRecording)
                 }
                 // Start branch — check permission asynchronously
                 return .run { send in
-                    let granted = await speechAdapter.requestPermission()
+                    let granted = await captureClient.requestVoicePermission()
                     await send(.recordingPermissionResult(granted))
                 }
 
@@ -491,7 +477,7 @@ public struct AddTransactionFeature: Sendable {
                 state.isRecording = true
                 state.speechError = nil
                 return .run { send in
-                    for try await text in speechAdapter.startRecording() {
+                    for try await text in captureClient.startVoiceSession() {
                         await send(.transcriptionUpdated(text))
                     }
                 } catch: { _, send in
@@ -508,8 +494,8 @@ public struct AddTransactionFeature: Sendable {
                 state.isRecording = false
                 state.speechError = String(localized: "speech_recognition_failed_error")
                 // stream.finish(throwing:) does not release AVAudioEngine/AVAudioSession —
-                // explicit stopRecording() is required for hardware teardown.
-                speechAdapter.stopRecording()
+                // explicit stopVoiceSession() is required for hardware teardown.
+                captureClient.stopVoiceSession()
                 return .cancel(id: CancelID.speechRecording)
             }
         }

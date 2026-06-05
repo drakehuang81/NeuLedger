@@ -7,7 +7,7 @@ struct TransactionTests {
     @Test("Transaction default values")
     func testDefaultValues() {
         let now = Date()
-        let tx = Transaction(amount: 100, date: now, accountId: UUID(), type: .expense, createdAt: now, updatedAt: now)
+        let tx = Transaction(amount: 100, date: now, accountId: UUID().uuidString, type: .expense, createdAt: now, updatedAt: now)
 
         #expect(tx.note == nil)
         #expect(tx.categoryId == nil)
@@ -18,7 +18,7 @@ struct TransactionTests {
 
     @Test("Transaction custom values")
     func testCustomValues() {
-        let accountId = UUID()
+        let accountId = UUID().uuidString
         let categoryId = UUID()
         let now = Date()
 
@@ -47,7 +47,7 @@ struct TransactionTests {
     func testEquatable() {
         let id = UUID()
         let now = Date()
-        let accountId = UUID()
+        let accountId = UUID().uuidString
 
         let tx1 = Transaction(id: id, amount: 100, date: now, accountId: accountId, type: .expense, createdAt: now, updatedAt: now)
         let tx2 = Transaction(id: id, amount: 100, date: now, accountId: accountId, type: .expense, createdAt: now, updatedAt: now)
@@ -61,7 +61,7 @@ struct TransactionTests {
     func testHashable() {
         let id = UUID()
         let now = Date()
-        let accountId = UUID()
+        let accountId = UUID().uuidString
 
         let tx1 = Transaction(id: id, amount: 100, date: now, accountId: accountId, type: .expense, createdAt: now, updatedAt: now)
         let tx2 = Transaction(id: id, amount: 100, date: now, accountId: accountId, type: .expense, createdAt: now, updatedAt: now)
@@ -79,7 +79,7 @@ struct TransactionTests {
     @Test("Transaction Codable round-trip")
     func testCodable() throws {
         let now = Date()
-        let tx = Transaction(amount: 100, date: now, accountId: UUID(), type: .expense, createdAt: now, updatedAt: now)
+        let tx = Transaction(amount: 100, date: now, accountId: UUID().uuidString, type: .expense, createdAt: now, updatedAt: now)
 
         let data = try JSONEncoder().encode(tx)
         let decoded = try JSONDecoder().decode(Transaction.self, from: data)
@@ -88,8 +88,8 @@ struct TransactionTests {
 
     @Test("Transaction Transfer has toAccountId")
     func testTransferTransaction() {
-        let sourceId = UUID()
-        let destId = UUID()
+        let sourceId = UUID().uuidString
+        let destId = UUID().uuidString
         let now = Date()
 
         let tx = Transaction(

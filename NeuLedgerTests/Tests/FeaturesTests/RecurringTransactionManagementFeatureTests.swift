@@ -15,7 +15,7 @@ struct RecurringTransactionManagementFeatureTests {
     ) -> RecurringTransaction {
         RecurringTransaction(
             id: id, amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
             type: .expense, tags: [], frequency: frequency,
             nextDueDate: nextDueDate, isActive: isActive, createdAt: Date()
         )
@@ -27,7 +27,7 @@ struct RecurringTransactionManagementFeatureTests {
         let store = await TestStore(initialState: RecurringTransactionManagementFeature.State()) {
             RecurringTransactionManagementFeature()
         } withDependencies: {
-            $0.recurringTransactionClient.fetchAll = { [rt] }
+            $0.ledgerClient.listRecurring = { [rt] }
         }
 
         await store.send(.task) { $0.isLoading = true }
@@ -48,9 +48,8 @@ struct RecurringTransactionManagementFeatureTests {
             RecurringTransactionManagementFeature()
         } withDependencies: {
             $0.date = .constant(Date())
-            $0.recurringTransactionClient.update = { updated.setValue($0) }
-            $0.recurringTransactionClient.fetchAll = { [deactivated.value] }
-            $0.notificationAdapter.cancelRecurringReminder = { _ in }
+            $0.ledgerClient.updateRecurring = { updated.setValue($0) }
+            $0.ledgerClient.listRecurring = { [deactivated.value] }
         }
 
         await store.send(.toggleActiveTapped(rt))
@@ -70,7 +69,7 @@ struct RecurringTransactionManagementFeatureTests {
         ) {
             RecurringTransactionManagementFeature()
         } withDependencies: {
-            $0.recurringTransactionClient.fetchAll = { [rt] }
+            $0.ledgerClient.listRecurring = { [rt] }
         }
 
         await store.send(.deleteRequested(rt.id)) {
@@ -89,11 +88,11 @@ struct RecurringTransactionManagementFeatureTests {
         }
     }
 
-    // P1-5 step 2: deleteConfirmed removes item and cancels notification
-    @Test("deleteConfirmed removes item and cancels notification")
+    // P1-5 step 2: deleteConfirmed removes item (reminder cancellation is now a
+    // post-condition of ledgerClient.deleteRecurring, internalised into the client).
+    @Test("deleteConfirmed removes item via deleteRecurring")
     func testDeleteShowsAlertAndConfirmation() async {
         let deletedId = LockIsolated<RecurringTransaction.ID?>(nil)
-        let cancelledId = LockIsolated<RecurringTransaction.ID?>(nil)
         let rt = Self.sample()
         // Start with alert pre-presented (after deleteRequested)
         var initialState = RecurringTransactionManagementFeature.State(items: [rt])
@@ -116,9 +115,8 @@ struct RecurringTransactionManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             RecurringTransactionManagementFeature()
         } withDependencies: {
-            $0.recurringTransactionClient.delete = { deletedId.setValue($0) }
-            $0.recurringTransactionClient.fetchAll = { [] }
-            $0.notificationAdapter.cancelRecurringReminder = { cancelledId.setValue($0) }
+            $0.ledgerClient.deleteRecurring = { deletedId.setValue($0) }
+            $0.ledgerClient.listRecurring = { [] }
         }
 
         await store.send(.alert(.presented(.deleteConfirmed(rt.id)))) {
@@ -127,13 +125,13 @@ struct RecurringTransactionManagementFeatureTests {
         await store.receive(\.loaded) { $0.items = [] }
 
         #expect(deletedId.value == rt.id)
-        #expect(cancelledId.value == rt.id)
     }
 
-    // P0-4: Re-enabling item with past nextDueDate reschedules to future
-    @Test("toggleActiveTapped true with overdue nextDueDate schedules to future")
+    // P0-4: Re-enabling item with past nextDueDate rebases nextDueDate to a future
+    // date before persisting, so the (Client-owned) reminder fires in the future.
+    @Test("toggleActiveTapped true with overdue nextDueDate rebases to future")
     func testToggleActiveTruePushesOverdueToFuture() async throws {
-        let scheduledDate = LockIsolated<Date?>(nil)
+        let persisted = LockIsolated<RecurringTransaction?>(nil)
         let fixedNow = Date(timeIntervalSinceReferenceDate: 771_638_400) // 2025-06-15
         let pastDate = Calendar.current.date(byAdding: .day, value: -7, to: fixedNow)!
         let rt = Self.sample(nextDueDate: pastDate, isActive: false)
@@ -147,11 +145,8 @@ struct RecurringTransactionManagementFeatureTests {
             RecurringTransactionManagementFeature()
         } withDependencies: {
             $0.date = .constant(fixedNow)
-            $0.recurringTransactionClient.update = { _ in }
-            $0.recurringTransactionClient.fetchAll = { [reactivated] }
-            $0.notificationAdapter.scheduleRecurringReminder = { _, date, _, _ in
-                scheduledDate.setValue(date)
-            }
+            $0.ledgerClient.updateRecurring = { persisted.setValue($0) }
+            $0.ledgerClient.listRecurring = { [reactivated] }
         }
 
         await store.send(.toggleActiveTapped(rt))
@@ -160,8 +155,9 @@ struct RecurringTransactionManagementFeatureTests {
             $0.items = [reactivated]
         }
 
-        let saved = try #require(scheduledDate.value)
-        #expect(saved > fixedNow)
+        let saved = try #require(persisted.value)
+        #expect(saved.isActive == true)
+        #expect(saved.nextDueDate > fixedNow)
     }
 
     // P1-D: Month-end boundary — 2026/01/31 + 1 month should clamp to 2026/02/28
@@ -202,7 +198,7 @@ struct RecurringTransactionManagementFeatureTests {
         ) {
             RecurringTransactionManagementFeature()
         } withDependencies: {
-            $0.recurringTransactionClient.fetchAll = { [rt] }
+            $0.ledgerClient.listRecurring = { [rt] }
         }
         await MainActor.run {
             store.exhaustivity = .off

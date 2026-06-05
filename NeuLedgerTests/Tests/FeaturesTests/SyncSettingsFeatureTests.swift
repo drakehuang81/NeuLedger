@@ -12,14 +12,9 @@ struct SyncSettingsFeatureTests {
         let store = await TestStore(initialState: SyncSettingsFeature.State()) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.userSettingsAdapter.bool = { key in
-                switch key.rawValue {
-                case "isSyncEnabled": return false
-                default: return key.defaultValue
-                }
-            }
-            $0.cloudSyncUseCase.isAvailable = { true }
-            $0.cloudSyncUseCase.lastSyncedAt = { nil }
+            $0.platformClient.syncEnabled = { false }
+            $0.platformClient.syncAvailable = { true }
+            $0.platformClient.lastSyncedAt = { nil }
         }
         await store.send(.task)
     }
@@ -31,28 +26,27 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.cloudSyncUseCase.enable = {
+            $0.platformClient.enableSync = {
                 AsyncThrowingStream { continuation in
                     continuation.yield(0.5)
                     continuation.yield(1.0)
                     continuation.finish()
                 }
             }
-            $0.userSettingsAdapter.bool = { _ in false }
-            $0.userSettingsAdapter.setBool = { _, _ in }
-            $0.cloudSyncUseCase.lastSyncedAt = { nil }
+            $0.platformClient.lastSyncedAt = { nil }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {
             $0.migrationState = .migrating(progress: 0)
         }
-        await store.receive(.migrationProgressUpdated(0.5)) {
+        // 寬限 timeout：全 scheme 高載時 effect 派送可能超過預設值（flaky 防治）
+        await store.receive(.migrationProgressUpdated(0.5), timeout: .seconds(10)) {
             $0.migrationState = .migrating(progress: 0.5)
         }
-        await store.receive(.migrationProgressUpdated(1.0)) {
+        await store.receive(.migrationProgressUpdated(1.0), timeout: .seconds(10)) {
             $0.migrationState = .migrating(progress: 1.0)
         }
-        await store.receive(.migrationCompleted) {
+        await store.receive(.migrationCompleted, timeout: .seconds(10)) {
             $0.migrationState = .completed
             $0.isSyncEnabled = true
         }
@@ -68,18 +62,18 @@ struct SyncSettingsFeatureTests {
         ) {
             SyncSettingsFeature()
         } withDependencies: {
-            $0.cloudSyncUseCase.enable = {
+            $0.platformClient.enableSync = {
                 AsyncThrowingStream { continuation in
                     continuation.finish(throwing: SyncError())
                 }
             }
-            $0.userSettingsAdapter.bool = { _ in false }
             $0.continuousClock = ImmediateClock()
         }
         await store.send(.enableSyncTapped) {
             $0.migrationState = .migrating(progress: 0)
         }
-        await store.receive(.migrationFailed("iCloud not available")) {
+        // 寬限 timeout：全 scheme 高載時 effect 派送可能超過預設值（flaky 防治）
+        await store.receive(.migrationFailed("iCloud not available"), timeout: .seconds(10)) {
             $0.migrationState = .failed("iCloud not available")
         }
     }

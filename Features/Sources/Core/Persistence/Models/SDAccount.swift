@@ -8,7 +8,7 @@ import SwiftData
 @Model
 final class SDAccount {
     /// The unique identifier of the account.
-    var id: UUID = UUID()
+    var id: String = "com.drake.SDAccount.id.defaultValue"
 
     /// The display name of the account.
     var name: String = ""
@@ -32,7 +32,7 @@ final class SDAccount {
     var createdAt: Date = Date()
 
     init(
-        id: UUID = UUID(),
+        id: String = UUID().uuidString,
         name: String,
         type: String,
         icon: String,

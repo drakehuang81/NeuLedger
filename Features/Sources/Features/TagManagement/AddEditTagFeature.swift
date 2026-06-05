@@ -61,7 +61,7 @@ public struct AddEditTagFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.tagClient) var tagClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
 
     // MARK: - Body
@@ -92,10 +92,10 @@ public struct AddEditTagFeature: Sendable {
                     switch mode {
                     case .add:
                         let tag = Tag(name: trimmedName, color: colorHex)
-                        try await tagClient.add(tag)
+                        try await ledger.createTag(tag)
                     case let .edit(existing):
                         let updated = Tag(id: existing.id, name: trimmedName, color: colorHex)
-                        try await tagClient.update(updated)
+                        try await ledger.updateTag(updated)
                     }
                     await send(.savedSuccessfully)
                 }

@@ -66,7 +66,7 @@ public struct AddEditCategoryFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
 
     private enum CancelID { case save }
@@ -119,7 +119,7 @@ public struct AddEditCategoryFeature: Sendable {
                             sortOrder: 0,
                             isDefault: false
                         )
-                        try await categoryClient.add(category)
+                        try await ledger.createCategory(category)
 
                     case let .edit(existing):
                         let updated = Domain.Category(
@@ -131,7 +131,7 @@ public struct AddEditCategoryFeature: Sendable {
                             sortOrder: existing.sortOrder,
                             isDefault: existing.isDefault
                         )
-                        try await categoryClient.update(updated)
+                        try await ledger.updateCategory(updated)
                     }
                     await send(.savedSuccessfully)
                 }

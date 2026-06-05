@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Period boundaries are inclusive on the start and exclusive on the
 /// end (DateInterval semantics), matching the convention used by
-/// `BudgetWarningPolicy` and the rest of the codebase.
+/// `Budget.evaluate` and the rest of the codebase.
 public struct BudgetStatus: Equatable, Sendable {
     public let budget: Budget
     public let periodStart: Date
@@ -39,7 +39,7 @@ public struct BudgetStatus: Equatable, Sendable {
 
     /// `progress` expressed as an integer percent (rounded down), the
     /// representation used by the warning notification subsystem so
-    /// `BudgetWarningPolicy` and consumers stay consistent.
+    /// `Budget.evaluate` and consumers stay consistent.
     public var usedPercent: Int {
         let pct = progress * 100
         return Int(pct.rounded(.down))

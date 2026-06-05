@@ -10,7 +10,7 @@ struct TransactionDraftTests {
         let original = TransactionDraft(
             id: UUID(),
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             amount: 480,
             date: Date(timeIntervalSince1970: 1_700_000_000)
         )
@@ -26,21 +26,21 @@ struct TransactionDraftTests {
         let zero = TransactionDraft(
             id: UUID(),
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             amount: 0,
             date: Date()
         )
         let positive = TransactionDraft(
             id: UUID(),
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             amount: 1,
             date: Date()
         )
         let negative = TransactionDraft(
             id: UUID(),
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             amount: -1,
             date: Date()
         )

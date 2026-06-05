@@ -20,10 +20,10 @@ public struct WatchRecordFeature: Sendable {
     /// send/cancel.
     public struct Draft: Equatable, Sendable {
         public var categoryId: UUID
-        public var accountIdOverride: UUID?
+        public var accountIdOverride: Account.ID?
         public var amount: Decimal
 
-        public init(categoryId: UUID, accountIdOverride: UUID?, amount: Decimal = 0) {
+        public init(categoryId: UUID, accountIdOverride: Account.ID?, amount: Decimal = 0) {
             self.categoryId = categoryId
             self.accountIdOverride = accountIdOverride
             self.amount = amount
@@ -34,7 +34,7 @@ public struct WatchRecordFeature: Sendable {
     public struct State: Equatable, Sendable {
         public var categories: [Domain.Category]
         public var accounts: [Account]
-        public var defaultAccountId: UUID?
+        public var defaultAccountId: Account.ID?
         public var draft: Draft?
         public var step: Step
         public var accountPickerForCategoryId: UUID?
@@ -42,7 +42,7 @@ public struct WatchRecordFeature: Sendable {
         public init(
             categories: [Domain.Category] = [],
             accounts: [Account] = [],
-            defaultAccountId: UUID? = nil,
+            defaultAccountId: Account.ID? = nil,
             draft: Draft? = nil,
             step: Step = .category,
             accountPickerForCategoryId: UUID? = nil
@@ -60,7 +60,7 @@ public struct WatchRecordFeature: Sendable {
             return categories.first { $0.id == id }
         }
 
-        public var activeAccountId: UUID? {
+        public var activeAccountId: Account.ID? {
             draft?.accountIdOverride ?? defaultAccountId
         }
 
@@ -72,12 +72,12 @@ public struct WatchRecordFeature: Sendable {
 
     public enum Action: Sendable {
         case task
-        case loaded(categories: [Domain.Category], accounts: [Account], defaultAccountId: UUID?)
+        case loaded(categories: [Domain.Category], accounts: [Account], defaultAccountId: Account.ID?)
 
         case categoryTapped(UUID)
         case categoryLongPressed(UUID)
         case accountPickerDismissed
-        case accountPicked(UUID)
+        case accountPicked(Account.ID)
 
         case amountDigit(Int)
         case amountBackspace
@@ -90,9 +90,7 @@ public struct WatchRecordFeature: Sendable {
 
     private static let amountCap: Decimal = 9_999_999
 
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.categoryClient) var categoryClient
-    @Dependency(\.accountClient) var accountClient
+    @Dependency(\.watchLedgerClient) var ledgerClient
     @Dependency(\.date.now) var now
 
     public init() {}
@@ -102,10 +100,10 @@ public struct WatchRecordFeature: Sendable {
             switch action {
 
             case .task:
-                return .run { [categoryClient, accountClient] send in
+                return .run { [ledgerClient] send in
                     @Sendable func load() async {
-                        async let categories = (try? await categoryClient.fetchByType(.expense)) ?? []
-                        async let accounts = (try? await accountClient.fetchActive()) ?? []
+                        async let categories = (try? await ledgerClient.categories(.expense)) ?? []
+                        async let accounts = (try? await ledgerClient.activeAccounts()) ?? []
                         let cats = await categories
                         let accs = await accounts
                         await send(.loaded(
@@ -183,7 +181,7 @@ public struct WatchRecordFeature: Sendable {
                     type: .expense
                 )
                 return .run { send in
-                    try? await transactionClient.add(transaction)
+                    try? await ledgerClient.record(transaction)
                     await send(.draftSent)
                 }
 

@@ -23,10 +23,10 @@ final class SDTransaction {
     var categoryId: UUID?
 
     /// The identifier of the primary account involved.
-    var accountId: UUID = UUID()
+    var accountId: String = ""
 
     /// The identifier of the destination account (only for transfers).
-    var toAccountId: UUID?
+    var toAccountId: String?
 
     /// The raw string representation of the ``TransactionType``.
     var type: String = ""
@@ -50,8 +50,8 @@ final class SDTransaction {
         date: Date,
         note: String? = nil,
         categoryId: UUID? = nil,
-        accountId: UUID,
-        toAccountId: UUID? = nil,
+        accountId: String,
+        toAccountId: String? = nil,
         type: String,
         aiSuggested: Bool = false,
         createdAt: Date = Date(),

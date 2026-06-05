@@ -40,7 +40,7 @@ public struct TagManagementFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.tagClient) var tagClient
+    @Dependency(\.ledgerClient) var ledger
 
     private enum CancelID { case task }
 
@@ -52,7 +52,7 @@ public struct TagManagementFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    let tags = try await tagClient.fetchAll()
+                    let tags = try await ledger.listTags()
                     await send(.tagsLoaded(tags))
                 }
                 .cancellable(id: CancelID.task)
@@ -87,8 +87,8 @@ public struct TagManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 return .run { send in
-                    try await tagClient.delete(id)
-                    let tags = try await tagClient.fetchAll()
+                    try await ledger.deleteTag(id)
+                    let tags = try await ledger.listTags()
                     await send(.tagsLoaded(tags))
                 }
 
@@ -98,7 +98,7 @@ public struct TagManagementFeature: Sendable {
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
                 return .run { send in
-                    let tags = try await tagClient.fetchAll()
+                    let tags = try await ledger.listTags()
                     await send(.tagsLoaded(tags))
                 }
 

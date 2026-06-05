@@ -8,7 +8,7 @@ import Domain
 struct RecurringTransactionFormFeatureTests {
 
     static let sampleAccount = Account(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: "00000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759",
         sortOrder: 0, isArchived: false, createdAt: Date()
     )
@@ -20,8 +20,8 @@ struct RecurringTransactionFormFeatureTests {
         ) {
             RecurringTransactionFormFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.saveTapped) {
@@ -36,8 +36,8 @@ struct RecurringTransactionFormFeatureTests {
         ) {
             RecurringTransactionFormFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.amountChanged("1000")) { $0.amountText = "1000" }
@@ -56,10 +56,9 @@ struct RecurringTransactionFormFeatureTests {
             RecurringTransactionFormFeature()
         } withDependencies: {
             $0.date = .constant(fixedNow)
-            $0.accountClient.fetchActive = { [Self.sampleAccount] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.recurringTransactionClient.add = { added.setValue($0) }
-            $0.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createRecurring = { added.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
         await MainActor.run {
@@ -90,8 +89,8 @@ struct RecurringTransactionFormFeatureTests {
             RecurringTransactionFormFeature()
         } withDependencies: {
             $0.date = .constant(referenceNow)
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.frequencyChanged(.yearly)) { state in
@@ -111,8 +110,8 @@ struct RecurringTransactionFormFeatureTests {
         ) {
             RecurringTransactionFormFeature()
         } withDependencies: {
-            $0.accountClient.fetchActive = { [] }
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         // Default frequency is .monthly; sending .monthly again is a no-op
         await store.send(.frequencyChanged(.monthly))
@@ -136,10 +135,9 @@ struct RecurringTransactionFormFeatureTests {
             RecurringTransactionFormFeature()
         } withDependencies: {
             $0.date.now = fixedNow
-            $0.accountClient.fetchActive = { [Self.sampleAccount] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.recurringTransactionClient.add = { added.setValue($0) }
-            $0.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createRecurring = { added.setValue($0) }
             $0.dismiss = DismissEffect { }
         }
         await MainActor.run {
@@ -167,9 +165,9 @@ struct RecurringTransactionFormFeatureTests {
             RecurringTransactionFormFeature()
         } withDependencies: {
             $0.date = .constant(fixedNow)
-            $0.accountClient.fetchActive = { [Self.sampleAccount] }
-            $0.categoryClient.fetchAll = { [] }
-            $0.recurringTransactionClient.add = { _ in throw FakeError() }
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createRecurring = { _ in throw FakeError() }
             $0.dismiss = DismissEffect { }
         }
         await MainActor.run {
@@ -196,7 +194,7 @@ struct RecurringTransactionFormFeatureTests {
 
         let rt = RecurringTransaction(
             id: UUID(), amount: 100, note: nil, categoryId: nil,
-            accountId: UUID(), toAccountId: nil, type: .expense,
+            accountId: UUID().uuidString, toAccountId: nil, type: .expense,
             tags: [], frequency: .monthly, nextDueDate: jan31,
             isActive: true, createdAt: jan31
         )

@@ -26,7 +26,7 @@ struct MapperTests {
     func testAccountMappingRoundTrip() throws {
         // Arrange
         let original = Account(
-            id: UUID(),
+            id: UUID().uuidString,
             name: "Test Bank",
             type: .bank,
             icon: "building.columns",
@@ -121,7 +121,7 @@ struct MapperTests {
             date: Date(),
             note: "Dinner in Paris",
             categoryId: UUID(),
-            accountId: UUID(),
+            accountId: UUID().uuidString,
             toAccountId: nil,
             type: .expense,
             tags: [tag1, tag2],

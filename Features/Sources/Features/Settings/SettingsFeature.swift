@@ -132,13 +132,9 @@ public struct SettingsFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.categoryClient) var categoryClient
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.carrierClient) var carrierClient
-    @Dependency(\.widgetSyncAdapter) var widgetSyncAdapter
-    @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
+    @Dependency(\.platformClient) var platformClient
     @Dependency(\.openURL) var openURL
 
     private enum CancelID { case task; case wipeAll; case seedRandom }
@@ -186,9 +182,9 @@ public struct SettingsFeature: Sendable {
 
             case .task:
                 return .run { send in
-                    async let accounts = accountClient.fetchActive()
-                    let defaultId = userSettingsAdapter.string(.defaultAccountId)
-                    let showAccessoryBar = userSettingsAdapter.bool(.showAccessoryBar)
+                    async let accounts = ledger.listActiveAccounts()
+                    let defaultId = ledger.defaultAccountId() ?? ""
+                    let showAccessoryBar = platformClient.showAccessoryBar()
                     let fetched = try await accounts
                     await send(.accountsLoaded(fetched))
                     await send(.defaultAccountSelected(defaultId))
@@ -196,14 +192,14 @@ public struct SettingsFeature: Sendable {
                     let displayName = Locale.current.localizedString(forLanguageCode: langCode)?.localizedCapitalized ?? langCode
                     await send(.languageLoaded(displayName))
                     await send(.accessoryBarToggleChanged(showAccessoryBar))
-                    let fetchedCarriers = try await carrierClient.fetchAll()
+                    let fetchedCarriers = try await carrierClient.listAll()
                     await send(.widgetCarriersLoaded(fetchedCarriers))
                 }
                 .cancellable(id: CancelID.task)
 
             case let .accountsLoaded(accounts):
                 state.accounts = accounts
-                if let selected = accounts.first(where: { $0.id.uuidString == state.selectedDefaultAccountId }) {
+                if let selected = accounts.first(where: { $0.id == state.selectedDefaultAccountId }) {
                     state.defaultAccountName = selected.name
                 } else {
                     state.defaultAccountName = accounts.first?.name ?? String(localized: "settings_none")
@@ -213,8 +209,8 @@ public struct SettingsFeature: Sendable {
             case let .defaultAccountSelected(id):
                 state.selectedDefaultAccountId = id
                 state.isPickingDefaultAccount = false
-                userSettingsAdapter.setString(id, .defaultAccountId)
-                if let account = state.accounts.first(where: { $0.id.uuidString == id }) {
+                ledger.setDefaultAccountId(id)
+                if let account = state.accounts.first(where: { $0.id == id }) {
                     state.defaultAccountName = account.name
                 }
                 return .none
@@ -249,11 +245,11 @@ public struct SettingsFeature: Sendable {
             case .exportCSVTapped:
                 state.exportingFormat = .csv
                 state.exportError = nil
-                return .run { [transactionClient, categoryClient, accountClient] send in
+                return .run { [ledger] send in
                     do {
-                        let transactions = try await transactionClient.fetchAll()
-                        let categories = try await categoryClient.fetchAll()
-                        let accounts = try await accountClient.fetchAll()
+                        let transactions = try await ledger.listAll(TransactionFilter()).map(\.transaction)
+                        let categories = try await ledger.listCategories(nil)
+                        let accounts = try await ledger.listAccounts()
 
                         let categoryMap = Dictionary(categories.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
                         let accountMap = Dictionary(accounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -297,9 +293,9 @@ public struct SettingsFeature: Sendable {
             case .exportJSONTapped:
                 state.exportingFormat = .json
                 state.exportError = nil
-                return .run { [transactionClient] send in
+                return .run { [ledger] send in
                     do {
-                        let transactions = try await transactionClient.fetchAll()
+                        let transactions = try await ledger.listAll(TransactionFilter()).map(\.transaction)
                         let encoder = JSONEncoder()
                         encoder.outputFormatting = .prettyPrinted
                         encoder.dateEncodingStrategy = .iso8601
@@ -329,7 +325,7 @@ public struct SettingsFeature: Sendable {
 
             case let .accessoryBarToggleChanged(value):
                 state.showAccessoryBar = value
-                userSettingsAdapter.setBool(value, .showAccessoryBar)
+                platformClient.setShowAccessoryBar(value)
                 return .send(.delegate(.accessoryBarVisibilityChanged(value)))
 
             case .privacyPolicyTapped:
@@ -339,9 +335,9 @@ public struct SettingsFeature: Sendable {
 
             case let .widgetCarriersLoaded(carriers):
                 state.carriers = carriers
-                let savedId = userSettingsAdapter.string(.widgetCarrierId)
-                state.widgetCarrierId = savedId
-                if let carrier = carriers.first(where: { $0.id.uuidString == savedId }) {
+                let activeId = carrierClient.activeForWidget()
+                state.widgetCarrierId = activeId?.uuidString ?? ""
+                if let activeId, let carrier = carriers.first(where: { $0.id == activeId }) {
                     state.widgetCarrierName = carrier.name
                 } else {
                     state.widgetCarrierName = ""
@@ -351,18 +347,12 @@ public struct SettingsFeature: Sendable {
             case let .widgetCarrierSelected(id):
                 state.widgetCarrierId = id.uuidString
                 state.isPickingWidgetCarrier = false
-                userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name
-                    return .run { [widgetSyncAdapter] _ in
-                        await widgetSyncAdapter.syncCarrier(
-                            carrier.barcode,
-                            carrier.type.rawValue,
-                            carrier.name
-                        )
-                    }
                 }
-                return .none
+                return .run { [carrierClient] _ in
+                    await carrierClient.setActiveForWidget(id)
+                }
 
             case .wipeAllDataTapped:
                 state.wipeAllDataError = nil
@@ -377,9 +367,9 @@ public struct SettingsFeature: Sendable {
                 state.isConfirmingWipeAllData = false
                 state.isWipingAllData = true
                 state.wipeAllDataError = nil
-                return .run { [cloudSyncUseCase] send in
+                return .run { [platformClient] send in
                     do {
-                        try await cloudSyncUseCase.wipeAll()
+                        try await platformClient.wipeAllSyncData()
                         await send(.wipeAllDataCompleted)
                     } catch {
                         await send(.wipeAllDataFailed(error.localizedDescription))
@@ -404,9 +394,9 @@ public struct SettingsFeature: Sendable {
                 state.isSeedingRandomData = true
                 state.seedRandomDataResult = nil
                 state.seedRandomDataError = nil
-                return .run { [accountClient, transactionClient, categoryClient] send in
+                return .run { [ledger] send in
                     do {
-                        let categories = try await categoryClient.fetchAll()
+                        let categories = try await ledger.listCategories(nil)
                         let expenseCats = categories.filter { $0.type == .expense }
                         let incomeCats = categories.filter { $0.type == .income }
                         let nameSeeds = ["主錢包", "活儲", "信用卡", "悠遊", "街口", "現金", "副帳", "外幣", "投資", "緊急"]
@@ -428,7 +418,7 @@ public struct SettingsFeature: Sendable {
                                 color: palette.randomElement() ?? type.defaultColor,
                                 sortOrder: 1000 + i
                             )
-                            try await accountClient.add(account)
+                            try await ledger.createAccount(account)
 
                             let txnCount = Int.random(in: 30...60)
                             for _ in 0..<txnCount {
@@ -449,7 +439,7 @@ public struct SettingsFeature: Sendable {
                                     accountId: account.id,
                                     type: txnType
                                 )
-                                try await transactionClient.add(txn)
+                                try await ledger.record(txn)
                             }
                             totalTransactions += txnCount
                         }
@@ -466,8 +456,8 @@ public struct SettingsFeature: Sendable {
             case let .seedRandomDataCompleted(accountCount, transactionCount):
                 state.isSeedingRandomData = false
                 state.seedRandomDataResult = "已產生 \(accountCount) 個帳戶、\(transactionCount) 筆交易"
-                return .run { [accountClient] send in
-                    let accounts = try await accountClient.fetchActive()
+                return .run { [ledger] send in
+                    let accounts = try await ledger.listActiveAccounts()
                     await send(.accountsLoaded(accounts))
                 }
 

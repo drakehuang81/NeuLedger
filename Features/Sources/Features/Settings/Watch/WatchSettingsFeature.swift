@@ -8,13 +8,13 @@ public struct WatchSettingsFeature: Sendable {
     @ObservableState
     public struct State: Equatable, Sendable {
         public var accounts: [Account]
-        public var selectedAccountId: UUID?
+        public var selectedAccountId: Account.ID?
         public var isPaired: Bool
         public var isWatchAppInstalled: Bool
 
         public init(
             accounts: [Account] = [],
-            selectedAccountId: UUID? = nil,
+            selectedAccountId: Account.ID? = nil,
             isPaired: Bool = false,
             isWatchAppInstalled: Bool = false
         ) {
@@ -27,13 +27,12 @@ public struct WatchSettingsFeature: Sendable {
 
     public enum Action: Equatable, Sendable {
         case task
-        case loaded(accounts: [Account], selectedAccountId: UUID?, isPaired: Bool, isWatchAppInstalled: Bool)
-        case accountSelected(UUID)
+        case loaded(accounts: [Account], selectedAccountId: Account.ID?, isPaired: Bool, isWatchAppInstalled: Bool)
+        case accountSelected(Account.ID)
     }
 
-    @Dependency(\.accountClient) var accountClient
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
-    @Dependency(\.watchBridgeAdapter) var watchBridgeAdapter
+    @Dependency(\.ledgerClient) var ledger
+    @Dependency(\.platformClient) var platformClient
 
     public init() {}
 
@@ -43,14 +42,12 @@ public struct WatchSettingsFeature: Sendable {
 
             case .task:
                 return .run { send in
-                    let accounts = (try? await accountClient.fetchActive()) ?? []
-                    let raw = userSettingsAdapter.string(.watchDefaultAccountId)
-                    let selected = raw.isEmpty ? nil : UUID(uuidString: raw)
+                    let accounts = (try? await ledger.listActiveAccounts()) ?? []
                     await send(.loaded(
                         accounts: accounts,
-                        selectedAccountId: selected,
-                        isPaired: watchBridgeAdapter.isPaired(),
-                        isWatchAppInstalled: watchBridgeAdapter.isWatchAppInstalled()
+                        selectedAccountId: platformClient.watchDefaultAccountId(),
+                        isPaired: platformClient.watchPaired(),
+                        isWatchAppInstalled: platformClient.watchAppInstalled()
                     ))
                 }
 
@@ -63,7 +60,7 @@ public struct WatchSettingsFeature: Sendable {
 
             case let .accountSelected(id):
                 state.selectedAccountId = id
-                userSettingsAdapter.setString(id.uuidString, .watchDefaultAccountId)
+                platformClient.setWatchDefaultAccountId(id)
                 return .none
             }
         }

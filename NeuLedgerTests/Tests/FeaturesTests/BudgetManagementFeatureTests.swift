@@ -26,7 +26,7 @@ struct BudgetManagementFeatureTests {
         let store = await TestStore(initialState: BudgetManagementFeature.State()) {
             BudgetManagementFeature()
         } withDependencies: {
-            $0.budgetClient.fetchAll = { [Self.sampleBudget] }
+            $0.planningClient.listAll = { [Self.sampleBudget] }
         }
 
         await store.send(.task) {
@@ -49,8 +49,8 @@ struct BudgetManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             BudgetManagementFeature()
         } withDependencies: {
-            $0.budgetClient.update = { budget in updated.setValue(budget) }
-            $0.budgetClient.fetchAll = { [Self.sampleBudget] }
+            $0.planningClient.update = { budget in updated.setValue(budget) }
+            $0.planningClient.listAll = { [Self.sampleBudget] }
         }
 
         await store.send(.toggleActive(Self.sampleBudget))
@@ -69,7 +69,7 @@ struct BudgetManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             BudgetManagementFeature()
         } withDependencies: {
-            $0.budgetClient.fetchAll = { [] }
+            $0.planningClient.listAll = { [] }
         }
 
         await store.send(.deleteRequested(id)) {
@@ -110,8 +110,8 @@ struct BudgetManagementFeatureTests {
         let store = await TestStore(initialState: initialState) {
             BudgetManagementFeature()
         } withDependencies: {
-            $0.budgetClient.delete = { budgetId in deletedId.setValue(budgetId) }
-            $0.budgetClient.fetchAll = { [] }
+            $0.planningClient.delete = { budgetId in deletedId.setValue(budgetId) }
+            $0.planningClient.listAll = { [] }
         }
 
         await store.send(.alert(.presented(.deleteConfirmed(id)))) {

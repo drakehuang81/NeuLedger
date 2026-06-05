@@ -26,7 +26,7 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.amountChanged("5000")) {
@@ -44,7 +44,7 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.nameChanged("食費")) {
@@ -65,7 +65,7 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.nameChanged("食費")) {
@@ -89,7 +89,7 @@ struct BudgetFormFeatureTests {
         let store = await TestStore(initialState: initialState) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.nameChanged("食費")) {
@@ -106,7 +106,7 @@ struct BudgetFormFeatureTests {
         let store = await TestStore(initialState: initialState) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
 
         await store.send(.amountChanged("1000")) {
@@ -125,8 +125,8 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
-            $0.budgetClient.add = { budget in addedBudget.setValue(budget) }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -150,8 +150,8 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
-            $0.budgetClient.update = { budget in updatedBudget.setValue(budget) }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.update = { budget in updatedBudget.setValue(budget) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -174,7 +174,7 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
             $0.dismiss = DismissEffect { }
         }
 
@@ -202,7 +202,7 @@ struct BudgetFormFeatureTests {
         ) {
             BudgetFormFeature()
         } withDependencies: {
-            $0.categoryClient.fetchAll = { [expenseCategory, incomeCategory] }
+            $0.ledgerClient.listCategories = { _ in [expenseCategory, incomeCategory] }
         }
 
         await store.send(.task)

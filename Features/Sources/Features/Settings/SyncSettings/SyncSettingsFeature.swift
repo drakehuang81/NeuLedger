@@ -44,8 +44,7 @@ public struct SyncSettingsFeature: Sendable {
         case syncNowFinished(Date)
     }
 
-    @Dependency(\.cloudSyncUseCase) var cloudSyncUseCase
-    @Dependency(\.userSettingsAdapter) var userSettingsAdapter
+    @Dependency(\.platformClient) var platformClient
     @Dependency(\.continuousClock) var clock
 
     public init() {}
@@ -54,9 +53,9 @@ public struct SyncSettingsFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
-                state.isSyncEnabled = userSettingsAdapter.bool(.isSyncEnabled)
-                state.isCloudKitAvailable = cloudSyncUseCase.isAvailable()
-                state.lastSyncedAt = cloudSyncUseCase.lastSyncedAt()
+                state.isSyncEnabled = platformClient.syncEnabled()
+                state.isCloudKitAvailable = platformClient.syncAvailable()
+                state.lastSyncedAt = platformClient.lastSyncedAt()
                 return .none
 
             case .enableSyncTapped:
@@ -71,7 +70,7 @@ public struct SyncSettingsFeature: Sendable {
                         }
                     }
                     do {
-                        for try await progress in cloudSyncUseCase.enable() {
+                        for try await progress in platformClient.enableSync() {
                             await send(.migrationProgressUpdated(progress))
                         }
                         await padIfNeeded()
@@ -89,7 +88,7 @@ public struct SyncSettingsFeature: Sendable {
             case .migrationCompleted:
                 state.migrationState = .completed
                 state.isSyncEnabled = true
-                state.lastSyncedAt = cloudSyncUseCase.lastSyncedAt()
+                state.lastSyncedAt = platformClient.lastSyncedAt()
                 return .none
 
             case .migrationFailed(let message):
@@ -101,12 +100,12 @@ public struct SyncSettingsFeature: Sendable {
                 state.isManualSyncing = true
                 return .run { [clock] send in
                     let start = Date()
-                    try? await cloudSyncUseCase.requestNow()
+                    try? await platformClient.requestSyncNow()
                     let remaining = 1.0 - Date().timeIntervalSince(start)
                     if remaining > 0 {
                         try? await clock.sleep(for: .seconds(remaining))
                     }
-                    await send(.syncNowFinished(cloudSyncUseCase.lastSyncedAt() ?? Date()))
+                    await send(.syncNowFinished(platformClient.lastSyncedAt() ?? Date()))
                 }
 
             case let .syncNowFinished(date):

@@ -20,7 +20,7 @@ struct SDRecurringTransactionMappingTests {
     func testApplyChanges() throws {
         let originalId = UUID()
         let originalCreatedAt = Date(timeIntervalSince1970: 1_000)
-        let originalAccountId = UUID()
+        let originalAccountId = UUID().uuidString
         let original = RecurringTransaction(
             id: originalId,
             amount: 100,
@@ -39,8 +39,8 @@ struct SDRecurringTransactionMappingTests {
         try context.save()
 
         let newCategoryId = UUID()
-        let newAccountId = UUID()
-        let newToAccountId = UUID()
+        let newAccountId = UUID().uuidString
+        let newToAccountId = UUID().uuidString
         let newNextDueDate = Date(timeIntervalSince1970: 9_999)
         let tagA = Tag(id: UUID(), name: "A", color: "#fff")
         let edited = RecurringTransaction(
@@ -78,13 +78,13 @@ struct SDRecurringTransactionMappingTests {
     func testIdPredicate() throws {
         let a = RecurringTransaction(
             id: UUID(), amount: 100, note: nil,
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
             type: .expense, tags: [], frequency: .monthly,
             nextDueDate: Date(), isActive: true, createdAt: Date()
         )
         let b = RecurringTransaction(
             id: UUID(), amount: 200, note: nil,
-            categoryId: nil, accountId: UUID(), toAccountId: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
             type: .income, tags: [], frequency: .yearly,
             nextDueDate: Date(), isActive: true, createdAt: Date()
         )

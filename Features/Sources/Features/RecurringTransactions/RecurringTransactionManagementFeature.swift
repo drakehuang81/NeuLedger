@@ -38,8 +38,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
         }
     }
 
-    @Dependency(\.recurringTransactionClient) var client
-    @Dependency(\.notificationAdapter) var notificationAdapter
+    @Dependency(\.ledgerClient) var ledger
     @Dependency(\.date.now) var now
 
     private enum CancelID { case task }
@@ -50,7 +49,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    let items = (try? await client.fetchAll()) ?? []
+                    let items = (try? await ledger.listRecurring()) ?? []
                     await send(.loaded(items))
                 }
                 .cancellable(id: CancelID.task, cancelInFlight: true)
@@ -71,27 +70,16 @@ public struct RecurringTransactionManagementFeature: Sendable {
             case let .toggleActiveTapped(item):
                 var updated = item
                 updated.isActive.toggle()
-                let currentNow = now
-                return .run { [updated, currentNow] send in
-                    try? await client.update(updated)
-                    if !updated.isActive {
-                        await notificationAdapter.cancelRecurringReminder(updated.id)
-                    } else {
-                        // P0-4: If nextDueDate is in the past, rebase to next valid future date
-                        let scheduledDate: Date
-                        if updated.nextDueDate < currentNow {
-                            scheduledDate = updated.nextDate(after: currentNow)
-                        } else {
-                            scheduledDate = updated.nextDueDate
-                        }
-                        try await notificationAdapter.scheduleRecurringReminder(
-                            updated.id,
-                            scheduledDate,
-                            String(localized: "recurring_transaction_notification_title"),
-                            String(localized: "recurring_transaction_notification_body")
-                        )
-                    }
-                    let items = (try? await client.fetchAll()) ?? []
+                // P0-4: When re-activating an overdue template, rebase nextDueDate to the
+                // next valid future date so the (now Client-owned) reminder fires in the future.
+                if updated.isActive, updated.nextDueDate < now {
+                    updated.nextDueDate = updated.nextDate(after: now)
+                }
+                return .run { [updated] send in
+                    // Reminder scheduling/cancellation is a post-condition of updateRecurring
+                    // (internalised into LedgerClient).
+                    try? await ledger.updateRecurring(updated)
+                    let items = (try? await ledger.listRecurring()) ?? []
                     await send(.loaded(items))
                 }
 
@@ -118,9 +106,10 @@ public struct RecurringTransactionManagementFeature: Sendable {
             // P1-5: Actual delete happens only after confirmation
             case let .alert(.presented(.deleteConfirmed(id))):
                 return .run { send in
-                    try? await client.delete(id)
-                    await notificationAdapter.cancelRecurringReminder(id)
-                    let items = (try? await client.fetchAll()) ?? []
+                    // Reminder cancellation is a post-condition of deleteRecurring
+                    // (internalised into LedgerClient).
+                    try? await ledger.deleteRecurring(id)
+                    let items = (try? await ledger.listRecurring()) ?? []
                     await send(.loaded(items))
                 }
 
@@ -129,7 +118,7 @@ public struct RecurringTransactionManagementFeature: Sendable {
 
             case .form(.presented(.delegate(.saved))):
                 return .run { send in
-                    let items = (try? await client.fetchAll()) ?? []
+                    let items = (try? await ledger.listRecurring()) ?? []
                     await send(.loaded(items))
                 }
 

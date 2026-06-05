@@ -18,7 +18,7 @@ struct SDAccountMappingTests {
 
     @Test("applyChanges updates every mutable scalar field, preserves id and createdAt")
     func testApplyChanges() throws {
-        let originalId = UUID()
+        let originalId = UUID().uuidString
         let originalCreatedAt = Date(timeIntervalSince1970: 1_000)
         let original = Account(
             id: originalId,

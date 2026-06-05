@@ -68,8 +68,7 @@ public struct TransactionsFeature: Sendable {
 
     // MARK: - Dependencies
 
-    @Dependency(\.transactionClient) var transactionClient
-    @Dependency(\.ledger) var ledger
+    @Dependency(\.ledgerClient) var ledger
 
     private enum CancelID {
         case task
@@ -85,8 +84,8 @@ public struct TransactionsFeature: Sendable {
             case .task:
                 state.isLoading = true
                 return .run { send in
-                    let transactions = try await transactionClient.fetchAll()
-                    await send(.transactionsLoaded(transactions))
+                    let transactions = try await ledger.listAll(filter: TransactionFilter())
+                    await send(.transactionsLoaded(transactions.map(\.transaction)))
                 }
                 .cancellable(id: CancelID.task)
 
@@ -100,8 +99,8 @@ public struct TransactionsFeature: Sendable {
                 state.searchText = text
                 if text.isEmpty {
                     return .run { send in
-                        let transactions = try await transactionClient.fetchAll()
-                        await send(.transactionsLoaded(transactions))
+                        let transactions = try await ledger.listAll(filter: TransactionFilter())
+                        await send(.transactionsLoaded(transactions.map(\.transaction)))
                     }
                     .cancellable(id: CancelID.search, cancelInFlight: true)
                 }
@@ -113,8 +112,8 @@ public struct TransactionsFeature: Sendable {
             case .searchDebounced:
                 let text = state.searchText
                 return .run { send in
-                    let results = try await transactionClient.search(text)
-                    await send(.transactionsLoaded(results))
+                    let results = try await ledger.search(text)
+                    await send(.transactionsLoaded(results.map(\.transaction)))
                 }
 
             // MARK: Filter
@@ -125,8 +124,8 @@ public struct TransactionsFeature: Sendable {
             case let .filter(.presented(.delegate(.filterApplied(newFilter)))):
                 state.activeFilter = newFilter
                 return .run { [filter = newFilter] send in
-                    let results = try await transactionClient.fetch(filter)
-                    await send(.transactionsLoaded(results))
+                    let results = try await ledger.listAll(filter: filter)
+                    await send(.transactionsLoaded(results.map(\.transaction)))
                 }
 
             case .filter(.presented(.delegate(.dismissed))):
@@ -194,8 +193,8 @@ public struct TransactionsFeature: Sendable {
             case .addTransaction(.presented(.delegate(.saved))):
                 state.addTransaction = nil
                 return .run { send in
-                    let transactions = try await transactionClient.fetchAll()
-                    await send(.transactionsLoaded(transactions))
+                    let transactions = try await ledger.listAll(filter: TransactionFilter())
+                    await send(.transactionsLoaded(transactions.map(\.transaction)))
                 }
 
             case .addTransaction(.presented(.delegate(.dismissed))):

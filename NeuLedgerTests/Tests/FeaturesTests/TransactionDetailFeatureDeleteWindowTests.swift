@@ -10,7 +10,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
 
     private static let sample = Transaction(
         id: UUID(uuidString: "44000000-0000-0000-0000-000000000001")!,
-        amount: 100, date: .now, accountId: UUID(), type: .expense
+        amount: 100, date: .now, accountId: UUID().uuidString, type: .expense
     )
 
     @Test("undoTapped clears pendingDelete and cancels window — delete never runs")
@@ -25,7 +25,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
             TransactionDetailFeature()
         } withDependencies: {
             $0.continuousClock = clock
-            $0.ledger.delete = { _ in deleteCalled.setValue(true) }
+            $0.ledgerClient.delete = { _ in deleteCalled.setValue(true) }
             $0.dismiss = DismissEffect { }
         }
 
@@ -53,7 +53,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
             TransactionDetailFeature()
         } withDependencies: {
             $0.continuousClock = clock
-            $0.ledger.delete = { deletedId.setValue($0) }
+            $0.ledgerClient.delete = { deletedId.setValue($0) }
             $0.dismiss = DismissEffect { dismissed.setValue(true) }
         }
 
@@ -84,7 +84,7 @@ struct TransactionDetailFeatureDeleteWindowTests {
             TransactionDetailFeature()
         } withDependencies: {
             $0.continuousClock = clock
-            $0.ledger.delete = { _ in throw DeleteFailed() }
+            $0.ledgerClient.delete = { _ in throw DeleteFailed() }
             $0.dismiss = DismissEffect { dismissed.setValue(true) }
         }
 

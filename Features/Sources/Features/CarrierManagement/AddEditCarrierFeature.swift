@@ -93,7 +93,7 @@ public struct AddEditCarrierFeature: Sendable {
                     switch mode {
                     case .add:
                         let carrier = Carrier(name: effectiveName, type: type, barcode: barcode)
-                        try await carrierClient.add(carrier)
+                        try await carrierClient.create(carrier)
                     case let .edit(existing):
                         let updated = Carrier(
                             id: existing.id,

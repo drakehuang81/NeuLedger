@@ -18,7 +18,7 @@ enum TransactionAnalyticsKernel {
     /// Per-day expense sums for the most recent `days` days ending on
     /// today, optionally scoped to a single account.
     static func weeklySpending(
-        accountID: UUID?,
+        accountID: Account.ID?,
         days: Int,
         container: ModelContainer
     ) throws -> [Decimal] {
@@ -238,7 +238,7 @@ enum TransactionAnalyticsKernel {
     /// Gauge-ready metrics for active budgets, optionally narrowed to
     /// categories that appear in `accountId`'s recent expenses.
     static func budgetGauges(
-        accountId: UUID?,
+        accountId: Account.ID?,
         activeBudgets: [Budget],
         categoryNamesById: [UUID: String],
         container: ModelContainer

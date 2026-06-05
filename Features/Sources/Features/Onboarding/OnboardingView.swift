@@ -38,7 +38,7 @@ struct OnboardingView: View {
                     PageDots(active: dotIndex)
                         .animation(.easeInOut(duration: 0.35), value: dotIndex)
                     Spacer()
-                    Button { store.send(.skipButtonTapped) } label: {
+                    Button { store.send(.finishOnboarding) } label: {
                         Text("common_skip")
                             .font(Font.Design.size15)
                             .foregroundStyle(.secondary)
@@ -61,15 +61,15 @@ struct OnboardingView: View {
         switch store.currentStep {
         case .welcome:
             PrimaryButton("onboarding_welcome_button", systemImage: "arrow.forward") {
-                store.send(.startButtonTapped)
+                store.send(.nextButtonTapped)
             }
         case .accountSelection:
             PrimaryButton(continueButtonKey) { store.send(.nextButtonTapped) }
                 .opacity(continueDisabled ? 0.5 : 1)
                 .disabled(continueDisabled)
         case .ready:
-            PrimaryButton("onboarding_ready_button") { store.send(.finishButtonTapped) }
-                .disabled(store.isCreatingAccounts)
+            PrimaryButton("onboarding_ready_button") { store.send(.nextButtonTapped) }
+                .disabled(store.currentStep == .done)
         case .done:
             EmptyView()
         }

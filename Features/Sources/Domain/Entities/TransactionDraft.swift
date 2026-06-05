@@ -14,7 +14,7 @@ public struct TransactionDraft: Equatable, Hashable, Codable, Sendable {
     public let categoryId: UUID
 
     /// The account this expense should be debited from.
-    public let accountId: UUID
+    public let accountId: Account.ID
 
     /// The monetary value. Watch UI enforces integer-only entry; storage is
     /// `Decimal` to stay aligned with `Transaction.amount`.
@@ -26,7 +26,7 @@ public struct TransactionDraft: Equatable, Hashable, Codable, Sendable {
     public init(
         id: UUID = UUID(),
         categoryId: UUID,
-        accountId: UUID,
+        accountId: Account.ID,
         amount: Decimal,
         date: Date = Date()
     ) {

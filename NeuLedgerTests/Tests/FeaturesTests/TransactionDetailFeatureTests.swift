@@ -8,7 +8,7 @@ import Domain
 struct TransactionDetailFeatureTests {
 
     private static let account = Account(
-        id: UUID(uuidString: "11000000-0000-0000-0000-000000000001")!,
+        id: "11000000-0000-0000-0000-000000000001",
         name: "現金", type: .cash, icon: "banknote", color: "#34C759"
     )
 
@@ -103,7 +103,7 @@ struct TransactionDetailFeatureTests {
             name: "現金", type: .cash, icon: "banknote", color: "#34C759"
         )
         let toAccount = Account(
-            id: UUID(uuidString: "11000000-0000-0000-0000-000000000002")!,
+            id: "11000000-0000-0000-0000-000000000002",
             name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
         )
         let category = Domain.Category(
@@ -129,9 +129,9 @@ struct TransactionDetailFeatureTests {
         ) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.accountClient.fetchAll = { [account, toAccount] }
-            $0.categoryClient.fetchAll = { [category] }
-            $0.transactionClient.detailStats = { _ in stubInsight }
+            $0.ledgerClient.listAccounts = { [account, toAccount] }
+            $0.ledgerClient.listCategories = { _ in [category] }
+            $0.insightsClient.detailStats = { _ in stubInsight }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -162,7 +162,7 @@ struct TransactionDetailFeatureTests {
         let store = await TestStore(initialState: initialState) {
             TransactionDetailFeature()
         } withDependencies: {
-            $0.ledger.delete = { deletedId.setValue($0) }
+            $0.ledgerClient.delete = { deletedId.setValue($0) }
             $0.continuousClock = clock
             $0.dismiss = DismissEffect { }
         }

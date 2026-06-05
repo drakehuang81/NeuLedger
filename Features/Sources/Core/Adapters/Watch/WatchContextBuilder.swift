@@ -15,6 +15,7 @@ public enum WatchContextBuilder {
     ) async throws -> WatchContextSnapshot {
         @Dependency(\.calendar) var calendar
         @Dependency(\.planningClient) var planningClient
+        @Dependency(\.carrierClient) var carrierClient
 
         // Infrastructure-layer collaborator in the Watch sync pipeline:
         // reads SwiftData directly via `SwiftDataStore` (same-layer, legal —
@@ -31,6 +32,10 @@ public enum WatchContextBuilder {
             .filter { !$0.isArchived }
         let allTxns = try await transactionStore.fetchAll(sortBy: [SortDescriptor(\.date, order: .reverse)])
         let activeBudgets = try await planningClient.listActive()
+        // Carriers ride the same full snapshot. Reactive save observation
+        // (WatchSyncObserver) means any CarrierStore mutation re-pushes
+        // automatically — never call the bridge from CarrierClient.
+        let carriers = try await carrierClient.listAll()
 
         let startOfToday = calendar.startOfDay(for: now)
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) else {
@@ -57,7 +62,8 @@ public enum WatchContextBuilder {
             todayTotal: todayTotal,
             todayCount: todayExpenses.count,
             monthBudgetProgress: progress,
-            snapshotAt: now
+            snapshotAt: now,
+            carriers: carriers
         )
     }
 

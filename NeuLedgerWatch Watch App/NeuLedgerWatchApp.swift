@@ -13,9 +13,9 @@ struct NeuLedgerWatch_Watch_AppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            WatchRootView(
-                store: Store(initialState: WatchRecordFeature.State()) {
-                    WatchRecordFeature()
+            WatchAppView(
+                store: Store(initialState: WatchAppFeature.State()) {
+                    WatchAppFeature()
                 }
             )
         }

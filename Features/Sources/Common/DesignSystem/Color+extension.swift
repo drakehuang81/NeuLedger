@@ -168,5 +168,10 @@ public extension Color {
         public static let ledgerCutChalkFg    = Color(hexLiteral: "#1A1410")
         public static let ledgerCutNoirAccent  = Color(hexLiteral: "#FFB880")
         public static let ledgerCutChalkAccent = Color(hexLiteral: "#A55530")
+
+        // MARK: - Barcode (scannability-critical, theme-invariant)
+        // 條碼對比不得隨 Light/Dark 變動 — 永遠純白底、純黑條。
+        public static let barcodeSurface = Color(hexLiteral: "#FFFFFF")
+        public static let barcodeInk = Color(hexLiteral: "#000000")
     }
 }

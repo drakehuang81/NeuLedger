@@ -15,7 +15,7 @@ struct WatchCacheStoreTests {
 
     private func makeSnapshot(
         todayTotal: Decimal = 480,
-        defaultAccountId: UUID = UUID()
+        defaultAccountId: Account.ID = UUID().uuidString
     ) -> WatchContextSnapshot {
         WatchContextSnapshot(
             categories: [

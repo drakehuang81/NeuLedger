@@ -37,7 +37,7 @@ struct WatchSessionGatewayTests {
 
     private func makeSnapshot() -> WatchContextSnapshot {
         WatchContextSnapshot(
-            categories: [], accounts: [], defaultAccountId: UUID(),
+            categories: [], accounts: [], defaultAccountId: UUID().uuidString,
             todayTotal: 420, todayCount: 1, monthBudgetProgress: nil,
             snapshotAt: Date()
         )
@@ -76,7 +76,7 @@ struct WatchSessionGatewayTests {
         let cache = makeCacheStore()
         let gateway = WatchSessionGateway(transport: transport, cache: cache)
         let draft = TransactionDraft(
-            categoryId: UUID(), accountId: UUID(), amount: 480
+            categoryId: UUID(), accountId: UUID().uuidString, amount: 480
         )
 
         gateway.send(draft: draft)

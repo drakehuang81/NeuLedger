@@ -260,4 +260,18 @@ struct PlatformClientTests {
             client.openAppSettings()
         }
     }
+
+    @Test("recordError mock override")
+    func testRecordErrorMock() {
+        struct DummyError: Error {}
+        withDependencies {
+            $0.platformClient.recordError = { error, userInfo in
+                #expect(error is DummyError)
+                #expect(userInfo == ["screen": "dashboard"])
+            }
+        } operation: {
+            @Dependency(\.platformClient) var client
+            client.recordError(DummyError(), ["screen": "dashboard"])
+        }
+    }
 }

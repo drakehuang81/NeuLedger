@@ -2,6 +2,7 @@ import Foundation
 import Dependencies
 import Domain
 import SwiftData
+import FirebaseCrashlytics
 
 #if canImport(UIKit)
 import UIKit
@@ -188,6 +189,9 @@ extension PlatformClient: DependencyKey {
                     }
                 }
                 #endif
+            },
+            recordError: { error, userInfo in
+                Crashlytics.crashlytics().record(error: error, userInfo: userInfo)
             }
         )
     }

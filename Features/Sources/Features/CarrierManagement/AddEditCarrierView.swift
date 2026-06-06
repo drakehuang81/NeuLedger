@@ -200,7 +200,7 @@ public struct AddEditCarrierView: View {
                                     set: { store.send(.barcodeChanged($0.uppercased())) }
                                 )
                             )
-                            .font(.system(.body, design: .monospaced))
+                            .font(Font.Design.bodyMonospaced)
                             .multilineTextAlignment(.trailing)
                             .foregroundStyle(
                                 store.barcodeError != nil

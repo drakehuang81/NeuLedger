@@ -63,10 +63,7 @@ public struct BudgetCategoryListPicker: View {
                     Circle()
                         .fill(color.opacity(0.12))
                     Image(systemName: symbol.isEmpty ? "tag" : symbol)
-                        .font(.system(
-                            size: isAll ? 14 : 15,
-                            weight: isAll ? .bold : .medium
-                        ))
+                        .font(isAll ? Font.Design.size14Semibold : Font.Design.size15Medium)
                         .foregroundStyle(color)
                         .symbolRenderingMode(.hierarchical)
                 }

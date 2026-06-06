@@ -4,14 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Code Navigation
 
-Swift LSP is installed and available via the `LSP` tool. **Always prefer LSP over Grep/Glob for Swift code navigation:**
+Tool triage: `LSP` for semantic point queries (hover / definition / references / rename), `ast-grep` for structural queries and rule audits, `Grep`/`Glob` for text searches (comments, strings, non-Swift files).
 
-- Find definitions → `LSP` (hover, go-to-definition) instead of `Grep`
-- Find references → `LSP` (find references) instead of `Grep`
-- Check type info / signatures → `LSP` (hover) instead of reading whole files
-- Rename symbols → `LSP` (rename) instead of manual search-and-replace
+### ast-grep audits (run before every PR)
 
-Only fall back to `Grep`/`Glob` when LSP cannot help (e.g., searching comments, file-level patterns, or non-Swift files).
+```bash
+# typography gateway — check BOTH spellings; expected output: only Font+extension.swift
+ast-grep --lang swift -p 'Font.system(size: $$$)' Features/Sources/ | cut -d: -f1 | sort -u
+ast-grep --lang swift -p '$X.font(.system($$$))' Features/Sources/ | cut -d: -f1 | sort -u
+
+# color gateway — expected output: only Color+extension.swift
+ast-grep --lang swift -p 'Color(hexLiteral: $$$)' Features/Sources/ | cut -d: -f1 | sort -u
+
+# presentation layers must never import SwiftData — expected: no output
+ast-grep --lang swift -p 'import SwiftData' Features/Sources/Features/ Features/Sources/WatchFeatures/
+
+# Client→Client ban — expected: exactly one §3.1 whitelisted hit (LedgerClient+Live injecting planningClient)
+ast-grep --lang swift -p '@Dependency(\.$NAME)' Features/Sources/Application/ | grep 'Client)'
+```
+
+Notes: `-l` means `--lang`, not "list files" — keep the `| cut -d: -f1 | sort -u` pipes as written. Explicit (`Font.system(...)`) and implicit-member (`.font(.system(...))`) calls are different AST shapes — both patterns are required.
 
 ## Build & Test
 

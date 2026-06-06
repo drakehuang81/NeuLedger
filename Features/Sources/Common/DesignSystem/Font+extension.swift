@@ -16,6 +16,10 @@ public extension Font {
         /// Monospaced digit body font for financial amounts (Dynamic Type).
         public static let amount = Font.body.monospacedDigit()
 
+        /// Fully monospaced body font for code-like input (e.g. carrier
+        /// barcodes) where every character must align (Dynamic Type).
+        public static let bodyMonospaced = Font.body.monospaced()
+
         // MARK: - Fixed Pixel Scale
         //
         // Absolute-pixel sizes for chrome, badges, metric labels, hero

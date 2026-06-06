@@ -34,6 +34,8 @@ public struct WatchSettingsFeature: Sendable {
     @Dependency(\.ledgerClient) var ledger
     @Dependency(\.platformClient) var platformClient
 
+    private enum CancelID { case pushWatchContext }
+
     public init() {}
 
     public var body: some ReducerOf<Self> {
@@ -53,7 +55,15 @@ public struct WatchSettingsFeature: Sendable {
 
             case let .loaded(accounts, selectedAccountId, isPaired, isWatchAppInstalled):
                 state.accounts = accounts
-                state.selectedAccountId = selectedAccountId
+                // Mirror WatchDefaultAccountResolver: honor the stored
+                // override only while it still points at a live account
+                // (it may have been archived/deleted in account management),
+                // otherwise fall back to the first active account
+                // (sortOrder-first, non-archived — guaranteed by
+                // listActiveAccounts) instead of leaving the list unchecked.
+                state.selectedAccountId = accounts.contains(where: { $0.id == selectedAccountId })
+                    ? selectedAccountId
+                    : accounts.first?.id
                 state.isPaired = isPaired
                 state.isWatchAppInstalled = isWatchAppInstalled
                 return .none
@@ -61,7 +71,12 @@ public struct WatchSettingsFeature: Sendable {
             case let .accountSelected(id):
                 state.selectedAccountId = id
                 platformClient.setWatchDefaultAccountId(id)
-                return .none
+                // Settings writes don't save SwiftData, so WatchSyncObserver
+                // never fires for them — push the fresh default explicitly.
+                // cancelInFlight: rapid re-selection must not let an older
+                // in-flight push land after (and overwrite) the newest one.
+                return .run { _ in await platformClient.pushWatchContext() }
+                    .cancellable(id: CancelID.pushWatchContext, cancelInFlight: true)
             }
         }
     }

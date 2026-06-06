@@ -51,28 +51,15 @@ public final class WatchSyncObserver {
 
     private func rebuildAndPush() async {
         @Dependency(\.watchBridgeAdapter) var bridge
-        // Infrastructure-layer collaborator in the Watch sync pipeline:
-        // resolves the fallback default account by reading SwiftData
-        // directly via `SwiftDataStore` (same-layer, legal — see
-        // docs/architecture.md §10). Mirrors the former
-        // accountClient.fetchActive() (sorted, non-archived).
-        let accountStore = AccountStore()
         do {
             // Prefer the Watch-specific default account chosen in Settings →
-            // Watch; fall back to the first active account so the Watch app
-            // can still receive categories/accounts before the user has ever
-            // visited that screen. Only bail when there is genuinely no
-            // account at all — Watch has nothing useful to show then.
-            let resolvedDefaultId: Account.ID
-            if let chosen = defaultAccountIdProvider() {
-                resolvedDefaultId = chosen
-            } else if let first = try await accountStore
-                .fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
-                .first(where: { !$0.isArchived })?.id {
-                resolvedDefaultId = first
-            } else {
-                return
-            }
+            // Watch (only while it still points at a live account); fall back
+            // to the first active account so the Watch app can still receive
+            // categories/accounts before the user has ever visited that
+            // screen. Only bail when there is genuinely no account at all —
+            // Watch has nothing useful to show then.
+            guard let resolvedDefaultId = try await WatchDefaultAccountResolver
+                .resolve(stored: defaultAccountIdProvider()) else { return }
             let snapshot = try await WatchContextBuilder.build(
                 defaultAccountId: resolvedDefaultId
             )

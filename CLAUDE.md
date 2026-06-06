@@ -144,7 +144,7 @@ Features/Sources/
 | `\.insightsClient` | 帳本的唯讀投影 | `todayStats`, `weeklySparkline`, `dailyBars`, `categoryProportions`, `budgetGauges`, `detailStats`, `generateAIInsight(s)`, `answerFinancialQuestion`, `isAIAvailable` |
 | `\.captureClient` | 進帳本前的輸入輔助（只產草稿） | `extractFromText/Voice`, `suggestCategories`, `isAvailable`, voice session 三方法 |
 | `\.carrierClient` | 電子發票載具保管 | `listAll`, CRUD, `setActiveForWidget`, `activeForWidget` |
-| `\.platformClient` | App 自身的運行環境 | 偏好/通知/同步/路由/系統 + watch 配對四方法 |
+| `\.platformClient` | App 自身的運行環境 | 偏好/通知/同步/路由/系統 + watch 配對/預設帳戶/`pushWatchContext` |
 
 內部不變量（已測試）：`ledgerClient.record/update` → `planningClient.evaluateAfterTransaction`（唯一 §3.1 白名單）；交易異動 → Widget/Watch 鏡像推送；recurring CRUD → 通知排程。Client→Client 預設禁止，跨域協調由 Reducer 用兩個 `.run` effect 做。
 

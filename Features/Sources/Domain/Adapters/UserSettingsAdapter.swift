@@ -82,7 +82,7 @@ public extension SettingsKey where Value == String {
     )
 
     /// The UUID string of the default account used when recording transactions from Apple Watch.
-    /// Empty string means "no override — fall back to the iOS default account".
+    /// Empty string means "no override — fall back to the sortOrder-first active account".
     static let watchDefaultAccountId = SettingsKey(
         rawValue: "watchDefaultAccountId",
         defaultValue: ""

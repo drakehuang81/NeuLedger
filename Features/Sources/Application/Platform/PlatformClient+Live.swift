@@ -71,6 +71,20 @@ extension PlatformClient: DependencyKey {
             setWatchDefaultAccountId: { id in
                 userSettingsAdapter.setString(id ?? "", .watchDefaultAccountId)
             },
+            pushWatchContext: {
+                do {
+                    let raw = userSettingsAdapter.string(.watchDefaultAccountId)
+                    guard let defaultAccountId = try await WatchDefaultAccountResolver
+                        .resolve(stored: raw.isEmpty ? nil : raw) else { return }
+                    let snapshot = try await WatchContextBuilder.build(
+                        defaultAccountId: defaultAccountId
+                    )
+                    try await watchBridgeAdapter.pushContext(snapshot)
+                } catch {
+                    // Swallow — WC retries on its own and the next SwiftData
+                    // save re-pushes a correct snapshot anyway.
+                }
+            },
 
             // MARK: Notification
             requestNotificationPermission: {

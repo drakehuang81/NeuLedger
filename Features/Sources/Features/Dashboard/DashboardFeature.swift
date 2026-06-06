@@ -39,7 +39,6 @@ public struct DashboardFeature: Sendable {
         case transactionObservation
         case balances
         case categoryFetch
-        case aiInsightFetch
         case weeklySpending
         case stats
         case insights
@@ -62,11 +61,6 @@ public struct DashboardFeature: Sendable {
         public var earliestTransactionDate: Date? = nil                      // transactionsUpdated
         public var categoryMap: [Domain.Category.ID: Domain.Category] = [:]  // categoriesLoaded
         public var weeklySpending: [Decimal] = []                            // weeklySpendingComputed
-
-        // AI Insight
-        public var aiInsight: String?
-        public var isLoadingInsight: Bool = false
-        public var lastInsightTransactionCount: Int?
 
         // Stats（全域數字 —— TODO(stats-follow-up): 連動需 todayStats 增加 accountId 參數）
         public var todaySpending: Decimal = 0
@@ -137,10 +131,6 @@ public struct DashboardFeature: Sendable {
         case sectionFailed(Section, String)
         case retrySection(Section)
 
-        // AI Insight
-        case fetchAIInsight
-        case aiInsightResponse(TaskResult<String>)
-
         // User interactions
         case addTransactionButtonTapped
         // Received from MainTabFeature when the TabBar AI input successfully extracts a transaction.
@@ -191,16 +181,11 @@ public struct DashboardFeature: Sendable {
                     cancelInFlight: false
                 )
 
-            // Task 2.5: Pull-to-refresh — reload data and force AI insight fetch
+            // Task 2.5: Pull-to-refresh — reload data
             case .pulledToRefresh:
-                state.lastInsightTransactionCount = nil
-                return .merge(
-                    loadAllSections(
-                        accountID: state.selectedAccountID,
-                        cancelInFlight: true
-                    ),
-                    // Force a new AI insight fetch
-                    .send(.fetchAIInsight)
+                return loadAllSections(
+                    accountID: state.selectedAccountID,
+                    cancelInFlight: true
                 )
 
             // MARK: Data responses
@@ -228,14 +213,6 @@ public struct DashboardFeature: Sendable {
                 state.recentTransactions = recent
                 state.earliestTransactionDate = earliestDate
                 state.transactionsPhase = .loaded
-
-                // AI insight 失效判斷：比較與寫回（aiInsightResponse.success）
-                // 都用 recentTransactions.count —— 同一來源（Bug 3 fix）。
-                // 已知限制：等量編輯（筆數不變、金額變）不會觸發重打，
-                // 沿用舊行為 —— TODO(insights-follow-up) 一併重新設計。
-                if state.lastInsightTransactionCount != recent.count {
-                    return .send(.fetchAIInsight)
-                }
                 return .none
 
             case let .categoriesLoaded(categories):
@@ -293,7 +270,7 @@ public struct DashboardFeature: Sendable {
                 //   需要 accountId 參數（Domain 介面 + Application 實作變更，另開單）。
                 //   屆時在此 merge statsEffect 並將 statsPhase 轉 loading。
                 // TODO(insights-follow-up): InsightCarousel 連動 —— generateInsights
-                //   實作後帶 selectedAccountID 重查，並重新設計 AI insight 失效策略。
+                //   實作後帶 selectedAccountID 重查。
                 return .merge(
                     transactionsEffect(accountID: accountID, cancelInFlight: true),
                     sparklineEffect(accountID: accountID, cancelInFlight: true)
@@ -319,43 +296,6 @@ public struct DashboardFeature: Sendable {
             case let .insightIndexChanged(i):
                 let upper = max(state.insights.count - 1, 0)
                 state.insightIndex = max(0, min(i, upper))
-                return .none
-
-            // MARK: AI Insight
-
-            case .fetchAIInsight:
-                guard insightsClient.isAIAvailable() else { return .none }
-                state.isLoadingInsight = true
-                return .run { [transactions = state.recentTransactions] send in
-                    let totalExpense = transactions
-                        .filter { $0.type == .expense }
-                        .reduce(Decimal.zero) { $0 + $1.amount }
-                    let totalIncome = transactions
-                        .filter { $0.type == .income }
-                        .reduce(Decimal.zero) { $0 + $1.amount }
-
-                    let summary = SpendingSummary(
-                        totalIncome: totalIncome,
-                        totalExpense: totalExpense,
-                        periodDescription: String(localized: "dashboard_period_recent", bundle: .main)
-                    )
-
-                    let insight = try await insightsClient.generateAIInsight(summary)
-                    await send(.aiInsightResponse(.success(insight)))
-                } catch: { error, send in
-                    await send(.aiInsightResponse(.failure(error)))
-                }
-                .cancellable(id: CancelID.aiInsightFetch, cancelInFlight: true)
-
-            case let .aiInsightResponse(.success(insight)):
-                state.isLoadingInsight = false
-                state.aiInsight = insight
-                state.lastInsightTransactionCount = state.recentTransactions.count
-                return .none
-
-            case .aiInsightResponse(.failure):
-                state.isLoadingInsight = false
-                state.aiInsight = nil
                 return .none
 
             // MARK: User interactions
@@ -485,7 +425,7 @@ public struct DashboardFeature: Sendable {
     /// 重複且無錯誤處理的 inline effect。
     ///
     /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）與
-    /// insights carousel（AI insight 由 `transactionsUpdated` 的 count diff 間接觸發）。
+    /// insights carousel（由 `loadAllSections` 的 `insightsEffect` 載入，mutation 後刻意不重載）。
     private func refreshAfterMutation(accountID: Account.ID?) -> Effect<Action> {
         .merge(
             accountsEffect(cancelInFlight: true),

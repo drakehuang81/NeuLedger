@@ -1344,23 +1344,6 @@
         }
       }
     },
-    "dashboard_period_recent": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recent"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "近期"
-          }
-        }
-      }
-    },
     "dashboard_section_load_failed": {
       "extractionState": "manual",
       "localizations": {

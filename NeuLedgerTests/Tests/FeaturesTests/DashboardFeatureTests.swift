@@ -94,8 +94,6 @@ struct DashboardFeatureTests {
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in "Test insight" }
             $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {
@@ -124,62 +122,12 @@ struct DashboardFeatureTests {
             $0.transactionsPhase = .loaded
         }
 
-        // AI insight triggered due to new transaction count != cached count
-        await store.receive(\.fetchAIInsight) {
-            $0.isLoadingInsight = true
-        }
-
         // Per-account balances computed (balance effect from accountsUpdated)
         await store.receive(\.accountBalancesComputed) {
             $0.accountBalances = [
                 Self.sampleAccounts[0].id: 45000,
                 Self.sampleAccounts[1].id: 1200,
             ]
-        }
-
-        await store.receive(\.aiInsightResponse.success) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = "Test insight"
-            $0.lastInsightTransactionCount = 4
-        }
-    }
-
-    // MARK: - Task 5.2: AI Cache Invalidation On New Transaction
-
-    @Test("AI insight cache is invalidated when transaction count changes")
-    func testAICacheInvalidationOnNewTransaction() async throws {
-        // Start with cached insight for 3 transactions
-        var initialState = DashboardFeature.State()
-        initialState.lastInsightTransactionCount = 3
-        initialState.aiInsight = "Old insight"
-        initialState.recentTransactions = Array(Self.sampleTransactions.prefix(3))
-
-        let store = await TestStore(
-            initialState: initialState
-        ) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in "Updated insight" }
-        }
-
-        // Simulate receiving an updated list with 4 transactions (different count).
-        let sorted = Self.sampleTransactions.sorted { $0.date > $1.date }
-        await store.send(.transactionsUpdated(recent: sorted, earliestDate: sorted.last?.date)) {
-            $0.recentTransactions = sorted
-            $0.earliestTransactionDate = sorted.last?.date
-            $0.transactionsPhase = .loaded
-        }
-
-        // Cache invalidated — fetch triggered
-        await store.receive(\.fetchAIInsight) {
-            $0.isLoadingInsight = true
-        }
-
-        await store.receive(\.aiInsightResponse.success) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = "Updated insight"
-            $0.lastInsightTransactionCount = 4
         }
     }
 
@@ -214,8 +162,6 @@ struct DashboardFeatureTests {
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in "" }
             $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {
@@ -234,84 +180,6 @@ struct DashboardFeatureTests {
             $0.categoryMap = Dictionary(
                 uniqueKeysWithValues: Self.sampleCategories.map { ($0.id, $0) }
             )
-        }
-    }
-
-    // MARK: - Task 5.3: Pull-to-Refresh Forces AI Insight Update
-
-    @Test("pulledToRefresh forces AI insight update")
-    func testPullToRefreshForcesAIUpdate() async throws {
-        var initialState = DashboardFeature.State()
-        initialState.lastInsightTransactionCount = 3
-        initialState.aiInsight = "Old insight"
-
-        let store = await TestStore(
-            initialState: initialState
-        ) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.date = .constant(Date(timeIntervalSince1970: 0))
-            $0.ledgerClient.listActiveAccounts = { Self.sampleAccounts }
-            $0.ledgerClient.balances = { [Self.sampleAccounts[0].id: 1000, Self.sampleAccounts[1].id: 1000] }
-            $0.ledgerClient.listAll = { _ in Array(Self.sampleTransactions.prefix(3)).map { EnrichedTransaction(transaction: $0) } }
-            $0.insightsClient.weeklySparkline = { _ in [] }
-            $0.insightsClient.todayStats = { _ in .zero }
-            $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in "Fresh insight" }
-            $0.insightsClient.generateInsights = { _ in [] }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.pulledToRefresh) {
-            $0.lastInsightTransactionCount = nil // Cache invalidated
-        }
-
-        // fetchAIInsight is sent synchronously as part of the merge
-        await store.receive(\.fetchAIInsight) {
-            $0.isLoadingInsight = true
-        }
-
-        // AI insight resolves before account/transaction data arrives
-        await store.receive(\.aiInsightResponse.success) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = "Fresh insight"
-            $0.lastInsightTransactionCount = 0 // recentTransactions is still empty at this point
-        }
-
-        // Accounts updated
-        await store.receive(\.accountsUpdated) {
-            $0.accounts = Self.sampleAccounts
-            $0.accountsPhase = .loaded
-        }
-
-        // Transactions updated
-        await store.receive(\.transactionsUpdated) {
-            let sorted = Array(Self.sampleTransactions.prefix(3)).sorted { $0.date > $1.date }
-            $0.recentTransactions = sorted
-            $0.earliestTransactionDate = sorted.last?.date
-            $0.transactionsPhase = .loaded
-        }
-
-        // transactionsUpdated triggers a second fetchAIInsight (count 3 != lastInsightTransactionCount 0)
-        await store.receive(\.fetchAIInsight) {
-            $0.isLoadingInsight = true
-        }
-
-        // Per-account balances computed (balance effect from accountsUpdated)
-        await store.receive(\.accountBalancesComputed) {
-            $0.accountBalances = [
-                Self.sampleAccounts[0].id: 1000,
-                Self.sampleAccounts[1].id: 1000,
-            ]
-        }
-
-        await store.receive(\.aiInsightResponse.success) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = "Fresh insight"
-            $0.lastInsightTransactionCount = 3
         }
     }
 
@@ -393,37 +261,10 @@ struct DashboardFeatureTests {
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listAccounts = { [] }
             $0.ledgerClient.listAll = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-            $0.insightsClient.generateAIInsight = { _ in "" }
             $0.date = .constant(fixedDate)
         }
         await store.send(.addTransactionWithPrefilledData(extracted)) {
             $0.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted), date: fixedDate)
-        }
-    }
-
-    // MARK: - AI Failure Fallback
-
-    @Test("AI insight failure falls back gracefully")
-    func testAIInsightFailure() async throws {
-        let store = await TestStore(
-            initialState: DashboardFeature.State()
-        ) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in
-                throw NSError(domain: "AI", code: -1)
-            }
-        }
-
-        await store.send(.fetchAIInsight) {
-            $0.isLoadingInsight = true
-        }
-
-        await store.receive(\.aiInsightResponse.failure) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = nil
         }
     }
 }

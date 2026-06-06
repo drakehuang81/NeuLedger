@@ -48,10 +48,10 @@ struct WatchCarrierFeatureTests {
         }
 
         await store.send(.carrierTapped(Self.cert.id)) {
-            $0.presentedCarrier = Self.cert
+            $0.presentedCarrierID = Self.cert.id
         }
         await store.send(.barcodeDismissed) {
-            $0.presentedCarrier = nil
+            $0.presentedCarrierID = nil
         }
     }
 
@@ -63,7 +63,7 @@ struct WatchCarrierFeatureTests {
         let store = TestStore(
             initialState: WatchCarrierFeature.State(
                 carriers: [Self.phone, Self.cert],
-                presentedCarrier: Self.phone
+                presentedCarrierID: Self.phone.id
             )
         ) {
             WatchCarrierFeature()
@@ -71,8 +71,8 @@ struct WatchCarrierFeatureTests {
 
         await store.send(.carriersUpdated([renamed, Self.cert])) {
             $0.carriers = [renamed, Self.cert]
-            $0.presentedCarrier = renamed
         }
+        #expect(store.state.presentedCarrier == renamed)
     }
 
     @Test("Cache update dismisses the presented carrier when it was deleted")
@@ -80,7 +80,7 @@ struct WatchCarrierFeatureTests {
         let store = TestStore(
             initialState: WatchCarrierFeature.State(
                 carriers: [Self.phone, Self.cert],
-                presentedCarrier: Self.cert
+                presentedCarrierID: Self.cert.id
             )
         ) {
             WatchCarrierFeature()
@@ -88,8 +88,8 @@ struct WatchCarrierFeatureTests {
 
         await store.send(.carriersUpdated([Self.phone])) {
             $0.carriers = [Self.phone]
-            $0.presentedCarrier = nil
         }
+        #expect(store.state.presentedCarrier == nil)
     }
 
     @Test("Sync state degrades to nil when the cache empties")

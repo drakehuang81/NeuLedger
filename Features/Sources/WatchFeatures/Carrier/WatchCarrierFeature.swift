@@ -17,17 +17,23 @@ public struct WatchCarrierFeature: Sendable {
         /// `[]` = synced and genuinely none.
         public var carriers: [Carrier]?
 
-        /// Carrier currently pushed full-screen from the 2+ list.
-        /// (The single-carrier fast path renders directly off
-        /// `carriers`, without touching this.)
-        public var presentedCarrier: Carrier?
+        /// ID of the carrier pushed full-screen from the 2+ list.
+        /// The presented carrier itself is derived from `carriers` — renames /
+        /// barcode edits flow through automatically, and deletion on iPhone
+        /// dismisses the screen (derivation returns nil).
+        public var presentedCarrierID: Carrier.ID?
+
+        /// Derived: single source of truth stays in `carriers`.
+        public var presentedCarrier: Carrier? {
+            presentedCarrierID.flatMap { id in carriers?.first { $0.id == id } }
+        }
 
         public init(
             carriers: [Carrier]? = nil,
-            presentedCarrier: Carrier? = nil
+            presentedCarrierID: Carrier.ID? = nil
         ) {
             self.carriers = carriers
-            self.presentedCarrier = presentedCarrier
+            self.presentedCarrierID = presentedCarrierID
         }
     }
 
@@ -60,19 +66,14 @@ public struct WatchCarrierFeature: Sendable {
 
             case let .carriersUpdated(carriers):
                 state.carriers = carriers
-                if let presented = state.presentedCarrier {
-                    // Re-resolve by id: pick up renames/barcode edits, and
-                    // dismiss if the carrier was deleted on iPhone.
-                    state.presentedCarrier = carriers?.first { $0.id == presented.id }
-                }
                 return .none
 
             case let .carrierTapped(id):
-                state.presentedCarrier = state.carriers?.first { $0.id == id }
+                state.presentedCarrierID = id
                 return .none
 
             case .barcodeDismissed:
-                state.presentedCarrier = nil
+                state.presentedCarrierID = nil
                 return .none
             }
         }

@@ -55,15 +55,9 @@ public struct WatchSettingsFeature: Sendable {
 
             case let .loaded(accounts, selectedAccountId, isPaired, isWatchAppInstalled):
                 state.accounts = accounts
-                // Mirror WatchDefaultAccountResolver: honor the stored
-                // override only while it still points at a live account
-                // (it may have been archived/deleted in account management),
-                // otherwise fall back to the first active account
-                // (sortOrder-first, non-archived — guaranteed by
-                // listActiveAccounts) instead of leaving the list unchecked.
-                state.selectedAccountId = accounts.contains(where: { $0.id == selectedAccountId })
-                    ? selectedAccountId
-                    : accounts.first?.id
+                // Single source of truth: Account.resolveDefaultId (shared with
+                // WatchDefaultAccountResolver / the Watch sync pipeline).
+                state.selectedAccountId = Account.resolveDefaultId(stored: selectedAccountId, in: accounts)
                 state.isPaired = isPaired
                 state.isWatchAppInstalled = isWatchAppInstalled
                 return .none

@@ -20,20 +20,22 @@ public struct StatPill: View {
                     .textCase(.uppercase)
                     .tracking(1)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 Text(value)
                     .font(Font.Design.size16Semibold.monospacedDigit())
                     .foregroundStyle(valueColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 #Preview {
-    HStack(spacing: 10) {
+    ProportionalHStack(spacing: 10) {
         StatPill(label: "stat_today", value: "NT$ 320")
-        StatPill(label: "stat_week", value: "NT$ 2,100", valueColor: Color.Design.expenseRed)
+        StatPill(label: "stat_week", value: "NT$ 1,234,567", valueColor: Color.Design.expenseRed)
         StatPill(label: "stat_saved", value: "28%", valueColor: Color.Design.incomeGreen)
     }
     .padding()

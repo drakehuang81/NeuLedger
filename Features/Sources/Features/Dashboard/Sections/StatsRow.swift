@@ -23,7 +23,7 @@ struct StatsRow: View {
     }
 
     private var content: some View {
-        HStack(spacing: 10) {
+        ProportionalHStack(spacing: 10) {
             StatPill(
                 label: "stat_today",
                 value: store.todaySpending.twdFormatted

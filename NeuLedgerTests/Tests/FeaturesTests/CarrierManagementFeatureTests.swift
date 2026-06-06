@@ -161,6 +161,98 @@ struct AddEditCarrierFeatureTests {
         #expect(updatedCarrier.value?.name == "更新後名稱")
         #expect(updatedCarrier.value?.id == Self.sampleCarrier.id)
     }
+
+    // MARK: - saveFailed 錯誤路徑
+
+    @Test("saveFailed sets saveError and clears isSaving")
+    func testSaveFailedSetsError() async {
+        struct FakeError: Error, LocalizedError {
+            var errorDescription: String? { "模擬儲存失敗" }
+        }
+
+        var initial = AddEditCarrierFeature.State(mode: .add)
+        initial.barcode = "/ABC1234"
+
+        let store = await TestStore(initialState: initial) {
+            AddEditCarrierFeature()
+        } withDependencies: {
+            $0.carrierClient.create = { _ in throw FakeError() }
+        }
+
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "模擬儲存失敗"
+        }
+    }
+
+    @Test("saveFailed then retry success clears saveError")
+    func testSaveFailedThenRetrySuccess() async {
+        struct FakeError: Error, LocalizedError {
+            var errorDescription: String? { "模擬儲存失敗" }
+        }
+
+        var initial = AddEditCarrierFeature.State(mode: .add)
+        initial.barcode = "/ABC1234"
+
+        let shouldFail = LockIsolated<Bool>(true)
+
+        let store = await TestStore(initialState: initial) {
+            AddEditCarrierFeature()
+        } withDependencies: {
+            $0.carrierClient.create = { _ in
+                if shouldFail.value { throw FakeError() }
+            }
+            $0.dismiss = DismissEffect {}
+        }
+
+        // 第一次失敗
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "模擬儲存失敗"
+        }
+
+        // 改為成功，重試
+        shouldFail.setValue(false)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) {
+            $0.isSaving = false
+            $0.saveError = nil
+        }
+        await store.receive(\.delegate.saved)
+    }
+
+    // MARK: - cancelTapped
+
+    @Test("cancelTapped emits delegate.dismissed")
+    func testCancelTapped() async {
+        let store = await TestStore(
+            initialState: AddEditCarrierFeature.State(mode: .add)
+        ) {
+            AddEditCarrierFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect {}
+        }
+
+        await store.send(.cancelTapped)
+        await store.receive(\.delegate.dismissed)
+    }
+
+    // MARK: - nameChanged setter
+
+    @Test("nameChanged updates state.name")
+    func testNameChanged() async {
+        let store = await TestStore(
+            initialState: AddEditCarrierFeature.State(mode: .add)
+        ) {
+            AddEditCarrierFeature()
+        }
+
+        await store.send(.nameChanged("新載具名稱")) {
+            $0.name = "新載具名稱"
+        }
+    }
 }
 
 @Suite("CarrierManagementFeature Tests")

@@ -38,26 +38,6 @@ struct BudgetManagementFeatureTests {
         }
     }
 
-    // MARK: - toggleActive
-
-    @Test("toggleActive flips isActive and reloads")
-    func testToggleActive() async {
-        let updated: LockIsolated<Budget?> = LockIsolated(nil)
-        var initialState = BudgetManagementFeature.State()
-        initialState.budgets = [Self.sampleBudget]
-
-        let store = await TestStore(initialState: initialState) {
-            BudgetManagementFeature()
-        } withDependencies: {
-            $0.planningClient.update = { budget in updated.setValue(budget) }
-            $0.planningClient.listAll = { [Self.sampleBudget] }
-        }
-
-        await store.send(.toggleActive(Self.sampleBudget))
-        await store.receive(\.budgetsLoaded)
-        #expect(updated.value?.isActive == false)
-    }
-
     // MARK: - delete flow
 
     @Test("deleteRequested presents confirmation alert")

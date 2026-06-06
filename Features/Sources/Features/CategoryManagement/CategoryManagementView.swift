@@ -103,7 +103,8 @@ public struct CategoryManagementView: View {
 
     // TODO: drag-to-reorder via `.onMove` was dropped during the redesign
     // (requires SwiftUI List). Reintroduce via a long-press context-menu
-    // "Move up / Move down" pair that calls .categoriesMoved on the reducer.
+    // "Move up / Move down" pair that dispatches a (to-be-reintroduced)
+    // reorder action re-assigning sortOrder via ledger.updateCategory.
     private var categoriesList: some View {
         ScrollView {
             VStack(spacing: 10) {

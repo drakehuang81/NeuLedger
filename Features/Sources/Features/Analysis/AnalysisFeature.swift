@@ -58,8 +58,7 @@ public struct AnalysisFeature: Sendable {
         }
     }
 
-    public enum Action: Sendable, BindableAction, Equatable {
-        case binding(BindingAction<State>)
+    public enum Action: Sendable, Equatable {
         case task
         case accountsLoaded([Account])
         case accountSelected(Account.ID?)
@@ -67,7 +66,6 @@ public struct AnalysisFeature: Sendable {
         case loadData
         case loadedData(TaskResult<AnalysisData?>)
         case budgetMetricsLoaded([BudgetGaugeMetrics])
-        case dismissInsight
         case categoryTapped(CategoryProportion)
         case categoryTransactionsLoaded(categoryName: String, [Transaction])
         case categoryDrilldownDismissed
@@ -78,7 +76,6 @@ public struct AnalysisFeature: Sendable {
         let summary: FinancialSummary
         let categoryProportions: [CategoryProportion]
         let dailyTrends: [DailyTrend]
-        let budgetMetrics: [BudgetGaugeMetrics]
         let insight: InsightDetail?
     }
 
@@ -91,12 +88,8 @@ public struct AnalysisFeature: Sendable {
     private enum CancelID { case budgets }
 
     public var body: some ReducerOf<Self> {
-        BindingReducer()
         Reduce { state, action in
             switch action {
-            case .binding:
-                return .none
-
             case .task:
                 return .merge(
                     .run { [ledger] send in
@@ -211,7 +204,6 @@ public struct AnalysisFeature: Sendable {
                             summary: summary,
                             categoryProportions: proportions,
                             dailyTrends: trends,
-                            budgetMetrics: [],
                             insight: insight
                         )
                         await send(.loadedData(.success(data)))
@@ -229,10 +221,6 @@ public struct AnalysisFeature: Sendable {
                     }
                     .cancellable(id: CancelID.budgets, cancelInFlight: true)
                 )
-
-            case .dismissInsight:
-                state.insight = nil
-                return .none
 
             case let .categoryTapped(proportion):
                 let categoryId = UUID(uuidString: proportion.id)

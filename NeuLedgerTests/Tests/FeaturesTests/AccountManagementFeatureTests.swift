@@ -313,36 +313,4 @@ struct AccountManagementFeatureTests {
         #expect(calledUpdate.value?.isArchived == false)
         #expect(calledUpdate.value?.id == id)
     }
-
-    // MARK: - Reorder
-
-    @Test("accountMoved reorders active accounts and updates sortOrder")
-    func testAccountMoved() async throws {
-        let updatedAccounts: LockIsolated<[Account]> = LockIsolated([])
-
-        var initialState = AccountManagementFeature.State()
-        initialState.accounts = [Self.cashAccount, Self.bankAccount]
-
-        let store = await TestStore(initialState: initialState) {
-            AccountManagementFeature()
-        } withDependencies: {
-            $0.ledgerClient.updateAccount = { account in
-                updatedAccounts.withValue { $0.append(account) }
-            }
-        }
-
-        // Move bank (index 1) to position 0
-        await store.send(.accountMoved(IndexSet(integer: 1), 0)) {
-            var reorderedBank = Self.bankAccount
-            reorderedBank.sortOrder = 0
-            var reorderedCash = Self.cashAccount
-            reorderedCash.sortOrder = 1
-            $0.accounts = [reorderedCash, reorderedBank]
-        }
-
-        // Verify updates were called
-        #expect(updatedAccounts.value.count == 2)
-        #expect(updatedAccounts.value.first { $0.id == Self.bankAccount.id }?.sortOrder == 0)
-        #expect(updatedAccounts.value.first { $0.id == Self.cashAccount.id }?.sortOrder == 1)
-    }
 }

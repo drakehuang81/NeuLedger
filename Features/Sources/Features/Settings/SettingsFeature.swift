@@ -43,7 +43,6 @@ public struct SettingsFeature: Sendable {
         public var exportError: String? = nil
         public var showAccessoryBar: Bool = true
         public var carriers: [Carrier] = []
-        public var widgetCarrierId: String = ""
         public var widgetCarrierName: String = ""
         public var isPickingDefaultAccount: Bool = false
         public var isPickingWidgetCarrier: Bool = false
@@ -61,7 +60,6 @@ public struct SettingsFeature: Sendable {
             currentLanguage: String = "",
             showAccessoryBar: Bool = true,
             carriers: [Carrier] = [],
-            widgetCarrierId: String = "",
             widgetCarrierName: String = ""
         ) {
             self.accounts = accounts
@@ -70,7 +68,6 @@ public struct SettingsFeature: Sendable {
             self.currentLanguage = currentLanguage
             self.showAccessoryBar = showAccessoryBar
             self.carriers = carriers
-            self.widgetCarrierId = widgetCarrierId
             self.widgetCarrierName = widgetCarrierName
         }
     }
@@ -116,7 +113,6 @@ public struct SettingsFeature: Sendable {
         case seedRandomDataTapped
         case seedRandomDataCompleted(accountCount: Int, transactionCount: Int)
         case seedRandomDataFailed(String)
-        case seedRandomDataDismissed
         case delegate(Delegate)
 
         @CasePathable
@@ -336,7 +332,6 @@ public struct SettingsFeature: Sendable {
             case let .widgetCarriersLoaded(carriers):
                 state.carriers = carriers
                 let activeId = carrierClient.activeForWidget()
-                state.widgetCarrierId = activeId?.uuidString ?? ""
                 if let activeId, let carrier = carriers.first(where: { $0.id == activeId }) {
                     state.widgetCarrierName = carrier.name
                 } else {
@@ -345,7 +340,6 @@ public struct SettingsFeature: Sendable {
                 return .none
 
             case let .widgetCarrierSelected(id):
-                state.widgetCarrierId = id.uuidString
                 state.isPickingWidgetCarrier = false
                 if let carrier = state.carriers.first(where: { $0.id == id }) {
                     state.widgetCarrierName = carrier.name
@@ -464,11 +458,6 @@ public struct SettingsFeature: Sendable {
             case let .seedRandomDataFailed(message):
                 state.isSeedingRandomData = false
                 state.seedRandomDataError = message
-                return .none
-
-            case .seedRandomDataDismissed:
-                state.seedRandomDataResult = nil
-                state.seedRandomDataError = nil
                 return .none
 
             case .delegate:

@@ -26,7 +26,6 @@ struct AccessoryBarFeature {
 
         // AI input bar
         case aiInputButtonTapped
-        case aiInputTextChanged(String)
         case aiInputSubmitted
         case aiInputDismissed
         case aiExtractionCompleted(TaskResult<ExtractedTransaction>)
@@ -83,10 +82,6 @@ struct AccessoryBarFeature {
             case .aiInputButtonTapped:
                 state.isAIInputExpanded = true
                 state.aiInputError = nil
-                return .none
-
-            case let .aiInputTextChanged(text):
-                state.aiInputText = text
                 return .none
 
             case .aiInputDismissed:

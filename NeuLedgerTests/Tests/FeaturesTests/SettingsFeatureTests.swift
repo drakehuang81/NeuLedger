@@ -496,7 +496,6 @@ struct SettingsWidgetCarrierTests {
         await store.receive(\.delegate.accessoryBarVisibilityChanged)
         await store.receive(\.widgetCarriersLoaded) {
             $0.carriers = Self.sampleCarriers
-            $0.widgetCarrierId = carrier.id.uuidString
             $0.widgetCarrierName = "我的手機條碼"
         }
     }
@@ -518,7 +517,6 @@ struct SettingsWidgetCarrierTests {
         }
 
         await store.send(.widgetCarrierSelected(target.id)) {
-            $0.widgetCarrierId = target.id.uuidString
             $0.widgetCarrierName = "自然人憑證"
         }
 

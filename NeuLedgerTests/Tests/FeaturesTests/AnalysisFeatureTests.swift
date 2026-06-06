@@ -34,20 +34,6 @@ struct AnalysisFeatureTests {
         Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID().uuidString, type: .transfer),
     ]
 
-    // MARK: - Dismiss Insight
-
-    @Test("dismissInsight sets insight to nil")
-    func testDismissInsight() async {
-        var initialState = AnalysisFeature.State()
-        initialState.insight = InsightDetail(id: "test-id", title: "AI 洞察", description: "本月飲食花費增加 15%")
-
-        let store = await TestStore(initialState: initialState) {
-            AnalysisFeature()
-        }
-
-        await store.send(.dismissInsight) { $0.insight = nil }
-    }
-
     // MARK: - Period Changed
 
     @Test("periodChanged updates selectedPeriod and triggers data reload")

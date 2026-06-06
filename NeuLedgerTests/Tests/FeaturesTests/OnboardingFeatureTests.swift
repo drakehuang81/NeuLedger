@@ -90,20 +90,6 @@ struct OnboardingFeatureTests {
         }
     }
 
-    @Test("sheet delegate.dismissed clears the sheet")
-    func testSheetDismiss() async {
-        let store = await TestStore(
-            initialState: OnboardingFeature.State(
-                customAccountSheet: CustomAccountFormFeature.State()
-            )
-        ) {
-            OnboardingFeature()
-        }
-        await store.send(.customAccountSheet(.presented(.delegate(.dismissed)))) {
-            $0.customAccountSheet = nil
-        }
-    }
-
     @Test("customAccountDeleted removes by id")
     func testDeleteCustom() async {
         let id1 = UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!

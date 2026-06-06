@@ -37,7 +37,6 @@ public struct AccountManagementFeature: Sendable {
         case accountTapped(Account)
         case deleteRequested(Account.ID)
         case unarchiveTapped(Account.ID)
-        case accountMoved(IndexSet, Int)
         case showArchiveConfirmation(Account.ID)
         case showDeleteConfirmation(Account.ID)
         case addEdit(PresentationAction<AddEditAccountFeature.Action>)
@@ -47,7 +46,6 @@ public struct AccountManagementFeature: Sendable {
         public enum Alert: Sendable, Equatable {
             case archiveConfirmed(Account.ID)
             case deleteConfirmed(Account.ID)
-            case unarchiveConfirmed(Account.ID)
         }
     }
 
@@ -55,7 +53,7 @@ public struct AccountManagementFeature: Sendable {
 
     @Dependency(\.ledgerClient) var ledger
 
-    private enum CancelID { case task, reorder }
+    private enum CancelID { case task }
 
     // MARK: - Body
 
@@ -102,28 +100,13 @@ public struct AccountManagementFeature: Sendable {
                 return .none
 
             case let .accountTapped(account):
-                if account.isArchived {
-                    state.alert = AlertState {
-                        TextState(String(localized: "alert_archived_account"))
-                    } actions: {
-                        ButtonState(action: .unarchiveConfirmed(account.id)) {
-                            TextState(String(localized: "account_management_unarchive"))
-                        }
-                        ButtonState(role: .cancel) {
-                            TextState(String(localized: "common_cancel"))
-                        }
-                    } message: {
-                        TextState(String(localized: "alert_unarchive_account_message"))
-                    }
-                } else {
-                    let existingNames = state.accounts
-                        .filter { $0.id != account.id }
-                        .map(\.name)
-                    state.addEdit = AddEditAccountFeature.State(
-                        mode: .edit(account),
-                        existingNames: existingNames
-                    )
-                }
+                let existingNames = state.accounts
+                    .filter { $0.id != account.id }
+                    .map(\.name)
+                state.addEdit = AddEditAccountFeature.State(
+                    mode: .edit(account),
+                    existingNames: existingNames
+                )
                 return .none
 
             case let .deleteRequested(id):
@@ -182,9 +165,6 @@ public struct AccountManagementFeature: Sendable {
                     await send(.accountsLoaded(accounts))
                 }
 
-            case let .alert(.presented(.unarchiveConfirmed(id))):
-                return .send(.unarchiveTapped(id))
-
             case .alert:
                 return .none
 
@@ -200,36 +180,6 @@ public struct AccountManagementFeature: Sendable {
                     let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
                 }
-
-            case let .accountMoved(source, destination):
-                var active = state.activeAccounts
-                active.move(fromOffsets: source, toOffset: destination)
-
-                let reordered = active.enumerated().map { index, account in
-                    Account(
-                        id: account.id,
-                        name: account.name,
-                        type: account.type,
-                        icon: account.icon,
-                        color: account.color,
-                        sortOrder: index,
-                        isArchived: account.isArchived,
-                        createdAt: account.createdAt
-                    )
-                }
-
-                for updated in reordered {
-                    if let idx = state.accounts.firstIndex(where: { $0.id == updated.id }) {
-                        state.accounts[idx] = updated
-                    }
-                }
-
-                return .run { _ in
-                    for account in reordered {
-                        try await ledger.updateAccount(account)
-                    }
-                }
-                .cancellable(id: CancelID.reorder, cancelInFlight: true)
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil

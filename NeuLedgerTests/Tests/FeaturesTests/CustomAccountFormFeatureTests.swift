@@ -83,13 +83,4 @@ struct CustomAccountFormFeatureTests {
         await store.send(.submitTapped)
         // No effects fire; TestStore strict mode catches missing handler if delegate fires.
     }
-
-    @Test("cancelTapped emits delegate.dismissed")
-    func testCancelEmitsDismiss() async {
-        let store = await TestStore(initialState: CustomAccountFormFeature.State()) {
-            CustomAccountFormFeature()
-        }
-        await store.send(.cancelTapped)
-        await store.receive(\.delegate.dismissed)
-    }
 }

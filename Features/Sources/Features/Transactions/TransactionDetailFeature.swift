@@ -19,8 +19,6 @@ public struct TransactionDetailFeature: Sendable {
     public struct State: Equatable {
         public var transaction: Transaction
         public var categoryName: String?
-        public var accountName: String?
-        public var toAccountName: String?
         public var account: Account?
         public var toAccount: Account?
         public var insight: TransactionInsight?
@@ -41,8 +39,6 @@ public struct TransactionDetailFeature: Sendable {
     public enum Action: Sendable, Equatable {
         case task
         case namesLoaded(
-            accountName: String?,
-            toAccountName: String?,
             categoryName: String?,
             account: Account?,
             toAccount: Account?
@@ -103,8 +99,6 @@ public struct TransactionDetailFeature: Sendable {
                         let toAccount = txn.toAccountId.flatMap { id in a.first { $0.id == id } }
                         let categoryName = txn.categoryId.flatMap { id in c.first { $0.id == id }?.localizedName }
                         await send(.namesLoaded(
-                            accountName: account?.name,
-                            toAccountName: toAccount?.name,
                             categoryName: categoryName,
                             account: account,
                             toAccount: toAccount
@@ -120,9 +114,7 @@ public struct TransactionDetailFeature: Sendable {
                     }
                 )
 
-            case let .namesLoaded(accountName, toAccountName, categoryName, account, toAccount):
-                state.accountName = accountName
-                state.toAccountName = toAccountName
+            case let .namesLoaded(categoryName, account, toAccount):
                 state.categoryName = categoryName
                 state.account = account
                 state.toAccount = toAccount
@@ -200,10 +192,6 @@ public struct TransactionDetailFeature: Sendable {
                 state.transaction = t
                 state.editTransaction = nil
                 return .send(.delegate(.updated(t)))
-
-            case .editTransaction(.presented(.delegate(.saved))):
-                state.editTransaction = nil
-                return .none
 
             case .editTransaction(.presented(.delegate(.dismissed))):
                 state.editTransaction = nil

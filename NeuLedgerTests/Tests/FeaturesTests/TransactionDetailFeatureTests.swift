@@ -96,7 +96,7 @@ struct TransactionDetailFeatureTests {
 
     // MARK: - Task (initial load of names)
 
-    @Test(".task loads accountName, toAccountName, categoryName via namesLoaded")
+    @Test(".task loads category name and accounts via namesLoaded")
     func testTaskLoadsNames() async {
         let account = Account(
             id: Self.account.id,
@@ -140,8 +140,6 @@ struct TransactionDetailFeatureTests {
         await store.send(.task)
         // namesLoaded and insightLoaded arrive concurrently; exhaust both regardless of order.
         await store.receive(\.namesLoaded) {
-            $0.accountName = "現金"
-            $0.toAccountName = "銀行"
             $0.categoryName = "餐飲"
             $0.account = account
             $0.toAccount = toAccount

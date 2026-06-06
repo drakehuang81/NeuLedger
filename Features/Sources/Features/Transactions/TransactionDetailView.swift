@@ -203,23 +203,19 @@ private enum PreviewFixtures {
         switch tx.type {
         case .expense:
             state.account = ewalletAccount
-            state.accountName = ewalletAccount.name
             state.categoryName = foodCategory.name
             state.insight = TransactionInsight(kind: .expenseVsCategoryAvg(
                 percentDelta: -9.3, avg: 182, monthlyCount: 12, monthTotal: 2_184
             ))
         case .income:
             state.account = bankAccount
-            state.accountName = bankAccount.name
             state.categoryName = salaryCategory.name
             state.insight = TransactionInsight(kind: .incomeVsLast(
                 percentDelta: 4.2, lastAmount: 48_000, monthlyCount: 1, netMonth: 47_830
             ))
         case .transfer:
             state.account = bankAccount
-            state.accountName = bankAccount.name
             state.toAccount = cashAccount
-            state.toAccountName = cashAccount.name
             state.insight = TransactionInsight(kind: .transfer(monthCount: 2, monthTotal: 5_500))
         }
         return Store(initialState: state) {

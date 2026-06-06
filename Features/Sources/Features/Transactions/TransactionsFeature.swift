@@ -30,15 +30,6 @@ public struct TransactionsFeature: Sendable {
             activeFilter.dateRange != nil
         }
 
-        var activeFilterCount: Int {
-            [
-                activeFilter.categoryIds.map { _ in 1 } ?? 0,
-                activeFilter.accountIds.map { _ in 1 } ?? 0,
-                activeFilter.tagIds.map { _ in 1 } ?? 0,
-                activeFilter.types.map { _ in 1 } ?? 0,
-                activeFilter.dateRange.map { _ in 1 } ?? 0
-            ].reduce(0, +)
-        }
     }
 
     // MARK: - Action
@@ -127,10 +118,6 @@ public struct TransactionsFeature: Sendable {
                     let results = try await ledger.listAll(filter: filter)
                     await send(.transactionsLoaded(results.map(\.transaction)))
                 }
-
-            case .filter(.presented(.delegate(.dismissed))):
-                state.filter = nil
-                return .none
 
             case .filter:
                 return .none

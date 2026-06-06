@@ -41,11 +41,8 @@ struct FilterFeatureTests {
     func testTaskLoadsOptions() async {
         let store = await makeStore()
 
-        await store.send(.task) {
-            $0.isLoading = true
-        }
+        await store.send(.task)
         await store.receive(\.optionsLoaded) {
-            $0.isLoading = false
             $0.categories = [Self.sampleCategory]
             $0.accounts = [Self.sampleAccount]
             $0.tags = [Self.sampleTag]
@@ -297,34 +294,6 @@ struct FilterFeatureTests {
             $0.startDate = nil
             $0.endDate = nil
         }
-    }
-
-    // MARK: - Dismiss
-
-    @Test("dismiss action emits dismissed delegate")
-    func testDismissEmitsDelegateAction() async {
-        let store = await makeStore()
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.dismiss)
-        await store.receive(\.delegate.dismissed)
-    }
-
-    // MARK: - hasActiveFilters computed property
-
-    @Test("hasActiveFilters is false when nothing is selected")
-    func testHasActiveFiltersFalseInitially() async {
-        let state = FilterFeature.State(initialFilter: TransactionFilter())
-        #expect(state.hasActiveFilters == false)
-    }
-
-    @Test("hasActiveFilters is true when types are selected")
-    func testHasActiveFiltersTrueWithTypes() async {
-        var state = FilterFeature.State(initialFilter: TransactionFilter())
-        state.selectedTypes = [.expense]
-        #expect(state.hasActiveFilters == true)
     }
 
     @Test("initialFilter pre-populates selections from TransactionFilter")

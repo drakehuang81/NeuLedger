@@ -20,7 +20,6 @@ public struct FilterFeature: Sendable {
         public var categories: [Domain.Category]
         public var accounts: [Account]
         public var tags: [Tag]
-        public var isLoading: Bool
 
         public init(initialFilter: TransactionFilter = TransactionFilter()) {
             self.selectedTypes = initialFilter.types ?? []
@@ -32,13 +31,6 @@ public struct FilterFeature: Sendable {
             self.categories = []
             self.accounts = []
             self.tags = []
-            self.isLoading = false
-        }
-
-        var hasActiveFilters: Bool {
-            !selectedTypes.isEmpty || !selectedCategoryIds.isEmpty ||
-            !selectedAccountIds.isEmpty || !selectedTagIds.isEmpty ||
-            startDate != nil || endDate != nil
         }
 
         var activeFilterCount: Int {
@@ -67,14 +59,12 @@ public struct FilterFeature: Sendable {
 
         case applyTapped
         case clearAllTapped
-        case dismiss
 
         case delegate(Delegate)
 
         @CasePathable
         public enum Delegate: Sendable, Equatable {
             case filterApplied(TransactionFilter)
-            case dismissed
         }
     }
 
@@ -91,7 +81,6 @@ public struct FilterFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
-                state.isLoading = true
                 return .run { send in
                     async let categories = ledger.listCategories(nil)
                     async let accounts = ledger.listAccounts()
@@ -102,7 +91,6 @@ public struct FilterFeature: Sendable {
                 .cancellable(id: CancelID.task)
 
             case let .optionsLoaded(categories, accounts, tags):
-                state.isLoading = false
                 state.categories = categories
                 state.accounts = accounts
                 state.tags = tags
@@ -178,12 +166,6 @@ public struct FilterFeature: Sendable {
                 state.startDate = nil
                 state.endDate = nil
                 return .none
-
-            case .dismiss:
-                return .run { send in
-                    await send(.delegate(.dismissed))
-                    await dismiss()
-                }
 
             case .delegate:
                 return .none

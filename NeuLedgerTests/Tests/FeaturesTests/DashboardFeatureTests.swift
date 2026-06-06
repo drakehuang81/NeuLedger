@@ -103,7 +103,6 @@ struct DashboardFeatureTests {
         }
 
         await store.send(.task) {
-            $0.isLoading = true
             $0.heroPhase = .loading
             $0.statsPhase = .loading
             $0.transactionsPhase = .loading
@@ -123,7 +122,6 @@ struct DashboardFeatureTests {
             $0.recentTransactions = sorted
             $0.earliestTransactionDate = sorted.last?.date
             $0.transactionsPhase = .loaded
-            $0.isLoading = false
         }
 
         // AI insight triggered due to new transaction count != cached count
@@ -225,7 +223,6 @@ struct DashboardFeatureTests {
         }
 
         await store.send(.task) {
-            $0.isLoading = true
             $0.heroPhase = .loading
             $0.statsPhase = .loading
             $0.transactionsPhase = .loading
@@ -269,7 +266,6 @@ struct DashboardFeatureTests {
         }
 
         await store.send(.pulledToRefresh) {
-            $0.isLoading = true
             $0.lastInsightTransactionCount = nil // Cache invalidated
         }
 
@@ -297,7 +293,6 @@ struct DashboardFeatureTests {
             $0.recentTransactions = sorted
             $0.earliestTransactionDate = sorted.last?.date
             $0.transactionsPhase = .loaded
-            $0.isLoading = false
         }
 
         // transactionsUpdated triggers a second fetchAIInsight (count 3 != lastInsightTransactionCount 0)
@@ -332,20 +327,6 @@ struct DashboardFeatureTests {
 
         await store.send(.seeAllTransactionsTapped)
         await store.receive(\.delegate.seeAllTransactionsTapped)
-    }
-
-    @Test("accountTapped opens analysis with selectedAccountId set")
-    func testAccountTappedOpensAnalysis() async throws {
-        let accountId = UUID().uuidString
-        let store = await TestStore(
-            initialState: DashboardFeature.State()
-        ) {
-            DashboardFeature()
-        }
-
-        await store.send(.accountTapped(accountId)) {
-            $0.path.append(.analysis(AnalysisFeature.State(selectedAccountId: accountId)))
-        }
     }
 
     @Test("transactionTapped with matching transaction presents detail")
@@ -418,56 +399,6 @@ struct DashboardFeatureTests {
         }
         await store.send(.addTransactionWithPrefilledData(extracted)) {
             $0.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted), date: fixedDate)
-        }
-    }
-
-    // MARK: - Step 4A: Quick Action Tapped Presents AddTransaction With Correct Type
-
-    @Test("quickActionExpenseTapped presents AddTransaction in .add(.expense) mode")
-    func testQuickActionExpenseTapped() async throws {
-        let fixedDate = Date(timeIntervalSince1970: 0)
-        let store = await TestStore(
-            initialState: DashboardFeature.State()
-        ) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.date = .constant(fixedDate)
-        }
-
-        await store.send(.quickActionExpenseTapped) {
-            $0.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: fixedDate)
-        }
-    }
-
-    @Test("quickActionIncomeTapped presents AddTransaction in .add(.income) mode")
-    func testQuickActionIncomeTapped() async throws {
-        let fixedDate = Date(timeIntervalSince1970: 0)
-        let store = await TestStore(
-            initialState: DashboardFeature.State()
-        ) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.date = .constant(fixedDate)
-        }
-
-        await store.send(.quickActionIncomeTapped) {
-            $0.addTransaction = AddTransactionFeature.State(mode: .add(.income), date: fixedDate)
-        }
-    }
-
-    @Test("quickActionTransferTapped presents AddTransaction in .add(.transfer) mode")
-    func testQuickActionTransferTapped() async throws {
-        let fixedDate = Date(timeIntervalSince1970: 0)
-        let store = await TestStore(
-            initialState: DashboardFeature.State()
-        ) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.date = .constant(fixedDate)
-        }
-
-        await store.send(.quickActionTransferTapped) {
-            $0.addTransaction = AddTransactionFeature.State(mode: .add(.transfer), date: fixedDate)
         }
     }
 

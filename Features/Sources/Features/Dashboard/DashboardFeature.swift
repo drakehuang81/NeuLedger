@@ -77,8 +77,7 @@ public struct DashboardFeature: Sendable {
         public var insights: [InsightData] = []
         public var insightIndex: Int = 0
 
-        // Loading & UI state
-        public var isLoading: Bool = false
+        // UI state
         public var expandedTransactionID: Transaction.ID? = nil
 
         // Per-section view state
@@ -121,7 +120,6 @@ public struct DashboardFeature: Sendable {
         // Lifecycle
         case task
         case pulledToRefresh
-        case refreshCompleted
 
         // Data responses
         case accountsUpdated([Account])
@@ -145,13 +143,9 @@ public struct DashboardFeature: Sendable {
 
         // User interactions
         case addTransactionButtonTapped
-        case quickActionExpenseTapped
-        case quickActionIncomeTapped
-        case quickActionTransferTapped
         // Received from MainTabFeature when the TabBar AI input successfully extracts a transaction.
         case addTransactionWithPrefilledData(ExtractedTransaction)
         case seeAllTransactionsTapped
-        case accountTapped(Account.ID)
         /// Entry from the "餘額總覽" section header; navigates to Analysis with
         /// the dashboard's currently-selected account filter (nil → portfolio view).
         case analysisShortcutTapped
@@ -187,7 +181,6 @@ public struct DashboardFeature: Sendable {
 
             // Task 2.1: Start async observation for Accounts and Transactions
             case .task:
-                state.isLoading = true
                 state.heroPhase = .loading
                 state.statsPhase = .loading
                 state.transactionsPhase = .loading
@@ -200,7 +193,6 @@ public struct DashboardFeature: Sendable {
 
             // Task 2.5: Pull-to-refresh — reload data and force AI insight fetch
             case .pulledToRefresh:
-                state.isLoading = true
                 state.lastInsightTransactionCount = nil
                 return .merge(
                     loadAllSections(
@@ -210,10 +202,6 @@ public struct DashboardFeature: Sendable {
                     // Force a new AI insight fetch
                     .send(.fetchAIInsight)
                 )
-
-            case .refreshCompleted:
-                state.isLoading = false
-                return .none
 
             // MARK: Data responses
 
@@ -240,7 +228,6 @@ public struct DashboardFeature: Sendable {
                 state.recentTransactions = recent
                 state.earliestTransactionDate = earliestDate
                 state.transactionsPhase = .loaded
-                state.isLoading = false
 
                 // AI insight 失效判斷：比較與寫回（aiInsightResponse.success）
                 // 都用 recentTransactions.count —— 同一來源（Bug 3 fix）。
@@ -377,34 +364,12 @@ public struct DashboardFeature: Sendable {
                 state.addTransaction = AddTransactionFeature.State(mode: .add(.expense), date: now)
                 return .none
 
-            case .quickActionExpenseTapped:
-                state.addTransaction = AddTransactionFeature.State(
-                    mode: .add(.expense), date: now
-                )
-                return .none
-
-            case .quickActionIncomeTapped:
-                state.addTransaction = AddTransactionFeature.State(
-                    mode: .add(.income), date: now
-                )
-                return .none
-
-            case .quickActionTransferTapped:
-                state.addTransaction = AddTransactionFeature.State(
-                    mode: .add(.transfer), date: now
-                )
-                return .none
-
             case let .addTransactionWithPrefilledData(extracted):
                 state.addTransaction = AddTransactionFeature.State(mode: .addPrefilled(extracted), date: now)
                 return .none
 
             case .seeAllTransactionsTapped:
                 return .send(.delegate(.seeAllTransactionsTapped))
-
-            case let .accountTapped(id):
-                state.path.append(.analysis(AnalysisFeature.State(selectedAccountId: id)))
-                return .none
 
             case .analysisShortcutTapped:
                 state.path.append(.analysis(AnalysisFeature.State(selectedAccountId: state.selectedAccountID)))

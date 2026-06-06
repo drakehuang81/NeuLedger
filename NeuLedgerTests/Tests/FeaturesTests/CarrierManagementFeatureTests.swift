@@ -290,6 +290,7 @@ struct CarrierManagementFeatureTests {
             $0.alert = nil
             $0.expandedCarrierId = nil  // expanded row is collapsed on confirm
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
         }
@@ -338,6 +339,7 @@ struct CarrierManagementFeatureTests {
             $0.alert = nil
             $0.expandedCarrierId = nil  // expanded row is collapsed on confirm
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
         }
@@ -370,6 +372,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA, Self.carrierB]
         }
@@ -394,6 +397,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA]
         }
@@ -419,6 +423,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA]
         }
@@ -502,6 +507,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.alert(.presented(.deleteConfirmed(deletedId)))) {
             $0.alert = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [remaining]
         }
@@ -536,6 +542,7 @@ struct CarrierManagementFeatureTests {
         await store.send(\.addEdit.presented.delegate.saved) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [saved]
         }

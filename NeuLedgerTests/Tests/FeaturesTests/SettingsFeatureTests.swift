@@ -446,6 +446,71 @@ struct SettingsNavigationTests {
 
 }
 
+@Suite("SettingsFeature — child delegate sync")
+struct SettingsChildDelegateSyncTests {
+
+    private static let oldAccounts: [Account] = [
+        Account(name: "舊現金", type: .cash, icon: "wallet.bifold", color: "green", sortOrder: 0),
+    ]
+
+    private static let newAccounts: [Account] = [
+        Account(name: "新現金", type: .cash, icon: "wallet.bifold", color: "green", sortOrder: 0),
+        Account(name: "新銀行", type: .bank, icon: "building.columns", color: "blue", sortOrder: 1),
+    ]
+
+    private static let newCarriers: [Carrier] = [
+        Carrier(name: "新載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234"),
+    ]
+
+    @Test("accountManagement delegate.accountsChanged reloads accounts in Settings")
+    func testAccountManagementDelegateReloadsAccounts() async {
+        var initialState = SettingsFeature.State()
+        initialState.accounts = Self.oldAccounts
+        initialState.defaultAccountName = "舊現金"
+        initialState.path.append(.accountManagement(AccountManagementFeature.State()))
+        let elementID = initialState.path.ids.first!
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { Self.newAccounts }
+        }
+
+        await store.send(
+            .path(.element(id: elementID, action: .accountManagement(.delegate(.accountsChanged))))
+        )
+
+        await store.receive(\.accountsLoaded) {
+            $0.accounts = Self.newAccounts
+            $0.defaultAccountName = "新現金"
+        }
+    }
+
+    @Test("carrierManagement delegate.carriersChanged reloads carriers in Settings")
+    func testCarrierManagementDelegateReloadsCarriers() async {
+        var initialState = SettingsFeature.State()
+        initialState.path.append(.carrierManagement(CarrierManagementFeature.State()))
+        let elementID = initialState.path.ids.first!
+
+        let activeCarrierId = Self.newCarriers[0].id
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.carrierClient.listAll = { Self.newCarriers }
+            $0.carrierClient.activeForWidget = { activeCarrierId }
+        }
+
+        await store.send(
+            .path(.element(id: elementID, action: .carrierManagement(.delegate(.carriersChanged))))
+        )
+
+        await store.receive(\.widgetCarriersLoaded) {
+            $0.carriers = Self.newCarriers
+            $0.widgetCarrierName = "新載具"
+        }
+    }
+}
+
 @Suite("SettingsFeature — widget carrier")
 struct SettingsWidgetCarrierTests {
 

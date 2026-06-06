@@ -196,6 +196,58 @@ struct TransactionsFeatureTests {
         }
     }
 
+    // MARK: - activeFilter preservation (audit A1)
+
+    @Test("addTransaction saved reload queries with activeFilter, not an empty filter")
+    func testSavedReloadUsesActiveFilter() async {
+        let captured = LockIsolated<TransactionFilter?>(nil)
+        let activeFilter = TransactionFilter(types: [.expense])
+
+        var initialState = TransactionsFeature.State()
+        initialState.activeFilter = activeFilter
+        initialState.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
+
+        let store = await TestStore(initialState: initialState) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { filter in
+                captured.setValue(filter)
+                return []
+            }
+        }
+
+        await store.send(.addTransaction(.presented(.delegate(.saved)))) {
+            $0.addTransaction = nil
+        }
+        await store.receive(\.transactionsLoaded)
+        #expect(captured.value == activeFilter)
+    }
+
+    @Test("clearing search restores the activeFilter-scoped list, not the full list")
+    func testClearSearchUsesActiveFilter() async {
+        let captured = LockIsolated<TransactionFilter?>(nil)
+        let activeFilter = TransactionFilter(types: [.expense])
+
+        var initialState = TransactionsFeature.State()
+        initialState.activeFilter = activeFilter
+        initialState.searchText = "abc"
+
+        let store = await TestStore(initialState: initialState) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { filter in
+                captured.setValue(filter)
+                return []
+            }
+        }
+
+        await store.send(.searchTextChanged("")) {
+            $0.searchText = ""
+        }
+        await store.receive(\.transactionsLoaded)
+        #expect(captured.value == activeFilter)
+    }
+
     // MARK: - Context Action
 
     @Test("contextActionTapped presents addTransaction sheet in .add(.expense) mode")

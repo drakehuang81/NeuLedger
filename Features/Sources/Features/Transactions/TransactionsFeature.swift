@@ -83,8 +83,8 @@ public struct TransactionsFeature: Sendable {
             // MARK: Lifecycle
             case .task:
                 state.isLoading = true
-                return .run { send in
-                    let transactions = try await ledger.listAll(filter: TransactionFilter())
+                return .run { [filter = state.activeFilter] send in
+                    let transactions = try await ledger.listAll(filter: filter)
                     await send(.transactionsLoaded(transactions.map(\.transaction)))
                 }
                 .cancellable(id: CancelID.task)
@@ -98,8 +98,8 @@ public struct TransactionsFeature: Sendable {
             case let .searchTextChanged(text):
                 state.searchText = text
                 if text.isEmpty {
-                    return .run { send in
-                        let transactions = try await ledger.listAll(filter: TransactionFilter())
+                    return .run { [filter = state.activeFilter] send in
+                        let transactions = try await ledger.listAll(filter: filter)
                         await send(.transactionsLoaded(transactions.map(\.transaction)))
                     }
                     .cancellable(id: CancelID.search, cancelInFlight: true)
@@ -192,8 +192,8 @@ public struct TransactionsFeature: Sendable {
             // MARK: AddTransaction
             case .addTransaction(.presented(.delegate(.saved))):
                 state.addTransaction = nil
-                return .run { send in
-                    let transactions = try await ledger.listAll(filter: TransactionFilter())
+                return .run { [filter = state.activeFilter] send in
+                    let transactions = try await ledger.listAll(filter: filter)
                     await send(.transactionsLoaded(transactions.map(\.transaction)))
                 }
 

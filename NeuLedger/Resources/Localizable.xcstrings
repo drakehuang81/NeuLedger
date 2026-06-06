@@ -8314,40 +8314,6 @@
         }
       }
     },
-    "analysis_monthly_eyebrow": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "6-month trend"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "6 月趨勢"
-          }
-        }
-      }
-    },
-    "analysis_monthly_avg_format": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avg %1$@/mo"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "平均 %1$@/月"
-          }
-        }
-      }
-    },
     "analysis_donut_eyebrow": {
       "extractionState": "manual",
       "localizations": {

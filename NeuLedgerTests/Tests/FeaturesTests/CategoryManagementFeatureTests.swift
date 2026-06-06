@@ -83,42 +83,6 @@ struct CategoryManagementFeatureTests {
         // No state change expected — transfer is guarded
     }
 
-    // MARK: - Reorder
-
-    @Test("categoriesMoved reassigns sortOrder and updates via client")
-    func testCategoriesMovedUpdatesSortOrder() async throws {
-        let updatedCategories: LockIsolated<[Domain.Category]> = LockIsolated([])
-
-        var initialState = CategoryManagementFeature.State()
-        initialState.categories = [Self.foodCategory, Self.transportCategory, Self.customExpenseCategory]
-
-        let store = await TestStore(initialState: initialState) {
-            CategoryManagementFeature()
-        } withDependencies: {
-            $0.ledgerClient.updateCategory = { cat in
-                updatedCategories.withValue { $0.append(cat) }
-            }
-        }
-
-        // Move "交通" (index 1) to position 0 in the filtered list.
-        // state.categories array positions are unchanged; only sortOrder values update in-place.
-        await store.send(.categoriesMoved(IndexSet(integer: 1), 0)) {
-            $0.categories = [
-                Domain.Category(id: Self.foodCategory.id, name: "飲食", icon: "fork.knife", color: "#FF3B30", type: .expense, sortOrder: 1, isDefault: true),
-                Domain.Category(id: Self.transportCategory.id, name: "交通", icon: "car.fill", color: "#FF9500", type: .expense, sortOrder: 0, isDefault: true),
-                Domain.Category(id: Self.customExpenseCategory.id, name: "自訂支出", icon: "tag.fill", color: "#5856D6", type: .expense, sortOrder: 2, isDefault: false)
-            ]
-        }
-
-        // Allow reorder effects to complete
-        await store.finish()
-
-        let updated = updatedCategories.value
-        #expect(updated.count == 3)
-        #expect(updated.first { $0.id == Self.transportCategory.id }?.sortOrder == 0)
-        #expect(updated.first { $0.id == Self.foodCategory.id }?.sortOrder == 1)
-    }
-
     // MARK: - Add Category
 
     @Test("addButtonTapped presents add form defaulting to current selectedType")

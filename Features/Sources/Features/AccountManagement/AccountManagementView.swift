@@ -62,7 +62,8 @@ public struct AccountManagementView: View {
     // TODO: drag-to-reorder is intentionally dropped — `.onMove` requires
     // SwiftUI `List` and we use ScrollView+GlassContainer here. Reintroduce
     // via a long-press "Move up / Move down" context-menu action or a
-    // dedicated reorder mode that calls .accountMoved on the reducer.
+    // dedicated reorder mode that dispatches a (to-be-reintroduced) reorder
+    // action re-assigning sortOrder via ledger.updateAccount.
     private var accountList: some View {
         ScrollView {
             VStack(spacing: 18) {

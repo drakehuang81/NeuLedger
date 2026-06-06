@@ -34,7 +34,6 @@ public struct CategoryManagementFeature: Sendable {
         case selectedTypeChanged(TransactionType)
         case addButtonTapped
         case categoryTapped(Domain.Category)
-        case categoriesMoved(IndexSet, Int)
         case deleteRequested(Domain.Category.ID)
         case addEdit(PresentationAction<AddEditCategoryFeature.Action>)
         case alert(PresentationAction<Alert>)
@@ -51,7 +50,6 @@ public struct CategoryManagementFeature: Sendable {
 
     private enum CancelID {
         case task
-        case reorder
     }
 
     // MARK: - Body
@@ -90,38 +88,6 @@ public struct CategoryManagementFeature: Sendable {
             case let .categoryTapped(category):
                 state.addEdit = AddEditCategoryFeature.State(mode: .edit(category))
                 return .none
-
-            // MARK: Reorder
-            case let .categoriesMoved(source, destination):
-                var filtered = state.filteredCategories
-                filtered.move(fromOffsets: source, toOffset: destination)
-
-                // Re-assign sortOrder based on new positions
-                let reordered = filtered.enumerated().map { index, category in
-                    Domain.Category(
-                        id: category.id,
-                        name: category.name,
-                        icon: category.icon,
-                        color: category.color,
-                        type: category.type,
-                        sortOrder: index,
-                        isDefault: category.isDefault
-                    )
-                }
-
-                // Update state.categories for the reordered items
-                for updated in reordered {
-                    if let idx = state.categories.firstIndex(where: { $0.id == updated.id }) {
-                        state.categories[idx] = updated
-                    }
-                }
-
-                return .run { _ in
-                    for category in reordered {
-                        try await ledger.updateCategory(category)
-                    }
-                }
-                .cancellable(id: CancelID.reorder, cancelInFlight: true)
 
             // MARK: Delete
             case let .deleteRequested(id):

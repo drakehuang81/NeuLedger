@@ -78,7 +78,7 @@ public struct AIAssistantFeature: Sendable {
                         await send(.answerFailed(String(localized: "ai_assistant_error")))
                     }
                 }
-                .cancellable(id: CancelID.ask, cancelInFlight: true)
+                .cancellable(id: CancelID.ask)
 
             case let .answerReceived(text):
                 state.isLoading = false

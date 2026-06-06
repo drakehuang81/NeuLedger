@@ -5,16 +5,11 @@ import Foundation
 import SwiftUI
 
 public struct AnalysisView: View {
-    @Bindable var store: StoreOf<AnalysisFeature>
+    let store: StoreOf<AnalysisFeature>
 
     public init(store: StoreOf<AnalysisFeature>) {
         self.store = store
     }
-
-    // TODO: 6-month trend requires multi-period transaction fetching that the
-    // current reducer does not perform. Keep this `false` until the data layer
-    // can supply prior-period totals; the card is hidden in the meantime.
-    private let hasMonthlyTrendData: Bool = false
 
     public var body: some View {
         ZStack {
@@ -83,10 +78,6 @@ public struct AnalysisView: View {
             KPIStrip(summary: store.summary)
 
             DailyBarsCard(trends: store.dailyTrends)
-
-            if hasMonthlyTrendData {
-                MonthlyTrendCard(monthlyTotals: [])
-            }
 
             if !store.categoryProportions.isEmpty {
                 CategoryDonutCard(

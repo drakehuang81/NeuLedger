@@ -79,8 +79,8 @@
 ## 進度追蹤
 
 - [x] PR A1 — fix/audit-behavior-bugs（PR #26，2026-06-06）
-- [ ] PR A2 — fix/dashboard-dead-state
-- [ ] PR A3 — fix/transactions-detail-filter-dead-state
+- [x] PR A2 — fix/dashboard-dead-state（PR #27，2026-06-07 merged）
+- [ ] PR A3 — fix/transactions-detail-filter-dead-state（plan: 2026-06-07-audit-fixes-A3-transactions.md）
 - [ ] PR A4 — fix/management-screens-dead-code
 - [ ] PR A5 — fix/ssot-refactors
 - [ ] PR B1 — fix/tests-addedit-suites

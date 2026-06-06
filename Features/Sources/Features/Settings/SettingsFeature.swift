@@ -173,6 +173,18 @@ public struct SettingsFeature: Sendable {
                 state.path.append(.watchSettings(WatchSettingsFeature.State()))
                 return .none
 
+            case .path(.element(id: _, action: .accountManagement(.delegate(.accountsChanged)))):
+                return .run { [ledger] send in
+                    let accounts = (try? await ledger.listActiveAccounts()) ?? []
+                    await send(.accountsLoaded(accounts))
+                }
+
+            case .path(.element(id: _, action: .carrierManagement(.delegate(.carriersChanged)))):
+                return .run { [carrierClient] send in
+                    let carriers = (try? await carrierClient.listAll()) ?? []
+                    await send(.widgetCarriersLoaded(carriers))
+                }
+
             case .path:
                 return .none
 

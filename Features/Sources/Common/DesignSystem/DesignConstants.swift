@@ -38,4 +38,7 @@ public enum DesignConstants {
         "#00C7BE", "#32ADE6", "#007AFF", "#5856D6",
         "#AF52DE", "#FF2D55", "#3478F6", "#8E8E93"
     ]
+
+    /// Default color hex for newly created tags (brand blue, also present in tagColorOptions).
+    public static let defaultTagColorHex: String = "#3478F6"
 }

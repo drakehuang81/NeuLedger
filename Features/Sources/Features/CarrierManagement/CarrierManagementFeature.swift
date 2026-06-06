@@ -30,10 +30,18 @@ public struct CarrierManagementFeature: Sendable {
         case deleteTapped(Carrier.ID)
         case addEdit(PresentationAction<AddEditCarrierFeature.Action>)
         case alert(PresentationAction<Alert>)
+        case delegate(Delegate)
 
         @CasePathable
         public enum Alert: Sendable, Equatable {
             case deleteConfirmed(Carrier.ID)
+        }
+
+        @CasePathable
+        public enum Delegate: Sendable, Equatable {
+            /// Any carrier write (add/edit/delete) completed; the parent
+            /// (Settings) should reload its own carrier-derived state.
+            case carriersChanged
         }
     }
 
@@ -95,43 +103,52 @@ public struct CarrierManagementFeature: Sendable {
 
             case let .alert(.presented(.deleteConfirmed(id))):
                 state.expandedCarrierId = nil
-                return .run { send in
-                    // CarrierClient.delete reloads the widget (syncAllCarriers) internally.
-                    let wasActiveWidgetCarrier = carrierClient.activeForWidget() == id
-                    try await carrierClient.delete(id)
-                    let carriers = try await carrierClient.listAll()
-                    // If the deleted carrier was the active widget carrier, re-point the
-                    // widget at the first remaining carrier (or leave it if none remain).
-                    if wasActiveWidgetCarrier, let first = carriers.first {
-                        await carrierClient.setActiveForWidget(first.id)
-                    }
-                    await send(.carriersLoaded(carriers))
-                } catch: { _, send in
-                    let carriers = (try? await carrierClient.listAll()) ?? []
-                    await send(.carriersLoaded(carriers))
-                }
+                return .merge(
+                    .run { send in
+                        // CarrierClient.delete reloads the widget (syncAllCarriers) internally.
+                        let wasActiveWidgetCarrier = carrierClient.activeForWidget() == id
+                        try await carrierClient.delete(id)
+                        let carriers = try await carrierClient.listAll()
+                        // If the deleted carrier was the active widget carrier, re-point the
+                        // widget at the first remaining carrier (or leave it if none remain).
+                        if wasActiveWidgetCarrier, let first = carriers.first {
+                            await carrierClient.setActiveForWidget(first.id)
+                        }
+                        await send(.carriersLoaded(carriers))
+                    } catch: { _, send in
+                        let carriers = (try? await carrierClient.listAll()) ?? []
+                        await send(.carriersLoaded(carriers))
+                    },
+                    .send(.delegate(.carriersChanged))
+                )
 
             case .alert:
                 return .none
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { send in
-                    // CarrierClient.create/update reloads the widget (syncAllCarriers)
-                    // internally; AddEditCarrierFeature already performed the mutation.
-                    let carriers = try await carrierClient.listAll()
-                    if carrierClient.activeForWidget() == nil, let first = carriers.first {
-                        // P0: Auto-assign the first ever carrier as the widget carrier.
-                        await carrierClient.setActiveForWidget(first.id)
-                    }
-                    await send(.carriersLoaded(carriers))
-                }
+                return .merge(
+                    .run { send in
+                        // CarrierClient.create/update reloads the widget (syncAllCarriers)
+                        // internally; AddEditCarrierFeature already performed the mutation.
+                        let carriers = try await carrierClient.listAll()
+                        if carrierClient.activeForWidget() == nil, let first = carriers.first {
+                            // P0: Auto-assign the first ever carrier as the widget carrier.
+                            await carrierClient.setActiveForWidget(first.id)
+                        }
+                        await send(.carriersLoaded(carriers))
+                    },
+                    .send(.delegate(.carriersChanged))
+                )
 
             case .addEdit(.presented(.delegate(.dismissed))):
                 state.addEdit = nil
                 return .none
 
             case .addEdit:
+                return .none
+
+            case .delegate:
                 return .none
             }
         }

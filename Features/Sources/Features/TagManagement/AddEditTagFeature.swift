@@ -1,3 +1,4 @@
+import Common
 import ComposableArchitecture
 import Domain
 import Foundation
@@ -27,10 +28,10 @@ public struct AddEditTagFeature: Sendable {
             switch mode {
             case .add:
                 self.name = ""
-                self.colorHex = "#3478F6"
+                self.colorHex = DesignConstants.defaultTagColorHex
             case let .edit(tag):
                 self.name = tag.name
-                self.colorHex = tag.color ?? "#3478F6"
+                self.colorHex = tag.color ?? DesignConstants.defaultTagColorHex
             }
         }
 

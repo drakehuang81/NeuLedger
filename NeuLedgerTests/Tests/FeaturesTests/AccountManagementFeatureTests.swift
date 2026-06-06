@@ -35,8 +35,8 @@ struct AccountManagementFeatureTests {
             AccountManagementFeature()
         } withDependencies: {
             $0.ledgerClient.listAccounts = { accounts }
-            $0.ledgerClient.balance = { id in
-                id == Self.cashAccount.id ? 1000 : 5000
+            $0.ledgerClient.balances = {
+                [Self.cashAccount.id: 1000, Self.bankAccount.id: 5000]
             }
         }
 
@@ -213,12 +213,14 @@ struct AccountManagementFeatureTests {
             $0.ledgerClient.deleteAccount = { deletedId.setValue($0) }
             // After delete, fetchAll returns only the bank account (1 remaining)
             $0.ledgerClient.listAccounts = { [Self.bankAccount] }
-            $0.ledgerClient.balance = { _ in 5000 }
+            $0.ledgerClient.balances = { [Self.bankAccount.id: 5000] }
         }
 
         await store.send(.alert(.presented(.deleteConfirmed(id)))) {
             $0.alert = nil
         }
+
+        await store.receive(\.delegate.accountsChanged)
 
         await store.receive(\.accountsLoaded) {
             $0.isLoading = false
@@ -264,12 +266,14 @@ struct AccountManagementFeatureTests {
         } withDependencies: {
             $0.ledgerClient.archiveAccount = { archivedId.setValue($0) }
             $0.ledgerClient.listAccounts = { afterArchive }
-            $0.ledgerClient.balance = { _ in 0 }
+            $0.ledgerClient.balances = { [Self.bankAccount.id: 0] }
         }
 
         await store.send(.alert(.presented(.archiveConfirmed(id)))) {
             $0.alert = nil
         }
+
+        await store.receive(\.delegate.accountsChanged)
 
         await store.receive(\.accountsLoaded) {
             $0.isLoading = false
@@ -277,7 +281,7 @@ struct AccountManagementFeatureTests {
         }
 
         await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.cashAccount.id: 0, Self.bankAccount.id: 0]
+            $0.balances = [Self.bankAccount.id: 0]
         }
 
         #expect(archivedId.value == id)
@@ -297,10 +301,12 @@ struct AccountManagementFeatureTests {
         } withDependencies: {
             $0.ledgerClient.updateAccount = { account in calledUpdate.setValue(account) }
             $0.ledgerClient.listAccounts = { [Self.cashAccount] }
-            $0.ledgerClient.balance = { _ in 0 }
+            $0.ledgerClient.balances = { [Self.cashAccount.id: 0] }
         }
 
         await store.send(.unarchiveTapped(id))
+
+        await store.receive(\.delegate.accountsChanged)
 
         await store.receive(\.accountsLoaded) {
             $0.accounts = [Self.cashAccount]
@@ -312,5 +318,129 @@ struct AccountManagementFeatureTests {
 
         #expect(calledUpdate.value?.isArchived == false)
         #expect(calledUpdate.value?.id == id)
+    }
+
+    // MARK: - Delegate Notifications (Settings desync fix)
+
+    @Test("unarchiveTapped notifies parent via delegate.accountsChanged")
+    func testUnarchiveNotifiesDelegate() async throws {
+        let id = Self.archivedAccount.id
+        var initialState = AccountManagementFeature.State()
+        initialState.accounts = [Self.archivedAccount]
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.updateAccount = { _ in }
+            $0.ledgerClient.listAccounts = { [Self.cashAccount] }
+            $0.ledgerClient.balances = { [Self.cashAccount.id: 0] }
+        }
+
+        await store.send(.unarchiveTapped(id))
+
+        await store.receive(\.delegate.accountsChanged)
+        await store.receive(\.accountsLoaded) {
+            $0.accounts = [Self.cashAccount]
+        }
+        await store.receive(\.balancesLoaded) {
+            $0.balances = [Self.cashAccount.id: 0]
+        }
+    }
+
+    @Test("addEdit saved notifies parent via delegate.accountsChanged")
+    func testAddEditSavedNotifiesDelegate() async throws {
+        var initialState = AccountManagementFeature.State()
+        initialState.addEdit = AddEditAccountFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAccounts = { [Self.cashAccount] }
+            $0.ledgerClient.balances = { [Self.cashAccount.id: 1000] }
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+
+        await store.receive(\.delegate.accountsChanged)
+        await store.receive(\.accountsLoaded) {
+            $0.accounts = [Self.cashAccount]
+        }
+        await store.receive(\.balancesLoaded) {
+            $0.balances = [Self.cashAccount.id: 1000]
+        }
+    }
+
+    @Test("deleteConfirmed notifies parent via delegate.accountsChanged")
+    func testDeleteConfirmedNotifiesDelegate() async throws {
+        let id = Self.cashAccount.id
+        var initialState = AccountManagementFeature.State()
+        initialState.accounts = [Self.cashAccount, Self.bankAccount]
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_confirm_delete"))
+        } actions: {
+            ButtonState(role: .destructive, action: .deleteConfirmed(id)) {
+                TextState(String(localized: "common_delete"))
+            }
+        }
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.deleteAccount = { _ in }
+            $0.ledgerClient.listAccounts = { [Self.bankAccount] }
+            $0.ledgerClient.balances = { [Self.bankAccount.id: 5000] }
+        }
+
+        await store.send(.alert(.presented(.deleteConfirmed(id)))) {
+            $0.alert = nil
+        }
+        await store.receive(\.delegate.accountsChanged)
+        await store.receive(\.accountsLoaded) {
+            $0.isLoading = false
+            $0.accounts = [Self.bankAccount]
+        }
+        await store.receive(\.balancesLoaded) {
+            $0.balances = [Self.bankAccount.id: 5000]
+        }
+    }
+
+    @Test("archiveConfirmed notifies parent via delegate.accountsChanged")
+    func testArchiveConfirmedNotifiesDelegate() async throws {
+        let id = Self.cashAccount.id
+        var initialState = AccountManagementFeature.State()
+        initialState.accounts = [Self.cashAccount, Self.bankAccount]
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_cannot_delete"))
+        } actions: {
+            ButtonState(action: .archiveConfirmed(id)) {
+                TextState(String(localized: "alert_archive_instead"))
+            }
+        }
+
+        var archivedCash = Self.cashAccount
+        archivedCash.isArchived = true
+        let afterArchive: [Account] = [archivedCash, Self.bankAccount]
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.archiveAccount = { _ in }
+            $0.ledgerClient.listAccounts = { afterArchive }
+            $0.ledgerClient.balances = { [Self.bankAccount.id: 0] }
+        }
+
+        await store.send(.alert(.presented(.archiveConfirmed(id)))) {
+            $0.alert = nil
+        }
+        await store.receive(\.delegate.accountsChanged)
+        await store.receive(\.accountsLoaded) {
+            $0.isLoading = false
+            $0.accounts = afterArchive
+        }
+        await store.receive(\.balancesLoaded) {
+            $0.balances = [Self.bankAccount.id: 0]
+        }
     }
 }

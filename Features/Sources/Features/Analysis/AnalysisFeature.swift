@@ -103,7 +103,8 @@ public struct AnalysisFeature: Sendable {
                         let accounts = (try? await ledger.listActiveAccounts()) ?? []
                         await send(.accountsLoaded(accounts))
                     },
-                    .send(.loadData)
+                    .send(.loadData),
+                    .send(.aiAssistant(.task))
                 )
 
             case let .accountsLoaded(accounts):

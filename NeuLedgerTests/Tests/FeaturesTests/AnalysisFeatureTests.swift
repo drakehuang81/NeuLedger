@@ -426,6 +426,30 @@ struct AnalysisFeatureTests {
         await store.receive(\.accountsLoaded) { $0.accounts = accounts }
     }
 
+    // MARK: - AI Assistant availability
+
+    @Test("task forwards aiAssistant.task so the availability gate can resolve")
+    func testTaskForwardsAIAssistantTask() async {
+        let store = await TestStore(initialState: AnalysisFeature.State()) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.listActive = { [] }
+            $0.insightsClient.isAIAvailable = { true }
+        }
+        await MainActor.run {
+            store.exhaustivity = .off
+        }
+
+        await store.send(.task)
+        // 修復前：.task 只 merge accounts 載入與 .loadData，永遠等不到這個 receive
+        await store.receive(\.aiAssistant.task) {
+            $0.aiAssistant.isAvailable = true
+        }
+    }
+
     @Test("accountSelected updates selectedAccountId and triggers loadData")
     func testAccountSelected() async {
         let accountId = UUID().uuidString

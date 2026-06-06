@@ -34,10 +34,11 @@ public struct AddEditAccountFeature: Sendable {
 
             switch mode {
             case .add:
+                let defaultType: AccountType = .cash
                 self.name = ""
-                self.type = .cash
-                self.icon = "creditcard"
-                self.colorHex = "#3478F6"
+                self.type = defaultType
+                self.icon = defaultType.defaultIcon
+                self.colorHex = defaultType.defaultColor
             case let .edit(account):
                 self.name = account.name
                 self.type = account.type

@@ -245,11 +245,56 @@ public struct RecurringTransactionFormView: View {
                         }
                     }
 
-                    // TODO: toAccount row (transfer destination) — requires
-                    // RecurringTransactionFormFeature.State to expose toAccount picker
-                    // in a way that drives a separate UI row; for now the toAccountId
-                    // is set silently when type == .transfer. Revisit when design
-                    // specifies a second account picker for transfers.
+                    // Transfer destination picker — only rendered for transfer templates (audit A1)
+                    if store.type == .transfer {
+                        rowDivider
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Menu {
+                                Button(String(localized: "add_transaction_select_account")) {
+                                    store.send(.toAccountChanged(nil))
+                                }
+                                ForEach(store.accounts.filter { $0.id != store.accountId }) { acc in
+                                    Button {
+                                        store.send(.toAccountChanged(acc.id))
+                                    } label: {
+                                        Label(acc.name, systemImage: acc.icon)
+                                    }
+                                }
+                            } label: {
+                                formRow(label: String(localized: "recurring_transaction_to_account_label")) {
+                                    if let toId = store.toAccountId,
+                                       let acc = store.accounts.first(where: { $0.id == toId }) {
+                                        HStack(spacing: 6) {
+                                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                                .fill(Color.Design.fromHex(acc.color))
+                                                .frame(width: 20, height: 20)
+                                                .overlay {
+                                                    Image(systemName: acc.icon)
+                                                        .font(Font.Design.size11Semibold)
+                                                        .foregroundStyle(.white)
+                                                }
+                                            Text(acc.name)
+                                                .font(Font.Design.body)
+                                                .foregroundStyle(Color.Design.textPrimary)
+                                        }
+                                    } else {
+                                        Text(String(localized: "add_transaction_select_account"))
+                                            .font(Font.Design.body)
+                                            .foregroundStyle(Color.Design.textTertiary)
+                                    }
+                                    Image(systemName: "chevron.right")
+                                        .font(Font.Design.size12Medium)
+                                        .foregroundStyle(Color.Design.textTertiary)
+                                }
+                            }
+                            if let err = store.transferError {
+                                ErrorText(err)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 8)
+                            }
+                        }
+                    }
                 }
             }
         }

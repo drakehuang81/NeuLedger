@@ -78,7 +78,7 @@
 
 ## 進度追蹤
 
-- [ ] PR A1 — fix/audit-behavior-bugs
+- [x] PR A1 — fix/audit-behavior-bugs（PR #26，2026-06-06）
 - [ ] PR A2 — fix/dashboard-dead-state
 - [ ] PR A3 — fix/transactions-detail-filter-dead-state
 - [ ] PR A4 — fix/management-screens-dead-code

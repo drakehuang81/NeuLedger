@@ -17,9 +17,7 @@ struct DashboardFeatureInsightTests {
             DashboardFeature()
         } withDependencies: {
             $0.date = .constant(Date(timeIntervalSince1970: 0))
-            $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateInsights = { _ in mock }
-            $0.insightsClient.generateAIInsight = { _ in "" }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listAll = { _ in [] }

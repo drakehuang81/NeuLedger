@@ -18,7 +18,6 @@ struct DashboardFeatureStatsTests {
             $0.ledgerClient.balances = { [:] }
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {

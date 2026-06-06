@@ -30,7 +30,6 @@ struct DashboardFeatureChipTests {
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in [txA, txB].map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
-            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -68,7 +67,6 @@ struct DashboardFeatureChipTests {
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in [txA, txB].map { EnrichedTransaction(transaction: $0) } }
             $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
-            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -103,7 +101,6 @@ struct DashboardFeatureChipTests {
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in [] }
             $0.insightsClient.weeklySparkline = { _ in [1, 2, 3, 4, 5, 6, 7] }
-            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run { store.exhaustivity = .off }
 

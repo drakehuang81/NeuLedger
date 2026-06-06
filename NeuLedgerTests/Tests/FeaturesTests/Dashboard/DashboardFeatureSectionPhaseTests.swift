@@ -19,7 +19,6 @@ struct DashboardFeatureSectionPhaseTests {
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateInsights = { _ in [] }
         }
 
@@ -48,7 +47,6 @@ struct DashboardFeatureSectionPhaseTests {
             $0.insightsClient.todayStats = { _ in .zero }
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
             $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {

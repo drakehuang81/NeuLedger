@@ -50,7 +50,6 @@ struct DashboardFeatureScopeTests {
                 [txA, txB, transferIn].map { EnrichedTransaction(transaction: $0) }
             }
             $0.insightsClient.weeklySparkline = { _ in [0, 0, 0, 0, 0, 0, 0] }
-            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -97,7 +96,6 @@ struct DashboardFeatureScopeTests {
                 [txA, txB].map { EnrichedTransaction(transaction: $0) }
             }
             $0.insightsClient.weeklySparkline = { _ in [1, 1, 1, 1, 1, 1, 1] }
-            $0.insightsClient.isAIAvailable = { false }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -140,61 +138,6 @@ struct DashboardFeatureScopeTests {
         }
     }
 
-    // MARK: - Bug 3
-
-    @Test("transactionsUpdated with unchanged count does not refetch AI insight")
-    func testAIInsightSkippedWhenCountUnchanged() async {
-        let base = Date(timeIntervalSince1970: 2_000_000)
-        let tx1 = Transaction(amount: 1, date: base, note: "1", accountId: "acc", type: .expense)
-        let tx2 = Transaction(amount: 2, date: base.addingTimeInterval(-60), note: "2", accountId: "acc", type: .expense)
-
-        var initial = DashboardFeature.State()
-        initial.lastInsightTransactionCount = 2
-
-        // Exhaustive TestStore：若 fetchAIInsight 被誤觸發，未接收的 action 會讓測試失敗。
-        let store = await TestStore(initialState: initial) {
-            DashboardFeature()
-        }
-        await store.send(.transactionsUpdated(recent: [tx1, tx2], earliestDate: tx2.date)) {
-            $0.recentTransactions = [tx1, tx2]
-            $0.earliestTransactionDate = tx2.date
-            $0.transactionsPhase = .loaded
-        }
-    }
-
-    @Test("AI insight response stores the same count the trigger compared against")
-    func testAIInsightCountConsistency() async {
-        let base = Date(timeIntervalSince1970: 2_000_000)
-        let txs = (0 ..< 4).map { i in
-            Transaction(
-                amount: Decimal(i + 1), date: base.addingTimeInterval(TimeInterval(-i * 60)),
-                note: "t\(i)", accountId: "acc", type: .expense
-            )
-        }
-        var initial = DashboardFeature.State()
-        initial.lastInsightTransactionCount = 2   // 與新 count(4) 不同 → 觸發
-
-        let store = await TestStore(initialState: initial) {
-            DashboardFeature()
-        } withDependencies: {
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in "insight" }
-        }
-        await store.send(.transactionsUpdated(recent: txs, earliestDate: txs.last?.date)) {
-            $0.recentTransactions = txs
-            $0.earliestTransactionDate = txs.last?.date
-            $0.transactionsPhase = .loaded
-        }
-        await store.receive(\.fetchAIInsight) {
-            $0.isLoadingInsight = true
-        }
-        await store.receive(\.aiInsightResponse.success) {
-            $0.isLoadingInsight = false
-            $0.aiInsight = "insight"
-            $0.lastInsightTransactionCount = 4   // 寫回 == 比較來源（修 Bug 3）
-        }
-    }
-
     // MARK: - Bug 4
 
     @Test("earliestTransactionDate reflects the scope's true earliest, not min(recent 20)")
@@ -211,7 +154,6 @@ struct DashboardFeatureScopeTests {
             DashboardFeature()
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in txs.map { EnrichedTransaction(transaction: $0) } }
-            $0.insightsClient.isAIAvailable = { false }
         }
         await store.send(.retrySection(.transactions)) {
             $0.transactionsPhase = .loading
@@ -221,7 +163,5 @@ struct DashboardFeatureScopeTests {
             $0.earliestTransactionDate = txs.last!.date   // 第 25 筆：最舊、不在 recent 20 內
             $0.transactionsPhase = .loaded
         }
-        // count(20) != lastInsightTransactionCount(nil) → 觸發；isAIAvailable false → 無 state 變化
-        await store.receive(\.fetchAIInsight)
     }
 }

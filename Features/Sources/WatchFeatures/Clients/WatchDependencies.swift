@@ -11,6 +11,7 @@ public enum WatchDependencies {
 
     public static func register(in dependencies: inout DependencyValues) {
         let cache = WatchCacheStore()
+        dependencies.watchCarrierClient = .watchLive(cache: cache)
 #if canImport(WatchConnectivity)
         let gateway = WatchSessionGateway(
             transport: LiveWatchPhoneTransport.shared,

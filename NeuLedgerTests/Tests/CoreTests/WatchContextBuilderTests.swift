@@ -85,6 +85,7 @@ struct WatchContextBuilderTests {
             $0.calendar = Calendar(identifier: .gregorian)
             $0.modelContainer = container
             $0.planningClient.listActive = { @Sendable in [] }
+            $0.carrierClient.listAll = { @Sendable in [] }
         } operation: {
             try await WatchContextBuilder.build(now: now, defaultAccountId: accountId)
         }
@@ -95,6 +96,7 @@ struct WatchContextBuilderTests {
         #expect(snapshot.accounts.count == 1)
         #expect(snapshot.defaultAccountId == accountId)
         #expect(snapshot.monthBudgetProgress == nil)
+        #expect(snapshot.carriers == [])
     }
 
     @Test("monthBudgetProgress is nil when no overall monthly budget is active")
@@ -105,10 +107,36 @@ struct WatchContextBuilderTests {
             $0.calendar = Calendar(identifier: .gregorian)
             $0.modelContainer = container
             $0.planningClient.listActive = { @Sendable in [] }
+            $0.carrierClient.listAll = { @Sendable in [] }
         } operation: {
             try await WatchContextBuilder.build(now: Date(), defaultAccountId: UUID().uuidString)
         }
 
         #expect(snapshot.monthBudgetProgress == nil)
+    }
+
+    @Test("Snapshot mirrors carriers from carrierClient in list order")
+    func mirrorsCarriersInListOrder() async throws {
+        let container = try await makeSeededContainer()
+        let phone = Carrier(
+            name: "手機條碼", type: .phoneBarcodeCarrier, barcode: "/AB12+CD"
+        )
+        let cert = Carrier(
+            name: "自然人憑證", type: .citizenDigitalCertificate,
+            barcode: "AB12345678901234"
+        )
+
+        let snapshot = try await withDependencies {
+            $0.calendar = Calendar(identifier: .gregorian)
+            $0.modelContainer = container
+            $0.planningClient.listActive = { @Sendable in [] }
+            $0.carrierClient.listAll = { @Sendable in [phone, cert] }
+        } operation: {
+            try await WatchContextBuilder.build(
+                now: Date(), defaultAccountId: UUID().uuidString
+            )
+        }
+
+        #expect(snapshot.carriers == [phone, cert])
     }
 }

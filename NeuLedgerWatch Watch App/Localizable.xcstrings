@@ -68,6 +68,39 @@
           }
         }
       }
+    },
+    "watch_carrier_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Carriers" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "載具" }
+        }
+      }
+    },
+    "watch_carrier_syncing_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Syncing — open NeuLedger on your iPhone" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "資料同步中\n請開啟 iPhone 上的 NeuLedger" }
+        }
+      }
+    },
+    "watch_carrier_empty_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No carriers yet — add one on your iPhone" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "尚無載具\n請在 iPhone 上新增電子發票載具" }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -15,7 +15,8 @@ struct WatchCacheStoreTests {
 
     private func makeSnapshot(
         todayTotal: Decimal = 480,
-        defaultAccountId: UUID = UUID()
+        defaultAccountId: Account.ID = UUID().uuidString,
+        carriers: [Carrier]? = nil
     ) -> WatchContextSnapshot {
         WatchContextSnapshot(
             categories: [
@@ -31,7 +32,8 @@ struct WatchCacheStoreTests {
             todayTotal: todayTotal,
             todayCount: 2,
             monthBudgetProgress: 0.62,
-            snapshotAt: Date(timeIntervalSince1970: 1_700_000_000)
+            snapshotAt: Date(timeIntervalSince1970: 1_700_000_000),
+            carriers: carriers
         )
     }
 
@@ -56,6 +58,35 @@ struct WatchCacheStoreTests {
         store.save(makeSnapshot(todayTotal: 100))
         store.save(makeSnapshot(todayTotal: 999))
         #expect(store.load()?.todayTotal == 999)
+    }
+
+    @Test("Snapshot with carriers round-trips")
+    func carriersRoundTrip() {
+        let (store, _) = makeStore()
+        let carrier = Carrier(
+            id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!,
+            name: "手機條碼", type: .phoneBarcodeCarrier,
+            barcode: "/AB12+CD",
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+        let original = makeSnapshot(carriers: [carrier])
+        store.save(original)
+        #expect(store.load()?.carriers == [carrier])
+    }
+
+    @Test("Legacy snapshot JSON without carriers key decodes with nil carriers")
+    func legacyJSONDecodesWithNilCarriers() {
+        let (store, defaults) = makeStore()
+        // 舊版 iPhone wire format：無 carriers key。Date 以
+        // timeIntervalSinceReferenceDate 編碼（JSONDecoder 預設）。
+        let legacyJSON = """
+        {"categories":[],"accounts":[],"defaultAccountId":"ACC-1",\
+        "todayTotal":0,"todayCount":0,"snapshotAt":700000000}
+        """
+        defaults.set(Data(legacyJSON.utf8), forKey: "watch.context_snapshot.v1")
+        let loaded = store.load()
+        #expect(loaded != nil)
+        #expect(loaded?.carriers == nil)
     }
 
     @Test("Saved snapshot survives a fresh store opened on the same defaults")

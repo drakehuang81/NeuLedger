@@ -23,14 +23,14 @@ struct WatchRecordFeatureTests {
     )
 
     private static let cashAccount = Account(
-        id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
+        id: "33333333-3333-3333-3333-333333333333",
         name: "Cash", type: .cash, icon: "banknote", color: "#34C759",
         sortOrder: 0, isArchived: false,
         createdAt: Date(timeIntervalSince1970: 0)
     )
 
     private static let cardAccount = Account(
-        id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+        id: "44444444-4444-4444-4444-444444444444",
         name: "Card", type: .creditCard, icon: "creditcard",
         color: "#5E5CE6", sortOrder: 1, isArchived: false,
         createdAt: Date(timeIntervalSince1970: 0)
@@ -49,12 +49,15 @@ struct WatchRecordFeatureTests {
             }
         }
 
-        await store.send(.task)
+        // `.task` keeps a notification subscription alive for cache
+        // updates — cancel it explicitly once the load assertion is done.
+        let task = await store.send(.task)
         await store.receive(\.loaded) {
             $0.categories = [Self.foodCategory, Self.transportCategory]
             $0.accounts = [Self.cashAccount, Self.cardAccount]
             $0.defaultAccountId = Self.cashAccount.id
         }
+        await task.cancel()
     }
 
     @Test("Selecting a category advances to amount step")

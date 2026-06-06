@@ -34,6 +34,13 @@ public struct WatchContextSnapshot: Equatable, Codable, Sendable {
     /// When this snapshot was assembled on iPhone.
     public let snapshotAt: Date
 
+    /// E-invoice carriers mirrored for the Watch carrier page, in the
+    /// iPhone list order. `nil` when the snapshot came from an older
+    /// iPhone build without carrier support (Watch shows a sync hint);
+    /// empty when the user genuinely has none (Watch shows add-on-iPhone
+    /// guidance). Optional so legacy cached JSON keeps decoding.
+    public let carriers: [Carrier]?
+
     public init(
         categories: [Category],
         accounts: [Account],
@@ -41,7 +48,8 @@ public struct WatchContextSnapshot: Equatable, Codable, Sendable {
         todayTotal: Decimal,
         todayCount: Int,
         monthBudgetProgress: Double?,
-        snapshotAt: Date
+        snapshotAt: Date,
+        carriers: [Carrier]? = nil
     ) {
         self.categories = categories
         self.accounts = accounts
@@ -50,5 +58,6 @@ public struct WatchContextSnapshot: Equatable, Codable, Sendable {
         self.todayCount = todayCount
         self.monthBudgetProgress = monthBudgetProgress
         self.snapshotAt = snapshotAt
+        self.carriers = carriers
     }
 }

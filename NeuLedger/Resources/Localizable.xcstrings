@@ -1973,6 +1973,40 @@
         }
       }
     },
+    "recurring_transaction_to_account_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轉入帳戶"
+          }
+        }
+      }
+    },
+    "recurring_transaction_error_to_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please select a destination account"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請選擇轉入帳戶"
+          }
+        }
+      }
+    },
     "transactions_title": {
       "extractionState": "manual",
       "localizations": {

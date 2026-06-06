@@ -31,6 +31,8 @@ public struct RecurringTransactionFormFeature: Sendable {
         public var accountError: String?
         // P0-3: Surface save errors inline
         public var saveError: String?
+        // Audit A1: transfer destination validation surfaces inline
+        public var transferError: String?
 
         public init(mode: Mode) {
             self.mode = mode
@@ -44,6 +46,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                 components.hour = 9; components.minute = 0
                 notificationTime = Calendar.current.date(from: components) ?? Date()
                 saveError = nil
+                transferError = nil
             case let .edit(rt):
                 amountText = "\(NSDecimalNumber(decimal: rt.amount).intValue)"
                 note = rt.note ?? ""; type = rt.type; frequency = rt.frequency
@@ -52,6 +55,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                 firstRunDate = Calendar.current.startOfDay(for: rt.nextDueDate)
                 notificationTime = rt.nextDueDate
                 saveError = nil
+                transferError = nil
             }
         }
     }
@@ -115,6 +119,7 @@ public struct RecurringTransactionFormFeature: Sendable {
 
             case let .typeChanged(type):
                 state.type = type
+                state.transferError = nil
                 return .none
 
             case let .frequencyChanged(freq):
@@ -138,6 +143,7 @@ public struct RecurringTransactionFormFeature: Sendable {
 
             case let .toAccountChanged(id):
                 state.toAccountId = id
+                state.transferError = nil
                 return .none
 
             case let .categoryChanged(id):
@@ -167,15 +173,26 @@ public struct RecurringTransactionFormFeature: Sendable {
                     state.accountError = String(localized: "recurring_transaction_error_account")
                     return .none
                 }
+                if state.type == .transfer {
+                    guard let toId = state.toAccountId else {
+                        state.transferError = String(localized: "recurring_transaction_error_to_account")
+                        return .none
+                    }
+                    guard toId != accountId else {
+                        state.transferError = String(localized: "add_transaction_error_same_account")
+                        return .none
+                    }
+                }
                 state.amountError = nil
                 state.accountError = nil
                 state.saveError = nil
+                state.transferError = nil
 
                 let frequency = state.frequency
                 let mode = state.mode
                 let note = state.note.isEmpty ? Optional<String>.none : state.note
                 let categoryId = state.categoryId
-                let toAccountId = state.toAccountId
+                let toAccountId = state.type == .transfer ? state.toAccountId : nil
                 let type_ = state.type
 
                 // P0-2: Combine firstRunDate (y/m/d) with notificationTime (h/m)

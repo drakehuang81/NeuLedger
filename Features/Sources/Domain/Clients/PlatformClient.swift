@@ -49,10 +49,17 @@ public struct PlatformClient: Sendable {
     /// `true` if the watchOS companion app is installed on the paired Watch.
     public var watchAppInstalled: @Sendable () -> Bool = { false }
     /// The default account used when recording transactions from Apple Watch,
-    /// or `nil` when no override is set (falls back to the iOS default account).
+    /// or `nil` when no override is set (falls back to the sortOrder-first
+    /// active account at snapshot time).
     public var watchDefaultAccountId: @Sendable () -> Account.ID? = { nil }
     /// Sets the Apple Watch default account override. Passing `nil` clears it.
     public var setWatchDefaultAccountId: @Sendable (_ id: Account.ID?) -> Void
+    /// Rebuilds the Watch context snapshot (validating the stored default
+    /// account against live accounts) and pushes it to the Watch immediately.
+    /// Settings writes don't save SwiftData, so the save-observer never fires
+    /// for them — call this after mutating Watch-related settings. Failures
+    /// are swallowed: WC retries and the next SwiftData save re-pushes anyway.
+    public var pushWatchContext: @Sendable () async -> Void
 
     // MARK: - Notification
 

@@ -228,8 +228,11 @@ activation reload the carrier widget internally (post-condition).
 
 - **Preferences** — `accessoryMode` / `reminderTime` / `dailyReminderEnabled`
   / `hasCompletedOnboarding` / `markOnboardingComplete` / `showAccessoryBar`
-  (+ setters); watch pairing surface: `watchPaired` / `watchAppInstalled` /
-  `watchDefaultAccountId` / `setWatchDefaultAccountId`
+  (+ setters); watch pairing & sync surface: `watchPaired` / `watchAppInstalled` /
+  `watchDefaultAccountId` / `setWatchDefaultAccountId` / `pushWatchContext`
+  (immediate snapshot push — settings writes don't save SwiftData, so the
+  save-observer never fires for them; the stored default is validated
+  against live accounts via `WatchDefaultAccountResolver` before use)
 - **Notification** — `requestNotificationPermission` /
   `notificationsAuthorized` / `scheduleDailyReminder` / `cancelDailyReminder`
   / `pendingRecurringConfirmations` (stream)

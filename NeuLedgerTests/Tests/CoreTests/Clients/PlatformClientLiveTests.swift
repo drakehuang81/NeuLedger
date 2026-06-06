@@ -2,6 +2,7 @@ import Testing
 import SwiftData
 import Foundation
 import Dependencies
+import ConcurrencyExtras
 import Domain
 @testable import Core
 
@@ -243,6 +244,92 @@ struct PlatformClientLiveTests {
         #expect(client.watchDefaultAccountId() != nil)
         client.setWatchDefaultAccountId(nil)
         #expect(client.watchDefaultAccountId() == nil)
+    }
+
+    private static func watchAccount(
+        id: String,
+        sortOrder: Int,
+        isArchived: Bool = false
+    ) -> Account {
+        Account(
+            id: id,
+            name: "Account \(sortOrder)",
+            type: .cash,
+            icon: "banknote",
+            color: "#34C759",
+            sortOrder: sortOrder,
+            isArchived: isArchived,
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+    }
+
+    /// Runs `pushWatchContext` against a fresh in-memory store seeded with
+    /// `accounts`, with `storedId` written as the Settings override, and
+    /// returns the snapshot captured by the spy bridge (or `nil` when the
+    /// client never pushed).
+    private func pushWatchContext(
+        storedId: Account.ID?,
+        accounts: [Account]
+    ) async throws -> WatchContextSnapshot? {
+        let container = try freshContainer()
+        let box = SettingsBox()
+        if let storedId {
+            box.setString(storedId, SettingsKey<String>.watchDefaultAccountId.rawValue)
+        }
+        let pushed = LockIsolated<WatchContextSnapshot?>(nil)
+        var watch = WatchBridgeAdapter.testValue
+        watch.pushContext = { snapshot in pushed.setValue(snapshot) }
+
+        try await withDependencies {
+            $0.modelContainer = container
+            $0.userSettingsAdapter = inMemorySettings(box)
+            $0.watchBridgeAdapter = watch
+            $0.calendar = Calendar(identifier: .gregorian)
+            $0.planningClient.listActive = { @Sendable in [] }
+            $0.carrierClient.listAll = { @Sendable in [] }
+        } operation: {
+            let accountStore = AccountStore()
+            for account in accounts { try await accountStore.add(account) }
+            let client = PlatformClient.liveValue
+            await client.pushWatchContext()
+        }
+
+        return pushed.value
+    }
+
+    @Test("pushWatchContext honors a stored override that points to a live account")
+    func pushWatchContextHonorsLiveOverride() async throws {
+        let snapshot = try await pushWatchContext(
+            storedId: "card-id",
+            accounts: [
+                Self.watchAccount(id: "cash-id", sortOrder: 0),
+                Self.watchAccount(id: "card-id", sortOrder: 1),
+            ]
+        )
+        #expect(snapshot?.defaultAccountId == "card-id")
+    }
+
+    @Test("pushWatchContext falls back past a dead stored override to the first active account")
+    func pushWatchContextValidatesDeadOverride() async throws {
+        let snapshot = try await pushWatchContext(
+            storedId: "card-id",
+            accounts: [
+                Self.watchAccount(id: "cash-id", sortOrder: 0),
+                Self.watchAccount(id: "card-id", sortOrder: 1, isArchived: true),
+            ]
+        )
+        #expect(snapshot?.defaultAccountId == "cash-id")
+    }
+
+    @Test("pushWatchContext pushes nothing when there is no active account")
+    func pushWatchContextSkipsWithoutActiveAccounts() async throws {
+        let snapshot = try await pushWatchContext(
+            storedId: "gone-id",
+            accounts: [
+                Self.watchAccount(id: "old-id", sortOrder: 0, isArchived: true),
+            ]
+        )
+        #expect(snapshot == nil)
     }
 
     // MARK: - Sync flags

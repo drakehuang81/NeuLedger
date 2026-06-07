@@ -182,6 +182,60 @@ struct BudgetFormFeatureTests {
         await store.receive(\.delegate.dismissed)
     }
 
+    // MARK: - categoryChanged + 存檔斷言
+
+    @Test("categoryChanged sets categoryId; saveTapped 將其寫入 planningClient.create")
+    func testCategoryChangedRoundTripsIntoBudget() async {
+        let addedBudget: LockIsolated<Budget?> = LockIsolated(nil)
+        let categoryId = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
+
+        let store = await TestStore(
+            initialState: BudgetFormFeature.State(mode: .add)
+        ) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.nameChanged("分類預算")) { $0.name = "分類預算" }
+        await store.send(.amountChanged("3000")) { $0.amountText = "3000" }
+        await store.send(.categoryChanged(categoryId)) { $0.categoryId = categoryId }
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(addedBudget.value?.categoryId == categoryId, "categoryId 應 round-trip 進入持久化 Budget")
+        #expect(addedBudget.value?.name == "分類預算")
+        #expect(addedBudget.value?.amount == 3000)
+    }
+
+    @Test("categoryChanged 無分類（nil） → saveTapped 寫入 categoryId = nil")
+    func testCategoryChangedNilRoundTrips() async {
+        let addedBudget: LockIsolated<Budget?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: BudgetFormFeature.State(mode: .add)
+        ) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.nameChanged("無分類預算")) { $0.name = "無分類預算" }
+        await store.send(.amountChanged("1000")) { $0.amountText = "1000" }
+        // categoryId 初始就是 nil，categoryChanged(nil) 不改變 state，不帶 closure
+        await store.send(.categoryChanged(nil))
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(addedBudget.value?.categoryId == nil, "nil categoryId 應 round-trip 進入 Budget")
+    }
+
     // MARK: - task loads categories
 
     @Test("task loads expense categories into availableCategories")

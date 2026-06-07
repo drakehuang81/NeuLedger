@@ -184,6 +184,101 @@ struct RecurringTransactionManagementFeatureTests {
         #expect(nextComponents.day == 28)
     }
 
+    // MARK: - deleteTapped 委派分支
+
+    @Test("deleteTapped 委派為 deleteRequested 並彈出確認 alert")
+    func testDeleteTappedDelegatesToDeleteRequested() async {
+        let rt = Self.sample()
+        let store = await TestStore(
+            initialState: RecurringTransactionManagementFeature.State(items: [rt])
+        ) {
+            RecurringTransactionManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listRecurring = { [rt] }
+        }
+
+        // deleteTapped 應委派為 deleteRequested(id) 並彈出 alert
+        await store.send(.deleteTapped(rt.id))
+        await store.receive(\.deleteRequested) {
+            $0.alert = AlertState {
+                TextState(String(localized: "alert_delete_recurring_transaction"))
+            } actions: {
+                ButtonState(role: .destructive, action: .deleteConfirmed(rt.id)) {
+                    TextState(String(localized: "common_delete"))
+                }
+                ButtonState(role: .cancel) {
+                    TextState(String(localized: "common_cancel"))
+                }
+            } message: {
+                TextState(String(localized: "alert_delete_recurring_transaction_message"))
+            }
+        }
+    }
+
+    // MARK: - form delegate saved reload
+
+    @Test("form delegate saved 觸發 listRecurring 並 reload items")
+    func testFormDelegateSavedReloads() async {
+        let rt = Self.sample()
+        var initialState = RecurringTransactionManagementFeature.State(items: [rt])
+        initialState.form = RecurringTransactionFormFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            RecurringTransactionManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listRecurring = { [rt] }
+            // 需 form 的 listRecurring（task effect）
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+        }
+        await MainActor.run {
+            store.exhaustivity = .off
+        }
+
+        await store.send(.form(.presented(.delegate(.saved))))
+
+        await store.receive(\.loaded) {
+            $0.items = [rt]
+        }
+    }
+
+    // MARK: - alert 取消負向路徑
+
+    @Test("alert cancel 取消刪除 → deleteRecurring 不被呼叫、無 loaded action")
+    func testAlertCancelDoesNotDelete() async {
+        let rt = Self.sample()
+        var initialState = RecurringTransactionManagementFeature.State(items: [rt])
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_delete_recurring_transaction"))
+        } actions: {
+            ButtonState(role: .destructive, action: RecurringTransactionManagementFeature.Action.Alert.deleteConfirmed(rt.id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(localized: "alert_delete_recurring_transaction_message"))
+        }
+
+        let deleteRecurringCalled: LockIsolated<Bool> = LockIsolated(false)
+
+        let store = await TestStore(initialState: initialState) {
+            RecurringTransactionManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.deleteRecurring = { _ in deleteRecurringCalled.setValue(true) }
+        }
+
+        // 按下「取消」按鈕（PresentationAction.dismiss）
+        await store.send(.alert(.dismiss)) {
+            $0.alert = nil
+        }
+
+        // deleteRecurring 不應被呼叫
+        #expect(deleteRecurringCalled.value == false, "取消刪除時 deleteRecurring 不應被呼叫")
+        // 沒有 .loaded action 被 receive 到（TestStore exhaustive 會自動驗證）
+    }
+
     // P0-1 smoke: edit mode form state carries correct firstRunDate
     @Test("edit mode form state reflects existing nextDueDate date portion")
     func testEditFormStateReflectsExistingNextDueDate() async {

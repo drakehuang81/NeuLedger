@@ -105,6 +105,26 @@ struct CategoryManagementFeatureTests {
         }
     }
 
+    // MARK: - categoryTapped
+
+    @Test("categoryTapped presents edit form with the tapped category")
+    func testCategoryTappedPresentsEditForm() async throws {
+        var initialState = CategoryManagementFeature.State()
+        initialState.categories = [Self.customExpenseCategory]
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        }
+
+        await store.send(.categoryTapped(Self.customExpenseCategory)) {
+            $0.addEdit = AddEditCategoryFeature.State(mode: .edit(Self.customExpenseCategory))
+        }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
+
     // MARK: - Delete Custom Category
 
     @Test("deleteRequested for custom category shows confirmation alert")

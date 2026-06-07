@@ -372,6 +372,21 @@ struct AccountManagementFeatureTests {
         }
     }
 
+    @Test("addEdit dismissed clears sheet without notifying parent or reloading accounts")
+    func testAddEditDelegateDismissedClearsSheet() async throws {
+        var initialState = AccountManagementFeature.State()
+        initialState.addEdit = AddEditAccountFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // No delegate.accountsChanged or accountsLoaded expected — dismissed 只清 sheet
+    }
+
     @Test("deleteConfirmed notifies parent via delegate.accountsChanged")
     func testDeleteConfirmedNotifiesDelegate() async throws {
         let id = Self.cashAccount.id

@@ -314,6 +314,79 @@ struct NotificationSettingsFeatureTests {
         #expect(openAppSettingsCalled.value == 1, "openAppSettings 應被呼叫一次")
     }
 
+    // MARK: - Budget Warning Toggle (Authorized)
+
+    @Test("budgetWarningToggled(true) 已授權 → setWarningEnabled(true) 被呼叫、state 更新")
+    func testBudgetWarningToggleOnAuthorized() async throws {
+        let setWarningEnabledCalled: LockIsolated<Bool?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: NotificationSettingsFeature.State(isAuthorized: true)
+        ) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.planningClient.setWarningEnabled = { val in setWarningEnabledCalled.setValue(val) }
+        }
+
+        await store.send(.budgetWarningToggled(true)) {
+            $0.budgetWarningEnabled = true
+        }
+
+        #expect(setWarningEnabledCalled.value == true, "setWarningEnabled(true) 應被呼叫")
+    }
+
+    @Test("budgetWarningToggled(false) 已授權 → setWarningEnabled(false) 被呼叫、state 更新")
+    func testBudgetWarningToggleOffAuthorized() async throws {
+        let setWarningEnabledCalled: LockIsolated<Bool?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: NotificationSettingsFeature.State(
+                budgetWarningEnabled: true,
+                isAuthorized: true
+            )
+        ) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.planningClient.setWarningEnabled = { val in setWarningEnabledCalled.setValue(val) }
+        }
+
+        await store.send(.budgetWarningToggled(false)) {
+            $0.budgetWarningEnabled = false
+        }
+
+        #expect(setWarningEnabledCalled.value == false, "setWarningEnabled(false) 應被呼叫")
+    }
+
+    // MARK: - reminderDateChanged when disabled (guard early-return)
+
+    @Test("reminderDateChanged 在 dailyReminderEnabled==false 時仍 persist setReminderTime 但不呼叫 scheduleDailyReminder")
+    func testReminderDateChangedWhenDisabled() async throws {
+        let setReminderTimeCalled: LockIsolated<Int> = LockIsolated(0)
+        let scheduleDailyReminderCalled: LockIsolated<Int> = LockIsolated(0)
+
+        // dailyReminderEnabled = false（預設），guard 應 early-return
+        let store = await TestStore(
+            initialState: NotificationSettingsFeature.State(isAuthorized: true)
+        ) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.setReminderTime = { _ in
+                setReminderTimeCalled.withValue { $0 += 1 }
+            }
+            $0.platformClient.scheduleDailyReminder = {
+                scheduleDailyReminderCalled.withValue { $0 += 1 }
+            }
+        }
+
+        let newDate = Calendar.current.date(from: DateComponents(hour: 9, minute: 30))!
+        await store.send(.reminderDateChanged(newDate)) {
+            $0.reminderDate = newDate
+        }
+
+        #expect(setReminderTimeCalled.value == 1, "setReminderTime 應被持久化（無論是否啟用）")
+        #expect(scheduleDailyReminderCalled.value == 0, "dailyReminderEnabled=false 時不應排程通知")
+    }
+
     // MARK: - Budget Warning Threshold
 
     @Test("warningThresholdChanged persists without triggering notification")

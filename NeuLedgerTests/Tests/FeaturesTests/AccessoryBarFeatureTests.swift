@@ -123,6 +123,45 @@ struct AccessoryBarAIInputTests {
         // aiInputText is empty by default → guard returns before extraction; no state change
         await store.send(.aiInputSubmitted)
     }
+
+    @Test("aiInputSubmitted success path: clears stale error, sets loading, extracts and emits delegate")
+    func submitSuccessPathExtractsAndEmitsDelegate() async {
+        let extracted = ExtractedTransaction(
+            amount: 200,
+            suggestedCategory: "餐飲",
+            description: "晚餐",
+            type: "expense"
+        )
+
+        // Precondition: state has non-empty text AND a stale aiInputError from a previous attempt
+        var initial = AccessoryBarFeature.State()
+        initial.aiInputText = "晚餐兩百元"
+        initial.aiInputError = "上次擷取失敗"
+        initial.isAIInputExpanded = true
+
+        let store = await TestStore(initialState: initial) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.extractFromText = { _ in extracted }
+        }
+
+        // 1. Send the submit action
+        await store.send(.aiInputSubmitted) {
+            // Reducer synchronously: isAIInputLoading = true, aiInputError = nil
+            $0.isAIInputLoading = true
+            $0.aiInputError = nil
+        }
+
+        // 2. Receive the aiExtractionCompleted(.success) from the effect
+        await store.receive(.aiExtractionCompleted(.success(extracted))) {
+            $0.isAIInputExpanded = false
+            $0.aiInputText = ""
+            $0.isAIInputLoading = false
+        }
+
+        // 3. Receive the delegate action that parent will handle
+        await store.receive(.delegate(.transactionExtracted(extracted)))
+    }
 }
 
 @Suite("AccessoryBarFeature — accessory mode")

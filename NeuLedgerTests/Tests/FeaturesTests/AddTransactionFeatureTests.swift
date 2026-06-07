@@ -667,6 +667,94 @@ struct AddTransactionVoiceTests {
     }
 }
 
+// MARK: - B4 補強：typeChanged、recurringFrequencyChanged、categorySelected、accountSelected
+
+@Suite("AddTransactionFeature — typeChanged / recurringFrequencyChanged / selection")
+struct AddTransactionTypeAndSelectionTests {
+
+    @Test("typeChanged 設定 type 並重置 categoryId")
+    func typeChangedResetsCategory() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.categoryId = UUID(uuidString: "EEEEEEEE-0000-0000-0000-000000000001")
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        await store.send(.typeChanged(.income)) {
+            $0.type = .income
+            $0.categoryId = nil // 切換 type 後 categoryId 應被重置
+        }
+    }
+
+    @Test("recurringFrequencyChanged 設定指定 frequency")
+    func recurringFrequencyChangedSetsFrequency() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.recurringFrequency = .monthly
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        await store.send(.recurringFrequencyChanged(.yearly)) {
+            $0.recurringFrequency = .yearly
+        }
+    }
+
+    @Test("accountSelected 清除 accountError 與 transferError")
+    func accountSelectedClearsErrors() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.accountError = "請選擇帳戶"
+        initial.transferError = "來源與目標不可相同"
+        let accountId = "FFFFFFFF-0000-0000-0000-000000000001"
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        await store.send(.accountSelected(accountId)) {
+            $0.accountId = accountId
+            $0.accountError = nil
+            $0.transferError = nil
+        }
+    }
+
+    @Test("categorySelected 清除 categoryError")
+    func categorySelectedClearsCategoryError() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.categoryError = "請選擇分類"
+        let categoryId = UUID(uuidString: "FFFFFFFF-0000-0000-0000-000000000002")!
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        await store.send(.categorySelected(categoryId)) {
+            $0.categoryId = categoryId
+            $0.categoryError = nil
+        }
+    }
+}
+
 // MARK: - B3 補強：categorySuggestionsReceived success / failure
 
 @Suite("AddTransactionFeature — categorySuggestionsReceived")

@@ -153,6 +153,42 @@ struct MainTabFeatureTests {
         }
     }
 
+    // MARK: - B4 補強：tabSelected 連動 isAccessoryVisible
+
+    @Test("tabSelected(.settings) 在 path 為空時 isAccessoryVisible = true")
+    func tabSelectedSettingsPathEmptyIsAccessoryVisible() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+        initial.showAccessoryBar = true
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.tabSelected(.settings)) {
+            $0.selectedTab = .settings
+            #expect($0.isAccessoryVisible == true) // settings.path is empty
+        }
+    }
+
+    @Test("tabSelected(.settings) 在 settings.path 非空時 isAccessoryVisible = false")
+    func tabSelectedSettingsPathNonEmptyIsAccessoryHidden() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+        initial.showAccessoryBar = true
+        // Push an AccountManagement state into settings.path
+        initial.settings.path.append(.accountManagement(AccountManagementFeature.State()))
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.tabSelected(.settings)) {
+            $0.selectedTab = .settings
+            #expect($0.isAccessoryVisible == false) // settings.path 非空
+        }
+    }
+
     @Test("savedRecurringConfirmation does not call updateRecurring when id not found")
     func savedRecurringConfirmationSkipsWhenIdNotFound() async {
         let missingId = UUID()

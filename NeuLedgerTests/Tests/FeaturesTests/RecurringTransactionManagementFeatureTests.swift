@@ -184,6 +184,21 @@ struct RecurringTransactionManagementFeatureTests {
         #expect(nextComponents.day == 28)
     }
 
+    // MARK: - B4 補強：addButtonTapped 進入新增表單
+
+    @Test("addButtonTapped 設定 state.form 為 .add 模式")
+    func testAddButtonTappedOpensAddForm() async {
+        let store = await TestStore(
+            initialState: RecurringTransactionManagementFeature.State()
+        ) {
+            RecurringTransactionManagementFeature()
+        }
+
+        await store.send(.addButtonTapped) {
+            $0.form = RecurringTransactionFormFeature.State(mode: .add)
+        }
+    }
+
     // MARK: - deleteTapped 委派分支
 
     @Test("deleteTapped 委派為 deleteRequested 並彈出確認 alert")

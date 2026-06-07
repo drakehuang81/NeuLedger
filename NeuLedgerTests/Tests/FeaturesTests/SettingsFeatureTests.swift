@@ -444,6 +444,84 @@ struct SettingsNavigationTests {
         }
     }
 
+    // MARK: - B4 補強：三個導航 action
+
+    @Test("carrierManagementTapped appends carrierManagement to path")
+    func carrierManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.carrierManagementTapped) {
+            $0.path.append(.carrierManagement(CarrierManagementFeature.State()))
+        }
+    }
+
+    @Test("syncSettingsTapped appends syncSettings to path")
+    func syncSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.syncSettingsTapped) {
+            $0.path.append(.syncSettings(SyncSettingsFeature.State()))
+        }
+    }
+
+    @Test("watchSettingsTapped appends watchSettings to path")
+    func watchSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.watchSettingsTapped) {
+            $0.path.append(.watchSettings(WatchSettingsFeature.State()))
+        }
+    }
+
+    // MARK: - B4 補強：四個 picker 旗標 action
+
+    @Test("defaultAccountTapped 設定 isPickingDefaultAccount = true")
+    func defaultAccountTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.defaultAccountTapped) {
+            $0.isPickingDefaultAccount = true
+        }
+    }
+
+    @Test("defaultAccountPickerDismissed 設定 isPickingDefaultAccount = false")
+    func defaultAccountPickerDismissed() async {
+        var initial = SettingsFeature.State()
+        initial.isPickingDefaultAccount = true
+        let store = await TestStore(initialState: initial) {
+            SettingsFeature()
+        }
+        await store.send(.defaultAccountPickerDismissed) {
+            $0.isPickingDefaultAccount = false
+        }
+    }
+
+    @Test("widgetCarrierTapped 設定 isPickingWidgetCarrier = true")
+    func widgetCarrierTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.widgetCarrierTapped) {
+            $0.isPickingWidgetCarrier = true
+        }
+    }
+
+    @Test("widgetCarrierPickerDismissed 設定 isPickingWidgetCarrier = false")
+    func widgetCarrierPickerDismissed() async {
+        var initial = SettingsFeature.State()
+        initial.isPickingWidgetCarrier = true
+        let store = await TestStore(initialState: initial) {
+            SettingsFeature()
+        }
+        await store.send(.widgetCarrierPickerDismissed) {
+            $0.isPickingWidgetCarrier = false
+        }
+    }
+
 }
 
 @Suite("SettingsFeature — child delegate sync")

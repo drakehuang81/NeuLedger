@@ -107,6 +107,37 @@ struct OnboardingFeatureTests {
         }
     }
 
+    // ── B4 補強：零帳戶路徑 ────────────────────────────────────────────
+
+    @Test("finishOnboarding 在 selectedTypes 與 customAccounts 皆為空時呼叫 setupAccounts([])")
+    func testFinishOnboardingZeroAccounts() async {
+        let captured = LockIsolated<[Account]>([])
+        let clock = TestClock()
+
+        // 空 selectedTypes + 空 customAccounts
+        let store = await TestStore(
+            initialState: OnboardingFeature.State(
+                currentStep: .done,
+                selectedTypes: [],
+                customAccounts: []
+            )
+        ) {
+            OnboardingFeature()
+        } withDependencies: {
+            $0.ledgerClient.setupAccounts = { accounts in
+                captured.withValue { $0 = accounts }
+            }
+            $0.platformClient.markOnboardingComplete = {}
+            $0.continuousClock = clock
+        }
+
+        await store.send(.finishOnboarding)
+        await clock.advance(by: .milliseconds(1600))
+        await store.receive(\.delegate.onboardingCompleted)
+
+        #expect(captured.value.isEmpty, "零帳戶時 setupAccounts 應以空陣列呼叫")
+    }
+
     // ── Finish flow (ready → done → setup accounts → delegate) ───────
 
     @Test("nextButtonTapped on ready triggers finishOnboarding and writes accounts")

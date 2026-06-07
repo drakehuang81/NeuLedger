@@ -248,6 +248,26 @@ struct TransactionsFeatureTests {
         #expect(captured.value == activeFilter)
     }
 
+    // MARK: - B3 補強：addTransaction delegate dismissed
+
+    @Test("addTransaction.delegate.dismissed closes the addTransaction sheet")
+    func testAddTransactionDelegateDismissedClosesSheet() async {
+        var initial = TransactionsFeature.State()
+        initial.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+
+        await store.send(.addTransaction(.presented(.delegate(.dismissed)))) {
+            $0.addTransaction = nil
+        }
+    }
+
+    // 注意：Filter.Delegate.dismissed 在 A 波重構中已從 FilterFeature 刪除（FilterFeature 現在
+    // 只有 .filterApplied），TransactionsFeature 不再有 .filter(.presented(.delegate(.dismissed)))
+    // handler。此項跳過，符合 B3 任務說明「Filter 的 dismissed 已在 A3 刪除」的指示。
+
     // MARK: - Context Action
 
     @Test("contextActionTapped presents addTransaction sheet in .add(.expense) mode")

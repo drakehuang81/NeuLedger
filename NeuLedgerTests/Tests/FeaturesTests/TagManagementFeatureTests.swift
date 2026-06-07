@@ -176,6 +176,21 @@ struct TagManagementFeatureTests {
 
     // MARK: - addEdit Delegate
 
+    @Test("addEdit delegate dismissed closes sheet without reloading tags")
+    func testAddEditDelegateDismissedClearsSheet() async throws {
+        var initialState = TagManagementFeature.State()
+        initialState.addEdit = AddEditTagFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            TagManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // 沒有 tagsLoaded 預期 — dismissed 只清 sheet
+    }
+
     @Test("addEdit delegate saved closes sheet and reloads tags via listTags")
     func testAddEditDelegateSavedClosesAndReloadsTags() async throws {
         var initialState = TagManagementFeature.State()

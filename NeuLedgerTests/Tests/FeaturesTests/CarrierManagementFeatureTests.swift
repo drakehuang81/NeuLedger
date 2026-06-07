@@ -640,4 +640,90 @@ struct CarrierManagementFeatureTests {
         }
         #expect(listAllCalled.value == true)
     }
+
+    // MARK: - editTapped
+
+    @Test("editTapped presents edit form with the tapped carrier")
+    func testEditTappedPresentsEditForm() async {
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.editTapped(Self.carrierA)) {
+            $0.addEdit = AddEditCarrierFeature.State(mode: .edit(Self.carrierA))
+        }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
+
+    // MARK: - addEdit dismissed
+
+    @Test("addEdit delegate dismissed clears sheet without reloading carriers")
+    func testAddEditDelegateDismissedClearsSheet() async {
+        var initial = CarrierManagementFeature.State()
+        initial.addEdit = AddEditCarrierFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // No carriersLoaded expected — dismissed 只清 sheet
+    }
+
+    // MARK: - deleteConfirmed catch 錯誤路徑
+
+    @Test("deleteConfirmed 刪除失敗 → catch 仍呼叫 listAll 回復 carriers 清單")
+    func testDeleteConfirmedCatchRecoversCarriers() async {
+        struct DeleteError: Error {}
+
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+        initial.alert = AlertState {
+            TextState(String(localized: "alert_delete_carrier"))
+        } actions: {
+            ButtonState(role: .destructive, action: CarrierManagementFeature.Action.Alert.deleteConfirmed(Self.carrierA.id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(format: String(localized: "alert_delete_carrier_message"), Self.carrierA.name))
+        }
+
+        let listAllCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.delete = { _ in throw DeleteError() }
+            $0.carrierClient.listAll = {
+                listAllCalled.withValue { $0 += 1 }
+                return [Self.carrierA, Self.carrierB]
+            }
+            $0.carrierClient.activeForWidget = { nil }
+        }
+        // expandedCarrierId 初始即 nil；alert/delegate 時序在並行時有差異，用 off 跳過精確 state 比對
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.alert(.presented(.deleteConfirmed(Self.carrierA.id))))
+
+        // delegate 在 .merge 中優先發出（.send 是同步的）
+        await store.receive(\.delegate.carriersChanged)
+
+        // catch 路徑 — 刪除失敗後仍用 listAll 回復清單
+        await store.receive(\.carriersLoaded) {
+            $0.carriers = [Self.carrierA, Self.carrierB]
+        }
+
+        #expect(listAllCalled.value >= 1, "catch 路徑應呼叫 listAll 回復清單")
+    }
 }

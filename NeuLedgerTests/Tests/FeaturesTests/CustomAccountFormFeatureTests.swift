@@ -40,8 +40,6 @@ struct CustomAccountFormFeatureTests {
 
         await store.send(.submitTapped)
         await store.receive(\.delegate.submitted)
-        // verify payload via captured delegate value:
-        // (TestStore's `.receive` does not let us inspect by default, so use a ref-cell pattern instead)
     }
 
     @Test("submitTapped delegate carries the expected draft fields")
@@ -52,7 +50,6 @@ struct CustomAccountFormFeatureTests {
             initialState: CustomAccountFormFeature.State(name: "  Visa  ", type: .creditCard, color: "#FF2D55")
         ) {
             CustomAccountFormFeature()
-                ._printChanges()
         } withDependencies: {
             $0.uuid = .constant(fixedUUID)
         }

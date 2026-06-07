@@ -123,6 +123,72 @@ struct MainTabFeatureTests {
         #expect(updated?.nextDueDate == newDate)
     }
 
+    // MARK: - B3 補強：delegate 同步
+
+    @Test("settings.delegate.accessoryBarVisibilityChanged syncs showAccessoryBar to MainTab state")
+    func settingsDelegateAccessoryBarVisibilityChangedSyncsState() async {
+        var initial = MainTabFeature.State()
+        initial.showAccessoryBar = true
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.settings(.delegate(.accessoryBarVisibilityChanged(false)))) {
+            $0.showAccessoryBar = false
+        }
+    }
+
+    @Test("dashboard.delegate.seeAllTransactionsTapped switches selectedTab to .transactions")
+    func dashboardDelegateSeeAllTransactionsTappedSwitchesTab() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.dashboard(.delegate(.seeAllTransactionsTapped))) {
+            $0.selectedTab = .transactions
+        }
+    }
+
+    // MARK: - B4 補強：tabSelected 連動 isAccessoryVisible
+
+    @Test("tabSelected(.settings) 在 path 為空時 isAccessoryVisible = true")
+    func tabSelectedSettingsPathEmptyIsAccessoryVisible() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+        initial.showAccessoryBar = true
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.tabSelected(.settings)) {
+            $0.selectedTab = .settings
+            #expect($0.isAccessoryVisible == true) // settings.path is empty
+        }
+    }
+
+    @Test("tabSelected(.settings) 在 settings.path 非空時 isAccessoryVisible = false")
+    func tabSelectedSettingsPathNonEmptyIsAccessoryHidden() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+        initial.showAccessoryBar = true
+        // Push an AccountManagement state into settings.path
+        initial.settings.path.append(.accountManagement(AccountManagementFeature.State()))
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.tabSelected(.settings)) {
+            $0.selectedTab = .settings
+            #expect($0.isAccessoryVisible == false) // settings.path 非空
+        }
+    }
+
     @Test("savedRecurringConfirmation does not call updateRecurring when id not found")
     func savedRecurringConfirmationSkipsWhenIdNotFound() async {
         let missingId = UUID()

@@ -108,4 +108,68 @@ struct DashboardFeatureSectionPhaseTests {
             $0.accountsPhase = .failed("y")
         }
     }
+
+    // MARK: - B3 補強：analysisShortcutTapped 導航
+
+    @Test("analysisShortcutTapped appends .analysis to path with current selectedAccountID")
+    func testAnalysisShortcutTappedWithSelectedAccount() async {
+        let accountId = "ACCT-0001"
+        var initial = DashboardFeature.State()
+        initial.selectedAccountID = accountId
+
+        let store = await TestStore(initialState: initial) {
+            DashboardFeature()
+        }
+
+        await store.send(.analysisShortcutTapped) {
+            $0.path.append(.analysis(AnalysisFeature.State(selectedAccountId: accountId)))
+        }
+    }
+
+    @Test("analysisShortcutTapped appends .analysis with nil accountId when no account selected")
+    func testAnalysisShortcutTappedWithNoAccount() async {
+        var initial = DashboardFeature.State()
+        initial.selectedAccountID = nil
+
+        let store = await TestStore(initialState: initial) {
+            DashboardFeature()
+        }
+
+        await store.send(.analysisShortcutTapped) {
+            $0.path.append(.analysis(AnalysisFeature.State(selectedAccountId: nil)))
+        }
+    }
+
+    // MARK: - B3 補強：retrySection(.accounts)
+
+    @Test("retrySection(.accounts) resets accountsPhase to loading and reloads accounts")
+    func testRetryAccounts() async {
+        let sampleAccount = Account(
+            id: "00000000-0000-0000-0000-000000000099",
+            name: "現金", type: .cash, icon: "banknote", color: "#34C759"
+        )
+        var initial = DashboardFeature.State()
+        initial.accountsPhase = .failed("err")
+
+        let store = await TestStore(initialState: initial) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [sampleAccount] }
+            // accountsUpdated 後 reducer 還會呼叫 ledger.balances()
+            $0.ledgerClient.balances = { [sampleAccount.id: 500] }
+        }
+
+        await store.send(.retrySection(.accounts)) {
+            $0.accountsPhase = .loading
+        }
+        // accountsEffect → accountsUpdated（phase = .loaded）
+        await store.receive(\.accountsUpdated) {
+            $0.accounts = [sampleAccount]
+            $0.accountsPhase = .loaded
+        }
+        // accountsUpdated → 自動發起 balances() → accountBalancesComputed
+        await store.receive(\.accountBalancesComputed) {
+            $0.accountBalances = [sampleAccount.id: 500]
+        }
+    }
 }

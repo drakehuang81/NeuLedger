@@ -148,6 +148,82 @@ struct TransactionDetailFeatureTests {
         await store.skipReceivedActions(strict: false)
     }
 
+    // MARK: - B4 補強：dismiss、editTransaction dismissed、deleteFailureAlert dismiss、task 失敗
+
+    @Test("dismiss action calls DismissEffect")
+    func testDismissCallsDismissEffect() async {
+        let dismissed = LockIsolated(false)
+        let store = await TestStore(
+            initialState: TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        ) {
+            TransactionDetailFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+
+        await store.send(.dismiss)
+        await store.finish()
+        #expect(dismissed.value == true)
+    }
+
+    @Test("editTransaction delegate dismissed clears editTransaction sheet")
+    func testEditTransactionDismissedClearsSheet() async {
+        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        initialState.editTransaction = AddTransactionFeature.State(mode: .edit(Self.sampleTransaction))
+
+        let store = await TestStore(initialState: initialState) {
+            TransactionDetailFeature()
+        }
+
+        await store.send(.editTransaction(.presented(.delegate(.dismissed)))) {
+            $0.editTransaction = nil
+        }
+    }
+
+    @Test("deleteFailureAlert dismiss clears the alert")
+    func testDeleteFailureAlertDismissClearsAlert() async {
+        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        initialState.deleteFailureAlert = AlertState {
+            TextState("transaction_detail_delete_failed_title")
+        } actions: {
+            ButtonState(role: .cancel, action: .dismiss) {
+                TextState("common_ok")
+            }
+        } message: {
+            TextState("transaction_detail_delete_failed_body")
+        }
+
+        let store = await TestStore(initialState: initialState) {
+            TransactionDetailFeature()
+        }
+
+        await store.send(.deleteFailureAlert(.presented(.dismiss))) {
+            $0.deleteFailureAlert = nil
+        }
+    }
+
+    @Test(".task 中 detailStats 拋錯時 receive insightFailed 並清 insight")
+    func testTaskInsightsClientThrowSendsInsightFailed() async {
+        struct InsightError: Error {}
+        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        initialState.insight = TransactionInsight(kind: .fallback(monthlyCategoryCount: 1))
+
+        let store = await TestStore(initialState: initialState) {
+            TransactionDetailFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAccounts = { [Self.account] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.detailStats = { _ in throw InsightError() }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        await store.receive(\.insightFailed) {
+            $0.insight = nil
+        }
+        await store.finish()
+    }
+
     @Test("deleteConfirmed enters pending state; window expiry triggers delete + delegate")
     func testDeleteConfirmedCallsDeleteAndDismisses() async {
         let deletedId: LockIsolated<Transaction.ID?> = LockIsolated(nil)

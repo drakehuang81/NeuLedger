@@ -444,6 +444,84 @@ struct SettingsNavigationTests {
         }
     }
 
+    // MARK: - B4 補強：三個導航 action
+
+    @Test("carrierManagementTapped appends carrierManagement to path")
+    func carrierManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.carrierManagementTapped) {
+            $0.path.append(.carrierManagement(CarrierManagementFeature.State()))
+        }
+    }
+
+    @Test("syncSettingsTapped appends syncSettings to path")
+    func syncSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.syncSettingsTapped) {
+            $0.path.append(.syncSettings(SyncSettingsFeature.State()))
+        }
+    }
+
+    @Test("watchSettingsTapped appends watchSettings to path")
+    func watchSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.watchSettingsTapped) {
+            $0.path.append(.watchSettings(WatchSettingsFeature.State()))
+        }
+    }
+
+    // MARK: - B4 補強：四個 picker 旗標 action
+
+    @Test("defaultAccountTapped 設定 isPickingDefaultAccount = true")
+    func defaultAccountTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.defaultAccountTapped) {
+            $0.isPickingDefaultAccount = true
+        }
+    }
+
+    @Test("defaultAccountPickerDismissed 設定 isPickingDefaultAccount = false")
+    func defaultAccountPickerDismissed() async {
+        var initial = SettingsFeature.State()
+        initial.isPickingDefaultAccount = true
+        let store = await TestStore(initialState: initial) {
+            SettingsFeature()
+        }
+        await store.send(.defaultAccountPickerDismissed) {
+            $0.isPickingDefaultAccount = false
+        }
+    }
+
+    @Test("widgetCarrierTapped 設定 isPickingWidgetCarrier = true")
+    func widgetCarrierTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.widgetCarrierTapped) {
+            $0.isPickingWidgetCarrier = true
+        }
+    }
+
+    @Test("widgetCarrierPickerDismissed 設定 isPickingWidgetCarrier = false")
+    func widgetCarrierPickerDismissed() async {
+        var initial = SettingsFeature.State()
+        initial.isPickingWidgetCarrier = true
+        let store = await TestStore(initialState: initial) {
+            SettingsFeature()
+        }
+        await store.send(.widgetCarrierPickerDismissed) {
+            $0.isPickingWidgetCarrier = false
+        }
+    }
+
 }
 
 @Suite("SettingsFeature — child delegate sync")
@@ -595,6 +673,102 @@ struct SettingsWipeAllDataTests {
         await store.receive(\.wipeAllDataFailed) {
             $0.isWipingAllData = false
             $0.wipeAllDataError = "wipe failed"
+        }
+    }
+}
+
+// MARK: - Seed Random Data
+
+@Suite("SettingsFeature — seed random data")
+struct SettingsSeedRandomDataTests {
+
+    private static let sampleAccount = Account(
+        name: "測試帳戶", type: .cash, icon: "banknote", color: "#34C759", sortOrder: 1000
+    )
+
+    @Test("seedRandomDataTapped 執行 seeding、完成後 receive seedRandomDataCompleted 並鏈式 reload accountsLoaded")
+    func testSeedRandomDataCompletedChain() async throws {
+        let createAccountCalled: LockIsolated<Int> = LockIsolated(0)
+        let recordCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createAccount = { _ in
+                createAccountCalled.withValue { $0 += 1 }
+            }
+            $0.ledgerClient.record = { _ in
+                recordCalled.withValue { $0 += 1 }
+            }
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount] }
+        }
+        // seedRandomDataResult 帶隨機數字；exhaustive off + 在 receive closure 中用 = 接受任意值
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.seedRandomDataTapped)
+
+        await store.receive(\.seedRandomDataCompleted) {
+            // exhaustive=off：只需確認 isSeedingRandomData=false；result 為隨機字串直接接受
+            $0.isSeedingRandomData = false
+        }
+
+        await store.receive(\.accountsLoaded)
+
+        // 驗證 side effect 計數
+        #expect(createAccountCalled.value >= 1, "至少應建立 1 個帳戶")
+        #expect(recordCalled.value >= 1, "至少應記錄 1 筆交易（categories 為空故 categoryId = nil，仍可 record）")
+    }
+
+    @Test("seedRandomDataTapped 進行中再次觸發不應重入（guard isSeedingRandomData）")
+    func testSeedRandomDataReentryGuard() async throws {
+        var initialState = SettingsFeature.State()
+        initialState.isSeedingRandomData = true
+
+        let createAccountCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createAccount = { _ in
+                createAccountCalled.withValue { $0 += 1 }
+            }
+            $0.ledgerClient.listActiveAccounts = { [] }
+        }
+
+        // 已在 seeding 中，再次觸發應 no-op（直接 return .none）
+        await store.send(.seedRandomDataTapped)
+        // 無任何 receive 期望 → 如果有 effect 啟動，TestStore 會失敗
+
+        #expect(createAccountCalled.value == 0, "重入時不應呼叫 createAccount")
+    }
+
+    @Test("seedRandomDataTapped 失敗 → seedRandomDataFailed 寫入 error，isSeedingRandomData 復位")
+    func testSeedRandomDataFailed() async throws {
+        struct SeedError: Error, LocalizedError {
+            var errorDescription: String? { "seed 失敗" }
+        }
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in throw SeedError() }
+            $0.ledgerClient.createAccount = { _ in }
+            $0.ledgerClient.listActiveAccounts = { [] }
+        }
+        // seedRandomDataError 帶 localizedDescription；exhaustive off + 在 receive closure 中接受任意 error 字串
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.seedRandomDataTapped)
+
+        await store.receive(\.seedRandomDataFailed) {
+            // exhaustive=off：只需確認 isSeedingRandomData=false；error 訊息直接接受
+            $0.isSeedingRandomData = false
         }
     }
 }

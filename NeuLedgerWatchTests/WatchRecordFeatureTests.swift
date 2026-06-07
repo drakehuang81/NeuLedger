@@ -182,6 +182,53 @@ struct WatchRecordFeatureTests {
         #expect((store.state.draft?.amount ?? 0) <= 9_999_999)
     }
 
+    @Test("amountConfirmed with positive amount advances to confirm step")
+    func amountConfirmedAdvancesToConfirm() async {
+        let store = TestStore(
+            initialState: WatchRecordFeature.State(
+                categories: [Self.foodCategory],
+                accounts: [Self.cashAccount],
+                defaultAccountId: Self.cashAccount.id,
+                draft: WatchRecordFeature.Draft(
+                    categoryId: Self.foodCategory.id,
+                    accountIdOverride: nil,
+                    amount: 200
+                ),
+                step: .amount
+            )
+        ) {
+            WatchRecordFeature()
+        }
+
+        await store.send(.amountConfirmed) {
+            $0.step = .confirm
+        }
+    }
+
+    @Test("amountConfirmed with zero amount is blocked — state does not change")
+    func amountConfirmedZeroAmountIsBlocked() async {
+        let initialState = WatchRecordFeature.State(
+            categories: [Self.foodCategory],
+            accounts: [Self.cashAccount],
+            defaultAccountId: Self.cashAccount.id,
+            draft: WatchRecordFeature.Draft(
+                categoryId: Self.foodCategory.id,
+                accountIdOverride: nil,
+                amount: 0
+            ),
+            step: .amount
+        )
+        let store = TestStore(initialState: initialState) {
+            WatchRecordFeature()
+        }
+
+        // guard `amount > 0` should early-return; no state mutation expected.
+        await store.send(.amountConfirmed)
+        // State is unchanged — step remains .amount, draft amount stays 0.
+        #expect(store.state.step == .amount)
+        #expect(store.state.draft?.amount == 0)
+    }
+
     @Test("Cancel from confirm clears draft and returns to category")
     func cancelClearsDraft() async {
         let store = TestStore(

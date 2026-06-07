@@ -173,4 +173,28 @@ struct TagManagementFeatureTests {
 
         #expect(deletedId.value == id)
     }
+
+    // MARK: - addEdit Delegate
+
+    @Test("addEdit delegate saved closes sheet and reloads tags via listTags")
+    func testAddEditDelegateSavedClosesAndReloadsTags() async throws {
+        var initialState = TagManagementFeature.State()
+        initialState.addEdit = AddEditTagFeature.State(mode: .add)
+        initialState.tags = [Self.tagA]
+
+        let store = await TestStore(initialState: initialState) {
+            TagManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listTags = { [Self.tagA, Self.tagB] }
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+
+        await store.receive(\.tagsLoaded) {
+            $0.isLoading = false
+            $0.tags = [Self.tagA, Self.tagB]
+        }
+    }
 }

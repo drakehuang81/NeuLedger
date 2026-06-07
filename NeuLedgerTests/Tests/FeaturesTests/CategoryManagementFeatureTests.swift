@@ -147,4 +147,87 @@ struct CategoryManagementFeatureTests {
         await store.send(.deleteRequested(Self.foodCategory.id))
         // No state change — isDefault guard prevents deletion
     }
+
+    // MARK: - Delete Confirmed
+
+    @Test("alert deleteConfirmed calls deleteCategory and reloads categories")
+    func testDeleteConfirmedCallsDeleteAndReloads() async throws {
+        let deletedId: LockIsolated<Domain.Category.ID?> = LockIsolated(nil)
+        let id = Self.customExpenseCategory.id
+
+        // Alert must be present for .alert(.presented(...)) to route through ifLet
+        var initialState = CategoryManagementFeature.State()
+        initialState.categories = [Self.foodCategory, Self.customExpenseCategory]
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_delete_category"))
+        } actions: {
+            ButtonState(role: .destructive, action: CategoryManagementFeature.Action.Alert.deleteConfirmed(id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(format: String(localized: "alert_delete_category_message_name %@"), Self.customExpenseCategory.name))
+        }
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.deleteCategory = { deletedId.setValue($0) }
+            $0.ledgerClient.listCategories = { _ in [Self.foodCategory] }
+        }
+
+        await store.send(.alert(.presented(.deleteConfirmed(id)))) {
+            $0.alert = nil
+        }
+
+        await store.receive(\.categoriesLoaded) {
+            $0.isLoading = false
+            $0.categories = [Self.foodCategory]
+        }
+
+        #expect(deletedId.value == id)
+    }
+
+    // MARK: - addEdit Delegate
+
+    @Test("addEdit delegate saved closes sheet and reloads categories")
+    func testAddEditDelegateSavedClosesAndReloads() async throws {
+        var initialState = CategoryManagementFeature.State()
+        initialState.addEdit = AddEditCategoryFeature.State(mode: .add(.expense))
+        initialState.categories = [Self.foodCategory]
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in
+                [Self.foodCategory, Self.customExpenseCategory]
+            }
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+
+        await store.receive(\.categoriesLoaded) {
+            $0.isLoading = false
+            $0.categories = [Self.foodCategory, Self.customExpenseCategory]
+        }
+    }
+
+    @Test("addEdit delegate dismissed clears sheet without reloading")
+    func testAddEditDelegateDismissedClearsSheetNoReload() async throws {
+        var initialState = CategoryManagementFeature.State()
+        initialState.addEdit = AddEditCategoryFeature.State(mode: .add(.expense))
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // No categoriesLoaded action expected after dismissed
+    }
 }

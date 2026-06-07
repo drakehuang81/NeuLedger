@@ -91,4 +91,60 @@ struct MainTabFeatureTests {
             #expect(state.transactions.addTransaction?.mode == .addPrefilled(extracted))
         }
     }
+
+    // MARK: - savedRecurringConfirmation Tests
+
+    @Test("savedRecurringConfirmation calls updateRecurring with updated nextDueDate when id found")
+    func savedRecurringConfirmationUpdatesNextDueDate() async {
+        let targetId = UUID()
+        let newDate = Date(timeIntervalSince1970: 9_999_999)
+        var template = RecurringTransaction(
+            id: targetId, amount: 5000, note: "水電費",
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: Date(timeIntervalSince1970: 0), isActive: true, createdAt: Date()
+        )
+
+        let updatedSpy = LockIsolated<RecurringTransaction?>(nil)
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.listRecurring = { [template] in [template] }
+            $0.ledgerClient.updateRecurring = { updated in updatedSpy.setValue(updated) }
+        }
+
+        await store.send(.dashboard(.delegate(.savedRecurringConfirmation(targetId, newDate))))
+        // Wait for the async effect to finish
+        await store.finish()
+
+        let updated = updatedSpy.value
+        #expect(updated != nil)
+        #expect(updated?.id == targetId)
+        #expect(updated?.nextDueDate == newDate)
+    }
+
+    @Test("savedRecurringConfirmation does not call updateRecurring when id not found")
+    func savedRecurringConfirmationSkipsWhenIdNotFound() async {
+        let missingId = UUID()
+        let newDate = Date(timeIntervalSince1970: 9_999_999)
+        let otherTemplate = RecurringTransaction(
+            id: UUID(), amount: 1000, note: "其他",
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: Date(timeIntervalSince1970: 0), isActive: true, createdAt: Date()
+        )
+
+        let updatedSpy = LockIsolated<RecurringTransaction?>(nil)
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.listRecurring = { [otherTemplate] in [otherTemplate] }
+            $0.ledgerClient.updateRecurring = { updated in updatedSpy.setValue(updated) }
+        }
+
+        await store.send(.dashboard(.delegate(.savedRecurringConfirmation(missingId, newDate))))
+        await store.finish()
+
+        #expect(updatedSpy.value == nil)
+    }
 }

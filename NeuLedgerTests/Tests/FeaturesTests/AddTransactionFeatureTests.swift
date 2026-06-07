@@ -361,6 +361,133 @@ struct AddTransactionFeatureTests {
     }
 }
 
+// MARK: - Recurring template creation (Task 4 & 5)
+
+@Suite("AddTransactionFeature — recurring template")
+struct AddTransactionRecurringTemplateTests {
+
+    private static let account = Account(
+        id: "00000000-0000-0000-0000-000000000020",
+        name: "現金", type: .cash, icon: "banknote", color: "#34C759"
+    )
+    private static let category = Domain.Category(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000030")!,
+        name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
+    )
+
+    // Task 4：saveTapped 在 .add 模式 + recurringFrequency != nil
+    // → spy ledger.createRecurring，斷言 template 的 frequency / amount / accountId / nextDueDate
+    @Test("saveTapped with recurringFrequency .monthly creates recurring template with correct fields")
+    func testSaveTappedCreatesRecurringTemplateMonthly() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 1_000_000)
+        let expectedNextDue = Calendar.current.date(byAdding: .month, value: 1, to: fixedDate)!
+
+        let createdTemplate = LockIsolated<RecurringTransaction?>(nil)
+        let recordedTx = LockIsolated<Transaction?>(nil)
+
+        var initial = AddTransactionFeature.State(mode: .add(.expense), date: fixedDate)
+        initial.amountText   = "500"
+        initial.accountId    = Self.account.id
+        initial.categoryId   = Self.category.id
+        initial.recurringFrequency = .monthly
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [Self.account] }
+            $0.ledgerClient.listCategories     = { _ in [Self.category] }
+            $0.ledgerClient.defaultAccountId   = { nil }
+            $0.captureClient.isAvailable       = { false }
+            $0.ledgerClient.record             = { recordedTx.setValue($0) }
+            $0.ledgerClient.createRecurring    = { createdTemplate.setValue($0) }
+            $0.dismiss = DismissEffect { }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        // 交易本體必須被記錄
+        #expect(recordedTx.value?.amount == 500)
+
+        // Recurring template 必須被建立，且欄位正確
+        let tpl = try #require(createdTemplate.value)
+        #expect(tpl.frequency   == .monthly)
+        #expect(tpl.amount      == 500)
+        #expect(tpl.accountId   == Self.account.id)
+        // nextDueDate 按 .monthly 計算（+1 個月）
+        #expect(tpl.nextDueDate == expectedNextDue)
+    }
+
+    @Test("saveTapped with recurringFrequency .weekly creates recurring template with weekly nextDueDate")
+    func testSaveTappedCreatesRecurringTemplateWeekly() async throws {
+        let fixedDate = Date(timeIntervalSince1970: 1_000_000)
+        let expectedNextDue = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: fixedDate)!
+
+        let createdTemplate = LockIsolated<RecurringTransaction?>(nil)
+
+        var initial = AddTransactionFeature.State(mode: .add(.expense), date: fixedDate)
+        initial.amountText   = "300"
+        initial.accountId    = Self.account.id
+        initial.categoryId   = Self.category.id
+        initial.recurringFrequency = .weekly
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [Self.account] }
+            $0.ledgerClient.listCategories     = { _ in [Self.category] }
+            $0.ledgerClient.defaultAccountId   = { nil }
+            $0.captureClient.isAvailable       = { false }
+            $0.ledgerClient.record             = { _ in }
+            $0.ledgerClient.createRecurring    = { createdTemplate.setValue($0) }
+            $0.dismiss = DismissEffect { }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        let tpl = try #require(createdTemplate.value)
+        #expect(tpl.frequency   == .weekly)
+        #expect(tpl.nextDueDate == expectedNextDue)
+    }
+
+    // Task 5：負例 — recurringFrequency == nil → createRecurring 不被呼叫
+    @Test("saveTapped with recurringFrequency nil does NOT call createRecurring")
+    func testSaveTappedWithoutRecurringDoesNotCallCreateRecurring() async {
+        let createRecurringCallCount = LockIsolated(0)
+
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.amountText  = "100"
+        initial.accountId   = Self.account.id
+        initial.categoryId  = Self.category.id
+        // recurringFrequency 預設為 nil
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [Self.account] }
+            $0.ledgerClient.listCategories     = { _ in [Self.category] }
+            $0.ledgerClient.defaultAccountId   = { nil }
+            $0.captureClient.isAvailable       = { false }
+            $0.ledgerClient.record             = { _ in }
+            $0.ledgerClient.createRecurring    = { _ in createRecurringCallCount.withValue { $0 += 1 } }
+            $0.dismiss = DismissEffect { }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        // createRecurring 不應被呼叫
+        #expect(createRecurringCallCount.value == 0)
+    }
+}
+
 @Suite("AddTransactionFeature — voice input")
 struct AddTransactionVoiceTests {
 

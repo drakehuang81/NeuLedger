@@ -443,4 +443,28 @@ struct AccountManagementFeatureTests {
             $0.balances = [Self.bankAccount.id: 0]
         }
     }
+
+    // MARK: - accountTapped (edit entry)
+
+    @Test("accountTapped on non-archived account presents edit form with existingNames excluding self")
+    func testAccountTappedPresentsEditFormExcludingSelf() async throws {
+        var initialState = AccountManagementFeature.State()
+        initialState.accounts = [Self.cashAccount, Self.bankAccount]
+
+        let store = await TestStore(initialState: initialState) {
+            AccountManagementFeature()
+        }
+
+        await store.send(.accountTapped(Self.cashAccount)) {
+            // existingNames must exclude the tapped account's own name ("現金")
+            $0.addEdit = AddEditAccountFeature.State(
+                mode: .edit(Self.cashAccount),
+                existingNames: ["銀行"]
+            )
+        }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
 }

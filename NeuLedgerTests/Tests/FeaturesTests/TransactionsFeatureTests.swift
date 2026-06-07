@@ -267,3 +267,167 @@ struct TransactionsFeatureTests {
         #expect(store.state.addTransaction?.type == .expense)
     }
 }
+
+// MARK: - Task 6: searchDebounced → ledger.search path
+
+@Suite("TransactionsFeature — search debounced path")
+struct TransactionsSearchDebouncedTests {
+
+    static let coffeeTransaction = Transaction(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000099")!,
+        amount: 60, date: Date(timeIntervalSince1970: 2_000_000),
+        note: "咖啡拿鐵", accountId: UUID().uuidString, type: .expense
+    )
+
+    // 說明：TransactionsFeature 的 debounce 使用 RunLoop.main（不可控 scheduler），
+    // 無法用 TestClock 推進。這裡直接 send(.searchDebounced) 測試 search effect 本身，
+    // 確保 ledger.search 被正確呼叫，且結果寫入 transactionsLoaded。
+    @Test("searchDebounced calls ledger.search and loads results into state")
+    func testSearchDebouncedCallsSearchAndLoadsResults() async {
+        let searchQuery = LockIsolated<String?>(nil)
+
+        var initial = TransactionsFeature.State()
+        initial.searchText = "咖啡"
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.search = { query in
+                searchQuery.setValue(query)
+                return [EnrichedTransaction(transaction: Self.coffeeTransaction)]
+            }
+        }
+
+        await store.send(.searchDebounced)
+        await store.receive(\.transactionsLoaded) {
+            $0.transactions = [Self.coffeeTransaction]
+        }
+
+        // spy 確認搜尋關鍵字正確傳遞
+        #expect(searchQuery.value == "咖啡")
+    }
+
+    @Test("searchDebounced with no matching results clears transactions to empty")
+    func testSearchDebouncedEmptyQuery() async {
+        // 初始有一筆交易，搜尋後應回傳空陣列，驗證 state.transactions 被清空
+        let nonMatchTx = Transaction(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000FFFF")!,
+            amount: 100, date: Date(timeIntervalSince1970: 1_000_000),
+            note: "晚餐", accountId: UUID().uuidString, type: .expense
+        )
+        var initial = TransactionsFeature.State()
+        initial.transactions = [nonMatchTx]
+        initial.searchText = "無結果"
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.search = { _ in return [] }   // 無符合結果
+        }
+
+        await store.send(.searchDebounced)
+        await store.receive(\.transactionsLoaded) {
+            $0.transactions = []   // state 改變：從有資料 → 空
+            $0.isLoading = false
+        }
+    }
+}
+
+// MARK: - Task 7: detail delegate 三分支
+
+@Suite("TransactionsFeature — detail delegate branches")
+struct TransactionsDetailDelegateTests {
+
+    static let tx1 = Transaction(
+        id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!,
+        amount: 100, date: Date(timeIntervalSince1970: 1_000_000),
+        note: "晚餐", accountId: UUID().uuidString, type: .expense
+    )
+    static let tx2 = Transaction(
+        id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000002")!,
+        amount: 200, date: Date(timeIntervalSince1970: 1_100_000),
+        note: "午餐", accountId: UUID().uuidString, type: .expense
+    )
+
+    // 分支 1：deleted — 從 state.transactions 移除並關閉 detail
+    @Test("detail.delegate.deleted removes the transaction from state and closes detail")
+    func testDetailDelegateDeletedRemovesRow() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.tx1, Self.tx2]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.tx1)
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+
+        await store.send(.detail(.presented(.delegate(.deleted(Self.tx1.id))))) {
+            $0.transactions = [Self.tx2]
+            $0.detail = nil
+        }
+    }
+
+    // 分支 2：updated — 替換該列（命中 firstIndex）並關閉 detail
+    @Test("detail.delegate.updated replaces the row in state and closes detail")
+    func testDetailDelegateUpdatedReplacesRow() async {
+        // 建立更新後的版本（相同 id，不同 amount/note）
+        let updatedTx1 = Transaction(
+            id: Self.tx1.id,
+            amount: 999, date: Self.tx1.date,
+            note: "已修改晚餐", categoryId: nil,
+            accountId: Self.tx1.accountId,
+            toAccountId: nil, type: .expense
+        )
+
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.tx1, Self.tx2]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.tx1)
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+
+        await store.send(.detail(.presented(.delegate(.updated(updatedTx1))))) {
+            $0.transactions = [updatedTx1, Self.tx2]
+            $0.detail = nil
+        }
+    }
+
+    // 分支 3：dismiss — 清 detail 為 nil（手動 dismiss，非系統 .onDismiss）
+    @Test("detail.dismiss clears detail state")
+    func testDetailDismissClearsDetail() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.tx1]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.tx1)
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+
+        await store.send(.detail(.dismiss)) {
+            $0.detail = nil
+        }
+    }
+
+    // updated 負例：id 不在清單中 → transactions 不變、detail 仍關閉
+    @Test("detail.delegate.updated with unknown id leaves transactions unchanged but closes detail")
+    func testDetailDelegateUpdatedUnknownIdNoChange() async {
+        let unknownTx = Transaction(
+            id: UUID(),   // 不在 state.transactions 中
+            amount: 500, date: Date(),
+            note: "不存在", accountId: UUID().uuidString, type: .expense
+        )
+
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.tx1, Self.tx2]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.tx1)
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+
+        await store.send(.detail(.presented(.delegate(.updated(unknownTx))))) {
+            // transactions 不變（firstIndex 命中失敗）
+            $0.detail = nil
+        }
+    }
+}

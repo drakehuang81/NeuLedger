@@ -295,4 +295,158 @@ struct RecurringTransactionFormFeatureTests {
         #expect(nextComponents.month == 2)
         #expect((nextComponents.day ?? 0) <= 29)
     }
+
+    // MARK: - Edit mode save (audit test 6)
+
+    @Test("edit mode saveTapped calls updateRecurring with updated fields and nextDueDate from firstRunDate+notificationTime")
+    func testEditModeSaveTappedUpdatesRecurring() async throws {
+        let fixedNow = Date(timeIntervalSinceReferenceDate: 771_638_400) // 2025-06-15 00:00 UTC
+
+        // Build an existing template (expense, monthly)
+        let existingRT = RecurringTransaction(
+            id: UUID(),
+            amount: 500,
+            note: "舊備註",
+            categoryId: nil,
+            accountId: Self.sampleAccount.id,
+            toAccountId: nil,
+            type: .expense,
+            tags: [],
+            frequency: .monthly,
+            nextDueDate: fixedNow,
+            isActive: true,
+            createdAt: fixedNow
+        )
+
+        // Edit mode init populates state from existing template
+        var initialState = RecurringTransactionFormFeature.State(mode: .edit(existingRT))
+
+        // Simulate user changing amount and note
+        // (we'll send actions to drive this in the store)
+        let updated: LockIsolated<RecurringTransaction?> = LockIsolated(nil)
+
+        let store = await TestStore(initialState: initialState) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+            $0.ledgerClient.updateRecurring = { updated.setValue($0) }
+            $0.dismiss = DismissEffect {}
+        }
+
+        await store.send(.amountChanged("1200")) { $0.amountText = "1200" }
+        await store.send(.noteChanged("新備註")) { $0.note = "新備註" }
+        await store.send(.saveTapped)
+        await store.receive(\.delegate.saved)
+
+        let saved = try #require(updated.value)
+        #expect(saved.id == existingRT.id)
+        #expect(saved.amount == 1200)
+        #expect(saved.note == "新備註")
+        #expect(saved.type == .expense)
+        // nextDueDate = firstRunDate (start of day for existingRT.nextDueDate) + notificationTime (hour:minute from existingRT.nextDueDate)
+        let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: existingRT.nextDueDate)
+        let expectedDate = Calendar.current.date(
+            bySettingHour: timeComponents.hour ?? 9,
+            minute: timeComponents.minute ?? 0,
+            second: 0,
+            of: Calendar.current.startOfDay(for: existingRT.nextDueDate)
+        )!
+        #expect(saved.nextDueDate == expectedDate)
+    }
+
+    // MARK: - Edit mode: transfer type changed to expense nils toAccountId (audit test 7)
+
+    @Test("edit mode: switching type from transfer to expense nils toAccountId on save")
+    func testEditModeTypeChangedFromTransferToExpenseNilsToAccountId() async throws {
+        let fixedNow = Date(timeIntervalSinceReferenceDate: 771_638_400)
+
+        // Existing template is a transfer
+        let existingTransferRT = RecurringTransaction(
+            id: UUID(),
+            amount: 800,
+            note: nil,
+            categoryId: nil,
+            accountId: Self.sampleAccount.id,
+            toAccountId: Self.sampleAccount2.id,
+            type: .transfer,
+            tags: [],
+            frequency: .monthly,
+            nextDueDate: fixedNow,
+            isActive: true,
+            createdAt: fixedNow
+        )
+
+        let updated: LockIsolated<RecurringTransaction?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: RecurringTransactionFormFeature.State(mode: .edit(existingTransferRT))
+        ) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+            $0.ledgerClient.updateRecurring = { updated.setValue($0) }
+            $0.dismiss = DismissEffect {}
+        }
+
+        // State after init should have toAccountId set from the existing template
+        // Verify the edit state loaded the toAccountId
+        await store.send(.typeChanged(.expense)) {
+            $0.type = .expense
+            $0.transferError = nil
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(\.delegate.saved)
+
+        let saved = try #require(updated.value)
+        #expect(saved.type == .expense)
+        // A1 nil-out: non-transfer type must have toAccountId == nil
+        #expect(saved.toAccountId == nil)
+    }
+
+    // MARK: - task loads options (audit test 8)
+
+    @Test("task loads accounts and categories and emits optionsLoaded")
+    func testTaskLoadsOptions() async throws {
+        let expenseCategory = Domain.Category(
+            id: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!,
+            name: "飲食", icon: "fork.knife", color: "#FF3B30", type: .expense, sortOrder: 0, isDefault: true
+        )
+
+        let store = await TestStore(
+            initialState: RecurringTransactionFormFeature.State(mode: .add)
+        ) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount, Self.sampleAccount2] }
+            $0.ledgerClient.listCategories = { _ in [expenseCategory] }
+        }
+
+        await store.send(.task)
+
+        await store.receive(\.optionsLoaded) { state in
+            state.accounts = [Self.sampleAccount, Self.sampleAccount2]
+            state.categories = [expenseCategory]
+        }
+    }
+
+    // MARK: - cancelTapped (audit test 9)
+
+    @Test("cancelTapped emits delegate dismissed and calls dismiss")
+    func testCancelTappedEmitsDelegateDismissed() async throws {
+        let dismissCalled: LockIsolated<Bool> = LockIsolated(false)
+
+        let store = await TestStore(
+            initialState: RecurringTransactionFormFeature.State(mode: .add)
+        ) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect { dismissCalled.setValue(true) }
+        }
+
+        await store.send(.cancelTapped)
+        await store.receive(\.delegate.dismissed)
+
+        #expect(dismissCalled.value == true)
+    }
 }

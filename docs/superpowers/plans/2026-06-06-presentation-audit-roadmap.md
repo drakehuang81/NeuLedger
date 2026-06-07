@@ -84,6 +84,6 @@
 - [x] PR A4 — fix/management-screens-dead-code（PR #29，2026-06-07 merged → integration）
 - [x] PR A5 — fix/ssot-refactors（PR #30，2026-06-07 merged → integration；範圍調整：insightsClient 投影項作廢，依據見 A5 plan）
 - [x] PR B1 — fix/tests-addedit-suites（PR #31，2026-06-07 merged → integration）
-- [ ] PR B2 — fix/tests-high-gaps
-- [ ] PR B3 — fix/tests-medium-gaps
-- [ ] PR B4 — fix/tests-low-gaps
+- [x] PR B2 — fix/tests-high-gaps（PR #32，2026-06-07 merged → integration）
+- [x] PR B3 — fix/tests-medium-gaps（與 B4 合併為 PR #33，2026-06-08 merged → integration）
+- [x] PR B4 — 併入 PR #33（加速裁定）

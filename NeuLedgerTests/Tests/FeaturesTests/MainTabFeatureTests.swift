@@ -123,6 +123,36 @@ struct MainTabFeatureTests {
         #expect(updated?.nextDueDate == newDate)
     }
 
+    // MARK: - B3 補強：delegate 同步
+
+    @Test("settings.delegate.accessoryBarVisibilityChanged syncs showAccessoryBar to MainTab state")
+    func settingsDelegateAccessoryBarVisibilityChangedSyncsState() async {
+        var initial = MainTabFeature.State()
+        initial.showAccessoryBar = true
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.settings(.delegate(.accessoryBarVisibilityChanged(false)))) {
+            $0.showAccessoryBar = false
+        }
+    }
+
+    @Test("dashboard.delegate.seeAllTransactionsTapped switches selectedTab to .transactions")
+    func dashboardDelegateSeeAllTransactionsTappedSwitchesTab() async {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        }
+
+        await store.send(.dashboard(.delegate(.seeAllTransactionsTapped))) {
+            $0.selectedTab = .transactions
+        }
+    }
+
     @Test("savedRecurringConfirmation does not call updateRecurring when id not found")
     func savedRecurringConfirmationSkipsWhenIdNotFound() async {
         let missingId = UUID()

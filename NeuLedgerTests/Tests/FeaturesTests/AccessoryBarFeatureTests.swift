@@ -326,6 +326,66 @@ struct AccessoryBarRecordingTests {
         }
     }
 
+    // MARK: - B3 補強：語音串流 effect 路徑
+
+    @Test("startVoiceSession yield text produces transcriptionUpdated via effect")
+    func voiceSessionYieldTextProducesTranscriptionUpdated() async {
+        // 建立一個 AsyncThrowingStream，先暫停讓 for-await 迴圈有機會啟動，再 yield 文字
+        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+
+        let store = await TestStore(initialState: AccessoryBarFeature.State()) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
+        }
+
+        // 啟動錄音 effect
+        await store.send(.recordingTapped)
+        await store.receive(.recordingStarted) {
+            $0.isRecording = true
+            $0.aiInputError = nil
+        }
+
+        // 用 Task 非同步 yield，讓 effect 的 for-await 迴圈有機會先進入等待狀態
+        // 再接收到文字並送出 transcriptionUpdated
+        Task {
+            continuation.yield("早餐五十五元")
+            continuation.finish()
+        }
+        await store.receive(.transcriptionUpdated("早餐五十五元")) {
+            $0.aiInputText = "早餐五十五元"
+        }
+    }
+
+    @Test("startVoiceSession throw produces transcriptionFailed via effect")
+    func voiceSessionThrowProducesTranscriptionFailed() async {
+        struct FakeRecordingError: Error {}
+        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+
+        let store = await TestStore(initialState: AccessoryBarFeature.State()) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
+        }
+
+        await store.send(.recordingTapped)
+        await store.receive(.recordingStarted) {
+            $0.isRecording = true
+            $0.aiInputError = nil
+        }
+
+        // 從外部 throw error → effect catch 應送出 transcriptionFailed
+        continuation.finish(throwing: FakeRecordingError())
+        await store.receive(.transcriptionFailed) {
+            $0.isRecording = false
+            $0.aiInputError = String(localized: "speech_recognition_failed_error")
+        }
+    }
+
     @Test("aiInputSubmitted is ignored while recording is active")
     func submitIgnoredWhileRecording() async {
         var initial = AccessoryBarFeature.State()

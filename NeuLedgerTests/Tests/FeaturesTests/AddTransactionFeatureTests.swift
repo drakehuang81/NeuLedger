@@ -666,3 +666,152 @@ struct AddTransactionVoiceTests {
         #expect(stopCalled.value)
     }
 }
+
+// MARK: - B3 補強：categorySuggestionsReceived success / failure
+
+@Suite("AddTransactionFeature — categorySuggestionsReceived")
+struct AddTransactionCategorySuggestionsTests {
+
+    private static let food = Domain.Category(
+        id: UUID(uuidString: "DDDDDDDD-0000-0000-0000-000000000001")!,
+        name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
+    )
+    private static let transport = Domain.Category(
+        id: UUID(uuidString: "DDDDDDDD-0000-0000-0000-000000000002")!,
+        name: "交通", icon: "car", color: "#3478F6", type: .expense
+    )
+
+    @Test("categorySuggestionsReceived success filters to existing category names")
+    func categorySuggestionsReceivedSuccessFilters() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        // 提供兩個分類，AI 回傳三個建議（其中「無效」不在清單中）
+        initial.categories = [Self.food, Self.transport]
+        initial.isSuggestingCategory = true
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [Self.food, Self.transport] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { true }
+        }
+
+        let suggestions = CategorySuggestions(suggestions: ["餐飲", "無效分類", "交通"], confidence: "high")
+        await store.send(.categorySuggestionsReceived(.success(suggestions))) {
+            $0.isSuggestingCategory = false
+            // 「無效分類」不在 filteredCategories 中，會被過濾掉
+            $0.suggestedCategoryNames = ["餐飲", "交通"]
+        }
+    }
+
+    @Test("categorySuggestionsReceived failure sets categorySuggestionError and clears isSuggestingCategory")
+    func categorySuggestionsReceivedFailureSetsError() async {
+        struct FakeAIError: Error {}
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.categories = [Self.food]
+        initial.isSuggestingCategory = true
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [Self.food] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { true }
+        }
+
+        await store.send(.categorySuggestionsReceived(.failure(FakeAIError()))) {
+            $0.isSuggestingCategory = false
+            $0.categorySuggestionError = String(localized: "add_transaction_category_suggestion_failed")
+        }
+    }
+}
+
+// MARK: - B3 補強：note binding AI 擷取邏輯（note debounce 說明）
+//
+// AddTransactionFeature 的 note binding → extractFromText 防抖 effect 使用
+// RunLoop.main scheduler（不可用 TestClock 控制）。
+// 此 suite 改用「直接 send backgroundExtractionCompleted 下游 action」驗證
+// 邏輯正確性，並補充 binding.note 設定 isBackgroundParsingNote 的同步行為。
+
+@Suite("AddTransactionFeature — note binding AI extraction logic")
+struct AddTransactionNoteDebounceTests {
+
+    @Test("binding.note non-empty sets isBackgroundParsingNote to true synchronously")
+    func noteBindingNonEmptySetsParsingFlag() async {
+        let store = await TestStore(
+            initialState: AddTransactionFeature.State(mode: .add(.expense))
+        ) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+            $0.captureClient.extractFromText = { _ in ExtractedTransaction() }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        // 送 binding.note — reducer 同步設 isBackgroundParsingNote = true
+        await store.send(\.binding.note, "早餐100元") {
+            $0.note = "早餐100元"
+            $0.isBackgroundParsingNote = true
+        }
+        // RunLoop.main debounce 不可控，不 receive backgroundExtractionCompleted；
+        // 用 finish() 讓 in-flight effect 靜默清理
+        await store.finish()
+    }
+
+    @Test("binding.note cleared cancels noteDebounce and clears isBackgroundParsingNote")
+    func noteBindingEmptyCancelsDebounce() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.note = "早餐100元"
+        initial.isBackgroundParsingNote = true
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        // 清空 note → reducer 應取消 noteDebounce effect，isBackgroundParsingNote 被設為 false
+        await store.send(\.binding.note, "") {
+            $0.note = ""
+            $0.isBackgroundParsingNote = false
+        }
+        // noteDebounce cancel — 無 in-flight effect 需等待
+    }
+
+    @Test("backgroundExtractionCompleted with extracted result fills empty fields")
+    func backgroundExtractionCompletedFillsEmptyFields() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.isBackgroundParsingNote = true
+        // note 有內容但 amountText 為空 → amount 應被填入
+        initial.note = "午餐180元"
+
+        let extracted = ExtractedTransaction(
+            amount: 180,
+            suggestedCategory: nil,
+            description: "午餐180元",
+            type: "expense"
+        )
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        await store.send(.backgroundExtractionCompleted(extracted)) {
+            $0.isBackgroundParsingNote = false
+            $0.amountText = "180"   // 空 amountText 被填入
+        }
+    }
+}

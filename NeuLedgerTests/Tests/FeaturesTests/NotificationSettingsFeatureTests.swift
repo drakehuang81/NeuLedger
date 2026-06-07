@@ -218,6 +218,102 @@ struct NotificationSettingsFeatureTests {
         #expect(state.recurringManagement.items.isEmpty)
     }
 
+    // MARK: - dailyReminder 未授權→授予→重試
+
+    @Test("dailyReminderToggled 未授權、授予 → authorizationStatusLoaded + 重試 → setReminderTime + scheduleDailyReminder 被呼叫")
+    func testDailyReminderUnauthorizedGrantedRetry() async throws {
+        let setReminderTimeCalled: LockIsolated<Int> = LockIsolated(0)
+        let scheduleDailyReminderCalled: LockIsolated<Int> = LockIsolated(0)
+        let setEnabledCalled: LockIsolated<Bool?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: NotificationSettingsFeature.State(isAuthorized: false)
+        ) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.requestNotificationPermission = { true } // 授予
+            $0.platformClient.setReminderTime = { _ in
+                setReminderTimeCalled.withValue { $0 += 1 }
+            }
+            $0.platformClient.scheduleDailyReminder = {
+                scheduleDailyReminderCalled.withValue { $0 += 1 }
+            }
+            $0.platformClient.setDailyReminderEnabled = { val in
+                setEnabledCalled.setValue(val)
+            }
+        }
+
+        // 第一次 send：未授權，觸發請求
+        await store.send(.dailyReminderToggled(true))
+
+        // effect 授予後送 authorizationStatusLoaded(true)
+        await store.receive(\.authorizationStatusLoaded) {
+            $0.isAuthorized = true
+            $0.showPermissionDeniedBanner = false
+        }
+
+        // 接著自動重試送 dailyReminderToggled(true)，這次已授權，走正規路徑
+        await store.receive(.dailyReminderToggled(true)) {
+            $0.dailyReminderEnabled = true
+        }
+
+        #expect(setReminderTimeCalled.value == 1, "setReminderTime 應被呼叫一次（重試時）")
+        #expect(scheduleDailyReminderCalled.value == 1, "scheduleDailyReminder 應被呼叫一次")
+        #expect(setEnabledCalled.value == true, "setDailyReminderEnabled(true) 應被呼叫")
+    }
+
+    // MARK: - budgetWarning 未授權→授予→重試
+
+    @Test("budgetWarningToggled 未授權、授予 → authorizationStatusLoaded + 重試 → setWarningEnabled(true) 被呼叫")
+    func testBudgetWarningUnauthorizedGrantedRetry() async throws {
+        let setWarningEnabledCalled: LockIsolated<Bool?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: NotificationSettingsFeature.State(isAuthorized: false)
+        ) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.requestNotificationPermission = { true } // 授予
+            $0.planningClient.setWarningEnabled = { val in
+                setWarningEnabledCalled.setValue(val)
+            }
+        }
+
+        await store.send(.budgetWarningToggled(true))
+
+        await store.receive(\.authorizationStatusLoaded) {
+            $0.isAuthorized = true
+            $0.showPermissionDeniedBanner = false
+        }
+
+        await store.receive(.budgetWarningToggled(true)) {
+            $0.budgetWarningEnabled = true
+        }
+
+        #expect(setWarningEnabledCalled.value == true, "setWarningEnabled(true) 應被呼叫（重試後已授權路徑）")
+    }
+
+    // MARK: - openSystemSettingsTapped
+
+    @Test("openSystemSettingsTapped 呼叫 platformClient.openAppSettings")
+    func testOpenSystemSettingsTapped() async throws {
+        let openAppSettingsCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(
+            initialState: NotificationSettingsFeature.State()
+        ) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.openAppSettings = {
+                openAppSettingsCalled.withValue { $0 += 1 }
+            }
+        }
+
+        await store.send(.openSystemSettingsTapped)
+
+        #expect(openAppSettingsCalled.value == 1, "openAppSettings 應被呼叫一次")
+    }
+
     // MARK: - Budget Warning Threshold
 
     @Test("warningThresholdChanged persists without triggering notification")

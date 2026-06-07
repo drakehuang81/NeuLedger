@@ -511,6 +511,96 @@ struct SettingsChildDelegateSyncTests {
     }
 }
 
+// MARK: - Wipe All Data
+
+@Suite("SettingsFeature — wipe all data")
+struct SettingsWipeAllDataTests {
+
+    @Test("wipeAllDataTapped 設定確認旗標")
+    func testWipeAllDataTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.wipeAllDataTapped) {
+            $0.isConfirmingWipeAllData = true
+        }
+    }
+
+    @Test("wipeAllDataDismissed 清除確認旗標")
+    func testWipeAllDataDismissed() async {
+        var initialState = SettingsFeature.State()
+        initialState.isConfirmingWipeAllData = true
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        }
+        await store.send(.wipeAllDataDismissed) {
+            $0.isConfirmingWipeAllData = false
+        }
+    }
+
+    @Test("wipeAllDataConfirmed 成功 → receive wipeAllDataCompleted → delegate allDataWiped，旗標復位")
+    func testWipeAllDataConfirmedSuccess() async {
+        let wipeCalled: LockIsolated<Bool> = LockIsolated(false)
+
+        var initialState = SettingsFeature.State()
+        initialState.isConfirmingWipeAllData = true
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.platformClient.wipeAllSyncData = {
+                wipeCalled.setValue(true)
+            }
+        }
+
+        await store.send(.wipeAllDataConfirmed) {
+            $0.isConfirmingWipeAllData = false
+            $0.isWipingAllData = true
+            $0.wipeAllDataError = nil
+        }
+
+        await store.receive(\.wipeAllDataCompleted) {
+            $0.isWipingAllData = false
+        }
+
+        await store.receive(\.delegate.allDataWiped)
+
+        #expect(wipeCalled.value == true, "wipeAllSyncData 應被呼叫一次")
+    }
+
+    @Test("wipeAllDataConfirmed 失敗 → receive wipeAllDataFailed → wipeAllDataError 寫入，isWipingAllData 復位")
+    func testWipeAllDataConfirmedFailure() async {
+        struct WipeError: Error, LocalizedError {
+            var errorDescription: String? { "wipe failed" }
+        }
+
+        var initialState = SettingsFeature.State()
+        initialState.isConfirmingWipeAllData = true
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.platformClient.wipeAllSyncData = {
+                throw WipeError()
+            }
+        }
+
+        await store.send(.wipeAllDataConfirmed) {
+            $0.isConfirmingWipeAllData = false
+            $0.isWipingAllData = true
+            $0.wipeAllDataError = nil
+        }
+
+        await store.receive(\.wipeAllDataFailed) {
+            $0.isWipingAllData = false
+            $0.wipeAllDataError = "wipe failed"
+        }
+    }
+}
+
+// MARK: - Widget Carrier
+
 @Suite("SettingsFeature — widget carrier")
 struct SettingsWidgetCarrierTests {
 

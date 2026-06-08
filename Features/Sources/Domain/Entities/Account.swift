@@ -1,5 +1,21 @@
 import Foundation
 
+// MARK: - Default account resolution
+
+public extension Account {
+    /// Single source of truth for the Watch default-account rule, shared by
+    /// `WatchDefaultAccountResolver` (Core) and `WatchSettingsFeature` (Features):
+    /// honor the stored override only while it still points at an account in
+    /// `activeAccounts`; otherwise fall back to the first one (callers pass
+    /// sortOrder-sorted, non-archived accounts). `nil` when the list is empty.
+    static func resolveDefaultId(stored: Account.ID?, in activeAccounts: [Account]) -> Account.ID? {
+        if let stored, activeAccounts.contains(where: { $0.id == stored }) {
+            return stored
+        }
+        return activeAccounts.first?.id
+    }
+}
+
 /// A representation of a physical or virtual financial account.
 ///
 /// Use `Account` to represent where funds are held, such as physical cash, bank accounts, or digital wallets.

@@ -161,6 +161,98 @@ struct AddEditCarrierFeatureTests {
         #expect(updatedCarrier.value?.name == "更新後名稱")
         #expect(updatedCarrier.value?.id == Self.sampleCarrier.id)
     }
+
+    // MARK: - saveFailed 錯誤路徑
+
+    @Test("saveFailed sets saveError and clears isSaving")
+    func testSaveFailedSetsError() async {
+        struct FakeError: Error, LocalizedError {
+            var errorDescription: String? { "模擬儲存失敗" }
+        }
+
+        var initial = AddEditCarrierFeature.State(mode: .add)
+        initial.barcode = "/ABC1234"
+
+        let store = await TestStore(initialState: initial) {
+            AddEditCarrierFeature()
+        } withDependencies: {
+            $0.carrierClient.create = { _ in throw FakeError() }
+        }
+
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "模擬儲存失敗"
+        }
+    }
+
+    @Test("saveFailed then retry success clears saveError")
+    func testSaveFailedThenRetrySuccess() async {
+        struct FakeError: Error, LocalizedError {
+            var errorDescription: String? { "模擬儲存失敗" }
+        }
+
+        var initial = AddEditCarrierFeature.State(mode: .add)
+        initial.barcode = "/ABC1234"
+
+        let shouldFail = LockIsolated<Bool>(true)
+
+        let store = await TestStore(initialState: initial) {
+            AddEditCarrierFeature()
+        } withDependencies: {
+            $0.carrierClient.create = { _ in
+                if shouldFail.value { throw FakeError() }
+            }
+            $0.dismiss = DismissEffect {}
+        }
+
+        // 第一次失敗
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "模擬儲存失敗"
+        }
+
+        // 改為成功，重試
+        shouldFail.setValue(false)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) {
+            $0.isSaving = false
+            $0.saveError = nil
+        }
+        await store.receive(\.delegate.saved)
+    }
+
+    // MARK: - cancelTapped
+
+    @Test("cancelTapped emits delegate.dismissed")
+    func testCancelTapped() async {
+        let store = await TestStore(
+            initialState: AddEditCarrierFeature.State(mode: .add)
+        ) {
+            AddEditCarrierFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect {}
+        }
+
+        await store.send(.cancelTapped)
+        await store.receive(\.delegate.dismissed)
+    }
+
+    // MARK: - nameChanged setter
+
+    @Test("nameChanged updates state.name")
+    func testNameChanged() async {
+        let store = await TestStore(
+            initialState: AddEditCarrierFeature.State(mode: .add)
+        ) {
+            AddEditCarrierFeature()
+        }
+
+        await store.send(.nameChanged("新載具名稱")) {
+            $0.name = "新載具名稱"
+        }
+    }
 }
 
 @Suite("CarrierManagementFeature Tests")
@@ -290,6 +382,7 @@ struct CarrierManagementFeatureTests {
             $0.alert = nil
             $0.expandedCarrierId = nil  // expanded row is collapsed on confirm
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
         }
@@ -338,6 +431,7 @@ struct CarrierManagementFeatureTests {
             $0.alert = nil
             $0.expandedCarrierId = nil  // expanded row is collapsed on confirm
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierB]
         }
@@ -370,6 +464,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA, Self.carrierB]
         }
@@ -394,6 +489,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA]
         }
@@ -419,6 +515,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.addEdit(.presented(.delegate(.saved)))) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA]
         }
@@ -502,6 +599,7 @@ struct CarrierManagementFeatureTests {
         await store.send(.alert(.presented(.deleteConfirmed(deletedId)))) {
             $0.alert = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [remaining]
         }
@@ -536,9 +634,96 @@ struct CarrierManagementFeatureTests {
         await store.send(\.addEdit.presented.delegate.saved) {
             $0.addEdit = nil
         }
+        await store.receive(\.delegate.carriersChanged)
         await store.receive(\.carriersLoaded) {
             $0.carriers = [saved]
         }
         #expect(listAllCalled.value == true)
+    }
+
+    // MARK: - editTapped
+
+    @Test("editTapped presents edit form with the tapped carrier")
+    func testEditTappedPresentsEditForm() async {
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.editTapped(Self.carrierA)) {
+            $0.addEdit = AddEditCarrierFeature.State(mode: .edit(Self.carrierA))
+        }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
+
+    // MARK: - addEdit dismissed
+
+    @Test("addEdit delegate dismissed clears sheet without reloading carriers")
+    func testAddEditDelegateDismissedClearsSheet() async {
+        var initial = CarrierManagementFeature.State()
+        initial.addEdit = AddEditCarrierFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // No carriersLoaded expected — dismissed 只清 sheet
+    }
+
+    // MARK: - deleteConfirmed catch 錯誤路徑
+
+    @Test("deleteConfirmed 刪除失敗 → catch 仍呼叫 listAll 回復 carriers 清單")
+    func testDeleteConfirmedCatchRecoversCarriers() async {
+        struct DeleteError: Error {}
+
+        var initial = CarrierManagementFeature.State()
+        initial.carriers = [Self.carrierA, Self.carrierB]
+        initial.alert = AlertState {
+            TextState(String(localized: "alert_delete_carrier"))
+        } actions: {
+            ButtonState(role: .destructive, action: CarrierManagementFeature.Action.Alert.deleteConfirmed(Self.carrierA.id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(format: String(localized: "alert_delete_carrier_message"), Self.carrierA.name))
+        }
+
+        let listAllCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(initialState: initial) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.delete = { _ in throw DeleteError() }
+            $0.carrierClient.listAll = {
+                listAllCalled.withValue { $0 += 1 }
+                return [Self.carrierA, Self.carrierB]
+            }
+            $0.carrierClient.activeForWidget = { nil }
+        }
+        // expandedCarrierId 初始即 nil；alert/delegate 時序在並行時有差異，用 off 跳過精確 state 比對
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.alert(.presented(.deleteConfirmed(Self.carrierA.id))))
+
+        // delegate 在 .merge 中優先發出（.send 是同步的）
+        await store.receive(\.delegate.carriersChanged)
+
+        // catch 路徑 — 刪除失敗後仍用 listAll 回復清單
+        await store.receive(\.carriersLoaded) {
+            $0.carriers = [Self.carrierA, Self.carrierB]
+        }
+
+        #expect(listAllCalled.value >= 1, "catch 路徑應呼叫 listAll 回復清單")
     }
 }

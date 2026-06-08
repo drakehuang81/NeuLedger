@@ -97,7 +97,6 @@ struct AccessoryView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.title)
                         .font(Font.Design.size11Semibold)
                         .foregroundStyle(Color.Design.textSecondary)
                         .contentShape(Rectangle())

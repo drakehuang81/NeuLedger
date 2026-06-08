@@ -33,13 +33,11 @@ public struct CustomAccountFormFeature {
 
     public enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
-        case cancelTapped
         case submitTapped
         case delegate(Delegate)
 
         @CasePathable
         public enum Delegate: Equatable {
-            case dismissed
             case submitted(CustomAccountDraft)
         }
     }
@@ -52,8 +50,6 @@ public struct CustomAccountFormFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
-            case .cancelTapped:
-                return .send(.delegate(.dismissed))
             case .submitTapped:
                 guard state.canSubmit else { return .none }
                 let draft = CustomAccountDraft(

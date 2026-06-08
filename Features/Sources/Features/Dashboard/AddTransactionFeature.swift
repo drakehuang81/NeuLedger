@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Domain
 import Foundation
+import Common
 
 @Reducer
 public struct AddTransactionFeature: Sendable {
@@ -239,7 +240,7 @@ public struct AddTransactionFeature: Sendable {
             case .saveTapped:
                 var hasError = false
 
-                let amountValue = Decimal(string: state.amountText) ?? 0
+                let amountValue = state.amountText.parsedAmountDecimal ?? 0
                 if amountValue <= 0 {
                     state.amountError = String(localized: "add_transaction_error_amount")
                     hasError = true
@@ -249,19 +250,21 @@ public struct AddTransactionFeature: Sendable {
                     state.accountError = String(localized: "add_transaction_error_account")
                     hasError = true
                 }
-
-                if state.type != .transfer && state.categoryId == nil {
-                    if case .edit = state.mode {
-                        // In edit mode, allow saving with no category (preserving existing nil)
-                    } else {
-                        state.categoryError = String(localized: "add_transaction_error_category")
+                switch state.type {
+                case .transfer:
+                    if state.accountId != nil && state.accountId == state.toAccountId {
+                        state.transferError = String(localized: "add_transaction_error_same_account")
                         hasError = true
                     }
-                }
-
-                if state.type == .transfer && state.accountId != nil && state.accountId == state.toAccountId {
-                    state.transferError = String(localized: "add_transaction_error_same_account")
-                    hasError = true
+                case .income, .expense:
+                    if state.categoryId == nil {
+                        if case .edit = state.mode {
+                            // In edit mode, allow saving with no category (preserving existing nil)
+                        } else {
+                            state.categoryError = String(localized: "add_transaction_error_category")
+                            hasError = true
+                        }
+                    }
                 }
 
                 if hasError { return .none }

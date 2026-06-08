@@ -11,7 +11,7 @@ import SwiftUI
 ///  - period segmented pills (月 / 週 / 年)
 ///  - account filter Menu chip (only when accounts exist)
 struct AnalysisTopBar: View {
-    @Bindable var store: StoreOf<AnalysisFeature>
+    let store: StoreOf<AnalysisFeature>
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {

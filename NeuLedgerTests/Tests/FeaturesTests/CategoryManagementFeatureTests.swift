@@ -83,42 +83,6 @@ struct CategoryManagementFeatureTests {
         // No state change expected — transfer is guarded
     }
 
-    // MARK: - Reorder
-
-    @Test("categoriesMoved reassigns sortOrder and updates via client")
-    func testCategoriesMovedUpdatesSortOrder() async throws {
-        let updatedCategories: LockIsolated<[Domain.Category]> = LockIsolated([])
-
-        var initialState = CategoryManagementFeature.State()
-        initialState.categories = [Self.foodCategory, Self.transportCategory, Self.customExpenseCategory]
-
-        let store = await TestStore(initialState: initialState) {
-            CategoryManagementFeature()
-        } withDependencies: {
-            $0.ledgerClient.updateCategory = { cat in
-                updatedCategories.withValue { $0.append(cat) }
-            }
-        }
-
-        // Move "交通" (index 1) to position 0 in the filtered list.
-        // state.categories array positions are unchanged; only sortOrder values update in-place.
-        await store.send(.categoriesMoved(IndexSet(integer: 1), 0)) {
-            $0.categories = [
-                Domain.Category(id: Self.foodCategory.id, name: "飲食", icon: "fork.knife", color: "#FF3B30", type: .expense, sortOrder: 1, isDefault: true),
-                Domain.Category(id: Self.transportCategory.id, name: "交通", icon: "car.fill", color: "#FF9500", type: .expense, sortOrder: 0, isDefault: true),
-                Domain.Category(id: Self.customExpenseCategory.id, name: "自訂支出", icon: "tag.fill", color: "#5856D6", type: .expense, sortOrder: 2, isDefault: false)
-            ]
-        }
-
-        // Allow reorder effects to complete
-        await store.finish()
-
-        let updated = updatedCategories.value
-        #expect(updated.count == 3)
-        #expect(updated.first { $0.id == Self.transportCategory.id }?.sortOrder == 0)
-        #expect(updated.first { $0.id == Self.foodCategory.id }?.sortOrder == 1)
-    }
-
     // MARK: - Add Category
 
     @Test("addButtonTapped presents add form defaulting to current selectedType")
@@ -136,6 +100,26 @@ struct CategoryManagementFeatureTests {
 
         // Dismiss the presented sheet so the @Presents dismiss-listener
         // effect tears down before the test ends.
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
+
+    // MARK: - categoryTapped
+
+    @Test("categoryTapped presents edit form with the tapped category")
+    func testCategoryTappedPresentsEditForm() async throws {
+        var initialState = CategoryManagementFeature.State()
+        initialState.categories = [Self.customExpenseCategory]
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        }
+
+        await store.send(.categoryTapped(Self.customExpenseCategory)) {
+            $0.addEdit = AddEditCategoryFeature.State(mode: .edit(Self.customExpenseCategory))
+        }
+
         await store.send(\.addEdit.dismiss) {
             $0.addEdit = nil
         }
@@ -182,5 +166,88 @@ struct CategoryManagementFeatureTests {
 
         await store.send(.deleteRequested(Self.foodCategory.id))
         // No state change — isDefault guard prevents deletion
+    }
+
+    // MARK: - Delete Confirmed
+
+    @Test("alert deleteConfirmed calls deleteCategory and reloads categories")
+    func testDeleteConfirmedCallsDeleteAndReloads() async throws {
+        let deletedId: LockIsolated<Domain.Category.ID?> = LockIsolated(nil)
+        let id = Self.customExpenseCategory.id
+
+        // Alert must be present for .alert(.presented(...)) to route through ifLet
+        var initialState = CategoryManagementFeature.State()
+        initialState.categories = [Self.foodCategory, Self.customExpenseCategory]
+        initialState.alert = AlertState {
+            TextState(String(localized: "alert_delete_category"))
+        } actions: {
+            ButtonState(role: .destructive, action: CategoryManagementFeature.Action.Alert.deleteConfirmed(id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(format: String(localized: "alert_delete_category_message_name %@"), Self.customExpenseCategory.name))
+        }
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.deleteCategory = { deletedId.setValue($0) }
+            $0.ledgerClient.listCategories = { _ in [Self.foodCategory] }
+        }
+
+        await store.send(.alert(.presented(.deleteConfirmed(id)))) {
+            $0.alert = nil
+        }
+
+        await store.receive(\.categoriesLoaded) {
+            $0.isLoading = false
+            $0.categories = [Self.foodCategory]
+        }
+
+        #expect(deletedId.value == id)
+    }
+
+    // MARK: - addEdit Delegate
+
+    @Test("addEdit delegate saved closes sheet and reloads categories")
+    func testAddEditDelegateSavedClosesAndReloads() async throws {
+        var initialState = CategoryManagementFeature.State()
+        initialState.addEdit = AddEditCategoryFeature.State(mode: .add(.expense))
+        initialState.categories = [Self.foodCategory]
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in
+                [Self.foodCategory, Self.customExpenseCategory]
+            }
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+
+        await store.receive(\.categoriesLoaded) {
+            $0.isLoading = false
+            $0.categories = [Self.foodCategory, Self.customExpenseCategory]
+        }
+    }
+
+    @Test("addEdit delegate dismissed clears sheet without reloading")
+    func testAddEditDelegateDismissedClearsSheetNoReload() async throws {
+        var initialState = CategoryManagementFeature.State()
+        initialState.addEdit = AddEditCategoryFeature.State(mode: .add(.expense))
+
+        let store = await TestStore(initialState: initialState) {
+            CategoryManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // No categoriesLoaded action expected after dismissed
     }
 }

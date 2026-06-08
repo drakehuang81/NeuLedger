@@ -444,7 +444,336 @@ struct SettingsNavigationTests {
         }
     }
 
+    // MARK: - B4 補強：三個導航 action
+
+    @Test("carrierManagementTapped appends carrierManagement to path")
+    func carrierManagementTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.carrierManagementTapped) {
+            $0.path.append(.carrierManagement(CarrierManagementFeature.State()))
+        }
+    }
+
+    @Test("syncSettingsTapped appends syncSettings to path")
+    func syncSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.syncSettingsTapped) {
+            $0.path.append(.syncSettings(SyncSettingsFeature.State()))
+        }
+    }
+
+    @Test("watchSettingsTapped appends watchSettings to path")
+    func watchSettingsTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.watchSettingsTapped) {
+            $0.path.append(.watchSettings(WatchSettingsFeature.State()))
+        }
+    }
+
+    // MARK: - B4 補強：四個 picker 旗標 action
+
+    @Test("defaultAccountTapped 設定 isPickingDefaultAccount = true")
+    func defaultAccountTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.defaultAccountTapped) {
+            $0.isPickingDefaultAccount = true
+        }
+    }
+
+    @Test("defaultAccountPickerDismissed 設定 isPickingDefaultAccount = false")
+    func defaultAccountPickerDismissed() async {
+        var initial = SettingsFeature.State()
+        initial.isPickingDefaultAccount = true
+        let store = await TestStore(initialState: initial) {
+            SettingsFeature()
+        }
+        await store.send(.defaultAccountPickerDismissed) {
+            $0.isPickingDefaultAccount = false
+        }
+    }
+
+    @Test("widgetCarrierTapped 設定 isPickingWidgetCarrier = true")
+    func widgetCarrierTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.widgetCarrierTapped) {
+            $0.isPickingWidgetCarrier = true
+        }
+    }
+
+    @Test("widgetCarrierPickerDismissed 設定 isPickingWidgetCarrier = false")
+    func widgetCarrierPickerDismissed() async {
+        var initial = SettingsFeature.State()
+        initial.isPickingWidgetCarrier = true
+        let store = await TestStore(initialState: initial) {
+            SettingsFeature()
+        }
+        await store.send(.widgetCarrierPickerDismissed) {
+            $0.isPickingWidgetCarrier = false
+        }
+    }
+
 }
+
+@Suite("SettingsFeature — child delegate sync")
+struct SettingsChildDelegateSyncTests {
+
+    private static let oldAccounts: [Account] = [
+        Account(name: "舊現金", type: .cash, icon: "wallet.bifold", color: "green", sortOrder: 0),
+    ]
+
+    private static let newAccounts: [Account] = [
+        Account(name: "新現金", type: .cash, icon: "wallet.bifold", color: "green", sortOrder: 0),
+        Account(name: "新銀行", type: .bank, icon: "building.columns", color: "blue", sortOrder: 1),
+    ]
+
+    private static let newCarriers: [Carrier] = [
+        Carrier(name: "新載具", type: .phoneBarcodeCarrier, barcode: "/ABC1234"),
+    ]
+
+    @Test("accountManagement delegate.accountsChanged reloads accounts in Settings")
+    func testAccountManagementDelegateReloadsAccounts() async {
+        var initialState = SettingsFeature.State()
+        initialState.accounts = Self.oldAccounts
+        initialState.defaultAccountName = "舊現金"
+        initialState.path.append(.accountManagement(AccountManagementFeature.State()))
+        let elementID = initialState.path.ids.first!
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { Self.newAccounts }
+        }
+
+        await store.send(
+            .path(.element(id: elementID, action: .accountManagement(.delegate(.accountsChanged))))
+        )
+
+        await store.receive(\.accountsLoaded) {
+            $0.accounts = Self.newAccounts
+            $0.defaultAccountName = "新現金"
+        }
+    }
+
+    @Test("carrierManagement delegate.carriersChanged reloads carriers in Settings")
+    func testCarrierManagementDelegateReloadsCarriers() async {
+        var initialState = SettingsFeature.State()
+        initialState.path.append(.carrierManagement(CarrierManagementFeature.State()))
+        let elementID = initialState.path.ids.first!
+
+        let activeCarrierId = Self.newCarriers[0].id
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.carrierClient.listAll = { Self.newCarriers }
+            $0.carrierClient.activeForWidget = { activeCarrierId }
+        }
+
+        await store.send(
+            .path(.element(id: elementID, action: .carrierManagement(.delegate(.carriersChanged))))
+        )
+
+        await store.receive(\.widgetCarriersLoaded) {
+            $0.carriers = Self.newCarriers
+            $0.widgetCarrierName = "新載具"
+        }
+    }
+}
+
+// MARK: - Wipe All Data
+
+@Suite("SettingsFeature — wipe all data")
+struct SettingsWipeAllDataTests {
+
+    @Test("wipeAllDataTapped 設定確認旗標")
+    func testWipeAllDataTapped() async {
+        let store = await TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        }
+        await store.send(.wipeAllDataTapped) {
+            $0.isConfirmingWipeAllData = true
+        }
+    }
+
+    @Test("wipeAllDataDismissed 清除確認旗標")
+    func testWipeAllDataDismissed() async {
+        var initialState = SettingsFeature.State()
+        initialState.isConfirmingWipeAllData = true
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        }
+        await store.send(.wipeAllDataDismissed) {
+            $0.isConfirmingWipeAllData = false
+        }
+    }
+
+    @Test("wipeAllDataConfirmed 成功 → receive wipeAllDataCompleted → delegate allDataWiped，旗標復位")
+    func testWipeAllDataConfirmedSuccess() async {
+        let wipeCalled: LockIsolated<Bool> = LockIsolated(false)
+
+        var initialState = SettingsFeature.State()
+        initialState.isConfirmingWipeAllData = true
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.platformClient.wipeAllSyncData = {
+                wipeCalled.setValue(true)
+            }
+        }
+
+        await store.send(.wipeAllDataConfirmed) {
+            $0.isConfirmingWipeAllData = false
+            $0.isWipingAllData = true
+            $0.wipeAllDataError = nil
+        }
+
+        await store.receive(\.wipeAllDataCompleted) {
+            $0.isWipingAllData = false
+        }
+
+        await store.receive(\.delegate.allDataWiped)
+
+        #expect(wipeCalled.value == true, "wipeAllSyncData 應被呼叫一次")
+    }
+
+    @Test("wipeAllDataConfirmed 失敗 → receive wipeAllDataFailed → wipeAllDataError 寫入，isWipingAllData 復位")
+    func testWipeAllDataConfirmedFailure() async {
+        struct WipeError: Error, LocalizedError {
+            var errorDescription: String? { "wipe failed" }
+        }
+
+        var initialState = SettingsFeature.State()
+        initialState.isConfirmingWipeAllData = true
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.platformClient.wipeAllSyncData = {
+                throw WipeError()
+            }
+        }
+
+        await store.send(.wipeAllDataConfirmed) {
+            $0.isConfirmingWipeAllData = false
+            $0.isWipingAllData = true
+            $0.wipeAllDataError = nil
+        }
+
+        await store.receive(\.wipeAllDataFailed) {
+            $0.isWipingAllData = false
+            $0.wipeAllDataError = "wipe failed"
+        }
+    }
+}
+
+// MARK: - Seed Random Data
+
+@Suite("SettingsFeature — seed random data")
+struct SettingsSeedRandomDataTests {
+
+    private static let sampleAccount = Account(
+        name: "測試帳戶", type: .cash, icon: "banknote", color: "#34C759", sortOrder: 1000
+    )
+
+    @Test("seedRandomDataTapped 執行 seeding、完成後 receive seedRandomDataCompleted 並鏈式 reload accountsLoaded")
+    func testSeedRandomDataCompletedChain() async throws {
+        let createAccountCalled: LockIsolated<Int> = LockIsolated(0)
+        let recordCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createAccount = { _ in
+                createAccountCalled.withValue { $0 += 1 }
+            }
+            $0.ledgerClient.record = { _ in
+                recordCalled.withValue { $0 += 1 }
+            }
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount] }
+        }
+        // seedRandomDataResult 帶隨機數字；exhaustive off + 在 receive closure 中用 = 接受任意值
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.seedRandomDataTapped)
+
+        await store.receive(\.seedRandomDataCompleted) {
+            // exhaustive=off：只需確認 isSeedingRandomData=false；result 為隨機字串直接接受
+            $0.isSeedingRandomData = false
+        }
+
+        await store.receive(\.accountsLoaded)
+
+        // 驗證 side effect 計數
+        #expect(createAccountCalled.value >= 1, "至少應建立 1 個帳戶")
+        #expect(recordCalled.value >= 1, "至少應記錄 1 筆交易（categories 為空故 categoryId = nil，仍可 record）")
+    }
+
+    @Test("seedRandomDataTapped 進行中再次觸發不應重入（guard isSeedingRandomData）")
+    func testSeedRandomDataReentryGuard() async throws {
+        var initialState = SettingsFeature.State()
+        initialState.isSeedingRandomData = true
+
+        let createAccountCalled: LockIsolated<Int> = LockIsolated(0)
+
+        let store = await TestStore(initialState: initialState) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createAccount = { _ in
+                createAccountCalled.withValue { $0 += 1 }
+            }
+            $0.ledgerClient.listActiveAccounts = { [] }
+        }
+
+        // 已在 seeding 中，再次觸發應 no-op（直接 return .none）
+        await store.send(.seedRandomDataTapped)
+        // 無任何 receive 期望 → 如果有 effect 啟動，TestStore 會失敗
+
+        #expect(createAccountCalled.value == 0, "重入時不應呼叫 createAccount")
+    }
+
+    @Test("seedRandomDataTapped 失敗 → seedRandomDataFailed 寫入 error，isSeedingRandomData 復位")
+    func testSeedRandomDataFailed() async throws {
+        struct SeedError: Error, LocalizedError {
+            var errorDescription: String? { "seed 失敗" }
+        }
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in throw SeedError() }
+            $0.ledgerClient.createAccount = { _ in }
+            $0.ledgerClient.listActiveAccounts = { [] }
+        }
+        // seedRandomDataError 帶 localizedDescription；exhaustive off + 在 receive closure 中接受任意 error 字串
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.seedRandomDataTapped)
+
+        await store.receive(\.seedRandomDataFailed) {
+            // exhaustive=off：只需確認 isSeedingRandomData=false；error 訊息直接接受
+            $0.isSeedingRandomData = false
+        }
+    }
+}
+
+// MARK: - Widget Carrier
 
 @Suite("SettingsFeature — widget carrier")
 struct SettingsWidgetCarrierTests {
@@ -496,7 +825,6 @@ struct SettingsWidgetCarrierTests {
         await store.receive(\.delegate.accessoryBarVisibilityChanged)
         await store.receive(\.widgetCarriersLoaded) {
             $0.carriers = Self.sampleCarriers
-            $0.widgetCarrierId = carrier.id.uuidString
             $0.widgetCarrierName = "我的手機條碼"
         }
     }
@@ -518,7 +846,6 @@ struct SettingsWidgetCarrierTests {
         }
 
         await store.send(.widgetCarrierSelected(target.id)) {
-            $0.widgetCarrierId = target.id.uuidString
             $0.widgetCarrierName = "自然人憑證"
         }
 

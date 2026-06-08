@@ -38,24 +38,85 @@ struct BudgetManagementFeatureTests {
         }
     }
 
-    // MARK: - toggleActive
+    // MARK: - add/edit form open
 
-    @Test("toggleActive flips isActive and reloads")
-    func testToggleActive() async {
-        let updated: LockIsolated<Budget?> = LockIsolated(nil)
+    @Test("addButtonTapped presents add form")
+    func testAddButtonTapped() async {
+        let store = await TestStore(
+            initialState: BudgetManagementFeature.State()
+        ) {
+            BudgetManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+        }
+        // BudgetFormFeature.State.startDate 用 Date()，在並行測試中有毫秒差異
+        // exhaustive=off 讓未聲明的欄位不被精確比對
+        await MainActor.run { store.exhaustivity = .off }
+
+        // 不在 closure 中設定 addEdit（含 startDate）以避免時間差 mismatch
+        await store.send(.addButtonTapped)
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
+
+    @Test("budgetTapped presents edit form with existing budget")
+    func testBudgetTappedPresentsEditForm() async {
         var initialState = BudgetManagementFeature.State()
         initialState.budgets = [Self.sampleBudget]
 
         let store = await TestStore(initialState: initialState) {
             BudgetManagementFeature()
         } withDependencies: {
-            $0.planningClient.update = { budget in updated.setValue(budget) }
+            $0.ledgerClient.listCategories = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.budgetTapped(Self.sampleBudget)) {
+            $0.addEdit = BudgetFormFeature.State(mode: .edit(Self.sampleBudget))
+        }
+
+        await store.send(\.addEdit.dismiss) {
+            $0.addEdit = nil
+        }
+    }
+
+    // MARK: - addEdit delegate
+
+    @Test("addEdit delegate saved clears sheet and reloads budgets")
+    func testAddEditDelegateSavedReloads() async {
+        var initialState = BudgetManagementFeature.State()
+        initialState.addEdit = BudgetFormFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            BudgetManagementFeature()
+        } withDependencies: {
             $0.planningClient.listAll = { [Self.sampleBudget] }
         }
 
-        await store.send(.toggleActive(Self.sampleBudget))
-        await store.receive(\.budgetsLoaded)
-        #expect(updated.value?.isActive == false)
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+
+        await store.receive(\.budgetsLoaded) {
+            $0.budgets = [Self.sampleBudget]
+        }
+    }
+
+    @Test("addEdit delegate dismissed clears sheet without reloading budgets")
+    func testAddEditDelegateDismissedClearsSheet() async {
+        var initialState = BudgetManagementFeature.State()
+        initialState.addEdit = BudgetFormFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            BudgetManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // No budgetsLoaded expected
     }
 
     // MARK: - delete flow

@@ -5084,23 +5084,6 @@
         }
       }
     },
-    "alert_archived_account": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Archived Account"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已封存帳戶"
-          }
-        }
-      }
-    },
     "alert_cannot_delete": {
       "extractionState": "manual",
       "localizations": {
@@ -5182,23 +5165,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "確定要刪除此預算嗎？"
-          }
-        }
-      }
-    },
-    "alert_unarchive_account_message": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Do you want to unarchive this account?"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "是否要解除封存此帳戶？"
           }
         }
       }
@@ -8344,40 +8310,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "· 平均 NT$%1$@/日"
-          }
-        }
-      }
-    },
-    "analysis_monthly_eyebrow": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "6-month trend"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "6 月趨勢"
-          }
-        }
-      }
-    },
-    "analysis_monthly_avg_format": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avg %1$@/mo"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "平均 %1$@/月"
           }
         }
       }

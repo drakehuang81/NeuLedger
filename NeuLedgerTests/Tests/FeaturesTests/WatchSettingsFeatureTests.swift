@@ -160,6 +160,61 @@ struct WatchSettingsFeatureTests {
         #expect(pushed.value)
     }
 
+    // MARK: - B4 補強：listActiveAccounts 拋錯路徑
+
+    @Test("task 中 listActiveAccounts 拋錯時 accounts 退化為空且 selectedAccountId 為 nil")
+    func taskListActiveAccountsThrowDegradesGracefully() async {
+        struct FetchError: Error {}
+
+        let store = TestStore(initialState: WatchSettingsFeature.State()) {
+            WatchSettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { @Sendable in
+                throw FetchError()
+            }
+            $0.platformClient.watchDefaultAccountId = { nil }
+            $0.platformClient.watchPaired = { false }
+            $0.platformClient.watchAppInstalled = { false }
+        }
+
+        await store.send(.task)
+        // State 不變（初始值已全是 default）；空 block 斷言 action 確實有被 receive
+        await store.receive(\.loaded)
+    }
+
+    // MARK: - B4 補強：accountSelected 不驗 membership 的非對稱行為（as-is 行為固化）
+
+    @Test("accountSelected 無條件接受不在 accounts 內的 id 並持久化（as-is 非對稱行為）")
+    func accountSelectedAcceptsNonMemberIdAsIs() async {
+        let cash = Self.cashAccount
+        let card = Self.cardAccount
+        let outsiderId = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
+        let captured = LockIsolated<Account.ID?>(nil)
+
+        let store = TestStore(
+            initialState: WatchSettingsFeature.State(
+                accounts: [cash, card],
+                selectedAccountId: cash.id,
+                isPaired: true,
+                isWatchAppInstalled: true
+            )
+        ) {
+            WatchSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.setWatchDefaultAccountId = { @Sendable id in
+                captured.setValue(id)
+            }
+            $0.platformClient.pushWatchContext = { @Sendable in }
+        }
+
+        // View 保證不可達，但 reducer 不做 membership 驗證（as-is）
+        await store.send(.accountSelected(outsiderId)) {
+            $0.selectedAccountId = outsiderId
+        }
+
+        #expect(captured.value == outsiderId, "accountSelected 應無條件持久化（as-is 行為）")
+    }
+
     @Test("Rapidly re-selecting accounts cancels the in-flight push so only the latest survives")
     func reselectingAccountCancelsInFlightPush() async {
         let cash = Self.cashAccount

@@ -37,17 +37,23 @@ public struct AccountManagementFeature: Sendable {
         case accountTapped(Account)
         case deleteRequested(Account.ID)
         case unarchiveTapped(Account.ID)
-        case accountMoved(IndexSet, Int)
         case showArchiveConfirmation(Account.ID)
         case showDeleteConfirmation(Account.ID)
         case addEdit(PresentationAction<AddEditAccountFeature.Action>)
         case alert(PresentationAction<Alert>)
+        case delegate(Delegate)
 
         @CasePathable
         public enum Alert: Sendable, Equatable {
             case archiveConfirmed(Account.ID)
             case deleteConfirmed(Account.ID)
-            case unarchiveConfirmed(Account.ID)
+        }
+
+        @CasePathable
+        public enum Delegate: Sendable, Equatable {
+            /// Any account write (add/edit/archive/unarchive/delete) completed;
+            /// the parent (Settings) should reload its own account-derived state.
+            case accountsChanged
         }
     }
 
@@ -55,7 +61,7 @@ public struct AccountManagementFeature: Sendable {
 
     @Dependency(\.ledgerClient) var ledger
 
-    private enum CancelID { case task, reorder }
+    private enum CancelID { case task }
 
     // MARK: - Body
 
@@ -73,20 +79,8 @@ public struct AccountManagementFeature: Sendable {
             case let .accountsLoaded(accounts):
                 state.isLoading = false
                 state.accounts = accounts
-                let ids = accounts.map(\.id)
                 return .run { send in
-                    var balances: [Account.ID: Decimal] = [:]
-                    await withTaskGroup(of: (Account.ID, Decimal).self) { group in
-                        for id in ids {
-                            group.addTask {
-                                let balance = (try? await ledger.balance(id)) ?? 0
-                                return (id, balance)
-                            }
-                        }
-                        for await (id, balance) in group {
-                            balances[id] = balance
-                        }
-                    }
+                    let balances = (try? await ledger.balances()) ?? [:]
                     await send(.balancesLoaded(balances))
                 }
 
@@ -102,28 +96,13 @@ public struct AccountManagementFeature: Sendable {
                 return .none
 
             case let .accountTapped(account):
-                if account.isArchived {
-                    state.alert = AlertState {
-                        TextState(String(localized: "alert_archived_account"))
-                    } actions: {
-                        ButtonState(action: .unarchiveConfirmed(account.id)) {
-                            TextState(String(localized: "account_management_unarchive"))
-                        }
-                        ButtonState(role: .cancel) {
-                            TextState(String(localized: "common_cancel"))
-                        }
-                    } message: {
-                        TextState(String(localized: "alert_unarchive_account_message"))
-                    }
-                } else {
-                    let existingNames = state.accounts
-                        .filter { $0.id != account.id }
-                        .map(\.name)
-                    state.addEdit = AddEditAccountFeature.State(
-                        mode: .edit(account),
-                        existingNames: existingNames
-                    )
-                }
+                let existingNames = state.accounts
+                    .filter { $0.id != account.id }
+                    .map(\.name)
+                state.addEdit = AddEditAccountFeature.State(
+                    mode: .edit(account),
+                    existingNames: existingNames
+                )
                 return .none
 
             case let .deleteRequested(id):
@@ -169,21 +148,24 @@ public struct AccountManagementFeature: Sendable {
                 return .none
 
             case let .alert(.presented(.archiveConfirmed(id))):
-                return .run { send in
-                    try await ledger.archiveAccount(id)
-                    let accounts = try await ledger.listAccounts()
-                    await send(.accountsLoaded(accounts))
-                }
+                return .merge(
+                    .run { send in
+                        try await ledger.archiveAccount(id)
+                        let accounts = try await ledger.listAccounts()
+                        await send(.accountsLoaded(accounts))
+                    },
+                    .send(.delegate(.accountsChanged))
+                )
 
             case let .alert(.presented(.deleteConfirmed(id))):
-                return .run { send in
-                    try await ledger.deleteAccount(id)
-                    let accounts = try await ledger.listAccounts()
-                    await send(.accountsLoaded(accounts))
-                }
-
-            case let .alert(.presented(.unarchiveConfirmed(id))):
-                return .send(.unarchiveTapped(id))
+                return .merge(
+                    .run { send in
+                        try await ledger.deleteAccount(id)
+                        let accounts = try await ledger.listAccounts()
+                        await send(.accountsLoaded(accounts))
+                    },
+                    .send(.delegate(.accountsChanged))
+                )
 
             case .alert:
                 return .none
@@ -195,54 +177,33 @@ public struct AccountManagementFeature: Sendable {
                 var updated = account
                 updated.isArchived = false
                 let toUpdate = updated
-                return .run { send in
-                    try await ledger.updateAccount(toUpdate)
-                    let accounts = try await ledger.listAccounts()
-                    await send(.accountsLoaded(accounts))
-                }
-
-            case let .accountMoved(source, destination):
-                var active = state.activeAccounts
-                active.move(fromOffsets: source, toOffset: destination)
-
-                let reordered = active.enumerated().map { index, account in
-                    Account(
-                        id: account.id,
-                        name: account.name,
-                        type: account.type,
-                        icon: account.icon,
-                        color: account.color,
-                        sortOrder: index,
-                        isArchived: account.isArchived,
-                        createdAt: account.createdAt
-                    )
-                }
-
-                for updated in reordered {
-                    if let idx = state.accounts.firstIndex(where: { $0.id == updated.id }) {
-                        state.accounts[idx] = updated
-                    }
-                }
-
-                return .run { _ in
-                    for account in reordered {
-                        try await ledger.updateAccount(account)
-                    }
-                }
-                .cancellable(id: CancelID.reorder, cancelInFlight: true)
+                return .merge(
+                    .run { send in
+                        try await ledger.updateAccount(toUpdate)
+                        let accounts = try await ledger.listAccounts()
+                        await send(.accountsLoaded(accounts))
+                    },
+                    .send(.delegate(.accountsChanged))
+                )
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .run { send in
-                    let accounts = try await ledger.listAccounts()
-                    await send(.accountsLoaded(accounts))
-                }
+                return .merge(
+                    .run { send in
+                        let accounts = try await ledger.listAccounts()
+                        await send(.accountsLoaded(accounts))
+                    },
+                    .send(.delegate(.accountsChanged))
+                )
 
             case .addEdit(.presented(.delegate(.dismissed))):
                 state.addEdit = nil
                 return .none
 
             case .addEdit:
+                return .none
+
+            case .delegate:
                 return .none
             }
         }

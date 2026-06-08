@@ -19,8 +19,6 @@ public struct TransactionDetailFeature: Sendable {
     public struct State: Equatable {
         public var transaction: Transaction
         public var categoryName: String?
-        public var accountName: String?
-        public var toAccountName: String?
         public var account: Account?
         public var toAccount: Account?
         public var insight: TransactionInsight?
@@ -40,9 +38,8 @@ public struct TransactionDetailFeature: Sendable {
 
     public enum Action: Sendable, Equatable {
         case task
+        case loadDisplayNames(Transaction)
         case namesLoaded(
-            accountName: String?,
-            toAccountName: String?,
             categoryName: String?,
             account: Account?,
             toAccount: Account?
@@ -92,24 +89,24 @@ public struct TransactionDetailFeature: Sendable {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .loadDisplayNames(let transaction):
+                return .run { send in
+                    async let accounts = ledger.listAccounts()
+                    async let categories = ledger.listCategories(nil)
+                    let (a, c) = try await (accounts, categories)
+                    let account = a.first { $0.id == transaction.accountId }
+                    let toAccount = transaction.toAccountId.flatMap { id in a.first { $0.id == id } }
+                    let categoryName = transaction.categoryId.flatMap { id in c.first { $0.id == id }?.localizedName }
+                    await send(.namesLoaded(
+                        categoryName: categoryName,
+                        account: account,
+                        toAccount: toAccount
+                    ))
+                }
             case .task:
                 let txn = state.transaction
                 return .merge(
-                    .run { send in
-                        async let accounts = ledger.listAccounts()
-                        async let categories = ledger.listCategories(nil)
-                        let (a, c) = try await (accounts, categories)
-                        let account = a.first { $0.id == txn.accountId }
-                        let toAccount = txn.toAccountId.flatMap { id in a.first { $0.id == id } }
-                        let categoryName = txn.categoryId.flatMap { id in c.first { $0.id == id }?.localizedName }
-                        await send(.namesLoaded(
-                            accountName: account?.name,
-                            toAccountName: toAccount?.name,
-                            categoryName: categoryName,
-                            account: account,
-                            toAccount: toAccount
-                        ))
-                    },
+                    .send(.loadDisplayNames(txn)),
                     .run { send in
                         do {
                             let insight = try await insightsClient.detailStats(txn)
@@ -120,9 +117,7 @@ public struct TransactionDetailFeature: Sendable {
                     }
                 )
 
-            case let .namesLoaded(accountName, toAccountName, categoryName, account, toAccount):
-                state.accountName = accountName
-                state.toAccountName = toAccountName
+            case let .namesLoaded(categoryName, account, toAccount):
                 state.categoryName = categoryName
                 state.account = account
                 state.toAccount = toAccount
@@ -195,15 +190,13 @@ public struct TransactionDetailFeature: Sendable {
 
             case .dismiss:
                 return .run { _ in await dismiss() }
-
-            case let .editTransaction(.presented(.delegate(.savedWithTransaction(t)))):
-                state.transaction = t
+            case let .editTransaction(.presented(.delegate(.savedWithTransaction(transaction)))):
+                state.transaction = transaction
                 state.editTransaction = nil
-                return .send(.delegate(.updated(t)))
-
-            case .editTransaction(.presented(.delegate(.saved))):
-                state.editTransaction = nil
-                return .none
+                return .concatenate(
+                    .send(.delegate(.updated(transaction))),
+                    .send(.loadDisplayNames(transaction))
+                )
 
             case .editTransaction(.presented(.delegate(.dismissed))):
                 state.editTransaction = nil

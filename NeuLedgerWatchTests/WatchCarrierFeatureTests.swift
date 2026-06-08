@@ -48,10 +48,10 @@ struct WatchCarrierFeatureTests {
         }
 
         await store.send(.carrierTapped(Self.cert.id)) {
-            $0.presentedCarrier = Self.cert
+            $0.presentedCarrierID = Self.cert.id
         }
         await store.send(.barcodeDismissed) {
-            $0.presentedCarrier = nil
+            $0.presentedCarrierID = nil
         }
     }
 
@@ -63,7 +63,7 @@ struct WatchCarrierFeatureTests {
         let store = TestStore(
             initialState: WatchCarrierFeature.State(
                 carriers: [Self.phone, Self.cert],
-                presentedCarrier: Self.phone
+                presentedCarrierID: Self.phone.id
             )
         ) {
             WatchCarrierFeature()
@@ -71,8 +71,8 @@ struct WatchCarrierFeatureTests {
 
         await store.send(.carriersUpdated([renamed, Self.cert])) {
             $0.carriers = [renamed, Self.cert]
-            $0.presentedCarrier = renamed
         }
+        #expect(store.state.presentedCarrier == renamed)
     }
 
     @Test("Cache update dismisses the presented carrier when it was deleted")
@@ -80,7 +80,7 @@ struct WatchCarrierFeatureTests {
         let store = TestStore(
             initialState: WatchCarrierFeature.State(
                 carriers: [Self.phone, Self.cert],
-                presentedCarrier: Self.cert
+                presentedCarrierID: Self.cert.id
             )
         ) {
             WatchCarrierFeature()
@@ -88,8 +88,8 @@ struct WatchCarrierFeatureTests {
 
         await store.send(.carriersUpdated([Self.phone])) {
             $0.carriers = [Self.phone]
-            $0.presentedCarrier = nil
         }
+        #expect(store.state.presentedCarrier == nil)
     }
 
     @Test("Sync state degrades to nil when the cache empties")
@@ -103,5 +103,44 @@ struct WatchCarrierFeatureTests {
         await store.send(.carriersUpdated(nil)) {
             $0.carriers = nil
         }
+    }
+
+    // MARK: - Task 3: carriersUpdated presented==nil branch
+
+    /// 有 2+ 載具且無人被展示時收到更新：只刷新 carriers，
+    /// presentedCarrierID 保持 nil（不應意外被設值）。
+    /// 這也驗證了 rename 後 presentedCarrier computed 自動反映新 barcode。
+    @Test("carriersUpdated with no presented carrier only refreshes the list")
+    func updateWithNoPresentedOnlyRefreshesList() async {
+        var renamedPhone = Self.phone
+        renamedPhone.name = "手機條碼（新）"
+        renamedPhone.barcode = "/ZZ99+WW"
+
+        // Start with 2 carriers, presentedCarrierID is nil (no one is presented)
+        let store = TestStore(
+            initialState: WatchCarrierFeature.State(
+                carriers: [Self.phone, Self.cert],
+                presentedCarrierID: nil
+            )
+        ) {
+            WatchCarrierFeature()
+        }
+
+        // carriersUpdated should update carriers without touching presentedCarrierID
+        await store.send(.carriersUpdated([renamedPhone, Self.cert])) {
+            $0.carriers = [renamedPhone, Self.cert]
+            // presentedCarrierID stays nil — not mutated by the update
+        }
+
+        // presentedCarrierID is still nil
+        #expect(store.state.presentedCarrierID == nil)
+        // presentedCarrier computed also nil (no one selected)
+        #expect(store.state.presentedCarrier == nil)
+
+        // Now tap the renamed carrier — presentedCarrier reflects the new barcode
+        await store.send(.carrierTapped(renamedPhone.id)) {
+            $0.presentedCarrierID = renamedPhone.id
+        }
+        #expect(store.state.presentedCarrier?.barcode == "/ZZ99+WW")
     }
 }

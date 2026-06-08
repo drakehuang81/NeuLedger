@@ -123,6 +123,45 @@ struct AccessoryBarAIInputTests {
         // aiInputText is empty by default → guard returns before extraction; no state change
         await store.send(.aiInputSubmitted)
     }
+
+    @Test("aiInputSubmitted success path: clears stale error, sets loading, extracts and emits delegate")
+    func submitSuccessPathExtractsAndEmitsDelegate() async {
+        let extracted = ExtractedTransaction(
+            amount: 200,
+            suggestedCategory: "餐飲",
+            description: "晚餐",
+            type: "expense"
+        )
+
+        // Precondition: state has non-empty text AND a stale aiInputError from a previous attempt
+        var initial = AccessoryBarFeature.State()
+        initial.aiInputText = "晚餐兩百元"
+        initial.aiInputError = "上次擷取失敗"
+        initial.isAIInputExpanded = true
+
+        let store = await TestStore(initialState: initial) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.extractFromText = { _ in extracted }
+        }
+
+        // 1. Send the submit action
+        await store.send(.aiInputSubmitted) {
+            // Reducer synchronously: isAIInputLoading = true, aiInputError = nil
+            $0.isAIInputLoading = true
+            $0.aiInputError = nil
+        }
+
+        // 2. Receive the aiExtractionCompleted(.success) from the effect
+        await store.receive(.aiExtractionCompleted(.success(extracted))) {
+            $0.isAIInputExpanded = false
+            $0.aiInputText = ""
+            $0.isAIInputLoading = false
+        }
+
+        // 3. Receive the delegate action that parent will handle
+        await store.receive(.delegate(.transactionExtracted(extracted)))
+    }
 }
 
 @Suite("AccessoryBarFeature — accessory mode")
@@ -282,6 +321,66 @@ struct AccessoryBarRecordingTests {
         }
 
         await store.send(.transcriptionFailed) {
+            $0.isRecording = false
+            $0.aiInputError = String(localized: "speech_recognition_failed_error")
+        }
+    }
+
+    // MARK: - B3 補強：語音串流 effect 路徑
+
+    @Test("startVoiceSession yield text produces transcriptionUpdated via effect")
+    func voiceSessionYieldTextProducesTranscriptionUpdated() async {
+        // 建立一個 AsyncThrowingStream，先暫停讓 for-await 迴圈有機會啟動，再 yield 文字
+        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+
+        let store = await TestStore(initialState: AccessoryBarFeature.State()) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
+        }
+
+        // 啟動錄音 effect
+        await store.send(.recordingTapped)
+        await store.receive(.recordingStarted) {
+            $0.isRecording = true
+            $0.aiInputError = nil
+        }
+
+        // 用 Task 非同步 yield，讓 effect 的 for-await 迴圈有機會先進入等待狀態
+        // 再接收到文字並送出 transcriptionUpdated
+        Task {
+            continuation.yield("早餐五十五元")
+            continuation.finish()
+        }
+        await store.receive(.transcriptionUpdated("早餐五十五元")) {
+            $0.aiInputText = "早餐五十五元"
+        }
+    }
+
+    @Test("startVoiceSession throw produces transcriptionFailed via effect")
+    func voiceSessionThrowProducesTranscriptionFailed() async {
+        struct FakeRecordingError: Error {}
+        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+
+        let store = await TestStore(initialState: AccessoryBarFeature.State()) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.requestVoicePermission = { true }
+            $0.captureClient.startVoiceSession = { stream }
+            $0.captureClient.stopVoiceSession = { }
+        }
+
+        await store.send(.recordingTapped)
+        await store.receive(.recordingStarted) {
+            $0.isRecording = true
+            $0.aiInputError = nil
+        }
+
+        // 從外部 throw error → effect catch 應送出 transcriptionFailed
+        continuation.finish(throwing: FakeRecordingError())
+        await store.receive(.transcriptionFailed) {
             $0.isRecording = false
             $0.aiInputError = String(localized: "speech_recognition_failed_error")
         }

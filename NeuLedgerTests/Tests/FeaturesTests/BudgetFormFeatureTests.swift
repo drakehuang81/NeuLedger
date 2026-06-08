@@ -182,6 +182,122 @@ struct BudgetFormFeatureTests {
         await store.receive(\.delegate.dismissed)
     }
 
+    // MARK: - categoryChanged + 存檔斷言
+
+    @Test("categoryChanged sets categoryId; saveTapped 將其寫入 planningClient.create")
+    func testCategoryChangedRoundTripsIntoBudget() async {
+        let addedBudget: LockIsolated<Budget?> = LockIsolated(nil)
+        let categoryId = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
+
+        let store = await TestStore(
+            initialState: BudgetFormFeature.State(mode: .add)
+        ) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.nameChanged("分類預算")) { $0.name = "分類預算" }
+        await store.send(.amountChanged("3000")) { $0.amountText = "3000" }
+        await store.send(.categoryChanged(categoryId)) { $0.categoryId = categoryId }
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(addedBudget.value?.categoryId == categoryId, "categoryId 應 round-trip 進入持久化 Budget")
+        #expect(addedBudget.value?.name == "分類預算")
+        #expect(addedBudget.value?.amount == 3000)
+    }
+
+    @Test("categoryChanged 無分類（nil） → saveTapped 寫入 categoryId = nil")
+    func testCategoryChangedNilRoundTrips() async {
+        let addedBudget: LockIsolated<Budget?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: BudgetFormFeature.State(mode: .add)
+        ) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.nameChanged("無分類預算")) { $0.name = "無分類預算" }
+        await store.send(.amountChanged("1000")) { $0.amountText = "1000" }
+        // categoryId 初始就是 nil，categoryChanged(nil) 不改變 state，不帶 closure
+        await store.send(.categoryChanged(nil))
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(addedBudget.value?.categoryId == nil, "nil categoryId 應 round-trip 進入 Budget")
+    }
+
+    // MARK: - B4 補強：saveTapped period/startDate/isActive 斷言
+
+    @Test("saveTapped（add）寫入 period 與 startDate 至 planningClient.create")
+    func testSaveTappedAddPersistsPeriodAndStartDate() async {
+        let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let addedBudget: LockIsolated<Budget?> = LockIsolated(nil)
+
+        var initial = BudgetFormFeature.State(mode: .add)
+        initial.name = "旅遊預算"
+        initial.amountText = "20000"
+        initial.period = .yearly
+        initial.startDate = fixedDate
+
+        let store = await TestStore(initialState: initial) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { budget in addedBudget.setValue(budget) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(addedBudget.value?.period == .yearly, "period 應 round-trip")
+        #expect(addedBudget.value?.startDate == fixedDate, "startDate 應 round-trip")
+    }
+
+    @Test("saveTapped（edit）保留既有的 isActive 不改變")
+    func testSaveTappedEditPreservesIsActive() async {
+        let activeBudget = Budget(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000099")!,
+            name: "活躍預算",
+            amount: 8000,
+            categoryId: nil,
+            period: .monthly,
+            startDate: Date(timeIntervalSince1970: 0),
+            isActive: true
+        )
+        let updatedBudget: LockIsolated<Budget?> = LockIsolated(nil)
+
+        let store = await TestStore(
+            initialState: BudgetFormFeature.State(mode: .edit(activeBudget))
+        ) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.update = { budget in updatedBudget.setValue(budget) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.nameChanged("改名預算")) { $0.name = "改名預算" }
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(updatedBudget.value?.isActive == activeBudget.isActive, "isActive 應從 existing 保留（不被重置）")
+        #expect(updatedBudget.value?.period == activeBudget.period, "period 應從 existing 保留")
+        #expect(updatedBudget.value?.startDate == activeBudget.startDate, "startDate 應從 existing 保留")
+    }
+
     // MARK: - task loads categories
 
     @Test("task loads expense categories into availableCategories")

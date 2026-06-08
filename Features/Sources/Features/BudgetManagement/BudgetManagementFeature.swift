@@ -26,7 +26,6 @@ public struct BudgetManagementFeature: Sendable {
         case budgetsLoaded([Budget])
         case addButtonTapped
         case budgetTapped(Budget)
-        case toggleActive(Budget)
         case deleteRequested(Budget.ID)
 
         case addEdit(PresentationAction<BudgetFormFeature.Action>)
@@ -69,15 +68,6 @@ public struct BudgetManagementFeature: Sendable {
             case let .budgetTapped(budget):
                 state.addEdit = BudgetFormFeature.State(mode: .edit(budget))
                 return .none
-
-            case let .toggleActive(budget):
-                var updated = budget
-                updated.isActive.toggle()
-                return .run { [updated] send in
-                    try await planningClient.update(updated)
-                    let budgets = try await planningClient.listAll()
-                    await send(.budgetsLoaded(budgets))
-                }
 
             case let .deleteRequested(id):
                 state.alert = AlertState {

@@ -34,20 +34,6 @@ struct AnalysisFeatureTests {
         Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID().uuidString, type: .transfer),
     ]
 
-    // MARK: - Dismiss Insight
-
-    @Test("dismissInsight sets insight to nil")
-    func testDismissInsight() async {
-        var initialState = AnalysisFeature.State()
-        initialState.insight = InsightDetail(id: "test-id", title: "AI 洞察", description: "本月飲食花費增加 15%")
-
-        let store = await TestStore(initialState: initialState) {
-            AnalysisFeature()
-        }
-
-        await store.send(.dismissInsight) { $0.insight = nil }
-    }
-
     // MARK: - Period Changed
 
     @Test("periodChanged updates selectedPeriod and triggers data reload")
@@ -497,6 +483,117 @@ struct AnalysisFeatureTests {
         await store.receive(\.loadedData)
 
         #expect(capturedFilter.value?.accountIds == Set([accountId]))
+    }
+
+    // MARK: - B3 補強：loadData 兩條並發 effect 協調
+
+    // MARK: - B3 補強：loadData 兩條並發 effect 協調（驗證兩條都到齊）
+    //
+    // loadData 用 .merge() 同時發起兩條 effect：
+    //   ① 主資料 effect → .loadedData(.success(data))
+    //   ② budget effect → .budgetMetricsLoaded(metrics)
+    // 兩條到達順序不確定，用各自獨立的 receive 驗證 + exhaustivity = .off 處理任意順序。
+    @Test("loadData sends both loadedData and budgetMetricsLoaded — both effects arrive")
+    func testLoadDataBothEffectsArrive() async {
+        let budget = Budget(
+            name: "餐費預算", amount: 1000,
+            categoryId: Self.categoryId, period: .monthly, startDate: Date()
+        )
+        let txn = Transaction(
+            amount: 300, date: Self.day1, note: "午餐",
+            categoryId: Self.categoryId, accountId: Self.accountId, type: .expense
+        )
+
+        let store = await TestStore(initialState: AnalysisFeature.State()) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: txn)] }
+            $0.planningClient.listActive = { [budget] }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.insightsClient.isAIAvailable = { false }
+        }
+        // 兩條並發 effect 到達順序不確定 → exhaustivity = .off
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.loadData)
+
+        // 各自 receive 兩條，順序無要求（exhaustivity = .off）
+        await store.receive(\.loadedData)
+        await store.receive(\.budgetMetricsLoaded)
+
+        // 等待所有 effect 靜默結束
+        await store.finish()
+
+        // 最終 state 驗證：兩條 effect 都寫入正確值
+        await MainActor.run {
+            #expect(store.state.isLoading == false)
+            #expect(store.state.summary == FinancialSummary(totalIncome: 0, totalExpense: 300))
+            #expect(store.state.budgetMetrics.count == 1)
+            #expect(store.state.budgetMetrics.first?.id == budget.id.uuidString)
+        }
+    }
+
+    // MARK: - B3 補強：loadData cancelInFlight 取消前一個 budget effect
+    //
+    // AnalysisFeature.loadData 的 budget effect 帶 .cancellable(id: CancelID.budgets, cancelInFlight: true)。
+    // 此測試驗證：連續兩次 loadData 後，最終 state 中的 budgetMetrics 是「第二次」的結果。
+    //
+    // 鑑別力設計：用 LockIsolated 計數器讓 listActive 每次回傳「不同 id」的 budget。
+    //   - 第一次 loadData → planningClient.listActive 回傳 firstBudget
+    //   - 第二次 loadData → 回傳 secondBudget（不同 id）
+    // 若 cancelInFlight 正確運作，最終 budgetMetrics 只會是 secondBudget；
+    // 若 cancelInFlight 失效（兩條 budget effect 都跑完且後者先回），斷言會抓到 firstBudget 殘留。
+    //
+    // 注意：使用 exhaustivity = .off 是必要的，因為兩條 .merge effect 順序不確定，
+    // 且第一次 budget effect 被取消時 TestStore 不會收到其對應 action。
+    @Test("consecutive loadData: cancelInFlight ensures final budgetMetrics is the second invocation's result")
+    func testLoadDataCancelInFlightBudgetEffect() async {
+        let firstBudget = Budget(
+            name: "第一次預算", amount: 1000,
+            categoryId: Self.categoryId, period: .monthly, startDate: Date()
+        )
+        let secondBudget = Budget(
+            name: "第二次預算", amount: 2000,
+            categoryId: Self.categoryId, period: .monthly, startDate: Date()
+        )
+        // 計數器：第一次呼叫回傳 firstBudget，第二次（含之後）回傳 secondBudget
+        let listActiveCallCount = LockIsolated(0)
+
+        let store = await TestStore(initialState: AnalysisFeature.State()) {
+            AnalysisFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.planningClient.listActive = {
+                let n = listActiveCallCount.withValue { count -> Int in
+                    count += 1
+                    return count
+                }
+                return n == 1 ? [firstBudget] : [secondBudget]
+            }
+            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+            $0.insightsClient.isAIAvailable = { false }
+        }
+        // exhaustivity = .off：不要求每個被取消/順序不確定的 action 都被 receive
+        await MainActor.run { store.exhaustivity = .off }
+
+        // 第一次 loadData — 啟動 budget effect（listActive → firstBudget）
+        await store.send(.loadData)
+        // 立即送第二次 loadData — cancelInFlight 應取消第一次 budget effect 並重新啟動（listActive → secondBudget）
+        await store.send(.loadData)
+
+        // 收到最後一次 loadData 的兩個下游 action（順序不確定）
+        await store.receive(\.loadedData)
+        await store.receive(\.budgetMetricsLoaded)
+
+        await store.finish()
+
+        // 鑑別斷言：最終 budgetMetrics 必須是「第二次」的 secondBudget，而非 firstBudget。
+        // 這才真正驗證 cancelInFlight 把第一次的結果丟棄、只保留第二次。
+        await MainActor.run {
+            #expect(store.state.budgetMetrics.count == 1)
+            #expect(store.state.budgetMetrics.first?.id == secondBudget.id.uuidString)
+            #expect(store.state.budgetMetrics.first?.id != firstBudget.id.uuidString)
+        }
     }
 
     @Test("computeBudgetMetrics filters budgets to account-relevant categories")

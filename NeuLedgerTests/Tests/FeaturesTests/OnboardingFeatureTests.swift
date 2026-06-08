@@ -90,20 +90,6 @@ struct OnboardingFeatureTests {
         }
     }
 
-    @Test("sheet delegate.dismissed clears the sheet")
-    func testSheetDismiss() async {
-        let store = await TestStore(
-            initialState: OnboardingFeature.State(
-                customAccountSheet: CustomAccountFormFeature.State()
-            )
-        ) {
-            OnboardingFeature()
-        }
-        await store.send(.customAccountSheet(.presented(.delegate(.dismissed)))) {
-            $0.customAccountSheet = nil
-        }
-    }
-
     @Test("customAccountDeleted removes by id")
     func testDeleteCustom() async {
         let id1 = UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!
@@ -119,6 +105,37 @@ struct OnboardingFeatureTests {
         await store.send(.customAccountDeleted(id1)) {
             $0.customAccounts = [d2]
         }
+    }
+
+    // ── B4 補強：零帳戶路徑 ────────────────────────────────────────────
+
+    @Test("finishOnboarding 在 selectedTypes 與 customAccounts 皆為空時呼叫 setupAccounts([])")
+    func testFinishOnboardingZeroAccounts() async {
+        let captured = LockIsolated<[Account]>([])
+        let clock = TestClock()
+
+        // 空 selectedTypes + 空 customAccounts
+        let store = await TestStore(
+            initialState: OnboardingFeature.State(
+                currentStep: .done,
+                selectedTypes: [],
+                customAccounts: []
+            )
+        ) {
+            OnboardingFeature()
+        } withDependencies: {
+            $0.ledgerClient.setupAccounts = { accounts in
+                captured.withValue { $0 = accounts }
+            }
+            $0.platformClient.markOnboardingComplete = {}
+            $0.continuousClock = clock
+        }
+
+        await store.send(.finishOnboarding)
+        await clock.advance(by: .milliseconds(1600))
+        await store.receive(\.delegate.onboardingCompleted)
+
+        #expect(captured.value.isEmpty, "零帳戶時 setupAccounts 應以空陣列呼叫")
     }
 
     // ── Finish flow (ready → done → setup accounts → delegate) ───────

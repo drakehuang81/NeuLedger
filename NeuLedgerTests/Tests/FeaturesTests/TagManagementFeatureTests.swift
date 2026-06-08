@@ -173,4 +173,43 @@ struct TagManagementFeatureTests {
 
         #expect(deletedId.value == id)
     }
+
+    // MARK: - addEdit Delegate
+
+    @Test("addEdit delegate dismissed closes sheet without reloading tags")
+    func testAddEditDelegateDismissedClearsSheet() async throws {
+        var initialState = TagManagementFeature.State()
+        initialState.addEdit = AddEditTagFeature.State(mode: .add)
+
+        let store = await TestStore(initialState: initialState) {
+            TagManagementFeature()
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.dismissed)))) {
+            $0.addEdit = nil
+        }
+        // 沒有 tagsLoaded 預期 — dismissed 只清 sheet
+    }
+
+    @Test("addEdit delegate saved closes sheet and reloads tags via listTags")
+    func testAddEditDelegateSavedClosesAndReloadsTags() async throws {
+        var initialState = TagManagementFeature.State()
+        initialState.addEdit = AddEditTagFeature.State(mode: .add)
+        initialState.tags = [Self.tagA]
+
+        let store = await TestStore(initialState: initialState) {
+            TagManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listTags = { [Self.tagA, Self.tagB] }
+        }
+
+        await store.send(.addEdit(.presented(.delegate(.saved)))) {
+            $0.addEdit = nil
+        }
+
+        await store.receive(\.tagsLoaded) {
+            $0.isLoading = false
+            $0.tags = [Self.tagA, Self.tagB]
+        }
+    }
 }

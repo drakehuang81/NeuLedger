@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Domain
 import Foundation
+import Common
 
 @Reducer
 public struct AddTransactionFeature: Sendable {
@@ -154,33 +155,6 @@ public struct AddTransactionFeature: Sendable {
 
     private enum CancelID { case task; case noteDebounce; case categorySuggest; case speechRecording }
 
-    private static func amountDecimal(from text: String) -> Decimal? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.generatesDecimalNumbers = true
-        if let number = formatter.number(from: trimmed) {
-            return number.decimalValue
-        }
-
-        let separators = [
-            formatter.groupingSeparator,
-            Locale.current.groupingSeparator,
-            ",",
-            "，",
-            " "
-        ]
-        let normalized = separators
-            .compactMap { $0 }
-            .reduce(trimmed) { partial, separator in
-                partial.replacingOccurrences(of: separator, with: "")
-            }
-
-        return Decimal(string: normalized)
-    }
-
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -266,7 +240,7 @@ public struct AddTransactionFeature: Sendable {
             case .saveTapped:
                 var hasError = false
 
-                let amountValue = Self.amountDecimal(from: state.amountText) ?? 0
+                let amountValue = state.amountText.parsedAmountDecimal ?? 0
                 if amountValue <= 0 {
                     state.amountError = String(localized: "add_transaction_error_amount")
                     hasError = true

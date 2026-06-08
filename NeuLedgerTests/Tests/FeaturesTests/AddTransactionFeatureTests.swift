@@ -210,6 +210,36 @@ struct AddTransactionFeatureTests {
         #expect(saved.value?.amount == 200)
     }
 
+    @Test("saveTapped parses grouped amountText as full amount")
+    func saveTappedParsesGroupedAmountText() async {
+        let saved = LockIsolated<Transaction?>(nil)
+        let category = Domain.Category(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000011")!,
+            name: "餐飲",
+            icon: "fork.knife",
+            color: "#FF6B6B",
+            type: .expense
+        )
+
+        var initialState = AddTransactionFeature.State(mode: .add(.expense))
+        initialState.amountText = "5,000"
+        initialState.accountId = Self.account1.id
+        initialState.categoryId = category.id
+
+        let store = await TestStore(initialState: initialState) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.record = { saved.setValue($0) }
+            $0.dismiss = DismissEffect { }
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(\.savedSuccessfully)
+        await store.receive(\.delegate.saved)
+
+        #expect(saved.value?.amount == 5_000)
+    }
+
     @Test("suggestCategoryTapped is no-op when AI unavailable")
     func suggestCategoryTappedUnavailable() async {
         let store = await makeStore(aiAvailable: false)

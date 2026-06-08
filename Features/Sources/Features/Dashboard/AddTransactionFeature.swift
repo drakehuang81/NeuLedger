@@ -154,6 +154,33 @@ public struct AddTransactionFeature: Sendable {
 
     private enum CancelID { case task; case noteDebounce; case categorySuggest; case speechRecording }
 
+    private static func amountDecimal(from text: String) -> Decimal? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.generatesDecimalNumbers = true
+        if let number = formatter.number(from: trimmed) {
+            return number.decimalValue
+        }
+
+        let separators = [
+            formatter.groupingSeparator,
+            Locale.current.groupingSeparator,
+            ",",
+            "，",
+            " "
+        ]
+        let normalized = separators
+            .compactMap { $0 }
+            .reduce(trimmed) { partial, separator in
+                partial.replacingOccurrences(of: separator, with: "")
+            }
+
+        return Decimal(string: normalized)
+    }
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -239,7 +266,7 @@ public struct AddTransactionFeature: Sendable {
             case .saveTapped:
                 var hasError = false
 
-                let amountValue = Decimal(string: state.amountText) ?? 0
+                let amountValue = Self.amountDecimal(from: state.amountText) ?? 0
                 if amountValue <= 0 {
                     state.amountError = String(localized: "add_transaction_error_amount")
                     hasError = true
@@ -249,19 +276,21 @@ public struct AddTransactionFeature: Sendable {
                     state.accountError = String(localized: "add_transaction_error_account")
                     hasError = true
                 }
-
-                if state.type != .transfer && state.categoryId == nil {
-                    if case .edit = state.mode {
-                        // In edit mode, allow saving with no category (preserving existing nil)
-                    } else {
-                        state.categoryError = String(localized: "add_transaction_error_category")
+                switch state.type {
+                case .transfer:
+                    if state.accountId != nil && state.accountId == state.toAccountId {
+                        state.transferError = String(localized: "add_transaction_error_same_account")
                         hasError = true
                     }
-                }
-
-                if state.type == .transfer && state.accountId != nil && state.accountId == state.toAccountId {
-                    state.transferError = String(localized: "add_transaction_error_same_account")
-                    hasError = true
+                case .income, .expense:
+                    if state.categoryId == nil {
+                        if case .edit = state.mode {
+                            // In edit mode, allow saving with no category (preserving existing nil)
+                        } else {
+                            state.categoryError = String(localized: "add_transaction_error_category")
+                            hasError = true
+                        }
+                    }
                 }
 
                 if hasError { return .none }

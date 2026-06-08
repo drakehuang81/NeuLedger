@@ -22,19 +22,21 @@ struct TxHero: View {
                     .font(Font.Design.size12Medium)
                     .foregroundStyle(transaction.type.amountDisplayColor)
             }
-            if let name = categoryName {
-                Text(name)
-                    .font(Font.Design.size12Medium)
-                    .foregroundStyle(Color.Design.textPrimary)
-            } else {
-                Text(Self.fallbackCategoryKey(for: transaction.type))
-                    .font(Font.Design.size12Medium)
-                    .foregroundStyle(Color.Design.textPrimary)
+            Group {
+                if let name = categoryName {
+                    Text(name)
+                        .font(Font.Design.size12Medium)
+                        .foregroundStyle(Color.Design.textPrimary)
+                } else {
+                    Text(Self.fallbackCategoryKey(for: transaction.type))
+                        .font(Font.Design.size12Medium)
+                        .foregroundStyle(Color.Design.textPrimary)
+                }
             }
+            .glassEffect(Glass.clear.tint(Color.Design.surface), in: Capsule())
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 5)
-        .glassEffect(Glass.clear.tint(Color.Design.surface), in: Capsule())
     }
 
     private var amountRow: some View {

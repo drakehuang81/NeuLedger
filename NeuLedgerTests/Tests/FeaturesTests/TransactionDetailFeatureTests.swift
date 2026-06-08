@@ -38,17 +38,38 @@ struct TransactionDetailFeatureTests {
         }
     }
 
-    @Test("savedWithTransaction updates state.transaction, dismisses sheet, sends delegate")
+    @Test("savedWithTransaction updates state.transaction, categoryName, dismisses sheet, sends delegate")
     func testEditSavedWithTransactionUpdatesStateAndSendsDelegate() async {
-        var initialState = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
-        initialState.editTransaction = AddTransactionFeature.State(mode: .edit(Self.sampleTransaction))
+        let oldCategory = Domain.Category(
+            id: UUID(uuidString: "33000000-0000-0000-0000-000000000001")!,
+            name: "餐飲", icon: "fork.knife", color: "#FF6B6B", type: .expense
+        )
+        let newCategory = Domain.Category(
+            id: UUID(uuidString: "33000000-0000-0000-0000-000000000002")!,
+            name: "交通", icon: "bus", color: "#3478F6", type: .expense
+        )
+        let originalTransaction = Transaction(
+            id: Self.sampleTransaction.id,
+            amount: 150,
+            date: Self.sampleTransaction.date,
+            note: "午餐",
+            categoryId: oldCategory.id,
+            accountId: Self.account.id,
+            toAccountId: nil,
+            type: .expense
+        )
+
+        var initialState = TransactionDetailFeature.State(transaction: originalTransaction)
+        initialState.categoryName = oldCategory.localizedName
+        initialState.account = Self.account
+        initialState.editTransaction = AddTransactionFeature.State(mode: .edit(originalTransaction))
 
         let updatedTransaction = Transaction(
-            id: Self.sampleTransaction.id,
+            id: originalTransaction.id,
             amount: 300,
-            date: Self.sampleTransaction.date,
+            date: originalTransaction.date,
             note: "晚餐",
-            categoryId: nil,
+            categoryId: newCategory.id,
             accountId: Self.account.id,
             toAccountId: nil,
             type: .expense
@@ -56,6 +77,9 @@ struct TransactionDetailFeatureTests {
 
         let store = await TestStore(initialState: initialState) {
             TransactionDetailFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAccounts = { [Self.account] }
+            $0.ledgerClient.listCategories = { _ in [oldCategory, newCategory] }
         }
 
         await store.send(.editTransaction(.presented(.delegate(.savedWithTransaction(updatedTransaction))))) {
@@ -63,6 +87,12 @@ struct TransactionDetailFeatureTests {
             $0.editTransaction = nil
         }
         await store.receive(\.delegate.updated)
+        await store.receive(\.loadDisplayNames)
+        await store.receive(\.namesLoaded) {
+            $0.categoryName = newCategory.localizedName
+            $0.account = Self.account
+            $0.toAccount = nil
+        }
     }
 
     // MARK: - Delete Flow

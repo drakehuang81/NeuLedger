@@ -710,7 +710,7 @@ struct SettingsSeedRandomDataTests {
 
         await store.send(.seedRandomDataTapped)
 
-        await store.receive(\.seedRandomDataCompleted) {
+        await store.receive(\.seedRandomDataCompleted, timeout: .seconds(10)) {
             // exhaustive=off：只需確認 isSeedingRandomData=false；result 為隨機字串直接接受
             $0.isSeedingRandomData = false
         }

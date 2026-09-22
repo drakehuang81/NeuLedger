@@ -23,7 +23,9 @@ public extension BudgetPeriod {
     /// 給 `TransactionFilter.dateRange`（`ClosedRange<Date>`）使用。
     func closedRange(containing date: Date, calendar: Calendar = .current) -> ClosedRange<Date> {
         let interval = dateInterval(containing: date, calendar: calendar)
-        return interval.start...interval.end.addingTimeInterval(-0.001)
+        let upper = interval.end.addingTimeInterval(-0.001)
+        // 防禦 `dateInterval` 的零長度 fallback：確保 lowerBound <= upperBound（退化為單一時刻）。
+        return interval.start...max(interval.start, upper)
     }
 
     /// 緊接在「包含 `date` 的期間」之前的那一期（例如「上個月」）。

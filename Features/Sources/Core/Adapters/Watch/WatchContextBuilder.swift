@@ -81,12 +81,7 @@ public enum WatchContextBuilder {
             $0.period == .monthly && $0.categoryId == nil
         }) else { return nil }
 
-        let components = calendar.dateComponents([.year, .month], from: now)
-        guard let startOfMonth = calendar.date(from: components),
-              let startOfNextMonth = calendar.date(
-                byAdding: .month, value: 1, to: startOfMonth
-              ) else { return nil }
-        let monthRange = startOfMonth..<startOfNextMonth
+        let monthRange = BudgetPeriod.monthly.dateInterval(containing: now, calendar: calendar)
 
         let monthExpenseTotal = transactions
             .filter { $0.type == .expense && monthRange.contains($0.date) }

@@ -310,6 +310,58 @@ struct FilterFeatureTests {
         #expect(state.selectedAccountIds == [Self.sampleAccount.id])
         #expect(state.selectedTagIds == [Self.sampleTag.id])
     }
+
+    // MARK: - Quick date range（來源：BudgetPeriod+Calendar）
+
+    private static var taipei: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Taipei")!
+        return cal
+    }
+
+    @Test("quickRangeSelected(.lastMonth) sets the previous calendar month with the last day fully included")
+    func testQuickRangeLastMonth() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let store = await TestStore(initialState: FilterFeature.State()) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+        }
+        let prev = BudgetPeriod.monthly.previousInterval(before: now, calendar: cal)
+        let lastDayEvening = cal.date(from: DateComponents(year: 2026, month: 2, day: 28, hour: 23))!
+
+        await store.send(.quickRangeSelected(.lastMonth)) {
+            $0.startDate = prev.start
+            $0.endDate = prev.end.addingTimeInterval(-0.001)
+            $0.activeQuickRange = .lastMonth
+            #expect($0.endDate! > lastDayEvening)   // 修掉「最後一天 00:00 截止」的舊 bug
+        }
+    }
+
+    @Test("manual startDateChanged clears activeQuickRange")
+    func testManualDateClearsQuickRange() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let store = await TestStore(initialState: FilterFeature.State()) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+        }
+        let thisMonth = BudgetPeriod.monthly.closedRange(containing: now, calendar: cal)
+        await store.send(.quickRangeSelected(.thisMonth)) {
+            $0.startDate = thisMonth.lowerBound
+            $0.endDate = thisMonth.upperBound
+            $0.activeQuickRange = .thisMonth
+        }
+        let custom = cal.date(from: DateComponents(year: 2026, month: 3, day: 5))!
+        await store.send(.startDateChanged(custom)) {
+            $0.startDate = custom
+            $0.activeQuickRange = nil
+        }
+    }
 }
 
 // MARK: - B3 補強：applyTapped dateRange 三分支

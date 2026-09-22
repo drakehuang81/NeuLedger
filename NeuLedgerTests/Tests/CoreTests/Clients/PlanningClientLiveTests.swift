@@ -82,6 +82,19 @@ struct PlanningClientLiveTests {
         )
     }
 
+    // MARK: - Period bounds (single source: BudgetPeriod+Calendar)
+
+    @Test("currentStatus period bounds equal BudgetPeriod.closedRange(containing: today)")
+    func testCurrentStatusPeriodBounds() async throws {
+        let container = try freshContainer()
+        let client = sut(container)
+        let b = budget()   // monthly
+        let status = try await client.currentStatus(b)
+        let expected = BudgetPeriod.monthly.closedRange(containing: Date())
+        #expect(status.periodStart == expected.lowerBound)
+        #expect(status.periodEnd == expected.upperBound)
+    }
+
     // MARK: - CRUD (migrated from BudgetClientTests)
 
     @Test("create stores budget and listAll returns it")

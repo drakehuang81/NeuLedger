@@ -264,14 +264,16 @@ enum TransactionAnalyticsKernel {
 
         var metrics: [BudgetGaugeMetrics] = []
         for budget in filteredBudgets {
-            let (periodStart, periodEnd) = currentPeriodRange(for: budget.period)
+            let interval = budget.period.dateInterval(containing: Date())
+            let periodStart = interval.start
+            let periodEnd = interval.end
             let typeRaw = TransactionType.expense.rawValue
             let rows = try fetch(
                 container: container,
                 predicate: #Predicate<SDTransaction> { tx in
                     tx.type == typeRaw
                         && tx.date >= periodStart
-                        && tx.date <= periodEnd
+                        && tx.date < periodEnd
                 },
                 sortBy: []
             )
@@ -310,18 +312,4 @@ enum TransactionAnalyticsKernel {
         descriptor.sortBy = sortBy
         return try context.fetch(descriptor)
     }
-}
-
-/// Calendar-aligned period bounds for `BudgetPeriod` containing today.
-/// Returns inclusive start...end pair (end - 1ms).
-private func currentPeriodRange(for period: BudgetPeriod) -> (start: Date, end: Date) {
-    let cal = Calendar.current
-    let component: Calendar.Component
-    switch period {
-    case .weekly:  component = .weekOfYear
-    case .monthly: component = .month
-    case .yearly:  component = .year
-    }
-    let interval = cal.dateInterval(of: component, for: Date()) ?? DateInterval(start: Date(), duration: 0)
-    return (interval.start, interval.end.addingTimeInterval(-0.001))
 }

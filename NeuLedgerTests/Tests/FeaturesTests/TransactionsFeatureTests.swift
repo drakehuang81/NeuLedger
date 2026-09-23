@@ -362,6 +362,42 @@ struct TransactionsFeatureTests {
             $0.transactions = [Self.sampleTransaction]
         }
     }
+
+    // MARK: - Delete window survives sheet dismissal（health-audit A2）
+
+    @Test("dismissing the detail sheet during the undo window commits the delete")
+    func testDismissDuringPendingDeleteCommits() async {
+        var detail = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        detail.pendingDelete = true
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.detail = detail
+        let deleted = LockIsolated<Transaction.ID?>(nil)
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { deleted.setValue($0) }
+        }
+        await store.send(.detail(.dismiss)) { $0.detail = nil }
+        await store.receive(\.transactionDeleted) { $0.transactions = [] }
+        #expect(deleted.value == Self.sampleTransaction.id)
+    }
+
+    @Test("dismissing the detail sheet without a pending delete does not delete")
+    func testDismissWithoutPendingDeleteIsNoop() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        let deleted = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { _ in deleted.setValue(true) }
+        }
+        await store.send(.detail(.dismiss)) { $0.detail = nil }
+        await store.finish()
+        #expect(deleted.value == false)
+    }
 }
 
 // MARK: - Task 1: searchDebounced → ledger.listAll(effectiveFilter) path（health-audit A7）

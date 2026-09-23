@@ -186,8 +186,20 @@ public struct TransactionsFeature: Sendable {
                 return .none
 
             case .detail(.dismiss):
+                guard let detail = state.detail, detail.pendingDelete else {
+                    state.detail = nil
+                    return .none
+                }
+                // 使用者在 5 秒 Undo 視窗內關掉 sheet：child 的計時器會隨 ifLet 被取消，
+                // 由 parent 立即提交刪除，避免「看起來刪了其實沒刪」（health-audit A2）。
+                let id = detail.transaction.id
                 state.detail = nil
-                return .none
+                return .run { send in
+                    try await ledger.delete(id)
+                    await send(.transactionDeleted(id))
+                } catch: { error, send in
+                    await send(.loadFailed(error.localizedDescription))
+                }
 
             case .detail:
                 return .none

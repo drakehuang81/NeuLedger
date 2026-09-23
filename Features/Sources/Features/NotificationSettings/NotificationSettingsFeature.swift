@@ -22,6 +22,7 @@ public struct NotificationSettingsFeature: Sendable {
         public var isAuthorized: Bool = false
         public var showPermissionDeniedBanner: Bool = false
         public var recurringManagement: RecurringTransactionManagementFeature.State = .init()
+        public var reminderError: String? = nil
 
         public init(
             dailyReminderEnabled: Bool = false,
@@ -30,7 +31,8 @@ public struct NotificationSettingsFeature: Sendable {
             warningThreshold: Int = 80,
             isAuthorized: Bool = false,
             showPermissionDeniedBanner: Bool = false,
-            recurringManagement: RecurringTransactionManagementFeature.State = .init()
+            recurringManagement: RecurringTransactionManagementFeature.State = .init(),
+            reminderError: String? = nil
         ) {
             self.dailyReminderEnabled = dailyReminderEnabled
             self.reminderDate = reminderDate
@@ -39,6 +41,7 @@ public struct NotificationSettingsFeature: Sendable {
             self.isAuthorized = isAuthorized
             self.showPermissionDeniedBanner = showPermissionDeniedBanner
             self.recurringManagement = recurringManagement
+            self.reminderError = reminderError
         }
     }
 
@@ -54,6 +57,7 @@ public struct NotificationSettingsFeature: Sendable {
         case permissionDenied
         case openSystemSettingsTapped
         case recurringManagement(RecurringTransactionManagementFeature.Action)
+        case reminderScheduleFailed(String)
     }
 
     // MARK: - Dependencies
@@ -112,7 +116,11 @@ public struct NotificationSettingsFeature: Sendable {
                     let hour = Calendar.current.component(.hour, from: state.reminderDate)
                     let minute = Calendar.current.component(.minute, from: state.reminderDate)
                     platformClient.setReminderTime(ReminderTime(hour: hour, minute: minute))
-                    return .run { _ in try await platformClient.scheduleDailyReminder() }
+                    return .run { _ in
+                        try await platformClient.scheduleDailyReminder()
+                    } catch: { error, send in
+                        await send(.reminderScheduleFailed(error.localizedDescription))
+                    }
                 } else {
                     return .run { send in
                         let granted = await platformClient.requestNotificationPermission()
@@ -131,7 +139,11 @@ public struct NotificationSettingsFeature: Sendable {
                 let minute = Calendar.current.component(.minute, from: date)
                 platformClient.setReminderTime(ReminderTime(hour: hour, minute: minute))
                 guard state.dailyReminderEnabled else { return .none }
-                return .run { _ in try await platformClient.scheduleDailyReminder() }
+                return .run { _ in
+                    try await platformClient.scheduleDailyReminder()
+                } catch: { error, send in
+                    await send(.reminderScheduleFailed(error.localizedDescription))
+                }
 
             case let .budgetWarningToggled(enabled):
                 if !enabled {
@@ -169,6 +181,13 @@ public struct NotificationSettingsFeature: Sendable {
                 return .none
 
             case .recurringManagement:
+                return .none
+
+            case let .reminderScheduleFailed(message):
+                // 排程失敗就把開關關回去，否則使用者以為提醒已設好（health-audit「其他確認項」）。
+                state.dailyReminderEnabled = false
+                platformClient.setDailyReminderEnabled(false)
+                state.reminderError = message
                 return .none
             }
         }

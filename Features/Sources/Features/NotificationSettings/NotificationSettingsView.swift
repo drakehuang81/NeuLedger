@@ -126,6 +126,12 @@ public struct NotificationSettingsView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
 
+                    if let error = store.reminderError {
+                        ErrorText(error)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                    }
+
                     // Time picker row — always visible
                     rowDivider
                     HStack {

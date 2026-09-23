@@ -407,4 +407,30 @@ struct NotificationSettingsFeatureTests {
 
         #expect(persistedThreshold.value == 70)
     }
+
+    // MARK: - dailyReminder 排程失敗
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("dailyReminderToggled(true): schedule failure reverts the toggle and shows reminderError")
+    func testScheduleFailureRevertsToggle() async {
+        var initial = NotificationSettingsFeature.State()
+        initial.isAuthorized = true
+        let enabledLog = LockIsolated<[Bool]>([])
+        let store = await TestStore(initialState: initial) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.setDailyReminderEnabled = { enabled in
+                enabledLog.withValue { log in log.append(enabled) }
+            }
+            $0.platformClient.setReminderTime = { _ in }
+            $0.platformClient.scheduleDailyReminder = { throw StubError() }
+        }
+        await store.send(.dailyReminderToggled(true)) { $0.dailyReminderEnabled = true }
+        await store.receive(\.reminderScheduleFailed) {
+            $0.dailyReminderEnabled = false
+            $0.reminderError = "boom"
+        }
+        #expect(enabledLog.value.last == false)
+    }
 }

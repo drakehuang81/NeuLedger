@@ -11,6 +11,7 @@ public struct SyncSettingsFeature: Sendable {
         public var migrationState: MigrationState = .idle
         public var lastSyncedAt: Date?
         public var isManualSyncing: Bool = false
+        public var syncNowError: String? = nil
 
         public enum MigrationState: Equatable {
             case idle
@@ -24,13 +25,15 @@ public struct SyncSettingsFeature: Sendable {
             isCloudKitAvailable: Bool = true,
             migrationState: MigrationState = .idle,
             lastSyncedAt: Date? = nil,
-            isManualSyncing: Bool = false
+            isManualSyncing: Bool = false,
+            syncNowError: String? = nil
         ) {
             self.isSyncEnabled = isSyncEnabled
             self.isCloudKitAvailable = isCloudKitAvailable
             self.migrationState = migrationState
             self.lastSyncedAt = lastSyncedAt
             self.isManualSyncing = isManualSyncing
+            self.syncNowError = syncNowError
         }
     }
 
@@ -42,6 +45,7 @@ public struct SyncSettingsFeature: Sendable {
         case migrationFailed(String)
         case syncNowTapped
         case syncNowFinished(Date)
+        case syncNowFailed(String)
     }
 
     @Dependency(\.platformClient) var platformClient
@@ -98,19 +102,27 @@ public struct SyncSettingsFeature: Sendable {
             case .syncNowTapped:
                 guard !state.isManualSyncing else { return .none }
                 state.isManualSyncing = true
+                state.syncNowError = nil
                 return .run { [clock] send in
                     let start = Date()
-                    try? await platformClient.requestSyncNow()
+                    try await platformClient.requestSyncNow()
                     let remaining = 1.0 - Date().timeIntervalSince(start)
                     if remaining > 0 {
                         try? await clock.sleep(for: .seconds(remaining))
                     }
                     await send(.syncNowFinished(platformClient.lastSyncedAt() ?? Date()))
+                } catch: { error, send in
+                    await send(.syncNowFailed(error.localizedDescription))
                 }
 
             case let .syncNowFinished(date):
                 state.isManualSyncing = false
                 state.lastSyncedAt = date
+                return .none
+
+            case let .syncNowFailed(message):
+                state.isManualSyncing = false
+                state.syncNowError = message
                 return .none
             }
         }

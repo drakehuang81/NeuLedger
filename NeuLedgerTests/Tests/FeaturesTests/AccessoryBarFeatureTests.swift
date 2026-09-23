@@ -124,6 +124,26 @@ struct AccessoryBarAIInputTests {
         await store.send(.aiInputSubmitted)
     }
 
+    @Test("aiInputDismissed cancels an in-flight extraction so no late sheet pops up")
+    func testDismissCancelsExtraction() async {
+        var initial = AccessoryBarFeature.State()
+        initial.isAIInputExpanded = true
+        initial.aiInputText = "午餐 120"
+        let store = await TestStore(initialState: initial) {
+            AccessoryBarFeature()
+        } withDependencies: {
+            $0.captureClient.isAvailable = { true }
+            $0.captureClient.extractFromText = { _ in
+                try await Task.sleep(for: .seconds(60))   // 若沒被取消，store.finish 會逾時失敗
+                return ExtractedTransaction(amount: 120, suggestedCategory: nil, description: nil, type: nil)
+            }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.aiInputSubmitted)
+        await store.send(.aiInputDismissed)
+        await store.finish(timeout: .seconds(2))
+    }
+
     @Test("aiInputSubmitted success path: clears stale error, sets loading, extracts and emits delegate")
     func submitSuccessPathExtractsAndEmitsDelegate() async {
         let extracted = ExtractedTransaction(

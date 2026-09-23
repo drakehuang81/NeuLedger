@@ -91,13 +91,13 @@ struct AccessoryBarFeature {
                 state.isAIInputLoading = false
                 state.aiInputError = nil
                 state.isRecording = false
+                // 關掉輸入列就一併取消擷取，避免遲到的結果彈出新增頁（health-audit A9）。
+                var effects: [Effect<Action>] = [.cancel(id: CancelID.aiExtraction)]
                 if wasRecording {
-                    return .merge(
-                        .cancel(id: CancelID.speechRecording),
-                        .run { _ in captureClient.stopVoiceSession() }
-                    )
+                    effects.append(.cancel(id: CancelID.speechRecording))
+                    effects.append(.run { _ in captureClient.stopVoiceSession() })
                 }
-                return .none
+                return .merge(effects)
 
             case .aiInputSubmitted:
                 guard !state.aiInputText.isEmpty, !state.isRecording else { return .none }

@@ -199,6 +199,8 @@ public struct SyncSettingsView: View {
                 lastSyncedRow
 
                 syncNowButton
+
+                syncNowErrorText
             }
             .frame(maxWidth: .infinity)
         }
@@ -334,6 +336,13 @@ public struct SyncSettingsView: View {
         }
         .buttonStyle(.plain)
         .disabled(store.isManualSyncing)
+    }
+
+    @ViewBuilder
+    private var syncNowErrorText: some View {
+        if let error = store.syncNowError {
+            ErrorText(error)
+        }
     }
 
     private var featureHighlights: some View {

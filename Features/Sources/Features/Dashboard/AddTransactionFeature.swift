@@ -377,6 +377,7 @@ public struct AddTransactionFeature: Sendable {
                         try await ledger.record(transaction)
                         let newNextDue = template.nextDate(after: template.nextDueDate)
                         await send(.delegate(.savedRecurringConfirmation(template.id, newNextDue)))
+                        await dismiss()
                         return
                     }
                     await send(.savedSuccessfully)

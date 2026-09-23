@@ -335,6 +335,7 @@ struct AddTransactionFeatureTests {
             isActive: true, createdAt: Date()
         )
         let addedTransaction = LockIsolated<Transaction?>(nil)
+        let dismissed = LockIsolated(false)
         let store = await TestStore(
             initialState: AddTransactionFeature.State(mode: .addRecurringConfirmation(template))
         ) {
@@ -343,6 +344,7 @@ struct AddTransactionFeatureTests {
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
             $0.ledgerClient.record = { addedTransaction.setValue($0) }
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
         }
         await MainActor.run {
             store.exhaustivity = .off
@@ -352,6 +354,7 @@ struct AddTransactionFeatureTests {
         await store.receive(\.delegate.savedRecurringConfirmation) { _ in }
 
         #expect(addedTransaction.value?.amount == 500)
+        #expect(dismissed.value == true)
     }
 
     @Test("saveTapped in .edit mode sends savedWithTransaction carrying updated values")

@@ -23,6 +23,10 @@ struct AccountManagementFeatureTests {
         isArchived: true
     )
 
+    private struct StubError: LocalizedError {
+        var errorDescription: String? { "boom" }
+    }
+
     // MARK: - Load Accounts
 
     @Test("task loads all accounts and then fetches balances")
@@ -220,12 +224,12 @@ struct AccountManagementFeatureTests {
             $0.alert = nil
         }
 
-        await store.receive(\.delegate.accountsChanged)
-
         await store.receive(\.accountsLoaded) {
             $0.isLoading = false
             $0.accounts = [Self.bankAccount]
         }
+
+        await store.receive(\.delegate.accountsChanged)
 
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.bankAccount.id: 5000]
@@ -273,12 +277,12 @@ struct AccountManagementFeatureTests {
             $0.alert = nil
         }
 
-        await store.receive(\.delegate.accountsChanged)
-
         await store.receive(\.accountsLoaded) {
             $0.isLoading = false
             $0.accounts = afterArchive
         }
+
+        await store.receive(\.delegate.accountsChanged)
 
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.bankAccount.id: 0]
@@ -306,11 +310,11 @@ struct AccountManagementFeatureTests {
 
         await store.send(.unarchiveTapped(id))
 
-        await store.receive(\.delegate.accountsChanged)
-
         await store.receive(\.accountsLoaded) {
             $0.accounts = [Self.cashAccount]
         }
+
+        await store.receive(\.delegate.accountsChanged)
 
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.cashAccount.id: 0]
@@ -338,10 +342,10 @@ struct AccountManagementFeatureTests {
 
         await store.send(.unarchiveTapped(id))
 
-        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.accountsLoaded) {
             $0.accounts = [Self.cashAccount]
         }
+        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.cashAccount.id: 0]
         }
@@ -363,10 +367,10 @@ struct AccountManagementFeatureTests {
             $0.addEdit = nil
         }
 
-        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.accountsLoaded) {
             $0.accounts = [Self.cashAccount]
         }
+        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.cashAccount.id: 1000]
         }
@@ -411,11 +415,11 @@ struct AccountManagementFeatureTests {
         await store.send(.alert(.presented(.deleteConfirmed(id)))) {
             $0.alert = nil
         }
-        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.accountsLoaded) {
             $0.isLoading = false
             $0.accounts = [Self.bankAccount]
         }
+        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.bankAccount.id: 5000]
         }
@@ -449,11 +453,11 @@ struct AccountManagementFeatureTests {
         await store.send(.alert(.presented(.archiveConfirmed(id)))) {
             $0.alert = nil
         }
-        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.accountsLoaded) {
             $0.isLoading = false
             $0.accounts = afterArchive
         }
+        await store.receive(\.delegate.accountsChanged)
         await store.receive(\.balancesLoaded) {
             $0.balances = [Self.bankAccount.id: 0]
         }
@@ -481,5 +485,58 @@ struct AccountManagementFeatureTests {
         await store.send(\.addEdit.dismiss) {
             $0.addEdit = nil
         }
+    }
+
+    // MARK: - Load / Action Error Visibility (stability effect errors)
+
+    @Test("archiveConfirmed reloads accounts before notifying the delegate")
+    func testArchiveNotifiesAfterReload() async {
+        let account = Self.cashAccount
+        var initial = AccountManagementFeature.State()
+        initial.accounts = [account]
+        var archivedMutable = account; archivedMutable.isArchived = true
+        let archived = archivedMutable
+        // Alert must be present for .alert(.presented(...)) to route through ifLet
+        initial.alert = AlertState {
+            TextState(String(localized: "alert_cannot_delete"))
+        } actions: {
+            ButtonState(action: .archiveConfirmed(account.id)) {
+                TextState(String(localized: "alert_archive_instead"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(localized: "alert_archive_account_message"))
+        }
+
+        let store = await TestStore(initialState: initial) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.archiveAccount = { _ in }
+            $0.ledgerClient.listAccounts = { [archived] }
+            $0.ledgerClient.balances = { [:] }
+        }
+
+        await store.send(.alert(.presented(.archiveConfirmed(account.id)))) {
+            $0.alert = nil
+        }
+        await store.receive(\.accountsLoaded) {
+            $0.isLoading = false
+            $0.accounts = [archived]
+        }
+        await store.receive(\.delegate.accountsChanged)
+        await store.receive(\.balancesLoaded)
+    }
+
+    @Test("deleteRequested failure sets actionError instead of a dead button")
+    func testDeleteRequestedFailure() async {
+        let store = await TestStore(initialState: AccountManagementFeature.State()) {
+            AccountManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in throw StubError() }
+        }
+        await store.send(.deleteRequested(UUID().uuidString))
+        await store.receive(\.actionFailed) { $0.actionError = "boom" }
     }
 }

@@ -25,6 +25,11 @@ public struct CategoryManagementView: View {
                     if store.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let error = store.loadError {
+                        SectionFailureView(message: error) {
+                            store.send(.task)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if store.filteredCategories.isEmpty {
                         EmptyStateView(
                             icon: "tag.slash",
@@ -108,6 +113,11 @@ public struct CategoryManagementView: View {
     private var categoriesList: some View {
         ScrollView {
             VStack(spacing: 10) {
+                if let error = store.actionError {
+                    ErrorText(error)
+                        .padding(.horizontal, 16)
+                }
+
                 GlassContainer(cornerRadius: 18, padding: 4) {
                     VStack(spacing: 0) {
                         ForEach(Array(store.filteredCategories.enumerated()), id: \.element.id) { index, category in

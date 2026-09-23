@@ -19,6 +19,11 @@ public struct BudgetManagementView: View {
                 if store.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = store.loadError {
+                    SectionFailureView(message: error) {
+                        store.send(.task)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if store.budgets.isEmpty {
                     emptyState
                 } else {
@@ -68,6 +73,11 @@ public struct BudgetManagementView: View {
     private var budgetList: some View {
         ScrollView {
             VStack(spacing: 18) {
+                if let error = store.actionError {
+                    ErrorText(error)
+                        .padding(.horizontal, 16)
+                }
+
                 summaryHero
                 budgetSection
             }

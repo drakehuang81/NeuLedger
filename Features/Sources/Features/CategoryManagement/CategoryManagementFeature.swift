@@ -13,6 +13,8 @@ public struct CategoryManagementFeature: Sendable {
         public var categories: [Domain.Category] = []
         public var selectedType: TransactionType = .expense
         public var isLoading: Bool = false
+        public var loadError: String? = nil
+        public var actionError: String? = nil
 
         @Presents public var addEdit: AddEditCategoryFeature.State?
         @Presents public var alert: AlertState<Action.Alert>?
@@ -31,6 +33,8 @@ public struct CategoryManagementFeature: Sendable {
     public enum Action: Sendable, Equatable {
         case task
         case categoriesLoaded([Domain.Category])
+        case loadFailed(String)
+        case actionFailed(String)
         case selectedTypeChanged(TransactionType)
         case addButtonTapped
         case categoryTapped(Domain.Category)
@@ -65,12 +69,25 @@ public struct CategoryManagementFeature: Sendable {
                     let categories = try await ledger.listCategories(nil)
                     let sorted = categories.sorted { $0.sortOrder < $1.sortOrder }
                     await send(.categoriesLoaded(sorted))
+                } catch: { error, send in
+                    await send(.loadFailed(error.localizedDescription))
                 }
                 .cancellable(id: CancelID.task)
 
             case let .categoriesLoaded(categories):
+                state.loadError = nil
+                state.actionError = nil
                 state.isLoading = false
                 state.categories = categories
+                return .none
+
+            case let .loadFailed(message):
+                state.isLoading = false
+                state.loadError = message
+                return .none
+
+            case let .actionFailed(message):
+                state.actionError = message
                 return .none
 
             // MARK: Type Selection
@@ -115,6 +132,8 @@ public struct CategoryManagementFeature: Sendable {
                     let categories = try await ledger.listCategories(nil)
                     let sorted = categories.sorted { $0.sortOrder < $1.sortOrder }
                     await send(.categoriesLoaded(sorted))
+                } catch: { error, send in
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case .alert:
@@ -127,6 +146,8 @@ public struct CategoryManagementFeature: Sendable {
                     let categories = try await ledger.listCategories(nil)
                     let sorted = categories.sorted { $0.sortOrder < $1.sortOrder }
                     await send(.categoriesLoaded(sorted))
+                } catch: { error, send in
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case .addEdit(.presented(.delegate(.dismissed))):

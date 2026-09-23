@@ -18,6 +18,10 @@ struct TagManagementFeatureTests {
         name: "工作", color: "#3478F6"
     )
 
+    private struct StubError: LocalizedError {
+        var errorDescription: String? { "boom" }
+    }
+
     // MARK: - Load Tags
 
     @Test("task loads all tags")
@@ -210,6 +214,22 @@ struct TagManagementFeatureTests {
         await store.receive(\.tagsLoaded) {
             $0.isLoading = false
             $0.tags = [Self.tagA, Self.tagB]
+        }
+    }
+
+    // MARK: - Load Error Visibility (stability effect errors)
+
+    @Test(".task failure sets loadError and clears isLoading")
+    func testTaskFailure() async {
+        let store = await TestStore(initialState: TagManagementFeature.State()) {
+            TagManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.listTags = { throw StubError() }
+        }
+        await store.send(.task) { $0.isLoading = true }
+        await store.receive(\.loadFailed) {
+            $0.isLoading = false
+            $0.loadError = "boom"
         }
     }
 }

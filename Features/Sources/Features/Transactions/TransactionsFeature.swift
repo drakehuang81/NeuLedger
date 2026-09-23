@@ -16,6 +16,9 @@ public struct TransactionsFeature: Sendable {
         public var isLoading: Bool = false
         public var deleteConfirmationId: Transaction.ID? = nil
 
+        /// 最近一次載入或刪除失敗的訊息；成功載入後清空。View 用 SectionFailureView 顯示。
+        public var loadError: String? = nil
+
         @Presents var detail: TransactionDetailFeature.State?
         @Presents var filter: FilterFeature.State?
         @Presents var addTransaction: AddTransactionFeature.State?
@@ -30,6 +33,13 @@ public struct TransactionsFeature: Sendable {
             activeFilter.dateRange != nil
         }
 
+        /// 列表查詢一律用這個：使用者的篩選條件 + 搜尋字串（health-audit A7：搜尋不再丟掉篩選）。
+        var effectiveFilter: TransactionFilter {
+            var filter = activeFilter
+            filter.searchText = searchText.isEmpty ? nil : searchText
+            return filter
+        }
+
     }
 
     // MARK: - Action
@@ -37,6 +47,7 @@ public struct TransactionsFeature: Sendable {
     public enum Action: Sendable, Equatable {
         case task
         case transactionsLoaded([Transaction])
+        case loadFailed(String)
 
         case searchTextChanged(String)
         case searchDebounced
@@ -62,8 +73,19 @@ public struct TransactionsFeature: Sendable {
     @Dependency(\.ledgerClient) var ledger
 
     private enum CancelID {
-        case task
-        case search
+        case load            // 所有列表查詢共用，cancelInFlight 避免舊查詢覆蓋新結果
+        case searchDebounce  // 只給 debounce 用
+    }
+
+    /// 所有列表載入共用：成功 → transactionsLoaded，失敗 → loadFailed。
+    private func reload(_ filter: TransactionFilter) -> Effect<Action> {
+        .run { send in
+            let rows = try await ledger.listAll(filter: filter)
+            await send(.transactionsLoaded(rows.map(\.transaction)))
+        } catch: { error, send in
+            await send(.loadFailed(error.localizedDescription))
+        }
+        .cancellable(id: CancelID.load, cancelInFlight: true)
     }
 
     // MARK: - Body
@@ -74,38 +96,33 @@ public struct TransactionsFeature: Sendable {
             // MARK: Lifecycle
             case .task:
                 state.isLoading = true
-                return .run { [filter = state.activeFilter] send in
-                    let transactions = try await ledger.listAll(filter: filter)
-                    await send(.transactionsLoaded(transactions.map(\.transaction)))
-                }
-                .cancellable(id: CancelID.task)
+                state.loadError = nil
+                return reload(state.effectiveFilter)
 
             case let .transactionsLoaded(transactions):
                 state.isLoading = false
+                state.loadError = nil
                 state.transactions = transactions.sorted { $0.date > $1.date }
+                return .none
+
+            case let .loadFailed(message):
+                state.isLoading = false
+                state.loadError = message
                 return .none
 
             // MARK: Search
             case let .searchTextChanged(text):
                 state.searchText = text
                 if text.isEmpty {
-                    return .run { [filter = state.activeFilter] send in
-                        let transactions = try await ledger.listAll(filter: filter)
-                        await send(.transactionsLoaded(transactions.map(\.transaction)))
-                    }
-                    .cancellable(id: CancelID.search, cancelInFlight: true)
+                    return reload(state.effectiveFilter)
                 }
                 return .run { send in
                     await send(.searchDebounced)
                 }
-                .debounce(id: CancelID.search, for: 0.3, scheduler: RunLoop.main)
+                .debounce(id: CancelID.searchDebounce, for: 0.3, scheduler: RunLoop.main)
 
             case .searchDebounced:
-                let text = state.searchText
-                return .run { send in
-                    let results = try await ledger.search(text)
-                    await send(.transactionsLoaded(results.map(\.transaction)))
-                }
+                return reload(state.effectiveFilter)
 
             // MARK: Filter
             case .filterButtonTapped:
@@ -114,10 +131,7 @@ public struct TransactionsFeature: Sendable {
 
             case let .filter(.presented(.delegate(.filterApplied(newFilter)))):
                 state.activeFilter = newFilter
-                return .run { [filter = newFilter] send in
-                    let results = try await ledger.listAll(filter: filter)
-                    await send(.transactionsLoaded(results.map(\.transaction)))
-                }
+                return reload(state.effectiveFilter)
 
             case .filter:
                 return .none
@@ -146,6 +160,8 @@ public struct TransactionsFeature: Sendable {
                 return .run { send in
                     try await ledger.delete(id)
                     await send(.transactionDeleted(id))
+                } catch: { error, send in
+                    await send(.loadFailed(error.localizedDescription))
                 }
 
             case .deleteCancelled:
@@ -179,10 +195,7 @@ public struct TransactionsFeature: Sendable {
             // MARK: AddTransaction
             case .addTransaction(.presented(.delegate(.saved))):
                 state.addTransaction = nil
-                return .run { [filter = state.activeFilter] send in
-                    let transactions = try await ledger.listAll(filter: filter)
-                    await send(.transactionsLoaded(transactions.map(\.transaction)))
-                }
+                return reload(state.effectiveFilter)
 
             case .addTransaction(.presented(.delegate(.dismissed))):
                 state.addTransaction = nil

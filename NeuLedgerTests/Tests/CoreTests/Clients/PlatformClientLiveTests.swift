@@ -146,7 +146,11 @@ struct PlatformClientLiveTests {
 
         let client = sut(container: container)
         let result = try await client.resolveRecurringConfirmation(template.id)
-        #expect(result == .recurringConfirmation(template))
+        // 從 store 讀回的範本一定帶錨點（mapper 用 nextDueDate 回填舊資料），
+        // 所以比對對象要用同樣被錨定過的版本。
+        var expected = template
+        expected.anchorDate = template.nextDueDate
+        #expect(result == .recurringConfirmation(expected))
     }
 
     @Test("resolveRecurringConfirmation returns .none for an unknown id")

@@ -98,4 +98,52 @@ struct SDRecurringTransactionMappingTests {
         #expect(matches.count == 1)
         #expect(matches.first?.id == a.id)
     }
+
+    @Test("anchorDate round-trips through the SwiftData model")
+    func testAnchorDateRoundTrips() throws {
+        let anchor = Date(timeIntervalSince1970: 1_767_139_200)   // 2026-01-31
+        let domain = RecurringTransaction(
+            id: UUID(), amount: 18_000, note: "rent",
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: anchor, isActive: true, createdAt: anchor,
+            anchorDate: anchor
+        )
+        let model = SDRecurringTransaction.from(domain, context: context)
+        #expect(model.anchorDate == anchor)
+        #expect(model.toDomain().anchorDate == anchor)
+    }
+
+    @Test("a legacy row with no anchorDate reads back anchored at its nextDueDate")
+    func testLegacyRowBackfillsAnchorFromNextDueDate() throws {
+        let due = Date(timeIntervalSince1970: 1_767_139_200)
+        let model = SDRecurringTransaction(
+            amount: 18_000, accountId: UUID().uuidString,
+            typeRaw: TransactionType.expense.rawValue,
+            frequencyRaw: BudgetPeriod.monthly.rawValue,
+            nextDueDate: due
+        )
+        model.anchorDate = nil                       // 模擬遷移前寫入的資料列
+        #expect(model.toDomain().anchorDate == due)
+    }
+
+    @Test("applyChanges persists a re-anchored template")
+    func testApplyChangesWritesAnchorDate() throws {
+        let due = Date(timeIntervalSince1970: 1_767_139_200)
+        let later = due.addingTimeInterval(86_400 * 40)
+        var domain = RecurringTransaction(
+            id: UUID(), amount: 1, note: nil,
+            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: due, isActive: true, createdAt: due,
+            anchorDate: due
+        )
+        let model = SDRecurringTransaction.from(domain, context: context)
+
+        domain.nextDueDate = later
+        domain.anchorDate = later
+        model.applyChanges(from: domain, context: context)
+
+        #expect(model.anchorDate == later)
+    }
 }

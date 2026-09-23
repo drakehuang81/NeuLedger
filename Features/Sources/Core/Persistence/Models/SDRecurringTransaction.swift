@@ -43,6 +43,10 @@ final class SDRecurringTransaction {
     /// The date this recurring transaction was first created.
     var createdAt: Date = Date()
 
+    /// 系列錨點（使用者設定的到期日）。舊資料為 `nil`，讀取時以 `nextDueDate` 回填。
+    /// CloudKit 要求新增欄位必須 optional：維持 `Date?`，不要改成非 optional。
+    var anchorDate: Date?
+
     init(
         id: UUID = UUID(),
         amount: Decimal,
@@ -55,7 +59,8 @@ final class SDRecurringTransaction {
         frequencyRaw: String,
         nextDueDate: Date,
         isActive: Bool = true,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        anchorDate: Date? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -69,5 +74,6 @@ final class SDRecurringTransaction {
         self.nextDueDate = nextDueDate
         self.isActive = isActive
         self.createdAt = createdAt
+        self.anchorDate = anchorDate
     }
 }

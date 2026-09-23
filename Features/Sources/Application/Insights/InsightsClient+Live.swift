@@ -51,17 +51,8 @@ private struct QueryTransactionsTool: Tool {
             ? (start ?? .distantPast)...(end ?? .distantFuture)
             : nil
 
-        // Inline filter mirroring the former `transactionClient.fetch(filter)`.
-        let all = try await transactionStore.fetchAll()
-        let transactions = all.filter { txn in
-            if let categoryIds {
-                guard let cid = txn.categoryId, categoryIds.contains(cid) else { return false }
-            }
-            if let dateRange {
-                guard dateRange.contains(txn.date) else { return false }
-            }
-            return true
-        }
+        let filter = TransactionFilter(categoryIds: categoryIds, dateRange: dateRange)
+        let transactions = try await transactionStore.fetchAll().filter(filter.matches)
 
         if transactions.isEmpty {
             return String(localized: "ai_tool_no_transactions", bundle: .main)

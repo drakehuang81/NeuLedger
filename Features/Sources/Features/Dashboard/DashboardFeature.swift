@@ -389,7 +389,7 @@ public struct DashboardFeature: Sendable {
             do {
                 let all = try await ledger.listAll(TransactionFilter()).map(\.transaction)
                 let scoped = accountID.map { id in
-                    all.filter { $0.accountId == id || $0.toAccountId == id }
+                    all.filter { $0.involves(account: id) }
                 } ?? all
                 let sorted = scoped.sorted { $0.date > $1.date }
                 await send(.transactionsUpdated(

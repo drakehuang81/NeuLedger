@@ -131,7 +131,7 @@ struct LedgerClientLiveTests {
 
         results = try await sut.listAll(TransactionFilter(accountIds: [acc1]))
         #expect(results.count == 2)
-        #expect(results.allSatisfy { $0.transaction.accountId == acc1 })
+        #expect(results.allSatisfy { $0.transaction.involves(account: acc1) })
 
         results = try await sut.listAll(TransactionFilter(tagIds: [tag1.id]))
         #expect(results.count == 2)
@@ -143,6 +143,34 @@ struct LedgerClientLiveTests {
 
         results = try await sut.listAll(TransactionFilter(dateRange: now.addingTimeInterval(-86400*1.5)...now.addingTimeInterval(86400)))
         #expect(results.count == 2)
+    }
+
+    @Test("listAll(accountIds:) includes transfers INTO the account — same semantics as balance")
+    func testListAllAccountFilterIncludesIncomingTransfers() async throws {
+        let accA = UUID().uuidString
+        let accB = UUID().uuidString
+        let out = Transaction(amount: 100, date: Date(), accountId: accA, type: .expense)
+        let transferIn = Transaction(amount: 500, date: Date(), accountId: accB, toAccountId: accA, type: .transfer)
+        let unrelated = Transaction(amount: 50, date: Date(), accountId: accB, type: .expense)
+        try await sut.record(out)
+        try await sut.record(transferIn)
+        try await sut.record(unrelated)
+
+        let results = try await sut.listAll(TransactionFilter(accountIds: [accA]))
+        #expect(Set(results.map(\.transaction.id)) == Set([out.id, transferIn.id]))
+    }
+
+    @Test("balance folds signedEffect: income +, expense −, transfer out −, transfer in +")
+    func testBalanceSignedEffect() async throws {
+        let accA = UUID().uuidString
+        let accB = UUID().uuidString
+        try await sut.record(Transaction(amount: 1000, date: Date(), accountId: accA, type: .income))
+        try await sut.record(Transaction(amount: 300, date: Date(), accountId: accA, type: .expense))
+        try await sut.record(Transaction(amount: 200, date: Date(), accountId: accA, toAccountId: accB, type: .transfer))
+        try await sut.record(Transaction(amount: 50, date: Date(), accountId: accB, type: .expense))
+
+        #expect(try await sut.balance(accA) == 500)
+        #expect(try await sut.balance(accB) == 150)
     }
 
     @Test("search matches note text case-insensitively")

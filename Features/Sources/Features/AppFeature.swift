@@ -61,11 +61,16 @@ struct AppFeature {
                 return .run { send in
                     let canSkipOnboarding = try await platformClient.canSkipOnboarding()
                     await send(.route(canSkipOnboarding ? .main : .onboarding))
+                } catch: { _, send in
+                    // 讀不到 onboarding 狀態時寧可多問一次，也不要永遠停在 splash（health-audit A4）。
+                    await send(.route(.onboarding))
                 }
             case let .deepLinkReceived(url):
                 return .run { send in
                     let destination = try await platformClient.parseLink(url)
                     await send(.route(destination))
+                } catch: { _, _ in
+                    // 無法解析的連結直接忽略；此時沒有畫面能承接錯誤。
                 }
             case .onboarding(.delegate(.onboardingCompleted)):
                 return .send(.route(.main))

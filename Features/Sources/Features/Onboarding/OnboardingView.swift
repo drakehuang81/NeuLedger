@@ -68,8 +68,13 @@ struct OnboardingView: View {
                 .opacity(continueDisabled ? 0.5 : 1)
                 .disabled(continueDisabled)
         case .ready:
-            PrimaryButton("onboarding_ready_button") { store.send(.nextButtonTapped) }
-                .disabled(store.currentStep == .done)
+            VStack(spacing: 8) {
+                if let error = store.setupError {
+                    ErrorText(error)
+                }
+                PrimaryButton("onboarding_ready_button") { store.send(.nextButtonTapped) }
+                    .disabled(store.currentStep == .done)
+            }
         case .done:
             EmptyView()
         }

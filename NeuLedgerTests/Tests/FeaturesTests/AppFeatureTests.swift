@@ -193,4 +193,35 @@ struct AppFeatureTests {
             $0 = .onboarding(OnboardingFeature.State())
         }
     }
+
+    // MARK: - Splash / deep-link error fallback (health-audit A4)
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("splashCompleted falls back to onboarding when canSkipOnboarding throws")
+    func testSplashFallsBackToOnboarding() async {
+        let store = await TestStore(
+            initialState: AppFeature.State()
+        ) {
+            AppFeature()
+        } withDependencies: {
+            $0.platformClient.canSkipOnboarding = { throw StubError() }
+        }
+
+        await store.send(\.splashCompleted)
+        await store.receive(\.route.onboarding) {
+            $0 = .onboarding(OnboardingFeature.State())
+        }
+    }
+
+    @Test("deepLinkReceived ignores a link that fails to parse")
+    func testDeepLinkParseFailureIsIgnored() async {
+        let store = await TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.platformClient.parseLink = { _ in throw StubError() }
+        }
+        await store.send(.deepLinkReceived(URL(string: "neuledger://nope")!))
+        await store.finish()
+    }
 }

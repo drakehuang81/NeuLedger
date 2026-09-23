@@ -109,8 +109,8 @@ struct AddTransactionFeatureTests {
             $0.ledgerClient.record = { _ in }
         }
 
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
     }
 
@@ -203,8 +203,8 @@ struct AddTransactionFeatureTests {
             $0.dismiss = DismissEffect { }
         }
 
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
         #expect(saved.value != nil)
         #expect(saved.value?.amount == 200)
@@ -233,8 +233,8 @@ struct AddTransactionFeatureTests {
             $0.dismiss = DismissEffect { }
         }
 
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(saved.value?.amount == 5_000)
@@ -382,8 +382,8 @@ struct AddTransactionFeatureTests {
             $0.ledgerClient.update = { updatedCapture.setValue($0) }
         }
 
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfullyWithTransaction)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfullyWithTransaction) { $0.isSaving = false }
         await store.receive(\.delegate.savedWithTransaction)
 
         #expect(updatedCapture.value?.amount == 250)
@@ -515,6 +515,69 @@ struct AddTransactionRecurringTemplateTests {
 
         // createRecurring 不應被呼叫
         #expect(createRecurringCallCount.value == 0)
+    }
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("saveTapped: record failure sets saveError, resets isSaving, and does not dismiss")
+    func testSaveFailureIsVisible() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense), date: Date(timeIntervalSince1970: 1_000_000))
+        initial.amountText = "500"
+        initial.accountId  = Self.account.id
+        initial.categoryId = Self.category.id
+        let dismissed = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [Self.account] }
+            $0.ledgerClient.listCategories     = { _ in [Self.category] }
+            $0.ledgerClient.defaultAccountId   = { nil }
+            $0.captureClient.isAvailable       = { false }
+            $0.ledgerClient.record             = { _ in throw StubError() }
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "boom"
+        }
+        #expect(dismissed.value == false)
+    }
+
+    @Test("saveTapped while isSaving is ignored (no double write)")
+    func testSaveWhileSavingIsIgnored() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense), date: Date())
+        initial.amountText = "500"
+        initial.accountId  = Self.account.id
+        initial.categoryId = Self.category.id
+        initial.isSaving   = true
+        let records = LockIsolated(0)
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.record = { _ in records.withValue { $0 += 1 } }
+        }
+        await store.send(.saveTapped)
+        await store.finish()
+        #expect(records.value == 0)
+    }
+
+    @Test(".task failure sets optionsError and clears isLoading")
+    func testOptionsLoadFailure() async {
+        let store = await TestStore(initialState: AddTransactionFeature.State(mode: .add(.expense), date: Date())) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { throw StubError() }
+            $0.ledgerClient.listCategories     = { _ in [] }
+            $0.ledgerClient.defaultAccountId   = { nil }
+            $0.captureClient.isAvailable       = { false }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.task) { $0.isLoading = true }
+        await store.receive(\.optionsLoadFailed) {
+            $0.isLoading = false
+            $0.optionsError = "boom"
+        }
     }
 }
 

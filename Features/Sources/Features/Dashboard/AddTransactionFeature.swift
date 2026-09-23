@@ -42,6 +42,13 @@ public struct AddTransactionFeature: Sendable {
         public var accounts: [Account]
         public var categories: [Domain.Category]
         public var isLoading: Bool
+        /// 選項（帳戶／分類）載入失敗的訊息。
+        public var optionsError: String? = nil
+
+        /// 儲存進行中；View 停用儲存鈕、reducer 忽略重複的 saveTapped。
+        public var isSaving: Bool = false
+        /// 最近一次儲存失敗的訊息（inline 顯示）。
+        public var saveError: String? = nil
 
         // AI assistance state
         public var isBackgroundParsingNote: Bool = false
@@ -121,9 +128,11 @@ public struct AddTransactionFeature: Sendable {
         case recurringFrequencyChanged(BudgetPeriod)
 
         case saveTapped
+        case saveFailed(String)
         case dismiss
         case savedSuccessfully
         case savedSuccessfullyWithTransaction(Transaction)
+        case optionsLoadFailed(String)
 
         case delegate(Delegate)
 
@@ -186,13 +195,21 @@ public struct AddTransactionFeature: Sendable {
 
             case .task:
                 state.isLoading = true
+                state.optionsError = nil
                 return .run { send in
                     async let accounts = ledger.listActiveAccounts()
                     async let categories = ledger.listCategories(nil)
                     let (a, c) = try await (accounts, categories)
                     await send(.optionsLoaded(accounts: a, categories: c))
+                } catch: { error, send in
+                    await send(.optionsLoadFailed(error.localizedDescription))
                 }
                 .cancellable(id: CancelID.task)
+
+            case let .optionsLoadFailed(message):
+                state.isLoading = false
+                state.optionsError = message
+                return .none
 
             case let .optionsLoaded(accounts, categories):
                 state.isLoading = false
@@ -268,6 +285,10 @@ public struct AddTransactionFeature: Sendable {
                 }
 
                 if hasError { return .none }
+
+                guard !state.isSaving else { return .none }
+                state.isSaving = true
+                state.saveError = nil
 
                 let mode = state.mode
                 let date = state.date
@@ -359,15 +380,24 @@ public struct AddTransactionFeature: Sendable {
                         return
                     }
                     await send(.savedSuccessfully)
+                } catch: { error, send in
+                    await send(.saveFailed(error.localizedDescription))
                 }
 
+            case let .saveFailed(message):
+                state.isSaving = false
+                state.saveError = message
+                return .none
+
             case .savedSuccessfully:
+                state.isSaving = false
                 return .run { send in
                     await send(.delegate(.saved))
                     await dismiss()
                 }
 
             case let .savedSuccessfullyWithTransaction(transaction):
+                state.isSaving = false
                 return .run { send in
                     await send(.delegate(.savedWithTransaction(transaction)))
                     await dismiss()

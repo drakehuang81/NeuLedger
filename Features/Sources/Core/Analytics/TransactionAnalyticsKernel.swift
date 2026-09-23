@@ -277,12 +277,7 @@ enum TransactionAnalyticsKernel {
                 },
                 sortBy: []
             )
-            let categoryFilter = budget.categoryId
-            let scoped = rows.filter { tx in
-                guard let catId = categoryFilter else { return true }
-                return tx.categoryId == catId
-            }
-            let spent = scoped.reduce(Decimal.zero) { $0 + $1.amount }
+            let spent = budget.spent(in: rows.map(scalarTransaction))
 
             let label: String
             if let catId = budget.categoryId, let name = categoryNamesById[catId] {
@@ -301,6 +296,25 @@ enum TransactionAnalyticsKernel {
     }
 
     // MARK: - Internals
+
+    /// 只讀純量欄位的 Domain 投影（不碰 `tags` 關聯），給 `Budget.spent(in:)` /
+    /// `Transaction.involves(account:)` 等 Domain 規則使用。
+    private static func scalarTransaction(_ tx: SDTransaction) -> Transaction {
+        Transaction(
+            id: tx.id,
+            amount: tx.amount,
+            date: tx.date,
+            note: tx.note,
+            categoryId: tx.categoryId,
+            accountId: tx.accountId,
+            toAccountId: tx.toAccountId,
+            type: TransactionType(rawValue: tx.type) ?? .expense,
+            tags: [],
+            aiSuggested: tx.aiSuggested,
+            createdAt: tx.createdAt,
+            updatedAt: tx.updatedAt
+        )
+    }
 
     private static func fetch(
         container: ModelContainer,

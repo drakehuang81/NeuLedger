@@ -41,13 +41,7 @@ extension PlanningClient: DependencyKey {
             currentStatus: { budget in
                 let range = budget.period.closedRange(containing: Date())
                 let all = try await transactionStore.fetchAll()
-                let inPeriod = all.filter { txn in
-                    guard range.contains(txn.date) else { return false }
-                    guard txn.type == .expense else { return false }
-                    guard let scopedCategoryId = budget.categoryId else { return true }
-                    return txn.categoryId == scopedCategoryId
-                }
-                let spent = inPeriod.reduce(Decimal.zero) { $0 + $1.amount }
+                let spent = budget.spent(in: all.filter { range.contains($0.date) })
                 return BudgetStatus(
                     budget: budget,
                     periodStart: range.lowerBound,

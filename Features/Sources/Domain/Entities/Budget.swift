@@ -71,13 +71,7 @@ public extension Budget {
         guard amount > 0 else {
             return BudgetWarningOutcome(shouldWarn: false, usedPercent: 0)
         }
-        let totalSpent = transactionsInPeriod
-            .filter { txn in
-                guard txn.type == .expense else { return false }
-                guard let scopedCategoryId = categoryId else { return true }
-                return txn.categoryId == scopedCategoryId
-            }
-            .reduce(into: Decimal(0)) { $0 += $1.amount }
+        let totalSpent = spent(in: transactionsInPeriod)
         let ratio = (totalSpent / amount * 100) as NSDecimalNumber
         let usedPercent = ratio.intValue   // truncation is intentional (conservative)
         let shouldWarn = usedPercent >= threshold

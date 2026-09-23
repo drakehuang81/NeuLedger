@@ -115,6 +115,34 @@ struct WatchContextBuilderTests {
         #expect(snapshot.monthBudgetProgress == nil)
     }
 
+    @Test("monthBudgetProgress = overall monthly budget spent ratio, in-month expenses only, category budgets ignored")
+    func monthBudgetProgressRatio() async throws {
+        let accountId = UUID().uuidString
+        let cal = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let lastMonth = cal.date(byAdding: .month, value: -1, to: now)!
+        let txns: [Transaction] = [
+            Transaction(amount: 250, date: now, accountId: accountId, type: .expense),
+            Transaction(amount: 400, date: lastMonth, accountId: accountId, type: .expense),
+            Transaction(amount: 900, date: now, accountId: accountId, type: .income),
+        ]
+        let container = try await makeSeededContainer(transactions: txns)
+        let overall = Budget(name: "總預算", amount: 1000, categoryId: nil, period: .monthly, startDate: now)
+        let scoped = Budget(name: "餐費", amount: 100, categoryId: UUID(), period: .monthly, startDate: now)
+
+        let snapshot = try await withDependencies {
+            $0.calendar = cal
+            $0.modelContainer = container
+            $0.planningClient.listActive = { @Sendable in [scoped, overall] }
+            $0.carrierClient.listAll = { @Sendable in [] }
+        } operation: {
+            try await WatchContextBuilder.build(now: now, defaultAccountId: accountId)
+        }
+
+        #expect(snapshot.monthBudgetProgress == 0.25)
+        #expect(snapshot.todayTotal == 250)
+    }
+
     @Test("Snapshot mirrors carriers from carrierClient in list order")
     func mirrorsCarriersInListOrder() async throws {
         let container = try await makeSeededContainer()

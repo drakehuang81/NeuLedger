@@ -31,10 +31,6 @@ public struct RecurringTransaction: Identifiable, Equatable, Hashable, Sendable,
 
     /// Returns the next due date after `base` according to `frequency`.
     public func nextDate(after base: Date, calendar: Calendar = .current) -> Date {
-        switch frequency {
-        case .weekly:  return calendar.date(byAdding: .weekOfYear, value: 1, to: base) ?? base
-        case .monthly: return calendar.date(byAdding: .month,      value: 1, to: base) ?? base
-        case .yearly:  return calendar.date(byAdding: .year,       value: 1, to: base) ?? base
-        }
+        frequency.next(after: base, calendar: calendar)
     }
 }

@@ -296,6 +296,29 @@ struct FilterFeatureTests {
         }
     }
 
+    @Test("clearAllTapped also clears activeQuickRange")
+    func testClearAllClearsActiveQuickRange() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let thisMonth = BudgetPeriod.monthly.closedRange(containing: now, calendar: cal)
+        let store = await TestStore(initialState: FilterFeature.State()) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+        }
+        await store.send(.quickRangeSelected(.thisMonth)) {
+            $0.startDate = thisMonth.lowerBound
+            $0.endDate = thisMonth.upperBound
+            $0.activeQuickRange = .thisMonth
+        }
+        await store.send(.clearAllTapped) {
+            $0.startDate = nil
+            $0.endDate = nil
+            $0.activeQuickRange = nil
+        }
+    }
+
     @Test("initialFilter pre-populates selections from TransactionFilter")
     func testInitialFilterPrePopulates() async {
         let filter = TransactionFilter(
@@ -309,6 +332,100 @@ struct FilterFeatureTests {
         #expect(state.selectedCategoryIds == [Self.sampleCategory.id])
         #expect(state.selectedAccountIds == [Self.sampleAccount.id])
         #expect(state.selectedTagIds == [Self.sampleTag.id])
+    }
+
+    // MARK: - Quick date range（來源：BudgetPeriod+Calendar）
+
+    private static var taipei: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Taipei")!
+        return cal
+    }
+
+    @Test("quickRangeSelected(.lastMonth) sets the previous calendar month with the last day fully included")
+    func testQuickRangeLastMonth() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let store = await TestStore(initialState: FilterFeature.State()) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+        }
+        let prev = BudgetPeriod.monthly.previousInterval(before: now, calendar: cal)
+        let lastDayEvening = cal.date(from: DateComponents(year: 2026, month: 2, day: 28, hour: 23))!
+
+        await store.send(.quickRangeSelected(.lastMonth)) {
+            $0.startDate = prev.start
+            $0.endDate = prev.end.addingTimeInterval(-0.001)
+            $0.activeQuickRange = .lastMonth
+            #expect($0.endDate! > lastDayEvening)   // 修掉「最後一天 00:00 截止」的舊 bug
+        }
+    }
+
+    @Test("manual startDateChanged clears activeQuickRange")
+    func testManualDateClearsQuickRange() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let store = await TestStore(initialState: FilterFeature.State()) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+        }
+        let thisMonth = BudgetPeriod.monthly.closedRange(containing: now, calendar: cal)
+        await store.send(.quickRangeSelected(.thisMonth)) {
+            $0.startDate = thisMonth.lowerBound
+            $0.endDate = thisMonth.upperBound
+            $0.activeQuickRange = .thisMonth
+        }
+        let custom = cal.date(from: DateComponents(year: 2026, month: 3, day: 5))!
+        await store.send(.startDateChanged(custom)) {
+            $0.startDate = custom
+            $0.activeQuickRange = nil
+        }
+    }
+
+    @Test(".task rehydrates activeQuickRange when initialFilter's dateRange equals a quick range")
+    func testTaskRehydratesQuickRange() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let thisMonth = BudgetPeriod.monthly.closedRange(containing: now, calendar: cal)
+        let store = await TestStore(
+            initialState: FilterFeature.State(initialFilter: TransactionFilter(dateRange: thisMonth))
+        ) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listTags = { [] }
+        }
+        await store.send(.task) { $0.activeQuickRange = .thisMonth }
+        await store.receive(\.optionsLoaded)
+    }
+
+    @Test(".task leaves activeQuickRange nil when the date range is custom")
+    func testTaskKeepsCustomRangeUnhighlighted() async {
+        let cal = Self.taipei
+        let now = cal.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let customStart = cal.date(from: DateComponents(year: 2026, month: 3, day: 2))!
+        let customEnd = cal.date(from: DateComponents(year: 2026, month: 3, day: 9))!
+        let custom = customStart...customEnd
+        let store = await TestStore(
+            initialState: FilterFeature.State(initialFilter: TransactionFilter(dateRange: custom))
+        ) {
+            FilterFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendar = cal
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listTags = { [] }
+        }
+        await store.send(.task)
+        await store.receive(\.optionsLoaded)
     }
 }
 
@@ -328,8 +445,8 @@ struct FilterFeatureDateRangeTests {
             $0.ledgerClient.listAccounts = { [] }
             $0.ledgerClient.listTags = { [] }
             $0.dismiss = DismissEffect { }
-            // 注意：FilterFeature 的 start-only 分支用直呼 Date()（非 @Dependency(\.date)），
-            // 故 upperBound 不可在測試中控制；此處不注入 date dependency。
+            // 此 helper 目前只給「分支 1：start <= end」測試使用，該分支不觸碰
+            // @Dependency(\.date.now)，故不需注入 date dependency。
         }
     }
 
@@ -350,14 +467,15 @@ struct FilterFeatureDateRangeTests {
         )))
     }
 
-    // 分支 2：僅設 start（end 為 nil）→ start...Date() fallback 到目前時間
-    // 注意：FilterFeature 使用 Date()（非 @Dependency），upper bound 不可控。
+    // 分支 2：僅設 start（end 為 nil）→ start...now fallback 到注入的 @Dependency(\.date.now)
+    // 注意：F3 起 FilterFeature 改用 @Dependency(\.date.now)（非直呼 Date()），
+    // 故此測試須注入 $0.date，否則會觸發 swift-dependencies 的 unimplemented 失敗。
     // 此測試驗證「start-only 路徑走的是 non-nil 分支」：
     //   applyTapped 後送出的 filter.dateRange.lowerBound == start。
-    // upper bound 的精確值因執行時間而異，不做斷言；但 lowerBound 必須精確。
     @Test("applyTapped with start only: filterApplied filter has non-nil dateRange with correct lowerBound")
     func applyTappedStartOnlyFallsBackToNow() async {
         let start = Date(timeIntervalSince1970: 1_000_000)
+        let now = Date(timeIntervalSince1970: 5_000_000)
 
         var initial = FilterFeature.State(initialFilter: TransactionFilter())
         initial.startDate = start
@@ -366,6 +484,7 @@ struct FilterFeatureDateRangeTests {
         let store = await TestStore(initialState: initial) {
             FilterFeature()
         } withDependencies: {
+            $0.date = .constant(now)
             $0.ledgerClient.listCategories = { _ in [] }
             $0.ledgerClient.listAccounts = { [] }
             $0.ledgerClient.listTags = { [] }

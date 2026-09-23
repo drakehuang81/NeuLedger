@@ -264,23 +264,20 @@ enum TransactionAnalyticsKernel {
 
         var metrics: [BudgetGaugeMetrics] = []
         for budget in filteredBudgets {
-            let (periodStart, periodEnd) = currentPeriodRange(for: budget.period)
+            let interval = budget.period.dateInterval(containing: Date())
+            let periodStart = interval.start
+            let periodEnd = interval.end
             let typeRaw = TransactionType.expense.rawValue
             let rows = try fetch(
                 container: container,
                 predicate: #Predicate<SDTransaction> { tx in
                     tx.type == typeRaw
                         && tx.date >= periodStart
-                        && tx.date <= periodEnd
+                        && tx.date < periodEnd
                 },
                 sortBy: []
             )
-            let categoryFilter = budget.categoryId
-            let scoped = rows.filter { tx in
-                guard let catId = categoryFilter else { return true }
-                return tx.categoryId == catId
-            }
-            let spent = scoped.reduce(Decimal.zero) { $0 + $1.amount }
+            let spent = budget.spent(in: rows.map(scalarTransaction))
 
             let label: String
             if let catId = budget.categoryId, let name = categoryNamesById[catId] {
@@ -300,6 +297,27 @@ enum TransactionAnalyticsKernel {
 
     // MARK: - Internals
 
+    /// 只讀純量欄位的 Domain 投影（不碰 `tags` 關聯），給 `Budget.spent(in:)` /
+    /// `Transaction.involves(account:)` 等 Domain 規則使用。
+    /// 欄位對照 `Core/Mappers/SDTransaction+Mapping.swift` 的 `toDomain()`；
+    /// `SDTransaction` 新增純量欄位時兩處要一起改。
+    private static func scalarTransaction(_ tx: SDTransaction) -> Transaction {
+        Transaction(
+            id: tx.id,
+            amount: tx.amount,
+            date: tx.date,
+            note: tx.note,
+            categoryId: tx.categoryId,
+            accountId: tx.accountId,
+            toAccountId: tx.toAccountId,
+            type: TransactionType(rawValue: tx.type) ?? .expense,
+            tags: [],
+            aiSuggested: tx.aiSuggested,
+            createdAt: tx.createdAt,
+            updatedAt: tx.updatedAt
+        )
+    }
+
     private static func fetch(
         container: ModelContainer,
         predicate: Predicate<SDTransaction>,
@@ -310,18 +328,4 @@ enum TransactionAnalyticsKernel {
         descriptor.sortBy = sortBy
         return try context.fetch(descriptor)
     }
-}
-
-/// Calendar-aligned period bounds for `BudgetPeriod` containing today.
-/// Returns inclusive start...end pair (end - 1ms).
-private func currentPeriodRange(for period: BudgetPeriod) -> (start: Date, end: Date) {
-    let cal = Calendar.current
-    let component: Calendar.Component
-    switch period {
-    case .weekly:  component = .weekOfYear
-    case .monthly: component = .month
-    case .yearly:  component = .year
-    }
-    let interval = cal.dateInterval(of: component, for: Date()) ?? DateInterval(start: Date(), duration: 0)
-    return (interval.start, interval.end.addingTimeInterval(-0.001))
 }

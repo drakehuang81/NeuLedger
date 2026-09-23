@@ -343,12 +343,10 @@ public struct FilterView: View {
         }
     }
 
-    private func quickDateChip(label: String, range: QuickDateRange) -> some View {
-        let (start, end) = range.dates
-        let isActive = store.startDate == start && store.endDate == end
+    private func quickDateChip(label: String, range: FilterFeature.QuickDateRange) -> some View {
+        let isActive = store.activeQuickRange == range
         return Button {
-            store.send(.startDateChanged(start))
-            store.send(.endDateChanged(end))
+            store.send(.quickRangeSelected(range))
         } label: {
             Text(label)
                 .font(Font.Design.size12Semibold)
@@ -457,36 +455,6 @@ private struct FlowLayout: Layout {
             subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
-// MARK: - Quick Date Range
-
-private enum QuickDateRange {
-    case thisWeek, thisMonth, lastMonth, thisYear
-
-    var dates: (Date, Date) {
-        let cal = Calendar.current
-        let now = Date()
-        switch self {
-        case .thisWeek:
-            let start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
-            let end = cal.date(byAdding: .day, value: 6, to: start)!
-            return (start, end)
-        case .thisMonth:
-            let start = cal.date(from: cal.dateComponents([.year, .month], from: now))!
-            let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start)!
-            return (start, end)
-        case .lastMonth:
-            let thisMonthStart = cal.date(from: cal.dateComponents([.year, .month], from: now))!
-            let start = cal.date(byAdding: .month, value: -1, to: thisMonthStart)!
-            let end = cal.date(byAdding: .day, value: -1, to: thisMonthStart)!
-            return (start, end)
-        case .thisYear:
-            let start = cal.date(from: cal.dateComponents([.year], from: now))!
-            let end = cal.date(byAdding: DateComponents(year: 1, day: -1), to: start)!
-            return (start, end)
         }
     }
 }

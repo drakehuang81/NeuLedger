@@ -55,8 +55,8 @@ public extension Budget {
     /// - Parameters:
     ///   - transactionsInPeriod: All transactions that fall within the
     ///     budget's current period (caller is responsible for the date filter).
-    ///     This function filters out non-expense rows and rows that don't
-    ///     match the budget's `categoryId` (if the budget is category-scoped).
+    ///     Row scoping (expense-only, category match) is delegated to
+    ///     `spent(in:)` / `appliesTo(_:)` in `Budget+Spending.swift`.
     ///   - threshold: The warning threshold percentage, e.g. `80` for 80%.
     ///   - lastWarnedPercent: The percent at which this budget was last
     ///     warned in the current period, or `nil` if never warned this period.
@@ -71,13 +71,7 @@ public extension Budget {
         guard amount > 0 else {
             return BudgetWarningOutcome(shouldWarn: false, usedPercent: 0)
         }
-        let totalSpent = transactionsInPeriod
-            .filter { txn in
-                guard txn.type == .expense else { return false }
-                guard let scopedCategoryId = categoryId else { return true }
-                return txn.categoryId == scopedCategoryId
-            }
-            .reduce(into: Decimal(0)) { $0 += $1.amount }
+        let totalSpent = spent(in: transactionsInPeriod)
         let ratio = (totalSpent / amount * 100) as NSDecimalNumber
         let usedPercent = ratio.intValue   // truncation is intentional (conservative)
         let shouldWarn = usedPercent >= threshold

@@ -141,37 +141,10 @@ extension LedgerClient: DependencyKey {
                 return try await enrich(trimmed)
             },
             listAll: { filter in
-                var results = try await transactionStore.fetchAll(
+                let all = try await transactionStore.fetchAll(
                     sortBy: [SortDescriptor(\.date, order: .reverse)]
                 )
-
-                if let categoryIds = filter.categoryIds {
-                    results = results.filter { txn in
-                        guard let catId = txn.categoryId else { return false }
-                        return categoryIds.contains(catId)
-                    }
-                }
-                if let accountIds = filter.accountIds {
-                    results = results.filter { accountIds.contains($0.accountId) }
-                }
-                if let tagIds = filter.tagIds {
-                    results = results.filter { txn in
-                        txn.tags.contains { tagIds.contains($0.id) }
-                    }
-                }
-                if let types = filter.types {
-                    results = results.filter { types.contains($0.type) }
-                }
-                if let dateRange = filter.dateRange {
-                    results = results.filter { dateRange.contains($0.date) }
-                }
-                if let searchText = filter.searchText, !searchText.isEmpty {
-                    let lowered = searchText.lowercased()
-                    results = results.filter {
-                        $0.note?.lowercased().contains(lowered) ?? false
-                    }
-                }
-                return try await enrich(results)
+                return try await enrich(all.filter(filter.matches))
             },
             search: { query in
                 let lowered = query.lowercased()
@@ -226,7 +199,7 @@ extension LedgerClient: DependencyKey {
             },
             deleteAccount: { id in
                 let hasLinkedTransactions = try await transactionStore.fetchAll().contains {
-                    $0.accountId == id || $0.toAccountId == id
+                    $0.involves(account: id)
                 }
                 guard !hasLinkedTransactions else {
                     throw CoreError.operationDenied(
@@ -243,20 +216,7 @@ extension LedgerClient: DependencyKey {
                     .filter { !$0.isArchived }
             },
             balance: { id in
-                let transactions = try await transactionStore.fetchAll()
-                var balance: Decimal = 0
-                for txn in transactions {
-                    switch txn.type {
-                    case .income:
-                        if txn.accountId == id { balance += txn.amount }
-                    case .expense:
-                        if txn.accountId == id { balance -= txn.amount }
-                    case .transfer:
-                        if txn.accountId == id { balance -= txn.amount }
-                        if txn.toAccountId == id { balance += txn.amount }
-                    }
-                }
-                return balance
+                try await transactionStore.fetchAll().balance(of: id)
             },
             balances: {
                 let active = try await accountStore.fetchAll(
@@ -265,19 +225,7 @@ extension LedgerClient: DependencyKey {
                 let transactions = try await transactionStore.fetchAll()
                 var result: [Account.ID: Decimal] = [:]
                 for account in active {
-                    var balance: Decimal = 0
-                    for txn in transactions {
-                        switch txn.type {
-                        case .income:
-                            if txn.accountId == account.id { balance += txn.amount }
-                        case .expense:
-                            if txn.accountId == account.id { balance -= txn.amount }
-                        case .transfer:
-                            if txn.accountId == account.id { balance -= txn.amount }
-                            if txn.toAccountId == account.id { balance += txn.amount }
-                        }
-                    }
-                    result[account.id] = balance
+                    result[account.id] = transactions.balance(of: account.id)
                 }
                 return result
             },

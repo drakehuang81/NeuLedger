@@ -46,7 +46,7 @@ public enum WatchContextBuilder {
         let todayExpenses = allTxns.filter {
             $0.type == .expense && todayRange.contains($0.date)
         }
-        let todayTotal = todayExpenses.reduce(Decimal(0)) { $0 + $1.amount }
+        let todayTotal = todayExpenses.total(of: .expense)
 
         let progress = monthBudgetProgress(
             now: now,
@@ -81,20 +81,8 @@ public enum WatchContextBuilder {
             $0.period == .monthly && $0.categoryId == nil
         }) else { return nil }
 
-        let components = calendar.dateComponents([.year, .month], from: now)
-        guard let startOfMonth = calendar.date(from: components),
-              let startOfNextMonth = calendar.date(
-                byAdding: .month, value: 1, to: startOfMonth
-              ) else { return nil }
-        let monthRange = startOfMonth..<startOfNextMonth
-
-        let monthExpenseTotal = transactions
-            .filter { $0.type == .expense && monthRange.contains($0.date) }
-            .reduce(Decimal(0)) { $0 + $1.amount }
-
-        guard overall.amount > 0 else { return nil }
-        let ratio = (monthExpenseTotal as NSDecimalNumber).doubleValue
-               / (overall.amount as NSDecimalNumber).doubleValue
-        return ratio
+        let monthRange = BudgetPeriod.monthly.dateInterval(containing: now, calendar: calendar)
+        let spent = overall.spent(in: transactions.filter { monthRange.contains($0.date) })
+        return overall.progress(spent: spent)
     }
 }

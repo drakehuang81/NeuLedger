@@ -39,19 +39,13 @@ extension PlanningClient: DependencyKey {
                 try await budgetStore.delete(id: id)
             },
             currentStatus: { budget in
-                let (start, end) = currentPeriodBounds(for: budget.period, today: Date())
+                let range = budget.period.closedRange(containing: Date())
                 let all = try await transactionStore.fetchAll()
-                let inPeriod = all.filter { txn in
-                    guard (start...end).contains(txn.date) else { return false }
-                    guard txn.type == .expense else { return false }
-                    guard let scopedCategoryId = budget.categoryId else { return true }
-                    return txn.categoryId == scopedCategoryId
-                }
-                let spent = inPeriod.reduce(Decimal.zero) { $0 + $1.amount }
+                let spent = budget.spent(in: all.filter { range.contains($0.date) })
                 return BudgetStatus(
                     budget: budget,
-                    periodStart: start,
-                    periodEnd: end,
+                    periodStart: range.lowerBound,
+                    periodEnd: range.upperBound,
                     spent: spent
                 )
             },
@@ -70,12 +64,12 @@ extension PlanningClient: DependencyKey {
                 let all = (try? await transactionStore.fetchAll()) ?? []
 
                 for budget in activeBudgets {
-                    let (start, end) = currentPeriodBounds(for: budget.period, today: today)
-                    let inPeriod = all.filter { (start...end).contains($0.date) }
+                    let range = budget.period.closedRange(containing: today)
+                    let inPeriod = all.filter { range.contains($0.date) }
 
                     let formatter = ISO8601DateFormatter()
                     formatter.formatOptions = [.withFullDate]
-                    let pKey = formatter.string(from: start)
+                    let pKey = formatter.string(from: range.lowerBound)
                     let bidStr = budget.id.uuidString
                     let lastWarned = notificationAdapter.lastWarnedPercent(bidStr, pKey)
 
@@ -110,20 +104,4 @@ extension PlanningClient: DependencyKey {
             }
         )
     }
-}
-
-/// Compute the calendar-aligned period bounds for the given `BudgetPeriod`
-/// containing `today`. Returns a closed range — `end` is the last
-/// representable instant of the period (DateInterval.end minus 1 ms) so
-/// the resulting `ClosedRange<Date>` excludes the next period's start.
-private func currentPeriodBounds(for period: BudgetPeriod, today: Date) -> (start: Date, end: Date) {
-    let cal = Calendar.current
-    let component: Calendar.Component
-    switch period {
-    case .weekly:  component = .weekOfYear
-    case .monthly: component = .month
-    case .yearly:  component = .year
-    }
-    let interval = cal.dateInterval(of: component, for: today) ?? DateInterval(start: today, duration: 0)
-    return (interval.start, interval.end.addingTimeInterval(-0.001))
 }

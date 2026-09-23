@@ -293,12 +293,7 @@ public struct AddTransactionFeature: Sendable {
                         try await ledger.record(transaction)
                         if let frequency = recurringFrequency_ {
                             let templateId = UUID()
-                            let nextDue: Date
-                            switch frequency {
-                            case .weekly:  nextDue = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: date) ?? date
-                            case .monthly: nextDue = Calendar.current.date(byAdding: .month, value: 1, to: date) ?? date
-                            case .yearly:  nextDue = Calendar.current.date(byAdding: .year, value: 1, to: date) ?? date
-                            }
+                            let nextDue = frequency.next(after: date)
                             let template = RecurringTransaction(
                                 id: templateId,
                                 amount: amountValue,

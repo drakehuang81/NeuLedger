@@ -9,6 +9,8 @@ public struct TransactionFilter: Equatable, Sendable {
     public var categoryIds: Set<Category.ID>?
     
     /// A set indicating the acceptable account identifiers. If `nil`, accounts are not filtered.
+    /// Matching is bidirectional: a transaction matches when its `accountId` **or**
+    /// `toAccountId` is in the set (transfers INTO an account count). See `matches(_:)`.
     public var accountIds: Set<Account.ID>?
     
     /// A set indicating the acceptable tag identifiers. If `nil`, tags are not filtered.

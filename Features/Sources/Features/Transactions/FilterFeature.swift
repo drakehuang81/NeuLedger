@@ -6,6 +6,25 @@ import Foundation
 public struct FilterFeature: Sendable {
     public init() {}
 
+    // MARK: - Quick date range
+
+    /// 篩選頁的四個快捷區間。區間定義唯一來源是 `BudgetPeriod+Calendar`。
+    public enum QuickDateRange: Equatable, Sendable, CaseIterable {
+        case thisWeek, thisMonth, lastMonth, thisYear
+
+        /// 閉區間：上界是該期最後一天 23:59:59.999。
+        public func range(now: Date, calendar: Calendar) -> ClosedRange<Date> {
+            switch self {
+            case .thisWeek:  return BudgetPeriod.weekly.closedRange(containing: now, calendar: calendar)
+            case .thisMonth: return BudgetPeriod.monthly.closedRange(containing: now, calendar: calendar)
+            case .thisYear:  return BudgetPeriod.yearly.closedRange(containing: now, calendar: calendar)
+            case .lastMonth:
+                let previous = BudgetPeriod.monthly.previousInterval(before: now, calendar: calendar)
+                return BudgetPeriod.monthly.closedRange(containing: previous.start, calendar: calendar)
+            }
+        }
+    }
+
     // MARK: - State
 
     @ObservableState
@@ -20,6 +39,9 @@ public struct FilterFeature: Sendable {
         public var categories: [Domain.Category]
         public var accounts: [Account]
         public var tags: [Tag]
+
+        /// 目前套用的快捷區間；使用者手動改起訖日即清空。
+        public var activeQuickRange: QuickDateRange? = nil
 
         public init(initialFilter: TransactionFilter = TransactionFilter()) {
             self.selectedTypes = initialFilter.types ?? []
@@ -56,6 +78,7 @@ public struct FilterFeature: Sendable {
         case tagToggled(Tag.ID)
         case startDateChanged(Date?)
         case endDateChanged(Date?)
+        case quickRangeSelected(QuickDateRange)
 
         case applyTapped
         case clearAllTapped
@@ -72,6 +95,8 @@ public struct FilterFeature: Sendable {
 
     @Dependency(\.ledgerClient) var ledger
     @Dependency(\.dismiss) var dismiss
+    @Dependency(\.date.now) var now
+    @Dependency(\.calendar) var calendar
 
     private enum CancelID { case task }
 
@@ -81,6 +106,14 @@ public struct FilterFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
+                // 重開篩選頁時 `State(initialFilter:)` 帶不回 `activeQuickRange`；
+                // 若起訖日恰等於某個快捷區間，回填它讓 chip 維持高亮。
+                if state.activeQuickRange == nil,
+                   let start = state.startDate, let end = state.endDate, start <= end {
+                    state.activeQuickRange = QuickDateRange.allCases.first {
+                        $0.range(now: now, calendar: calendar) == start...end
+                    }
+                }
                 return .run { send in
                     async let categories = ledger.listCategories(nil)
                     async let accounts = ledger.listAccounts()
@@ -130,10 +163,19 @@ public struct FilterFeature: Sendable {
 
             case let .startDateChanged(date):
                 state.startDate = date
+                state.activeQuickRange = nil
                 return .none
 
             case let .endDateChanged(date):
                 state.endDate = date
+                state.activeQuickRange = nil
+                return .none
+
+            case let .quickRangeSelected(quick):
+                let range = quick.range(now: now, calendar: calendar)
+                state.startDate = range.lowerBound
+                state.endDate = range.upperBound
+                state.activeQuickRange = quick
                 return .none
 
             case .applyTapped:
@@ -141,7 +183,7 @@ public struct FilterFeature: Sendable {
                 if let start = state.startDate, let end = state.endDate, start <= end {
                     dateRange = start...end
                 } else if let start = state.startDate {
-                    dateRange = start...Date()
+                    dateRange = start...now
                 } else {
                     dateRange = nil
                 }
@@ -165,6 +207,7 @@ public struct FilterFeature: Sendable {
                 state.selectedTagIds = []
                 state.startDate = nil
                 state.endDate = nil
+                state.activeQuickRange = nil
                 return .none
 
             case .delegate:

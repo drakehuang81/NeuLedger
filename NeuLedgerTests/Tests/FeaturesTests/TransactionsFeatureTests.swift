@@ -339,8 +339,26 @@ struct TransactionsFeatureTests {
             $0.ledgerClient.delete = { _ in throw StubError() }
         }
         await store.send(.deleteConfirmed) { $0.deleteConfirmationId = nil }
-        await store.receive(\.loadFailed) { $0.loadError = "boom" }
+        await store.receive(\.actionFailed) { $0.actionError = "boom" }
         await MainActor.run { #expect(store.state.transactions.count == 1) }
+    }
+
+    @Test("a stale loadError clears when a later reload (via searchDebounced) succeeds")
+    func testStaleLoadErrorClearsOnReloadSuccess() async {
+        var initial = TransactionsFeature.State()
+        initial.loadError = "stale"
+        initial.searchText = "x"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+        }
+        await store.send(.searchDebounced)
+        await store.receive(\.transactionsLoaded) {
+            $0.isLoading = false
+            $0.loadError = nil
+            $0.transactions = [Self.sampleTransaction]
+        }
     }
 
     @Test("loadFailed clears when a later load succeeds")

@@ -417,6 +417,7 @@ struct NotificationSettingsFeatureTests {
         var initial = NotificationSettingsFeature.State()
         initial.isAuthorized = true
         let enabledLog = LockIsolated<[Bool]>([])
+        let cancelCalled = LockIsolated(false)
         let store = await TestStore(initialState: initial) {
             NotificationSettingsFeature()
         } withDependencies: {
@@ -425,12 +426,33 @@ struct NotificationSettingsFeatureTests {
             }
             $0.platformClient.setReminderTime = { _ in }
             $0.platformClient.scheduleDailyReminder = { throw StubError() }
+            $0.platformClient.cancelDailyReminder = { cancelCalled.setValue(true) }
         }
         await store.send(.dailyReminderToggled(true)) { $0.dailyReminderEnabled = true }
         await store.receive(\.reminderScheduleFailed) {
             $0.dailyReminderEnabled = false
             $0.reminderError = "boom"
         }
+        await store.finish()
         #expect(enabledLog.value.last == false)
+        #expect(cancelCalled.value == true, "排程失敗後應取消舊排程，避免關閉狀態下提醒仍照響")
+    }
+
+    @Test("dailyReminderToggled clears a stale reminderError before rescheduling")
+    func testToggleClearsStaleReminderError() async {
+        var initial = NotificationSettingsFeature.State()
+        initial.isAuthorized = true
+        initial.reminderError = "stale"
+        let store = await TestStore(initialState: initial) {
+            NotificationSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.setDailyReminderEnabled = { _ in }
+            $0.platformClient.setReminderTime = { _ in }
+            $0.platformClient.scheduleDailyReminder = { }
+        }
+        await store.send(.dailyReminderToggled(true)) {
+            $0.reminderError = nil
+            $0.dailyReminderEnabled = true
+        }
     }
 }

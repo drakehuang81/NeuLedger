@@ -110,6 +110,7 @@ public struct AddTransactionView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common_cancel")) { store.send(.dismiss) }
+                        .disabled(store.isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "common_save")) { store.send(.saveTapped) }

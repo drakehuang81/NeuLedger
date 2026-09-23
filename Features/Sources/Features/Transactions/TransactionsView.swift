@@ -211,6 +211,10 @@ public struct TransactionsView: View {
 
     private var transactionsList: some View {
         ScrollView {
+            if let error = store.actionError {
+                ErrorText(error)
+                    .padding(.horizontal, 22)
+            }
             if store.searchText.isEmpty {
                 LazyVStack  {
                     ForEach(groupedTransactions, id: \.date) { group in

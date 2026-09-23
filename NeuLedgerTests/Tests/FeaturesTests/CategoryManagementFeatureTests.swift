@@ -284,8 +284,9 @@ struct CategoryManagementFeatureTests {
         } withDependencies: {
             $0.ledgerClient.deleteCategory = { _ in throw StubError() }
         }
-        await MainActor.run { store.exhaustivity = .off }
-        await store.send(.alert(.presented(.deleteConfirmed(category.id))))
+        await store.send(.alert(.presented(.deleteConfirmed(category.id)))) {
+            $0.alert = nil
+        }
         await store.receive(\.actionFailed) { $0.actionError = "boom" }
         await MainActor.run { #expect(store.state.categories.count == 1) }
     }

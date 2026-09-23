@@ -104,6 +104,7 @@ public struct NotificationSettingsFeature: Sendable {
                 return .none
 
             case let .dailyReminderToggled(enabled):
+                state.reminderError = nil
                 if !enabled {
                     state.dailyReminderEnabled = false
                     platformClient.setDailyReminderEnabled(false)
@@ -134,6 +135,7 @@ public struct NotificationSettingsFeature: Sendable {
                 }
 
             case let .reminderDateChanged(date):
+                state.reminderError = nil
                 state.reminderDate = date
                 let hour = Calendar.current.component(.hour, from: date)
                 let minute = Calendar.current.component(.minute, from: date)
@@ -188,7 +190,8 @@ public struct NotificationSettingsFeature: Sendable {
                 state.dailyReminderEnabled = false
                 platformClient.setDailyReminderEnabled(false)
                 state.reminderError = message
-                return .none
+                // 排程 add 失敗時舊的排程可能仍在（同 identifier 覆蓋失敗），一併取消，避免 UI 顯示關閉但提醒照響。
+                return .run { _ in await platformClient.cancelDailyReminder() }
             }
         }
     }

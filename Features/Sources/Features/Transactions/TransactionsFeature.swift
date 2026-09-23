@@ -16,8 +16,11 @@ public struct TransactionsFeature: Sendable {
         public var isLoading: Bool = false
         public var deleteConfirmationId: Transaction.ID? = nil
 
-        /// 最近一次載入或刪除失敗的訊息；成功載入後清空。View 用 SectionFailureView 顯示。
+        /// 最近一次載入失敗的訊息；成功載入後清空。View 用 SectionFailureView 顯示。
         public var loadError: String? = nil
+
+        /// 最近一次刪除等寫入動作失敗的訊息；列表保留、上方 inline 顯示。成功載入後清空。
+        public var actionError: String? = nil
 
         @Presents var detail: TransactionDetailFeature.State?
         @Presents var filter: FilterFeature.State?
@@ -39,7 +42,6 @@ public struct TransactionsFeature: Sendable {
             filter.searchText = searchText.isEmpty ? nil : searchText
             return filter
         }
-
     }
 
     // MARK: - Action
@@ -48,6 +50,7 @@ public struct TransactionsFeature: Sendable {
         case task
         case transactionsLoaded([Transaction])
         case loadFailed(String)
+        case actionFailed(String)
 
         case searchTextChanged(String)
         case searchDebounced
@@ -102,12 +105,17 @@ public struct TransactionsFeature: Sendable {
             case let .transactionsLoaded(transactions):
                 state.isLoading = false
                 state.loadError = nil
+                state.actionError = nil
                 state.transactions = transactions.sorted { $0.date > $1.date }
                 return .none
 
             case let .loadFailed(message):
                 state.isLoading = false
                 state.loadError = message
+                return .none
+
+            case let .actionFailed(message):
+                state.actionError = message
                 return .none
 
             // MARK: Search
@@ -161,7 +169,7 @@ public struct TransactionsFeature: Sendable {
                     try await ledger.delete(id)
                     await send(.transactionDeleted(id))
                 } catch: { error, send in
-                    await send(.loadFailed(error.localizedDescription))
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case .deleteCancelled:
@@ -198,7 +206,7 @@ public struct TransactionsFeature: Sendable {
                     try await ledger.delete(id)
                     await send(.transactionDeleted(id))
                 } catch: { error, send in
-                    await send(.loadFailed(error.localizedDescription))
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case .detail:

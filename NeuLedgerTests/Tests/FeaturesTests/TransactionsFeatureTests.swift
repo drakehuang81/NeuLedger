@@ -328,7 +328,7 @@ struct TransactionsFeatureTests {
         #expect(captured.value?.searchText == "sushi")
     }
 
-    @Test("deleteConfirmed failure surfaces loadError and keeps the row")
+    @Test("deleteConfirmed failure surfaces actionError and keeps the row")
     func testDeleteFailureKeepsRow() async {
         var initial = TransactionsFeature.State()
         initial.transactions = [Self.sampleTransaction]
@@ -341,6 +341,24 @@ struct TransactionsFeatureTests {
         await store.send(.deleteConfirmed) { $0.deleteConfirmationId = nil }
         await store.receive(\.actionFailed) { $0.actionError = "boom" }
         await MainActor.run { #expect(store.state.transactions.count == 1) }
+    }
+
+    @Test("transactionDeleted clears a stale actionError left by an earlier failed delete")
+    func testDeleteSuccessClearsStaleActionError() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.deleteConfirmationId = Self.sampleTransaction.id
+        initial.actionError = "stale"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { _ in }
+        }
+        await store.send(.deleteConfirmed) { $0.deleteConfirmationId = nil }
+        await store.receive(\.transactionDeleted) {
+            $0.actionError = nil
+            $0.transactions = []
+        }
     }
 
     @Test("a stale loadError clears when a later reload (via searchDebounced) succeeds")
@@ -529,6 +547,22 @@ struct TransactionsDetailDelegateTests {
         }
 
         await store.send(.detail(.presented(.delegate(.deleted(Self.tx1.id))))) {
+            $0.transactions = [Self.tx2]
+            $0.detail = nil
+        }
+    }
+
+    @Test("detail.delegate.deleted clears a stale actionError")
+    func testDetailDelegateDeletedClearsStaleActionError() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.tx1, Self.tx2]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.tx1)
+        initial.actionError = "stale"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+        await store.send(.detail(.presented(.delegate(.deleted(Self.tx1.id))))) {
+            $0.actionError = nil
             $0.transactions = [Self.tx2]
             $0.detail = nil
         }

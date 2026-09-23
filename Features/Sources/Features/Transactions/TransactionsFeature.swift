@@ -177,11 +177,13 @@ public struct TransactionsFeature: Sendable {
                 return .none
 
             case let .transactionDeleted(id):
+                state.actionError = nil
                 state.transactions.removeAll { $0.id == id }
                 return .none
 
             // MARK: Detail
             case let .detail(.presented(.delegate(.deleted(id)))):
+                state.actionError = nil
                 state.transactions.removeAll { $0.id == id }
                 state.detail = nil
                 return .none

@@ -43,6 +43,9 @@ public struct FilterFeature: Sendable {
         /// 目前套用的快捷區間；使用者手動改起訖日即清空。
         public var activeQuickRange: QuickDateRange? = nil
 
+        /// 選項（分類／帳戶／標籤）載入失敗的訊息。
+        public var optionsError: String? = nil
+
         public init(initialFilter: TransactionFilter = TransactionFilter()) {
             self.selectedTypes = initialFilter.types ?? []
             self.selectedCategoryIds = initialFilter.categoryIds ?? []
@@ -71,6 +74,7 @@ public struct FilterFeature: Sendable {
     public enum Action: Sendable, Equatable {
         case task
         case optionsLoaded(categories: [Domain.Category], accounts: [Account], tags: [Tag])
+        case optionsLoadFailed(String)
 
         case typeToggled(TransactionType)
         case categoryToggled(Domain.Category.ID)
@@ -114,12 +118,15 @@ public struct FilterFeature: Sendable {
                         $0.range(now: now, calendar: calendar) == start...end
                     }
                 }
+                state.optionsError = nil
                 return .run { send in
                     async let categories = ledger.listCategories(nil)
                     async let accounts = ledger.listAccounts()
                     async let tags = ledger.listTags()
                     let (c, a, t) = try await (categories, accounts, tags)
                     await send(.optionsLoaded(categories: c, accounts: a, tags: t))
+                } catch: { error, send in
+                    await send(.optionsLoadFailed(error.localizedDescription))
                 }
                 .cancellable(id: CancelID.task)
 
@@ -127,6 +134,10 @@ public struct FilterFeature: Sendable {
                 state.categories = categories
                 state.accounts = accounts
                 state.tags = tags
+                return .none
+
+            case let .optionsLoadFailed(message):
+                state.optionsError = message
                 return .none
 
             case let .typeToggled(type):

@@ -18,6 +18,10 @@ public struct FilterView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
+                        if let error = store.optionsError {
+                            ErrorText(error)
+                                .padding(.horizontal, 22)
+                        }
                         typeSection
                         if !store.categories.isEmpty {
                             categorySection

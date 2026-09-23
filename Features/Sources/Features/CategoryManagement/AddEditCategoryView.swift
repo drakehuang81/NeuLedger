@@ -51,6 +51,7 @@ public struct AddEditCategoryView: View {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
+                    .disabled(store.isSaving)
                 }
             }
         }
@@ -164,6 +165,10 @@ public struct AddEditCategoryView: View {
                     .autocorrectionDisabled()
                 }
                 if let error = store.nameError {
+                    ErrorText(error)
+                        .padding(.horizontal, 4)
+                }
+                if let error = store.saveError {
                     ErrorText(error)
                         .padding(.horizontal, 4)
                 }

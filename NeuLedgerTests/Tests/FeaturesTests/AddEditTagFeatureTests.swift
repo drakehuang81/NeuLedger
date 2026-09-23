@@ -63,8 +63,8 @@ struct AddEditTagFeatureTests {
         }
 
         await store.send(.nameChanged("食物")) { $0.name = "食物" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(created.value?.name == "食物")
@@ -88,8 +88,8 @@ struct AddEditTagFeatureTests {
 
         await store.send(.nameChanged("購物")) { $0.name = "購物" }
         await store.send(.colorHexChanged("#FF2D55")) { $0.colorHex = "#FF2D55" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(created.value?.color == "#FF2D55")
@@ -114,13 +114,41 @@ struct AddEditTagFeatureTests {
 
         await store.send(.nameChanged("出差")) { $0.name = "出差" }
         await store.send(.colorHexChanged("#AF52DE")) { $0.colorHex = "#AF52DE" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(updated.value?.id == original.id)
         #expect(updated.value?.name == "出差")
         #expect(updated.value?.color == "#AF52DE")
+    }
+
+    // MARK: - Save failure inline error
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("saveTapped: create failure sets saveError, resets isSaving, does not dismiss")
+    func testSaveFailureIsVisible() async {
+        let dismissed = LockIsolated(false)
+
+        let store = await TestStore(
+            initialState: AddEditTagFeature.State(mode: .add)
+        ) {
+            AddEditTagFeature()
+        } withDependencies: {
+            $0.ledgerClient.createTag = { _ in throw StubError() }
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+
+        await store.send(.nameChanged("食物")) { $0.name = "食物" }
+        await store.send(.saveTapped) {
+            $0.isSaving = true
+        }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "boom"
+        }
+        #expect(dismissed.value == false)
     }
 
     // MARK: - Name validation failure

@@ -49,6 +49,23 @@ struct FilterFeatureTests {
         }
     }
 
+    // MARK: - .task failure
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test(".task failure sets optionsError instead of hanging")
+    func testTaskFailureSetsOptionsError() async {
+        let store = await TestStore(initialState: FilterFeature.State()) {
+            FilterFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in throw StubError() }
+            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.listTags = { [] }
+        }
+        await store.send(.task)
+        await store.receive(\.optionsLoadFailed) { $0.optionsError = "boom" }
+    }
+
     // MARK: - Toggle filters
 
     @Test("typeToggled adds type to selectedTypes")
@@ -534,31 +551,19 @@ struct FilterFeatureDateRangeTests {
 
 // MARK: - B3 補強：FilterFeature .task 錯誤路徑
 //
-// [PRODUCTION BUG — 記錄、不修復]
-// FilterFeature.task 的 .run 沒有 catch：
-//   .run { send in
-//     let (c, a, t) = try await (categories, accounts, tags)
-//     await send(.optionsLoaded(...))
-//   }
-// 任一 client 拋錯時，TCA 的 .run 會呼叫 runtimeWarn
-// ("An 'Effect' returned from '...' threw an unhandled error.")，
-// 而非靜默死亡。在 TestStore 中此 runtimeWarn 被轉為測試 Issue（= 測試失敗）。
-// 這正是 audit 指出的「靜默空 section」風險的更嚴重形式：
-//   - Production：runtimeWarn + section 維持空白，無使用者回饋
-//   - 測試：Issue（非 crash，但不靜默）
-//
-// 此 suite 改用 happy-path 驗證 .task 的正常行為，
-// 並以代碼註解記錄錯誤路徑為 production bug（audit 第 F4 追蹤點）。
+// [FIXED — stability-effect-errors Task 5]
+// FilterFeature.task 的 .run 原本沒有 catch，任一 client 拋錯時會觸發
+// TCA 的 runtimeWarn（"An 'Effect' returned from '...' threw an unhandled
+// error."）而非把錯誤攤在畫面上。已在 FilterFeature.swift 補上
+// `catch: { error, send in await send(.optionsLoadFailed(...)) }`，
+// 錯誤路徑改由 `State.optionsError` inline 顯示；見上方
+// `testTaskFailureSetsOptionsError`。
 
 @Suite("FilterFeature — .task options loading")
 struct FilterFeatureTaskErrorTests {
 
     // 驗證 .task happy-path：listCategories/listAccounts/listTags 正常時
     // optionsLoaded 送出並填入 state。這也確認 .task effect 的完整鏈路。
-    //
-    // 注意：.task 的 try-catch-missing bug（任一 client throw → runtimeWarn → 空 section）
-    // 為已知 production bug，等待 production 修復（在 catch 補錯誤處理）。
-    // 修復前此錯誤路徑不可在 TestStore 中安全測試（runtimeWarn 會把測試標記為失敗）。
     @Test(".task loads options from all three clients into state")
     func taskLoadOptionsHappyPath() async {
         let cat = Domain.Category(

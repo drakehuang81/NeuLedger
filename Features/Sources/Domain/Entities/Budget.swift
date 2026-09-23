@@ -55,8 +55,8 @@ public extension Budget {
     /// - Parameters:
     ///   - transactionsInPeriod: All transactions that fall within the
     ///     budget's current period (caller is responsible for the date filter).
-    ///     This function filters out non-expense rows and rows that don't
-    ///     match the budget's `categoryId` (if the budget is category-scoped).
+    ///     Row scoping (expense-only, category match) is delegated to
+    ///     `spent(in:)` / `appliesTo(_:)` in `Budget+Spending.swift`.
     ///   - threshold: The warning threshold percentage, e.g. `80` for 80%.
     ///   - lastWarnedPercent: The percent at which this budget was last
     ///     warned in the current period, or `nil` if never warned this period.

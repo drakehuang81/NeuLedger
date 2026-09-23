@@ -20,7 +20,7 @@ public struct FilterFeature: Sendable {
             case .thisYear:  return BudgetPeriod.yearly.closedRange(containing: now, calendar: calendar)
             case .lastMonth:
                 let previous = BudgetPeriod.monthly.previousInterval(before: now, calendar: calendar)
-                return previous.start...previous.end.addingTimeInterval(-0.001)
+                return BudgetPeriod.monthly.closedRange(containing: previous.start, calendar: calendar)
             }
         }
     }
@@ -106,6 +106,14 @@ public struct FilterFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .task:
+                // 重開篩選頁時 `State(initialFilter:)` 帶不回 `activeQuickRange`；
+                // 若起訖日恰等於某個快捷區間，回填它讓 chip 維持高亮。
+                if state.activeQuickRange == nil,
+                   let start = state.startDate, let end = state.endDate, start <= end {
+                    state.activeQuickRange = QuickDateRange.allCases.first {
+                        $0.range(now: now, calendar: calendar) == start...end
+                    }
+                }
                 return .run { send in
                     async let categories = ledger.listCategories(nil)
                     async let accounts = ledger.listAccounts()
@@ -175,7 +183,7 @@ public struct FilterFeature: Sendable {
                 if let start = state.startDate, let end = state.endDate, start <= end {
                     dateRange = start...end
                 } else if let start = state.startDate {
-                    dateRange = start...Date()
+                    dateRange = start...now
                 } else {
                     dateRange = nil
                 }

@@ -299,6 +299,8 @@ enum TransactionAnalyticsKernel {
 
     /// 只讀純量欄位的 Domain 投影（不碰 `tags` 關聯），給 `Budget.spent(in:)` /
     /// `Transaction.involves(account:)` 等 Domain 規則使用。
+    /// 欄位對照 `Core/Mappers/SDTransaction+Mapping.swift` 的 `toDomain()`；
+    /// `SDTransaction` 新增純量欄位時兩處要一起改。
     private static func scalarTransaction(_ tx: SDTransaction) -> Transaction {
         Transaction(
             id: tx.id,

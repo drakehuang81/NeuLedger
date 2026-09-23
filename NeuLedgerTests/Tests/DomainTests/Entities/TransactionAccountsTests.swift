@@ -30,6 +30,10 @@ struct TransactionAccountsTests {
         #expect(transfer.signedEffect(on: Self.accA) == -500)
         #expect(transfer.signedEffect(on: Self.accB) == 500)
         #expect(transfer.signedEffect(on: "acc-C") == 0)
+
+        let selfTransfer = Self.tx(500, .transfer, from: Self.accA, to: Self.accA)
+        #expect(selfTransfer.signedEffect(on: Self.accA) == 0)
+        #expect(selfTransfer.involves(account: Self.accA))
     }
 
     @Test("total(of:) sums one type only")

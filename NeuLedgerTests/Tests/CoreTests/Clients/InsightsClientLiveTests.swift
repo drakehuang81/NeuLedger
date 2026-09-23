@@ -165,6 +165,31 @@ struct InsightsClientLiveTests {
         #expect(gauges.first?.totalBudget == 1000)
     }
 
+    @Test("budgetGauges for a category-scoped budget counts only that category (scalarTransaction maps categoryId)")
+    func testBudgetGaugesCategoryScoped() async throws {
+        let container = try freshContainer()
+        let ctx = ModelContext(container)
+        let food = UUID()
+        let transport = UUID()
+        let budget = Budget(
+            id: UUID(), name: "餐費", amount: 1000, categoryId: food,
+            period: .monthly, startDate: Date(), isActive: true
+        )
+        SDBudget.from(budget, context: ctx)
+        try ctx.save()
+
+        let now = Date()
+        let acct = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: acct, categoryId: food), into: container)
+        try insert(expenseTx(amount: 250, date: now, accountId: acct, categoryId: transport), into: container)
+        try insert(expenseTx(amount: 30, date: now, accountId: acct, categoryId: nil), into: container)
+
+        let gauges = try await sut(container).budgetGauges(nil)
+        #expect(gauges.count == 1)
+        #expect(gauges.first?.id == budget.id.uuidString)
+        #expect(gauges.first?.spentAmount == 300)
+    }
+
     // MARK: - isAIAvailable (reflects AIAdapter)
 
     @Test("isAIAvailable reflects AIAdapter availability — true")

@@ -478,7 +478,10 @@ struct LedgerClientRecurringTests {
         #expect(txns.isEmpty == false)
         for row in txns {
             #expect(row.transaction.sourceTemplateId == template.id)
-            #expect(row.transaction.sourcePeriodDueDate != nil)
+            // fix round 1 / G5：只驗 != nil 擋不住「戳成 today 而不是 dueDate」的突變。
+            // tick 建立交易時 `date` 就是 `dueDate`（見 makeTick 的 Transaction 初始化），
+            // 兩者必須相等；這條斷言能直接擋住那個突變。
+            #expect(row.transaction.sourcePeriodDueDate == row.transaction.date)
         }
     }
 
@@ -524,5 +527,97 @@ struct LedgerClientRecurringTests {
 
         let count = try await sut.tick()
         #expect(count > 0, "手動記的交易沒有來源欄位，不得被當成已補記")
+    }
+
+    // MARK: - fix round 1 / G3：窗外前綴後，第一個窗內期記帳前游標必須先落地
+
+    /// 在 `evaluateAfterTransaction`（`recordTransaction` 內、`transactionStore.add`
+    /// 完成之後才會觸發）第一次命中我們的範本時，讀一次 DB 裡這個範本當下的
+    /// `nextDueDate` 並記下來——只記第一次命中，之後的呼叫略過。
+    private final class CursorSnapshotCapture: @unchecked Sendable {
+        private let lock = NSLock()
+        private var captured = false
+        private var value: Date?
+
+        // `NSLock.lock()/.unlock()` 在 Swift 6 不能直接寫在 `async` 函式主體裡
+        // （"unavailable from asynchronous contexts"）；鎖的操作拆成同步 helper，
+        // `captureIfFirst` 本身只呼叫這兩個同步方法，不直接碰鎖。
+        private func testAndSetCaptured() -> Bool {
+            lock.lock(); defer { lock.unlock() }
+            let isFirst = !captured
+            if isFirst { captured = true }
+            return isFirst
+        }
+
+        private func setValue(_ newValue: Date?) {
+            lock.lock(); defer { lock.unlock() }
+            value = newValue
+        }
+
+        func captureIfFirst(_ resolve: () async throws -> Date?) async {
+            guard testAndSetCaptured() else { return }
+            let resolved = try? await resolve()
+            setValue(resolved.flatMap { $0 })
+        }
+
+        var nextDueDateAtFirstRecord: Date? {
+            lock.lock(); defer { lock.unlock() }; return value
+        }
+    }
+
+    @Test("the cursor lands in the store before the first in-window record, so a crash cannot recompute a different dueDate for it")
+    func testTickLandsCursorBeforeFirstInWindowRecord() async throws {
+        // 錨在兩年前的月繳範本：補記窗只有 12 個月，所以前面一整年在窗外，
+        // 只快轉、不寫 DB（F3）。在 fix round 1 / G3 之前，記第一筆窗內交易的
+        // 那一刻，DB 裡這個範本的 nextDueDate 還停在兩年前的原始錨點——不是
+        // 這一期的到期日。G3 修法要求記帳前先把游標落地一次，讓這一刻 DB 裡
+        // 的值已經等於這一期的到期日（否則當掉後重算前綴，換時區或跨 DST
+        // 可能算出不同值，去重失效）。
+        let anchor = Calendar.current.date(byAdding: .month, value: -24, to: fixedNow)!
+        var template = makeTemplate(nextDueDate: anchor, frequency: .monthly)
+        template.anchorDate = anchor
+        let templateId = template.id
+
+        // 直接寫 store，跳過 createRecurring 的排程（這條測試不需要提醒）。
+        let store = RecurringTransactionStore()
+        try await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            try await store.add(template)
+        }
+
+        let capture = CursorSnapshotCapture()
+
+        try await withDependencies { dependencies in
+            dependencies.modelContainer = container
+            dependencies.date = .constant(fixedNow)
+            dependencies.planningClient.evaluateAfterTransaction = { transaction in
+                guard transaction.sourceTemplateId == templateId else { return }
+                await capture.captureIfFirst {
+                    try await withDependencies { inner in
+                        inner.modelContainer = container
+                    } operation: {
+                        try await RecurringTransactionStore().fetch(id: templateId)?.nextDueDate
+                    }
+                }
+            }
+            dependencies.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
+            dependencies.notificationAdapter.cancelRecurringReminder = { _ in }
+        } operation: {
+            // 這個 client 跟 sut 共用同一個 container，但用自己的
+            // evaluateAfterTransaction 攔截點——不能重用 sut，因為 sut 的
+            // evaluateAfterTransaction 在 init() 就固定綁死了 evaluatedSpy。
+            let probe = LedgerClient.liveValue
+            _ = try await probe.tick()
+        }
+
+        let txns = try await sut.listAll(TransactionFilter())
+        let firstTx = txns.map(\.transaction)
+            .filter { $0.sourceTemplateId == templateId }
+            .min { ($0.sourcePeriodDueDate ?? .distantFuture) < ($1.sourcePeriodDueDate ?? .distantFuture) }
+
+        #expect(firstTx != nil, "至少要補記到窗內的第一期")
+        #expect(capture.nextDueDateAtFirstRecord == firstTx?.sourcePeriodDueDate,
+                "記第一筆窗內交易的那一刻，DB 裡的 nextDueDate 必須已經等於這一期的到期日，不能還停在原始錨點")
     }
 }

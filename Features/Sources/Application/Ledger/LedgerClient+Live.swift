@@ -119,15 +119,29 @@ extension LedgerClient: DependencyKey {
         let syncRecurringReminder = Self.makeSyncRecurringReminder(notificationAdapter)
 
         // tick 去重查詢：每次 tick 只查一次（plan R4），結果放進 Set 給迴圈內
-        // 純記憶體比對，不逐期打 DB。
-        let alreadyMaterialisedPeriods: @Sendable () async throws -> Set<MaterialisedPeriod> = {
-            // 只取自動補記產生的交易（手動記的兩個欄位都是 nil），避免把整張交易表讀進來。
+        // 純記憶體比對，不逐期打 DB。下界用呼叫端傳入的 earliest（fix round 1 /
+        // G2）：去重只對補記窗內的期數有意義，不設下界的話這個 Set 會隨 App 壽命
+        // 無界成長。**下界必須跟 makeTick 迴圈內同一個 `earliest`、同一個 `>=`
+        // 比較對齊**——寫成 `>` 會讓剛好落在邊界的那一期被記錄卻不進集合，下次
+        // 當掉重跑就重複，等於用另一種形式重現這個 PR 要修的 bug。
+        //
+        // predicate 退路（fix round 1 / G2）：`#Predicate` 對 `Date?` 做 `??`
+        // 合併後再比較不編譯——巨集展開出的 `NilCoalesce<...>` 表達式無法轉成
+        // `StandardPredicateExpression<Bool>`（`Date.distantPast` 與隱式成員
+        // `.distantPast` 兩種寫法都試過，錯誤相同）。改成 predicate 只保留
+        // `sourceTemplateId != nil`（fetch 沒收斂），下界改在 `compactMap` 的
+        // guard 內用記憶體過濾（Set 仍收斂成常數級）。fetch 成本由 G1 的短路
+        // 擋掉絕大多數呼叫。
+        let alreadyMaterialisedPeriods: @Sendable (Date) async throws -> Set<MaterialisedPeriod> = { earliest in
+            // 只取自動補記產生的交易（手動記的兩個欄位都是 nil），避免把整張
+            // 交易表讀進來。
             let rows = try await transactionStore.fetchAll(
                 where: #Predicate<SDTransaction> { $0.sourceTemplateId != nil }
             )
             return Set(rows.compactMap { tx in
                 guard let templateId = tx.sourceTemplateId,
-                      let due = tx.sourcePeriodDueDate else { return nil }
+                      let due = tx.sourcePeriodDueDate,
+                      due >= earliest else { return nil }
                 return MaterialisedPeriod(templateId: templateId, dueDate: due)
             })
         }

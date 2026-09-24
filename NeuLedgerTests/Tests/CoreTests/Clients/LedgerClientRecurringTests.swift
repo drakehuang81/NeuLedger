@@ -462,4 +462,67 @@ struct LedgerClientRecurringTests {
         #expect(LedgerClient.anchored(withAnchor).anchorDate == original, "既有錨點不得被覆蓋")
         #expect(LedgerClient.anchored(withAnchor).nextDueDate == due, "正規化不得動到其他欄位")
     }
+
+    // MARK: - 補記的冪等性
+
+    @Test("tick stamps the source template and period onto what it records")
+    func testTickStampsSourceOnMaterialisedTransactions() async throws {
+        let start = monthsBefore(1)
+        var template = makeTemplate(nextDueDate: start, frequency: .monthly)
+        template.anchorDate = start
+        try await sut.createRecurring(template)
+
+        _ = try await sut.tick()
+
+        let txns = try await sut.listAll(TransactionFilter())
+        #expect(txns.isEmpty == false)
+        for row in txns {
+            #expect(row.transaction.sourceTemplateId == template.id)
+            #expect(row.transaction.sourcePeriodDueDate != nil)
+        }
+    }
+
+    @Test("a period that was already recorded is not recorded again when the cursor did not advance")
+    func testTickSkipsAnAlreadyRecordedPeriod() async throws {
+        // 模擬「交易已寫入、游標沒前進」的當掉視窗：先跑一次 tick，
+        // 再把範本的 nextDueDate 手動倒回去，然後重跑 tick。
+        let start = monthsBefore(1)
+        var template = makeTemplate(nextDueDate: start, frequency: .monthly)
+        template.anchorDate = start
+        try await sut.createRecurring(template)
+
+        let first = try await sut.tick()
+        let afterFirst = try await sut.listAll(TransactionFilter()).count
+        #expect(first > 0)
+
+        // 把游標倒回原點，等同於「寫回進度那一步沒有成功」。
+        var rewound = try await sut.listRecurring().first { $0.id == template.id }!
+        rewound.nextDueDate = start
+        try await sut.updateRecurring(rewound)
+
+        let second = try await sut.tick()
+
+        #expect(second == 0, "同一期不得被重複補記")
+        #expect(try await sut.listAll(TransactionFilter()).count == afterFirst,
+                "交易總數不得增加")
+    }
+
+    @Test("a manually recorded transaction never blocks a materialisation")
+    func testManualTransactionsDoNotBlockMaterialisation() async throws {
+        // 使用者自己在同一天記了一筆一模一樣的帳，不該讓 tick 誤判為已補記。
+        let start = monthsBefore(1)
+        var template = makeTemplate(nextDueDate: start, frequency: .monthly)
+        template.anchorDate = start
+        try await sut.createRecurring(template)
+
+        try await sut.record(
+            Transaction(
+                amount: 1200, date: start, note: "Rent",
+                accountId: template.accountId, type: .expense
+            )
+        )
+
+        let count = try await sut.tick()
+        #expect(count > 0, "手動記的交易沒有來源欄位，不得被當成已補記")
+    }
 }

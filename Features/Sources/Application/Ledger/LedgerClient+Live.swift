@@ -118,6 +118,20 @@ extension LedgerClient: DependencyKey {
         // / `tick` 共用同一顆，啟用中就排程、暫停就取消（health-audit A5）。
         let syncRecurringReminder = Self.makeSyncRecurringReminder(notificationAdapter)
 
+        // tick 去重查詢：每次 tick 只查一次（plan R4），結果放進 Set 給迴圈內
+        // 純記憶體比對，不逐期打 DB。
+        let alreadyMaterialisedPeriods: @Sendable () async throws -> Set<MaterialisedPeriod> = {
+            // 只取自動補記產生的交易（手動記的兩個欄位都是 nil），避免把整張交易表讀進來。
+            let rows = try await transactionStore.fetchAll(
+                where: #Predicate<SDTransaction> { $0.sourceTemplateId != nil }
+            )
+            return Set(rows.compactMap { tx in
+                guard let templateId = tx.sourceTemplateId,
+                      let due = tx.sourcePeriodDueDate else { return nil }
+                return MaterialisedPeriod(templateId: templateId, dueDate: due)
+            })
+        }
+
         return LedgerClient(
             // MARK: Transactions
             record: { transaction in
@@ -259,7 +273,7 @@ extension LedgerClient: DependencyKey {
             createRecurring: Self.makeCreateRecurring(recurringStore, syncRecurringReminder),
             updateRecurring: Self.makeUpdateRecurring(recurringStore, syncRecurringReminder),
             deleteRecurring: Self.makeDeleteRecurring(recurringStore, notificationAdapter),
-            tick: Self.makeTick(recurringStore, recordTransaction, syncRecurringReminder),
+            tick: Self.makeTick(recurringStore, recordTransaction, syncRecurringReminder, alreadyMaterialisedPeriods),
 
             // MARK: Export (internalised — see +LiveExport.swift)
             exportCSV: Self.makeExportCSV(transactionStore, categoryStore, accountStore)

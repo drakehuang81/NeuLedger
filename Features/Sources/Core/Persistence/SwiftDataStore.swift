@@ -24,6 +24,19 @@ public struct SwiftDataStore<Domain: Identifiable & Sendable,
         return try context.fetch(descriptor).map { $0.toDomain() }
     }
 
+    /// Returns the Domain values matching an SD-side predicate.
+    ///
+    /// 給「需要用 SD 欄位過濾、但不想把整張表讀進記憶體」的呼叫端用
+    /// （例如週期補記的去重查詢只要 `sourceTemplateId != nil` 的那些）。
+    public func fetchAll(
+        where predicate: Predicate<SD>,
+        sortBy descriptors: [SortDescriptor<SD>] = []
+    ) async throws -> [Domain] {
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<SD>(predicate: predicate, sortBy: descriptors)
+        return try context.fetch(descriptor).map { $0.toDomain() }
+    }
+
     /// Returns the Domain value with the given id, or nil if no such entity exists.
     public func fetch(id: Domain.ID) async throws -> Domain? {
         let context = ModelContext(container)

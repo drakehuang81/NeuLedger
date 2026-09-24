@@ -63,6 +63,12 @@ import Domain
 /// closure（§3.1 budget invariant + reactive Watch/Widget mirror），跟使用者
 /// 手動 record 走同一條路徑。回傳值是實際 materialise 的筆數（被窗擋掉的不算；
 /// 另一條 tick 正在跑而被閘門擋下時也回 0）。
+/// 「某個範本的某一期」的識別鍵，用來判斷這一期是否已經補記過。
+struct MaterialisedPeriod: Hashable, Sendable {
+    let templateId: UUID
+    let dueDate: Date
+}
+
 extension LedgerClient {
     static func makeListRecurring(
         _ store: RecurringTransactionStore
@@ -163,7 +169,8 @@ extension LedgerClient {
     static func makeTick(
         _ store: RecurringTransactionStore,
         _ recordTransaction: @escaping @Sendable (Transaction) async throws -> Void,
-        _ syncReminder: @escaping @Sendable (RecurringTransaction) async throws -> Void
+        _ syncReminder: @escaping @Sendable (RecurringTransaction) async throws -> Void,
+        _ alreadyMaterialised: @escaping @Sendable () async throws -> Set<MaterialisedPeriod>
     ) -> @Sendable () async throws -> Int {
         // Resolve the clock at assembly time, matching `RecurringUseCase+Live`
         // (which read `@Dependency(\.date.now)` outside its tick closure).
@@ -184,6 +191,10 @@ extension LedgerClient {
                 $0.isActive && $0.nextDueDate <= today
             }
 
+            // 已經補記過的期數：中途當掉會留下「交易已寫入、游標沒前進」的狀態，
+            // 下一次 tick 必須跳過那些期，否則同一期會被記兩遍（spec：materialise 非冪等）。
+            let recorded = try await alreadyMaterialised()
+
             var materialised = 0
 
             for template in due {
@@ -199,6 +210,15 @@ extension LedgerClient {
                         guard advanced > dueDate else { break }
 
                         if dueDate >= earliest {
+                            let period = MaterialisedPeriod(templateId: cursor.id, dueDate: dueDate)
+                            if recorded.contains(period) {
+                                // 這一期上次已經記進去了，只是游標沒來得及前進。
+                                // 跳過記帳但仍要推進，否則會永遠卡在這一期。
+                                cursor.nextDueDate = advanced
+                                try await store.update(cursor)
+                                continue
+                            }
+
                             let tx = Transaction(
                                 id: UUID(),
                                 amount: cursor.amount,
@@ -211,7 +231,9 @@ extension LedgerClient {
                                 tags: cursor.tags,
                                 aiSuggested: false,
                                 createdAt: today,
-                                updatedAt: today
+                                updatedAt: today,
+                                sourceTemplateId: cursor.id,
+                                sourcePeriodDueDate: dueDate
                             )
 
                             // INVARIANT (architecture.md §3.1 Scenario A): recurring tick

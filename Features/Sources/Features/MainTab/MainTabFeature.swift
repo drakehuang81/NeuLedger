@@ -115,21 +115,6 @@ struct MainTabFeature {
                 state.selectedTab = .transactions
                 return .none
 
-            case let .dashboard(.delegate(.savedRecurringConfirmation(id, newNextDueDate))):
-                return .run { _ in
-                    do {
-                        let all = try await ledger.listRecurring()
-                        if var template = all.first(where: { $0.id == id }) {
-                            template.nextDueDate = newNextDueDate
-                            // Reminder rescheduling is a post-condition of updateRecurring
-                            // (internalised into LedgerClient).
-                            try await ledger.updateRecurring(template)
-                        }
-                    } catch {
-                        // silently ignore
-                    }
-                }
-
             case .dashboard:
                 return .none
 

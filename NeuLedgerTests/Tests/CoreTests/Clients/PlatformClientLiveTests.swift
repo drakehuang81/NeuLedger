@@ -118,49 +118,6 @@ struct PlatformClientLiveTests {
         #expect(result == false)
     }
 
-    // MARK: - resolveRecurringConfirmation
-
-    @Test("resolveRecurringConfirmation returns .recurringConfirmation for an existing template")
-    func resolveExistingRecurring() async throws {
-        let container = try freshContainer()
-        let store = withDependencies {
-            $0.modelContainer = container
-        } operation: {
-            RecurringTransactionStore()
-        }
-        let template = RecurringTransaction(
-            id: UUID(),
-            amount: 100,
-            note: "Rent",
-            categoryId: nil,
-            accountId: UUID().uuidString,
-            toAccountId: nil,
-            type: .expense,
-            tags: [],
-            frequency: .monthly,
-            nextDueDate: Date(),
-            isActive: true,
-            createdAt: Date()
-        )
-        try await store.add(template)
-
-        let client = sut(container: container)
-        let result = try await client.resolveRecurringConfirmation(template.id)
-        // 從 store 讀回的範本一定帶錨點（mapper 用 nextDueDate 回填舊資料），
-        // 所以比對對象要用同樣被錨定過的版本。
-        var expected = template
-        expected.anchorDate = template.nextDueDate
-        #expect(result == .recurringConfirmation(expected))
-    }
-
-    @Test("resolveRecurringConfirmation returns .none for an unknown id")
-    func resolveUnknownRecurring() async throws {
-        let container = try freshContainer()
-        let client = sut(container: container)
-        let result = try await client.resolveRecurringConfirmation(UUID())
-        #expect(result == .none)
-    }
-
     // MARK: - Preferences round-trips
 
     @Test("setAccessoryMode then accessoryMode reads back the same value")

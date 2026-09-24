@@ -71,14 +71,6 @@ public struct PlatformClient: Sendable {
     public var scheduleDailyReminder: @Sendable () async throws -> Void
     /// Cancels the daily reminder.
     public var cancelDailyReminder: @Sendable () async -> Void
-    /// AppFeature inbound-notification routing subscription — emits a
-    /// `RecurringTransaction.ID` each time the user taps a recurring-transaction
-    /// notification. Replaces the former direct `notificationAdapter` injection.
-    public var pendingRecurringConfirmations: @Sendable () -> AsyncStream<RecurringTransaction.ID> = {
-        let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
-        continuation.finish()
-        return stream
-    }
 
     // MARK: - Sync
 
@@ -102,8 +94,6 @@ public struct PlatformClient: Sendable {
     public var parseLink: @Sendable (URL) async throws -> RouteLinkDestination
     /// Whether onboarding can be skipped (i.e. it was already completed).
     public var canSkipOnboarding: @Sendable () async throws -> Bool
-    /// Resolves a recurring-transaction id into a confirmation destination.
-    public var resolveRecurringConfirmation: @Sendable (_ id: RecurringTransaction.ID) async throws -> RouteLinkDestination
 
     // MARK: - System
 

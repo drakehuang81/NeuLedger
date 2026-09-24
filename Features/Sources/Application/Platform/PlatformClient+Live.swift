@@ -12,21 +12,21 @@ import UIKit
 ///
 /// Assembled from the former `AppEnvironmentUseCase+Live` (preferences,
 /// notifications, app-settings), `CloudSyncUseCase+Live` (iCloud sync), and
-/// `DeeplinkClient+Live` (link routing). Persistence-backed routing reads
-/// recurring templates directly through
-/// `RecurringTransactionStore` (no
-/// repository indirection). All preference round-trips go through
+/// `DeeplinkClient+Live` (link routing). All preference round-trips go through
 /// `\.userSettingsAdapter` under their existing `SettingsKey`s; notification
 /// work delegates to `\.notificationAdapter`; iCloud lifecycle delegates to
 /// `\.cloudKitSyncAdapter`.
+///
+/// The recurring-transaction notification confirmation flow (tap → resolve →
+/// confirmation form) has been removed — `LedgerClient.tick()` now records
+/// due occurrences automatically when the app enters the foreground
+/// (health-audit A2), so this client no longer resolves recurring templates.
 extension PlatformClient: DependencyKey {
     public static var liveValue: PlatformClient {
         @Dependency(\.userSettingsAdapter) var userSettingsAdapter
         @Dependency(\.notificationAdapter) var notificationAdapter
         @Dependency(\.cloudKitSyncAdapter) var cloudKitSyncAdapter
         @Dependency(\.watchBridgeAdapter) var watchBridgeAdapter
-
-        let recurringStore = RecurringTransactionStore()
 
         let capturedCloudKitSyncAdapter = cloudKitSyncAdapter
         let capturedUserSettingsAdapter = userSettingsAdapter
@@ -100,9 +100,6 @@ extension PlatformClient: DependencyKey {
             },
             cancelDailyReminder: {
                 await notificationAdapter.cancelDailyReminder()
-            },
-            pendingRecurringConfirmations: {
-                notificationAdapter.pendingConfirmations()
             },
 
             // MARK: Sync
@@ -187,11 +184,6 @@ extension PlatformClient: DependencyKey {
             },
             canSkipOnboarding: {
                 userSettingsAdapter.bool(.hasCompletedOnboarding)
-            },
-            resolveRecurringConfirmation: { id in
-                let all = try await recurringStore.fetchAll()
-                guard let template = all.first(where: { $0.id == id }) else { return .none }
-                return .recurringConfirmation(template)
             },
 
             // MARK: System

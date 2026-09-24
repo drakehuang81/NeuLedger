@@ -4,7 +4,9 @@ import Foundation
 @testable import Features
 import Domain
 
-/// 補測試：refreshAfterMutation 統一重載的三個入口
+/// 補測試：refreshAfterMutation 統一重載的入口
+/// （原「入口 2：addTransaction 的定期交易確認 delegate」已隨
+/// 確認流程整條移除而刪除；編號沿用 1 / 3a / 3b / 3c，不重新排序。）
 ///
 /// 每個入口都會 merge 四條 effect：
 ///   accountsEffect → accountsUpdated（→ accountBalancesComputed）
@@ -80,42 +82,6 @@ struct DashboardFeatureMutationTests {
         await store.finish()
 
         // 斷言四個 section 的 phase 均為 loaded，確認 refreshAfterMutation 全部執行
-        await MainActor.run {
-            #expect(store.state.accounts == [Self.sampleAccount])
-            #expect(store.state.accountsPhase == .loaded)
-            #expect(store.state.recentTransactions == [Self.sampleTransaction])
-            #expect(store.state.transactionsPhase == .loaded)
-            #expect(store.state.todaySpending == 100)
-            #expect(store.state.statsPhase == .loaded)
-            #expect(store.state.weeklySpending == [10, 20, 30, 40, 50, 60, 70])
-            #expect(store.state.heroPhase == .loaded)
-        }
-    }
-
-    // MARK: - 入口 2：addTransaction.delegate(.savedRecurringConfirmation)
-
-    @Test("addTransaction.delegate.savedRecurringConfirmation → refreshAfterMutation + delegate forwarded to parent")
-    func testAddTransactionSavedRecurringConfirmationFiresRefreshAndForwardsDelegate() async {
-        let recurringId = UUID()
-        let newNextDue  = Date(timeIntervalSince1970: 2_000_000)
-
-        var initial = DashboardFeature.State()
-        initial.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
-
-        let store = await makeStore(initial: initial)
-        await MainActor.run { store.exhaustivity = .off }
-
-        await store.send(
-            .addTransaction(.presented(.delegate(.savedRecurringConfirmation(recurringId, newNextDue))))
-        )
-
-        // delegate 往上轉送（DashboardFeature 用 .send(.delegate(...)) 發出）
-        await store.receive(\.delegate.savedRecurringConfirmation) { _ in }
-
-        // 等待 refresh effects 完成
-        await store.skipReceivedActions()
-        await store.finish()
-
         await MainActor.run {
             #expect(store.state.accounts == [Self.sampleAccount])
             #expect(store.state.accountsPhase == .loaded)

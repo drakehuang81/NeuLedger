@@ -99,10 +99,6 @@ extension NotificationAdapter: DependencyKey {
                 .removePendingNotificationRequests(
                     withIdentifiers: ["neuledger.recurring.\(id.uuidString)"]
                 )
-        },
-
-        pendingConfirmations: {
-            RecurringNotificationDelegate.shared.confirmationStream()
         }
     )
 }

@@ -13,7 +13,6 @@ import CasePaths
 @CasePathable
 public enum RouteLinkDestination: Sendable, Equatable {
     case carrierManagement
-    case recurringConfirmation(RecurringTransaction)
     case main
     case onboarding
     case none

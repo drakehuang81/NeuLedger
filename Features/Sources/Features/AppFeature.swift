@@ -36,27 +36,15 @@ struct AppFeature {
         case onboarding(OnboardingFeature.Action)
         case main(MainTabFeature.Action)
         case route(RouteLinkDestination)
-        case task
     }
 
     @Dependency(\.platformClient) var platformClient
-
-    private enum CancelID { case recurringSubscription }
 
     // MARK: - Body
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task:
-                return .run { send in
-                    for await id in platformClient.pendingRecurringConfirmations() {
-                        let destination = (try? await platformClient.resolveRecurringConfirmation(id)) ?? .none
-                        await send(.route(destination))
-                    }
-                }
-                .cancellable(id: CancelID.recurringSubscription)
-
             case .splashCompleted:
                 return .run { send in
                     let canSkipOnboarding = try await platformClient.canSkipOnboarding()
@@ -93,14 +81,6 @@ struct AppFeature {
                     return .none
                 case .onboarding:
                     state = .onboarding(OnboardingFeature.State())
-                    return .none
-                case let .recurringConfirmation(template):
-                    guard case .main(var mainState) = state else { return .none }
-                    mainState.selectedTab = .dashboard
-                    mainState.dashboard.addTransaction = AddTransactionFeature.State(
-                        mode: .addRecurringConfirmation(template)
-                    )
-                    state = .main(mainState)
                     return .none
                 default:
                     return .none

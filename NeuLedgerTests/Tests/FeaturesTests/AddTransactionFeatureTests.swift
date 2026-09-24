@@ -321,42 +321,6 @@ struct AddTransactionFeatureTests {
         }
     }
 
-    @Test("saveTapped in addRecurringConfirmation mode emits savedRecurringConfirmation delegate")
-    func testSaveTappedRecurringConfirmationEmitsDelegate() async {
-        let recurringId = UUID()
-        let accountId = "00000000-0000-0000-0000-000000000001"
-        let categoryId = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
-        let template = RecurringTransaction(
-            id: recurringId, amount: 500, note: "房租",
-            categoryId: categoryId,
-            accountId: accountId,
-            toAccountId: nil, type: .expense, tags: [],
-            frequency: .monthly, nextDueDate: Date(),
-            isActive: true, createdAt: Date()
-        )
-        let addedTransaction = LockIsolated<Transaction?>(nil)
-        let dismissed = LockIsolated(false)
-        let store = await TestStore(
-            initialState: AddTransactionFeature.State(mode: .addRecurringConfirmation(template))
-        ) {
-            AddTransactionFeature()
-        } withDependencies: {
-            $0.ledgerClient.listActiveAccounts = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.ledgerClient.record = { addedTransaction.setValue($0) }
-            $0.dismiss = DismissEffect { dismissed.setValue(true) }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.saveTapped)
-        await store.receive(\.delegate.savedRecurringConfirmation) { _ in }
-
-        #expect(addedTransaction.value?.amount == 500)
-        #expect(dismissed.value == true)
-    }
-
     @Test("saveTapped in .edit mode sends savedWithTransaction carrying updated values")
     func testEditModeSavedDelegateCarriesTransaction() async {
         let existing = Transaction(

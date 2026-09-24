@@ -39,16 +39,30 @@ import Domain
 /// - **逐期落地**（R5）：每 materialise 一筆就把推進後的 `nextDueDate` 寫回
 ///   store，不是整批跑完才寫。中途被取消或當掉時，已補記的期數不會在下次
 ///   tick 重複補記。
-/// - **提醒只重排一次**：迴圈跑完整個範本後，若 `nextDueDate` 有變才呼叫
-///   `syncReminder`，不在迴圈內每期重排。
+/// - **提醒只重排一次**：迴圈跑完整個範本後，若 `nextDueDate` 有變且已推進到
+///   未來（`> today`）才呼叫 `syncReminder`，不在迴圈內每期重排；撞到迴圈上限
+///   時 cursor 還停在過去，這時不重排（維持原排程，等下一次 tick 推完再說），
+///   避免拿過去的日期去排一個永遠不會觸發的 `UNCalendarNotificationTrigger`。
 /// - **12 個月補記窗**（R4）：到期日早於 `today - 12 個月` 的期數不入帳，但
-///   仍要快轉游標，避免久未開啟或還原舊備份時一次灌進上百筆交易。
+///   仍要快轉游標，避免久未開啟或還原舊備份時一次灌進上百筆交易。窗外的期數
+///   什麼都沒記，所以**不逐期寫 DB**（重跑不會重複），只在整個範本跑完後、
+///   `nextDueDate` 真的變了才補寫一次（fix round 1 / F3——否則錨在數年前的
+///   週繳範本會有數百次沒有結果的 fetch + save 往返）。
 /// - **防呆**：硬性迴圈上限 500；`nextDate(after:)` 回傳值沒有前進（資料異常）
 ///   時 `break`，不無限迴圈。
+/// - **並行安全**（fix round 1 / F1）：`recurringTickGate` 這個 process-wide
+///   actor 確保同時只有一條 tick 在跑；`SwiftDataStore.update` 的
+///   read-modify-write 不是原子的，兩條重疊的 tick 會各自記到同一期造成無法
+///   事後辨識的重複帳。Feature 層的 `cancelInFlight` 擋不住這個——Swift 的
+///   取消是協作式的，tick 的迴圈裡沒有任何檢查點。
+/// - **per-template 錯誤隔離**（fix round 1 / F2）：任一範本 materialise 失敗
+///   不會中止其他範本（`continue` 到下一個），避免一個壞掉的範本靜默凍結全
+///   App 的週期記帳（配合 R6「tick 失敗不顯示任何東西」的既定裁定）。
 ///
 /// materialise 出的交易一律經由這個 Client 自己的共用 `recordTransaction`
 /// closure（§3.1 budget invariant + reactive Watch/Widget mirror），跟使用者
-/// 手動 record 走同一條路徑。回傳值是實際 materialise 的筆數（被窗擋掉的不算）。
+/// 手動 record 走同一條路徑。回傳值是實際 materialise 的筆數（被窗擋掉的不算；
+/// 另一條 tick 正在跑而被閘門擋下時也回 0）。
 extension LedgerClient {
     static func makeListRecurring(
         _ store: RecurringTransactionStore
@@ -127,6 +141,13 @@ extension LedgerClient {
     /// 硬性迴圈上限，防止資料異常（到期日不前進）造成無限迴圈。
     static let recurringCatchUpIterationLimit = 500
 
+    /// process-wide 單例，不依賴 `liveValue` 的快取語意（fix round 1 / F1）：
+    /// `liveValue` 是 computed property，若把閘門宣告成 `makeTick` 組裝時捕獲的
+    /// 區域變數，正確性就押在 swift-dependencies 的快取行為上——而測試每個
+    /// suite 都會重新求值 `liveValue` 一次，區域變數形式會各自拿到獨立的閘門，
+    /// 完全擋不住並行。`static let` 才能保證整個 process 共用同一顆。
+    static let recurringTickGate = RecurringTickGate()
+
     static func makeTick(
         _ store: RecurringTransactionStore,
         _ recordTransaction: @escaping @Sendable (Transaction) async throws -> Void,
@@ -136,12 +157,16 @@ extension LedgerClient {
         // (which read `@Dependency(\.date.now)` outside its tick closure).
         @Dependency(\.date.now) var now
 
-        return {
+        // 補記迴圈本體，抽出來是為了讓最外層的閘門 begin/end 包住它（見下方
+        // 回傳的 closure）。維持原本的邏輯不變，只補上 F2/F3/F6/F8 的修正。
+        let runTick: @Sendable () async throws -> Int = {
             let today = now
             let calendar = Calendar.current
+            // F6：曆法加法失敗時 fail-open（寧可全記也不要靜默全丟）——`?? today`
+            // 會讓 earliest 退化成 today，所有待補期數都會被快轉且一筆不記。
             let earliest = calendar.date(
-                byAdding: .month, value: -recurringCatchUpWindowMonths, to: today
-            ) ?? today
+                byAdding: .month, value: -Self.recurringCatchUpWindowMonths, to: today
+            ) ?? Date.distantPast
 
             let due = try await store.fetchAll().filter {
                 $0.isActive && $0.nextDueDate <= today
@@ -150,53 +175,106 @@ extension LedgerClient {
             var materialised = 0
 
             for template in due {
-                var cursor = Self.anchored(template)
-                var iterations = 0
+                do {
+                    var cursor = Self.anchored(template)
+                    var iterations = 0
 
-                while cursor.nextDueDate <= today, iterations < recurringCatchUpIterationLimit {
-                    iterations += 1
-                    let dueDate = cursor.nextDueDate
-                    let advanced = cursor.nextDate(after: dueDate)
-                    // 日期沒有前進代表資料異常；停手而不是無限迴圈。
-                    guard advanced > dueDate else { break }
+                    while cursor.nextDueDate <= today, iterations < Self.recurringCatchUpIterationLimit {
+                        iterations += 1
+                        let dueDate = cursor.nextDueDate
+                        let advanced = cursor.nextDate(after: dueDate)
+                        // 日期沒有前進代表資料異常；停手而不是無限迴圈。
+                        guard advanced > dueDate else { break }
 
-                    if dueDate >= earliest {
-                        let tx = Transaction(
-                            id: UUID(),
-                            amount: cursor.amount,
-                            date: dueDate,
-                            note: cursor.note,
-                            categoryId: cursor.categoryId,
-                            accountId: cursor.accountId,
-                            toAccountId: cursor.toAccountId,
-                            type: cursor.type,
-                            tags: cursor.tags,
-                            aiSuggested: false,
-                            createdAt: today,
-                            updatedAt: today
-                        )
+                        if dueDate >= earliest {
+                            let tx = Transaction(
+                                id: UUID(),
+                                amount: cursor.amount,
+                                date: dueDate,
+                                note: cursor.note,
+                                categoryId: cursor.categoryId,
+                                accountId: cursor.accountId,
+                                toAccountId: cursor.toAccountId,
+                                type: cursor.type,
+                                tags: cursor.tags,
+                                aiSuggested: false,
+                                createdAt: today,
+                                updatedAt: today
+                            )
 
-                        // INVARIANT (architecture.md §3.1 Scenario A): recurring tick
-                        // materialises due templates into real transactions through this
-                        // Client's own record path, so the budget warning invariant
-                        // (§3.1 Scenario B) is preserved for scheduler-emitted
-                        // transactions too.
-                        try await recordTransaction(tx)
-                        materialised += 1
+                            // INVARIANT (architecture.md §3.1 Scenario A): recurring tick
+                            // materialises due templates into real transactions through this
+                            // Client's own record path, so the budget warning invariant
+                            // (§3.1 Scenario B) is preserved for scheduler-emitted
+                            // transactions too.
+                            try await recordTransaction(tx)
+                            materialised += 1
+
+                            cursor.nextDueDate = advanced
+                            // 逐期落地：中途被取消或當掉時，已補記的期數不會在下次 tick 重來（plan R5）。
+                            try await store.update(cursor)
+                        } else {
+                            // F3：窗外——只快轉、不入帳、不寫 DB。什麼都沒記，重跑不會重複，
+                            // 不必每期都跑一輪 fetch + save。
+                            cursor.nextDueDate = advanced
+                        }
                     }
 
-                    cursor.nextDueDate = advanced
-                    // 逐期落地：中途被取消或當掉時，已補記的期數不會在下次 tick 重來（plan R5）。
-                    try await store.update(cursor)
-                }
-
-                if cursor.nextDueDate != template.nextDueDate {
-                    // 提醒只在整個範本跑完後重排一次。
-                    try await syncReminder(cursor)
+                    if cursor.nextDueDate != template.nextDueDate {
+                        // F3：涵蓋「整段都在窗外」或「撞到迴圈上限」的情況——一次寫入，
+                        // 不是幾百次（窗內路徑這裡會是第二次寫入同一個值，可接受）。
+                        try await store.update(cursor)
+                        if cursor.nextDueDate > today {
+                            // 撞到迴圈上限時 cursor 還停在過去；這時不要用過去的日期
+                            // 去排一個永遠不會觸發的提醒，維持原排程，等下次 tick 推完再重排。
+                            try await syncReminder(cursor)
+                        }
+                    }
+                } catch {
+                    // F2：單一範本失敗不得拖垮其他範本（下次 tick 會重試這一個）。
+                    // 配合 R6「tick 失敗不顯示任何東西」——沒有 UI 承接，只能靠隔離
+                    // 避免一個壞掉的範本靜默凍結全 App 的週期記帳。
+                    continue
                 }
             }
 
             return materialised
         }
+
+        return {
+            // F1：閘門必須包住整個 runTick，且成功/拋錯兩條路徑都要 end()——
+            // `defer` 內不能 `await`，所以不能用 defer 收尾。
+            guard await Self.recurringTickGate.begin() else { return 0 }
+            do {
+                let materialised = try await runTick()
+                await Self.recurringTickGate.end()
+                return materialised
+            } catch {
+                await Self.recurringTickGate.end()
+                throw error
+            }
+        }
     }
+}
+
+/// `tick()` 的串行化閘門。
+///
+/// 兩條重疊的 tick 會各自 `fetchAll` 到同一個 `nextDueDate` 並各記一筆，而
+/// `Transaction` 沒有指回範本的欄位，這種重複帳事後認不出來也清不掉。Feature 層的
+/// `cancelInFlight` 擋不住：Swift 的取消是協作式的，而 tick 的迴圈沒有任何檢查點，
+/// 被取消的那條會照跑到底。
+///
+/// `begin()` 內部沒有 `await`，從讀 `isRunning` 到設成 `true` 之間不會讓出，所以是
+/// 原子的。**不要**改成「把整段 tick 本體在 actor method 裡 await」的形狀——actor 在
+/// await 點會釋放，第二條照樣進得來，完全擋不住。
+actor RecurringTickGate {
+    private var isRunning = false
+
+    func begin() -> Bool {
+        if isRunning { return false }
+        isRunning = true
+        return true
+    }
+
+    func end() { isRunning = false }
 }

@@ -63,6 +63,7 @@ public struct LedgerClient: Sendable {
     public var deleteRecurring: @Sendable (_ id: RecurringTransaction.ID) async throws -> Void
     /// 把所有到期（含逾期）的啟用範本 materialise 成交易，回傳實際記了幾筆。
     /// 由前景觸發（`MainTabFeature`），不是背景排程。
+    /// 回傳 0 代表「沒有到期期數」**或**「另一條 tick 正在跑而這次被略過」。
     public var tick: @Sendable () async throws -> Int
 
     // MARK: - Export

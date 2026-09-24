@@ -16,7 +16,18 @@ import Domain
 /// 2. **`tick()` SAGA internalisation** — due templates are materialised through
 ///    the Client's own record path (preserving the §3.1 budget invariant) and
 ///    their `nextDueDate` is advanced.
-@Suite("LedgerClient Live (Recurring) Integration Tests")
+///
+/// `.serialized` (fix round 1 / F1): `LedgerClient.recurringTickGate` is a
+/// process-wide `static let` on purpose (production correctness must not
+/// depend on `liveValue`'s per-call re-evaluation — see the gate's doc
+/// comment). That means every test in this suite that calls the live
+/// `tick()` shares the same real gate. Swift Testing parallelises `@Test`
+/// methods within a suite by default, so without `.serialized` two unrelated
+/// tick tests running concurrently would steal each other's gate slot and
+/// intermittently see `0` instead of their expected count — a real
+/// cross-test race, not a flaky assertion, confirmed by a failing run before
+/// this trait was added (see task-4-report.md「Fix round 1」).
+@Suite("LedgerClient Live (Recurring) Integration Tests", .serialized)
 struct LedgerClientRecurringTests {
 
     /// Records every recurring-reminder call routed through the Client.
@@ -215,8 +226,8 @@ struct LedgerClientRecurringTests {
     func testTickSkipsInactiveTemplates() async throws {
         let inactiveId = UUID()
         let inactive = makeTemplate(id: inactiveId, nextDueDate: fixedNow.addingTimeInterval(-86400), isActive: false)
-        // 改用 store 直接寫入以跳過錨點正規化（Task 3 之後 createRecurring 一律經
-        // `anchored(_:)` 補錨，這裡要驗證的是「無錨點舊資料」也不能被 tick 誤補）。
+        // 改用 store 直接寫入是為了跳過 `createRecurring` 的提醒排程——暫停中的
+        // 範本不該收到提醒，走 `sut.createRecurring` 會誤排一次（fix round 1 / F7）。
         let store = RecurringTransactionStore()
         try await withDependencies {
             $0.modelContainer = container
@@ -284,6 +295,11 @@ struct LedgerClientRecurringTests {
         let count = try await sut.tick()
 
         #expect(count == 12)
+        // fix round 1 / F4：只驗數量會被「窗判斷寫反、改記最舊 12 期」的實作騙過；
+        // 明確驗證入帳的是窗內最早與最晚兩期。
+        let dates = try await sut.listAll(TransactionFilter()).map(\.transaction.date).sorted()
+        #expect(dates.first == Self.date(2022, 12, 1), "窗內最早的一期")
+        #expect(dates.last == Self.date(2023, 11, 1), "窗內最晚的一期")
         let stored = try await sut.listRecurring().first { $0.id == template.id }
         #expect(stored?.nextDueDate == Self.date(2023, 12, 1))
     }
@@ -299,6 +315,12 @@ struct LedgerClientRecurringTests {
 
         let expected = Calendar.current.date(byAdding: .month, value: 1, to: fixedNow)!
         #expect(spy.scheduledDate(for: template.id) == expected)
+        // fix round 1 / F5：沒有這條計次斷言時，「把 syncReminder 搬進迴圈、
+        // 每期都重排」的實作一樣會讓上面那條綠燈——`scheduledDate(for:)` 是字典，
+        // 只看得到最後一次寫入。createRecurring 排一次 + tick 收尾重排一次，
+        // tick 不得每期都重排。
+        #expect(spy.scheduled == [template.id, template.id],
+                "createRecurring 排一次 + tick 重排一次；tick 不得每期都重排")
     }
 
     @Test("tick returns zero and records nothing when no template is due")
@@ -310,6 +332,25 @@ struct LedgerClientRecurringTests {
 
         #expect(try await sut.tick() == 0)
         #expect(try await sut.listAll(TransactionFilter()).isEmpty)
+    }
+
+    // MARK: - tick 並行安全（fix round 1 / F1）
+
+    @Test("two overlapping ticks do not double-post the same occurrence")
+    func testConcurrentTicksDoNotDoublePost() async throws {
+        let start = monthsBefore(3)
+        var template = makeTemplate(nextDueDate: start, frequency: .monthly)
+        template.anchorDate = start
+        try await sut.createRecurring(template)
+
+        async let first = sut.tick()
+        async let second = sut.tick()
+        let counts = try await [first, second]
+
+        // 一條做完四期、另一條被閘門擋下回 0；順序不保證，所以比對集合。
+        #expect(counts.sorted() == [0, 4])
+        let txns = try await sut.listAll(TransactionFilter())
+        #expect(txns.count == 4, "重疊的 tick 不得重複入帳")
     }
 
     // MARK: - 暫停即取消提醒（health-audit A5）

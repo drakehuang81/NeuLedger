@@ -79,7 +79,6 @@ extension NotificationAdapter: DependencyKey {
             content.title = title
             content.body = body
             content.sound = .default
-            content.userInfo = ["recurringTransactionId": id.uuidString]
 
             let triggerDate = Calendar.current.dateComponents(
                 [.year, .month, .day, .hour, .minute, .second],

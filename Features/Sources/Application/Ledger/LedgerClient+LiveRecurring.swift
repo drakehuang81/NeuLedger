@@ -180,7 +180,7 @@ extension LedgerClient {
                 byAdding: .month, value: -Self.recurringCatchUpWindowMonths, to: today
             ) ?? Date.distantPast
 
-            let due = try await store.fetchAll().filter {
+            let due = try await store.fetchAll(sortBy: [SortDescriptor(\.nextDueDate)]).filter {
                 $0.isActive && $0.nextDueDate <= today
             }
 

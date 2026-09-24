@@ -355,13 +355,27 @@ public struct RecurringTransactionFormView: View {
                             .font(Font.Design.body)
                             .foregroundStyle(Color.Design.textPrimary)
                         Spacer()
-                        DatePicker(
-                            "",
-                            selection: $store.firstRunDate.sending(\.firstRunDateChanged),
-                            displayedComponents: .date
-                        )
-                        .labelsHidden()
-                        .tint(Color.accentColor)
+                        if store.mode == .add {
+                            DatePicker(
+                                "",
+                                selection: $store.firstRunDate.sending(\.firstRunDateChanged),
+                                in: Date()...,
+                                displayedComponents: .date
+                            )
+                            .labelsHidden()
+                            .tint(Color.accentColor)
+                        } else {
+                            // 編輯既有範本時不設下限：它的到期日本來就可能在過去，
+                            // 設下限會讓 picker 顯示超出範圍的值並可能悄悄把日期跳到今天，
+                            // 連帶重新錨定整個系列（final-fix W3）。
+                            DatePicker(
+                                "",
+                                selection: $store.firstRunDate.sending(\.firstRunDateChanged),
+                                displayedComponents: .date
+                            )
+                            .labelsHidden()
+                            .tint(Color.accentColor)
+                        }
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)

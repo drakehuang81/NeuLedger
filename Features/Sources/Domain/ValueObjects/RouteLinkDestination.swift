@@ -4,7 +4,9 @@ import CasePaths
 // MARK: - RouteLinkDestination
 
 /// A resolved navigation destination derived from an inbound link
-/// (URL deeplink, recurring-transaction notification, or onboarding gate).
+/// (URL deeplink or onboarding gate). Recurring-transaction due dates no
+/// longer route through here — they auto-record via `MainTabFeature`'s
+/// foreground `tick()` instead of a notification-confirmation deep link.
 ///
 /// Relocated from `Domain/UseCases/DeeplinkClient.swift` into the shared
 /// `ValueObjects` folder as part of the client-layer consolidation

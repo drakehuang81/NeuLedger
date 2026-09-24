@@ -104,14 +104,17 @@ struct MainTabFeature {
 
             case .recurringTickRequested:
                 // 週期交易的唯一推進點（health-audit A2：tick 原本零呼叫點）。
-                // cancelInFlight：啟動時的 .task 與回前景可能連續觸發，只留最後一次。
+                // 刻意不用 cancelInFlight：冷啟動時 .task 與 scenePhase .active 會各送一次，
+                // 取消掉第一條會讓它的 recurringTicked 變成 no-op（effect 已取消），而第二條
+                // 又被 Client 層的閘門擋下回 0——結果交易補記進去了、UI 卻不刷新。
+                // 重複入帳由 LedgerClient 的 RecurringTickGate 負責擋，不是這裡。
                 return .run { send in
                     let count = try await ledger.tick()
                     await send(.recurringTicked(count))
                 } catch: { error, send in
                     await send(.recurringTickFailed(error.localizedDescription))
                 }
-                .cancellable(id: CancelID.recurringTick, cancelInFlight: true)
+                .cancellable(id: CancelID.recurringTick)
 
             case let .recurringTicked(count):
                 // 沒補記到東西就不用多打一輪查詢（plan R8）。

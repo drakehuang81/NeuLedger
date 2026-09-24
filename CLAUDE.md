@@ -163,7 +163,7 @@ Features/Sources/
 
 ### Features Layer
 
-**App routing:** `AppFeature` defines `enum Destination { case onboarding(OnboardingFeature.State), case main }`. On launch it reads `platformClient.hasCompletedOnboarding()` to set the initial destination, and subscribes `platformClient.pendingRecurringConfirmations()` + resolves deep links via `platformClient.parseLink` / `resolveRecurringConfirmation`. `AppView` renders `OnboardingView` or `MainTabView` based on destination.
+**App routing:** `AppFeature` defines `enum State { case splash(pendingRoute:), case onboarding(OnboardingFeature.State), case main(MainTabFeature.State) }`. On launch it awaits `platformClient.canSkipOnboarding()` to route to `.onboarding` or `.main`, and resolves deep links via `platformClient.parseLink` → `RouteLinkDestination`; a link that arrives during `.splash` is buffered as `pendingRoute` and replayed once `.main` lands. Recurring-transaction due dates no longer go through a notification-confirmation route — they auto-record via `MainTabFeature`'s foreground `tick()` (see MainTab section below). `AppView` renders `LoadingView` / `OnboardingView` / `MainTabView` based on state.
 
 **Main tabs:** `MainTabFeature` composes four tabs — Dashboard, Transactions, Analysis, Settings — with a custom **Split Capsule TabBar** floating above the bottom safe area (left capsule: tab navigation; right capsule: global context action such as search or add).
 

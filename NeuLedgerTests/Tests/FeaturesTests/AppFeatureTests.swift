@@ -163,7 +163,10 @@ struct AppFeatureTests {
         await store.receive(\.route.main)
         await store.receive(\.route.carrierManagement) { state in
             // .main 落地後立刻 replay 暫存的 route
-            guard case let .main(main) = state else { return }
+            guard case let .main(main) = state else {
+                Issue.record("expected .main state")
+                return
+            }
             #expect(main.selectedTab == .settings)
         }
         await store.finish()

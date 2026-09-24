@@ -236,4 +236,56 @@ struct MainTabFeatureTests {
         await store.receive(\.recurringTickFailed)
         await store.finish()
     }
+
+    // MARK: - W1（final-fix-brief）：cancelInFlight 與 Client 層閘門互相抵消
+    //
+    // 用 gate（AsyncStream，見 AccessoryBarFeatureTests.testDismissCancelsExtraction 的既有寫法）
+    // 而不是 Task.yield() 控制第一條 tick 的完成時機：第一條卡在 gate（模擬冷啟動時仍在跑），
+    // 第二條立刻由模擬閘門回 0；確定第二條已經處理完，才放行第一條並斷言它的結果沒被吃掉。
+    // 用顯式 gate 取代 Task.yield() 是為了讓排序在系統負載高（跑整個 suite）時仍是決定性的——
+    // Task.yield() 次數在並行跑很多測試時無法保證第一條會先完成，實測在完整 suite 下會偶發假紅。
+
+    @Test("a second tick request does not cancel the first one's refresh")
+    func testSecondTickRequestDoesNotCancelTheFirstRefresh() async {
+        let calls = LockIsolated(0)
+        let (gate, gateContinuation) = AsyncStream<Void>.makeStream()
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            // 模擬 RecurringTickGate：先到者等測試放行才回傳真實筆數，後到者立刻被擋下回 0。
+            $0.ledgerClient.tick = {
+                let n = calls.withValue { c -> Int in c += 1; return c }
+                if n > 1 { return 0 }
+                for await _ in gate { break }
+                return 2
+            }
+            // dashboard 的 pulledToRefresh 會打六條 effect
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.balances           = { [:] }
+            $0.ledgerClient.listAll            = { _ in [] }
+            $0.ledgerClient.listCategories     = { _ in [] }
+            $0.insightsClient.todayStats       = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
+            $0.insightsClient.weeklySparkline  = { _ in [] }
+            $0.insightsClient.generateInsights = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        // 第一條 tick 請求：closure 卡在 gate，尚未回傳（模擬冷啟動時仍在跑的第一條 tick）。
+        await store.send(.recurringTickRequested)
+        // 第二條請求（scenePhase 回前景）：閘門擋下回 0。若 cancelInFlight 還在，這裡會先取消第一條。
+        await store.send(.scenePhaseBecameActive)
+        await store.receive(\.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+
+        // 放行第一條，讓它把真正補到的筆數送出來。
+        gateContinuation.yield(())
+        gateContinuation.finish()
+
+        // 關鍵斷言：第一條的結果沒有被第二條取消掉——收得到帶正值的 recurringTicked 與後續刷新。
+        await store.receive(\.recurringTicked)
+        await store.receive(\.dashboard.pulledToRefresh)
+        await store.finish()
+        #expect(calls.value == 2, "兩次請求都要真的呼叫 tick，第二次由閘門擋下")
+    }
 }

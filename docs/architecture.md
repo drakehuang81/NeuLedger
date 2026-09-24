@@ -243,11 +243,11 @@ activation reload the carrier widget internally (post-condition).
   against live accounts via `WatchDefaultAccountResolver` before use)
 - **Notification** — `requestNotificationPermission` /
   `notificationsAuthorized` / `scheduleDailyReminder` / `cancelDailyReminder`
-  / `pendingRecurringConfirmations` (stream)
 - **Sync** — `syncAvailable` / `syncEnabled` / `lastSyncedAt` /
   `enableSync` (progress stream) / `requestSyncNow` / `wipeAllSyncData`
-- **Routing** — `parseLink(URL)` / `canSkipOnboarding` /
-  `resolveRecurringConfirmation(id)` → `RouteLinkDestination`
+- **Routing** — `parseLink(URL)` / `canSkipOnboarding` → `RouteLinkDestination`
+  （週期交易到期不再走通知確認：`MainTabFeature` 在前景 `.task` 與 scenePhase
+  `.active` 時直接觸發 `ledgerClient.tick()` 自動入帳，見第 5 節「Recurring」）
 - **System** — `openAppSettings`
 
 ### ⌚️ `WatchLedgerClient` (watchOS target only)
@@ -264,7 +264,7 @@ the iPhone via `WatchSessionGateway`). Registered by
 | Adapter | Wraps |
 |---|---|
 | `UserSettingsAdapter` | `UserDefaults` (`SettingsKey` raw values are persisted — never rename them) |
-| `NotificationAdapter` | `UNUserNotificationCenter` + warning state + recurring reminders + `pendingConfirmations` stream |
+| `NotificationAdapter` | `UNUserNotificationCenter` + warning state + recurring reminders |
 | `WidgetSyncAdapter` | App Group `UserDefaults` + `WidgetCenter` reloads |
 | `AIAdapter` | Foundation Models (`SystemLanguageModel` / `LanguageModelSession`) |
 | `CloudKitSyncAdapter` | `NSPersistentCloudKitContainer` lifecycle + `lastSyncedAt` |

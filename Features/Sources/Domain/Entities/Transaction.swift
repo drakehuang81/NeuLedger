@@ -47,6 +47,16 @@ public struct Transaction: Identifiable, Equatable, Hashable, Codable, Sendable 
     /// The date and time when this record was last modified.
     public var updatedAt: Date
 
+    /// 產生這筆交易的週期範本 id；使用者手動記的交易為 `nil`。
+    ///
+    /// 與 `sourcePeriodDueDate` 一起讓自動補記變成**可辨識、可去重**的操作：
+    /// `tick` 在記帳前先查「這個範本的這一期是否已存在」，所以「記下交易」與
+    /// 「寫回進度」之間當掉時，下一次補記不會把同一期再記一遍。
+    public var sourceTemplateId: RecurringTransaction.ID?
+
+    /// 這筆交易對應的是該範本的哪一期（該期的到期日）；手動記的交易為 `nil`。
+    public var sourcePeriodDueDate: Date?
+
     public init(
         id: UUID = UUID(),
         amount: Decimal,
@@ -59,7 +69,9 @@ public struct Transaction: Identifiable, Equatable, Hashable, Codable, Sendable 
         tags: [Tag] = [],
         aiSuggested: Bool = false,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        sourceTemplateId: RecurringTransaction.ID? = nil,
+        sourcePeriodDueDate: Date? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -73,5 +85,7 @@ public struct Transaction: Identifiable, Equatable, Hashable, Codable, Sendable 
         self.aiSuggested = aiSuggested
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.sourceTemplateId = sourceTemplateId
+        self.sourcePeriodDueDate = sourcePeriodDueDate
     }
 }

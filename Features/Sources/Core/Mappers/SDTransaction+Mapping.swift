@@ -25,7 +25,9 @@ extension SDTransaction: PersistentDomainModel {
             tags: (tags ?? []).map { $0.toDomain() },
             aiSuggested: aiSuggested,
             createdAt: createdAt,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            sourceTemplateId: sourceTemplateId,
+            sourcePeriodDueDate: sourcePeriodDueDate
         )
     }
 
@@ -51,7 +53,9 @@ extension SDTransaction: PersistentDomainModel {
             type: domain.type.rawValue,
             aiSuggested: domain.aiSuggested,
             createdAt: domain.createdAt,
-            updatedAt: domain.updatedAt
+            updatedAt: domain.updatedAt,
+            sourceTemplateId: domain.sourceTemplateId,
+            sourcePeriodDueDate: domain.sourcePeriodDueDate
         )
         model.tags = domain.tags.map { SDTag.resolve($0, context: context) }
         context.insert(model)
@@ -68,6 +72,8 @@ extension SDTransaction: PersistentDomainModel {
         type = domain.type.rawValue
         aiSuggested = domain.aiSuggested
         updatedAt = domain.updatedAt
+        sourceTemplateId = domain.sourceTemplateId
+        sourcePeriodDueDate = domain.sourcePeriodDueDate
         tags = domain.tags.map { SDTag.resolve($0, context: context) }
     }
 

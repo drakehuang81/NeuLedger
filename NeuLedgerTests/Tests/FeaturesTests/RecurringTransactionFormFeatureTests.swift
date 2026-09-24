@@ -501,4 +501,35 @@ struct RecurringTransactionFormFeatureTests {
         #expect(updated.value?.anchorDate != oldAnchor, "使用者重新指定到期日就要重新錨定")
         #expect(updated.value?.anchorDate == updated.value?.nextDueDate)
     }
+
+    @Test("editing only other fields keeps the original anchor (a clamped due date must not become the new anchor)")
+    func testSaveEditWithoutDateChangeKeepsAnchor() async {
+        let updated = LockIsolated<RecurringTransaction?>(nil)
+        let fixedNow = Date(timeIntervalSinceReferenceDate: 771_638_400)
+        // 1/31 起的月繳系列已經走到被 clamp 的 2/28；錨點仍是 1/31。
+        let cal = Calendar.current
+        let anchor = cal.date(from: DateComponents(year: 2026, month: 1, day: 31, hour: 9))!
+        let clampedDue = cal.date(from: DateComponents(year: 2026, month: 2, day: 28, hour: 9))!
+        let existing = RecurringTransaction(
+            id: UUID(), amount: 1000, note: "rent",
+            categoryId: nil, accountId: Self.sampleAccount.id, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: clampedDue, isActive: true, createdAt: anchor,
+            anchorDate: anchor
+        )
+        let store = await TestStore(initialState: RecurringTransactionFormFeature.State(mode: .edit(existing))) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+            $0.ledgerClient.updateRecurring = { updated.setValue($0) }
+            $0.dismiss = DismissEffect {}
+        }
+        // 只改備註，完全不碰到期日。
+        await store.send(.noteChanged("rent (updated)")) { $0.note = "rent (updated)" }
+        await store.send(.saveTapped)
+        await store.receive(\.delegate.saved)
+
+        #expect(updated.value?.anchorDate == anchor, "沒改到期日就不該重錨，否則 31 號的系列會退化成 28 號")
+        #expect(updated.value?.nextDueDate == clampedDue)
+    }
 }

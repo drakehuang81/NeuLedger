@@ -206,8 +206,8 @@ struct LedgerClientRecurringTests {
     func testTickSkipsInactiveTemplates() async throws {
         let inactiveId = UUID()
         let inactive = makeTemplate(id: inactiveId, nextDueDate: fixedNow.addingTimeInterval(-86400), isActive: false)
-        // Insert directly via the store so we don't schedule a reminder for an
-        // inactive template — 改用 store 直接寫入以跳過錨點正規化。
+        // 改用 store 直接寫入，跳過 createRecurring 的排程與錨點正規化
+        // （暫停範本不該收到提醒）。
         let store = RecurringTransactionStore()
         try await withDependencies {
             $0.modelContainer = container
@@ -267,5 +267,20 @@ struct LedgerClientRecurringTests {
 
         let stored = try await sut.listRecurring().first { $0.id == template.id }
         #expect(stored?.anchorDate == template.nextDueDate)
+    }
+
+    @Test("anchored() fills a missing anchor with the due date and never overwrites an existing one")
+    func testAnchoredNormalisesOnlyWhenMissing() {
+        let due = fixedNow.addingTimeInterval(86400)
+
+        let withoutAnchor = makeTemplate(nextDueDate: due)
+        #expect(withoutAnchor.anchorDate == nil)
+        #expect(LedgerClient.anchored(withoutAnchor).anchorDate == due)
+
+        var withAnchor = makeTemplate(nextDueDate: due)
+        let original = due.addingTimeInterval(-86400 * 30)
+        withAnchor.anchorDate = original
+        #expect(LedgerClient.anchored(withAnchor).anchorDate == original, "既有錨點不得被覆蓋")
+        #expect(LedgerClient.anchored(withAnchor).nextDueDate == due, "正規化不得動到其他欄位")
     }
 }

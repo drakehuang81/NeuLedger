@@ -181,7 +181,15 @@ Five sections (`// MARK:`), ~35 closures. Live splits across
 Internal invariants (commented + tested):
 1. `record`/`update` → `planningClient.evaluateAfterTransaction` (§3.1)
 2. `record`/`update`/`delete` → Widget/Watch mirror push
-3. `tick()` → internal `record` (full chain applies to recurring fires)
+3. `tick()` is called by `MainTabFeature` when the app enters the foreground
+   (`.task` + scenePhase `.active`; no background task). It catches up
+   **every** missed occurrence per active template — not just the next one —
+   materialising each through the Client's own internal `record` path, so the
+   full invariant chain (budget warning + Watch/Widget mirror) applies to
+   recurring fires the same as user-entered ones. Occurrences due before
+   `today - 12 months` are fast-forwarded without being recorded (catch-up
+   window); the reminder is re-synced once per template after it finishes
+   catching up, not once per occurrence.
 4. recurring CRUD → schedules/cancels recurring reminders
    (`notificationAdapter`)
 5. accounts with transactions archive-only; `isDefault` categories

@@ -29,15 +29,26 @@ import Domain
 ///   save path verbatim.
 /// - `deleteRecurring` → cancel the reminder, then delete the template.
 ///
-/// ## tick() SAGA internalisation
+/// ## tick() 補跑重寫（health-audit A2 / B5）
 ///
-/// `tick` lifts `RecurringUseCase+Live.tick` but routes materialised
-/// transactions through this Client's own shared `recordTransaction` closure
-/// (the §3.1 budget invariant + reactive Watch/Widget mirror) instead of the
-/// former `\.ledger.record` hop. `fetchDue` is inlined as a `SwiftDataStore`
-/// fetch + the `nextDueDate <= today && isActive` filter (verbatim from
-/// `RecurringTransactionClient+Live.fetchDue`); each due template is then
-/// advanced via `template.nextDate(after:)`.
+/// `tick` 由 `MainTabFeature` 在 App 進前景時觸發（`.task` + scenePhase
+/// `.active`），不是背景排程（Info.plist 沒有、也不會加 `BGAppRefreshTask`）。
+/// 舊版每次呼叫只推進一期——若使用者超過一期沒開 App，會漏記中間的到期次數。
+/// 現在改成迴圈補跑每個啟用範本**所有**逾期期數：
+///
+/// - **逐期落地**（R5）：每 materialise 一筆就把推進後的 `nextDueDate` 寫回
+///   store，不是整批跑完才寫。中途被取消或當掉時，已補記的期數不會在下次
+///   tick 重複補記。
+/// - **提醒只重排一次**：迴圈跑完整個範本後，若 `nextDueDate` 有變才呼叫
+///   `syncReminder`，不在迴圈內每期重排。
+/// - **12 個月補記窗**（R4）：到期日早於 `today - 12 個月` 的期數不入帳，但
+///   仍要快轉游標，避免久未開啟或還原舊備份時一次灌進上百筆交易。
+/// - **防呆**：硬性迴圈上限 500；`nextDate(after:)` 回傳值沒有前進（資料異常）
+///   時 `break`，不無限迴圈。
+///
+/// materialise 出的交易一律經由這個 Client 自己的共用 `recordTransaction`
+/// closure（§3.1 budget invariant + reactive Watch/Widget mirror），跟使用者
+/// 手動 record 走同一條路徑。回傳值是實際 materialise 的筆數（被窗擋掉的不算）。
 extension LedgerClient {
     static func makeListRecurring(
         _ store: RecurringTransactionStore
@@ -109,51 +120,83 @@ extension LedgerClient {
         }
     }
 
+    /// 補記窗：只 materialise 到期日在 `today - 12 個月` 之後的期數。
+    /// 更早的直接快轉不入帳，避免久未開啟或還原舊備份時一次灌進上百筆（plan R4）。
+    static let recurringCatchUpWindowMonths = 12
+
+    /// 硬性迴圈上限，防止資料異常（到期日不前進）造成無限迴圈。
+    static let recurringCatchUpIterationLimit = 500
+
     static func makeTick(
         _ store: RecurringTransactionStore,
-        _ recordTransaction: @escaping @Sendable (Transaction) async throws -> Void
-    ) -> @Sendable () async throws -> Void {
+        _ recordTransaction: @escaping @Sendable (Transaction) async throws -> Void,
+        _ syncReminder: @escaping @Sendable (RecurringTransaction) async throws -> Void
+    ) -> @Sendable () async throws -> Int {
         // Resolve the clock at assembly time, matching `RecurringUseCase+Live`
         // (which read `@Dependency(\.date.now)` outside its tick closure).
         @Dependency(\.date.now) var now
 
         return {
             let today = now
+            let calendar = Calendar.current
+            let earliest = calendar.date(
+                byAdding: .month, value: -recurringCatchUpWindowMonths, to: today
+            ) ?? today
 
-            // fetchDue inlined (verbatim from RecurringTransactionClient+Live):
-            // active templates whose nextDueDate has arrived.
             let due = try await store.fetchAll().filter {
-                $0.nextDueDate <= today && $0.isActive
+                $0.isActive && $0.nextDueDate <= today
             }
+
+            var materialised = 0
 
             for template in due {
-                let tx = Transaction(
-                    id: UUID(),
-                    amount: template.amount,
-                    date: template.nextDueDate,
-                    note: template.note,
-                    categoryId: template.categoryId,
-                    accountId: template.accountId,
-                    toAccountId: template.toAccountId,
-                    type: template.type,
-                    tags: template.tags,
-                    aiSuggested: false,
-                    createdAt: today,
-                    updatedAt: today
-                )
+                var cursor = Self.anchored(template)
+                var iterations = 0
 
-                // INVARIANT (architecture.md §3.1 Scenario A): recurring tick
-                // materialises due templates into real transactions through this
-                // Client's own record path, so the budget warning invariant
-                // (§3.1 Scenario B) is preserved for scheduler-emitted
-                // transactions too — formerly a UseCase→UseCase SAGA hop, now
-                // internalised to the shared `recordTransaction` closure.
-                try await recordTransaction(tx)
+                while cursor.nextDueDate <= today, iterations < recurringCatchUpIterationLimit {
+                    iterations += 1
+                    let dueDate = cursor.nextDueDate
+                    let advanced = cursor.nextDate(after: dueDate)
+                    // 日期沒有前進代表資料異常；停手而不是無限迴圈。
+                    guard advanced > dueDate else { break }
 
-                var advanced = template
-                advanced.nextDueDate = template.nextDate(after: template.nextDueDate)
-                try await store.update(advanced)
+                    if dueDate >= earliest {
+                        let tx = Transaction(
+                            id: UUID(),
+                            amount: cursor.amount,
+                            date: dueDate,
+                            note: cursor.note,
+                            categoryId: cursor.categoryId,
+                            accountId: cursor.accountId,
+                            toAccountId: cursor.toAccountId,
+                            type: cursor.type,
+                            tags: cursor.tags,
+                            aiSuggested: false,
+                            createdAt: today,
+                            updatedAt: today
+                        )
+
+                        // INVARIANT (architecture.md §3.1 Scenario A): recurring tick
+                        // materialises due templates into real transactions through this
+                        // Client's own record path, so the budget warning invariant
+                        // (§3.1 Scenario B) is preserved for scheduler-emitted
+                        // transactions too.
+                        try await recordTransaction(tx)
+                        materialised += 1
+                    }
+
+                    cursor.nextDueDate = advanced
+                    // 逐期落地：中途被取消或當掉時，已補記的期數不會在下次 tick 重來（plan R5）。
+                    try await store.update(cursor)
+                }
+
+                if cursor.nextDueDate != template.nextDueDate {
+                    // 提醒只在整個範本跑完後重排一次。
+                    try await syncReminder(cursor)
+                }
             }
+
+            return materialised
         }
     }
 }

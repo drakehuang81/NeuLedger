@@ -61,7 +61,9 @@ public struct LedgerClient: Sendable {
     public var createRecurring: @Sendable (_ template: RecurringTransaction) async throws -> Void
     public var updateRecurring: @Sendable (_ template: RecurringTransaction) async throws -> Void
     public var deleteRecurring: @Sendable (_ id: RecurringTransaction.ID) async throws -> Void
-    public var tick: @Sendable () async throws -> Void
+    /// 把所有到期（含逾期）的啟用範本 materialise 成交易，回傳實際記了幾筆。
+    /// 由前景觸發（`MainTabFeature`），不是背景排程。
+    public var tick: @Sendable () async throws -> Int
 
     // MARK: - Export
 

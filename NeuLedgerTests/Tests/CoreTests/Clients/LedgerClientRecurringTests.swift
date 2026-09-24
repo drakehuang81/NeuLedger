@@ -121,6 +121,15 @@ struct LedgerClientRecurringTests {
         )
     }
 
+    /// 與實作同曆法同時區，避免測試與 `makeTick` 在不同時區算月份邊界。
+    private static func date(_ y: Int, _ m: Int, _ d: Int, hour: Int = 12) -> Date {
+        Calendar.current.date(from: DateComponents(year: y, month: m, day: d, hour: hour))!
+    }
+
+    private func monthsBefore(_ n: Int) -> Date {
+        Calendar.current.date(byAdding: .month, value: -n, to: fixedNow)!
+    }
+
     // MARK: - CRUD + notification 上收
 
     @Test("createRecurring persists and schedules a reminder at the due date")
@@ -180,7 +189,7 @@ struct LedgerClientRecurringTests {
         let future = makeTemplate(id: futureId, nextDueDate: fixedNow.addingTimeInterval(86400 * 30))
         try await sut.createRecurring(future)
 
-        try await sut.tick()
+        _ = try await sut.tick()
 
         // Exactly one transaction materialised, from the due template.
         let txns = try await sut.listAll(TransactionFilter())
@@ -206,8 +215,8 @@ struct LedgerClientRecurringTests {
     func testTickSkipsInactiveTemplates() async throws {
         let inactiveId = UUID()
         let inactive = makeTemplate(id: inactiveId, nextDueDate: fixedNow.addingTimeInterval(-86400), isActive: false)
-        // 改用 store 直接寫入，跳過 createRecurring 的排程與錨點正規化
-        // （暫停範本不該收到提醒）。
+        // 改用 store 直接寫入以跳過錨點正規化（Task 3 之後 createRecurring 一律經
+        // `anchored(_:)` 補錨，這裡要驗證的是「無錨點舊資料」也不能被 tick 誤補）。
         let store = RecurringTransactionStore()
         try await withDependencies {
             $0.modelContainer = container
@@ -215,12 +224,92 @@ struct LedgerClientRecurringTests {
             try await store.add(inactive)
         }
 
-        try await sut.tick()
+        _ = try await sut.tick()
 
         #expect(try await sut.listAll(TransactionFilter()).isEmpty)
         // Inactive template's due date is unchanged.
         let stored = try await sut.listRecurring().first { $0.id == inactiveId }
         #expect(stored?.nextDueDate == inactive.nextDueDate)
+    }
+
+    // MARK: - tick 補跑（health-audit A2）
+
+    @Test("tick materialises every missed occurrence, not just one")
+    func testTickCatchesUpAllMissedOccurrences() async throws {
+        // 三個月前開始的月繳範本：T-3、T-2、T-1、T-0（= fixedNow，等號也算到期）共四期。
+        let start = monthsBefore(3)
+        var template = makeTemplate(nextDueDate: start, frequency: .monthly)
+        template.anchorDate = start
+        try await sut.createRecurring(template)
+
+        let count = try await sut.tick()
+
+        #expect(count == 4)
+        let txns = try await sut.listAll(TransactionFilter())
+        #expect(txns.count == 4)
+        #expect(evaluatedSpy.ids.count == 4, "每一筆都要走 Client 自己的 record path（INVARIANT §3.1）")
+
+        let stored = try await sut.listRecurring().first { $0.id == template.id }
+        #expect(stored?.nextDueDate == Calendar.current.date(byAdding: .month, value: 1, to: fixedNow)!)
+    }
+
+    @Test("tick keeps a month-end template on the 31st instead of drifting to the 30th")
+    func testTickKeepsMonthEndAnchor() async throws {
+        // anchor 2023-08-31，today = fixedNow（2023-11-14/15）：
+        // 補記 8/31、9/30、10/31；舊的漂移實作在第三期會變成 10/30。
+        let anchor = Self.date(2023, 8, 31)
+        var template = makeTemplate(nextDueDate: anchor, frequency: .monthly)
+        template.anchorDate = anchor
+        try await sut.createRecurring(template)
+
+        let count = try await sut.tick()
+
+        #expect(count == 3)
+        let dates = try await sut.listAll(TransactionFilter()).map(\.transaction.date).sorted()
+        #expect(dates == [Self.date(2023, 8, 31), Self.date(2023, 9, 30), Self.date(2023, 10, 31)])
+
+        let stored = try await sut.listRecurring().first { $0.id == template.id }
+        #expect(stored?.nextDueDate == Self.date(2023, 11, 30))
+    }
+
+    @Test("tick skips occurrences older than the catch-up window but still fast-forwards")
+    func testTickSkipsAncientOccurrences() async throws {
+        // 2020-01-01 起的月繳、今天是 2023-11-14/15：窗 = today - 12 個月（2022-11-14/15）。
+        // 窗內的到期日是 2022-12-01 … 2023-11-01 共 12 期；2022-11-01 以前的不入帳。
+        let anchor = Self.date(2020, 1, 1)
+        var template = makeTemplate(nextDueDate: anchor, frequency: .monthly)
+        template.anchorDate = anchor
+        try await sut.createRecurring(template)
+
+        let count = try await sut.tick()
+
+        #expect(count == 12)
+        let stored = try await sut.listRecurring().first { $0.id == template.id }
+        #expect(stored?.nextDueDate == Self.date(2023, 12, 1))
+    }
+
+    @Test("tick reschedules the reminder to the advanced due date")
+    func testTickReschedulesReminder() async throws {
+        let start = monthsBefore(2)
+        var template = makeTemplate(nextDueDate: start, frequency: .monthly)
+        template.anchorDate = start
+        try await sut.createRecurring(template)
+
+        _ = try await sut.tick()
+
+        let expected = Calendar.current.date(byAdding: .month, value: 1, to: fixedNow)!
+        #expect(spy.scheduledDate(for: template.id) == expected)
+    }
+
+    @Test("tick returns zero and records nothing when no template is due")
+    func testTickWithNothingDueReturnsZero() async throws {
+        let future = fixedNow.addingTimeInterval(86400 * 10)
+        var template = makeTemplate(nextDueDate: future)
+        template.anchorDate = future
+        try await sut.createRecurring(template)
+
+        #expect(try await sut.tick() == 0)
+        #expect(try await sut.listAll(TransactionFilter()).isEmpty)
     }
 
     // MARK: - 暫停即取消提醒（health-audit A5）

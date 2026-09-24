@@ -19,11 +19,13 @@ import Domain
 /// reminder lifecycle is a guaranteed post-condition of the persistence
 /// mutation, not a thing each call-site must remember:
 ///
-/// - `createRecurring` / `updateRecurring` → persist, then schedule a due-date
-///   reminder keyed on the template id (same id ⇒ rescheduling replaces the
-///   previous request). Title/body use the same localized keys the Feature
-///   call-sites used (`recurring_transaction_notification_title` / `_body`),
-///   and `template.nextDueDate` as the fire date — matching the Form feature's
+/// - `createRecurring` / `updateRecurring` → persist, then **sync** the
+///   reminder（啟用排程 / 暫停取消，health-audit A5）via the shared
+///   `makeSyncRecurringReminder` closure keyed on the template id (same id ⇒
+///   rescheduling replaces the previous request). Title/body use the same
+///   localized keys the Feature call-sites used
+///   (`recurring_transaction_notification_title` / `_body`), and
+///   `template.nextDueDate` as the fire date — matching the Form feature's
 ///   save path verbatim.
 /// - `deleteRecurring` → cancel the reminder, then delete the template.
 ///
@@ -45,12 +47,18 @@ extension LedgerClient {
         }
     }
 
-    static func makeCreateRecurring(
-        _ store: RecurringTransactionStore,
+    /// 提醒生命週期的單一出口：啟用中就排程、暫停就取消。
+    ///
+    /// `createRecurring` / `updateRecurring` / `tick` 三條路徑共用同一顆，
+    /// 避免「暫停了卻還照排」這種各自實作的分歧（health-audit A5）。
+    static func makeSyncRecurringReminder(
         _ notificationAdapter: NotificationAdapter
     ) -> @Sendable (RecurringTransaction) async throws -> Void {
         { template in
-            try await store.add(template)
+            guard template.isActive else {
+                await notificationAdapter.cancelRecurringReminder(template.id)
+                return
+            }
             try await notificationAdapter.scheduleRecurringReminder(
                 template.id,
                 template.nextDueDate,
@@ -60,18 +68,34 @@ extension LedgerClient {
         }
     }
 
-    static func makeUpdateRecurring(
+    /// 寫入前正規化：沒有錨點的範本（舊資料或呼叫端沒帶）以當下到期日為錨。
+    static func anchored(_ template: RecurringTransaction) -> RecurringTransaction {
+        guard template.anchorDate == nil else { return template }
+        var normalised = template
+        normalised.anchorDate = template.nextDueDate
+        return normalised
+    }
+
+    static func makeCreateRecurring(
         _ store: RecurringTransactionStore,
-        _ notificationAdapter: NotificationAdapter
+        _ syncReminder: @escaping @Sendable (RecurringTransaction) async throws -> Void
     ) -> @Sendable (RecurringTransaction) async throws -> Void {
         { template in
-            try await store.update(template)
-            try await notificationAdapter.scheduleRecurringReminder(
-                template.id,
-                template.nextDueDate,
-                String(localized: "recurring_transaction_notification_title"),
-                String(localized: "recurring_transaction_notification_body")
-            )
+            let normalised = Self.anchored(template)
+            try await store.add(normalised)
+            try await syncReminder(normalised)
+        }
+    }
+
+    static func makeUpdateRecurring(
+        _ store: RecurringTransactionStore,
+        _ syncReminder: @escaping @Sendable (RecurringTransaction) async throws -> Void
+    ) -> @Sendable (RecurringTransaction) async throws -> Void {
+        { template in
+            let normalised = Self.anchored(template)
+            try await store.update(normalised)
+            // 暫停的範本要取消提醒而不是重排（health-audit A5）——由 syncReminder 分流。
+            try await syncReminder(normalised)
         }
     }
 

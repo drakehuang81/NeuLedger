@@ -449,4 +449,56 @@ struct RecurringTransactionFormFeatureTests {
 
         #expect(dismissCalled.value == true)
     }
+
+    // MARK: - 錨定（health-audit A10）
+
+    @Test("saving a new template anchors the series at the chosen first-run date")
+    func testSaveAddSetsAnchorDate() async {
+        let added = LockIsolated<RecurringTransaction?>(nil)
+        let fixedNow = Date(timeIntervalSinceReferenceDate: 771_638_400)
+        let store = await TestStore(initialState: RecurringTransactionFormFeature.State(mode: .add)) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+            $0.ledgerClient.createRecurring = { added.setValue($0) }
+            $0.dismiss = DismissEffect {}
+        }
+        await store.send(.amountChanged("1000")) { $0.amountText = "1000" }
+        await store.send(.accountChanged(Self.sampleAccount.id)) { $0.accountId = Self.sampleAccount.id }
+        await store.send(.saveTapped)
+        await store.receive(\.delegate.saved)
+
+        #expect(added.value?.anchorDate != nil)
+        #expect(added.value?.anchorDate == added.value?.nextDueDate)
+    }
+
+    @Test("editing a template re-anchors the series at the new due date")
+    func testSaveEditReAnchors() async {
+        let updated = LockIsolated<RecurringTransaction?>(nil)
+        let fixedNow = Date(timeIntervalSinceReferenceDate: 771_638_400)
+        let oldAnchor = fixedNow.addingTimeInterval(-86400 * 40)
+        let existing = RecurringTransaction(
+            id: UUID(), amount: 1000, note: nil,
+            categoryId: nil, accountId: Self.sampleAccount.id, toAccountId: nil,
+            type: .expense, tags: [], frequency: .monthly,
+            nextDueDate: fixedNow, isActive: true, createdAt: oldAnchor,
+            anchorDate: oldAnchor
+        )
+        let newFirstRun = fixedNow.addingTimeInterval(86400 * 5)
+        let store = await TestStore(initialState: RecurringTransactionFormFeature.State(mode: .edit(existing))) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+            $0.ledgerClient.updateRecurring = { updated.setValue($0) }
+            $0.dismiss = DismissEffect {}
+        }
+        await store.send(.firstRunDateChanged(newFirstRun)) {
+            $0.firstRunDate = Calendar.current.startOfDay(for: newFirstRun)
+        }
+        await store.send(.saveTapped)
+        await store.receive(\.delegate.saved)
+
+        #expect(updated.value?.anchorDate != oldAnchor, "使用者重新指定到期日就要重新錨定")
+        #expect(updated.value?.anchorDate == updated.value?.nextDueDate)
+    }
 }

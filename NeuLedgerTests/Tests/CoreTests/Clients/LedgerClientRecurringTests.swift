@@ -207,7 +207,7 @@ struct LedgerClientRecurringTests {
         let inactiveId = UUID()
         let inactive = makeTemplate(id: inactiveId, nextDueDate: fixedNow.addingTimeInterval(-86400), isActive: false)
         // Insert directly via the store so we don't schedule a reminder for an
-        // inactive template (createRecurring would still schedule).
+        // inactive template — 改用 store 直接寫入以跳過錨點正規化。
         let store = RecurringTransactionStore()
         try await withDependencies {
             $0.modelContainer = container
@@ -221,5 +221,51 @@ struct LedgerClientRecurringTests {
         // Inactive template's due date is unchanged.
         let stored = try await sut.listRecurring().first { $0.id == inactiveId }
         #expect(stored?.nextDueDate == inactive.nextDueDate)
+    }
+
+    // MARK: - 暫停即取消提醒（health-audit A5）
+
+    @Test("updateRecurring cancels the reminder when the template is paused")
+    func testUpdateCancelsReminderWhenInactive() async throws {
+        var template = makeTemplate(nextDueDate: fixedNow.addingTimeInterval(86400))
+        try await sut.createRecurring(template)
+        #expect(spy.scheduled == [template.id])
+
+        template.isActive = false
+        try await sut.updateRecurring(template)
+
+        #expect(spy.cancelled == [template.id], "暫停時要取消提醒，不能重排")
+        #expect(spy.scheduled == [template.id], "暫停時不得再排一次")
+    }
+
+    @Test("updateRecurring reschedules the reminder when the template is still active")
+    func testUpdateReschedulesReminderWhenActive() async throws {
+        var template = makeTemplate(nextDueDate: fixedNow.addingTimeInterval(86400))
+        try await sut.createRecurring(template)
+
+        let moved = template.nextDueDate.addingTimeInterval(86400)
+        template.nextDueDate = moved
+        try await sut.updateRecurring(template)
+
+        #expect(spy.scheduledDate(for: template.id) == moved)
+        #expect(spy.cancelled.isEmpty)
+    }
+
+    @Test("createRecurring does not schedule a reminder for an inactive template")
+    func testCreateInactiveDoesNotSchedule() async throws {
+        let template = makeTemplate(nextDueDate: fixedNow.addingTimeInterval(86400), isActive: false)
+        try await sut.createRecurring(template)
+
+        #expect(spy.scheduled.isEmpty)
+    }
+
+    @Test("a template written without an anchor comes back anchored at its due date")
+    func testWritePathNormalisesAnchor() async throws {
+        let template = makeTemplate(nextDueDate: fixedNow.addingTimeInterval(86400))
+        #expect(template.anchorDate == nil, "makeTemplate 不帶錨點，正好當作舊資料")
+        try await sut.createRecurring(template)
+
+        let stored = try await sut.listRecurring().first { $0.id == template.id }
+        #expect(stored?.anchorDate == template.nextDueDate)
     }
 }

@@ -219,6 +219,8 @@ public struct RecurringTransactionFormFeature: Sendable {
                     updated.type = type_
                     updated.frequency = frequency
                     updated.nextDueDate = combinedDate
+                    // 使用者重新指定了到期日 → 重新錨定系列（health-audit A10）。
+                    updated.anchorDate = combinedDate
                     template = updated
                 case .add:
                     isEdit = false
@@ -234,7 +236,8 @@ public struct RecurringTransactionFormFeature: Sendable {
                         frequency: frequency,
                         nextDueDate: combinedDate,
                         isActive: true,
-                        createdAt: now
+                        createdAt: now,
+                        anchorDate: combinedDate
                     )
                 }
 

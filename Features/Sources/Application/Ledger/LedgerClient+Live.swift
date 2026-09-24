@@ -111,6 +111,10 @@ extension LedgerClient: DependencyKey {
             await planningClient.evaluateAfterTransaction(transaction)
         }
 
+        // Reminder lifecycle 的單一出口：`createRecurring` / `updateRecurring`
+        // / `tick` 共用同一顆，啟用中就排程、暫停就取消（health-audit A5）。
+        let syncRecurringReminder = Self.makeSyncRecurringReminder(notificationAdapter)
+
         return LedgerClient(
             // MARK: Transactions
             record: { transaction in
@@ -249,8 +253,8 @@ extension LedgerClient: DependencyKey {
 
             // MARK: Recurring (internalised — see +LiveRecurring.swift)
             listRecurring: Self.makeListRecurring(recurringStore),
-            createRecurring: Self.makeCreateRecurring(recurringStore, notificationAdapter),
-            updateRecurring: Self.makeUpdateRecurring(recurringStore, notificationAdapter),
+            createRecurring: Self.makeCreateRecurring(recurringStore, syncRecurringReminder),
+            updateRecurring: Self.makeUpdateRecurring(recurringStore, syncRecurringReminder),
             deleteRecurring: Self.makeDeleteRecurring(recurringStore, notificationAdapter),
             tick: Self.makeTick(recurringStore, recordTransaction),
 

@@ -17,6 +17,8 @@ struct MainTabFeatureTests {
             $0.platformClient.accessoryMode = { .add }
             // MainTab's .task reads showAccessoryBar from platformClient
             $0.platformClient.showAccessoryBar = { false }
+            // .task 也會送 recurringTickRequested
+            $0.ledgerClient.tick = { 0 }
         }
         await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)
@@ -24,6 +26,7 @@ struct MainTabFeatureTests {
         await store.receive(\.accessoryBarVisibilityLoaded) {
             $0.showAccessoryBar = false
         }
+        await store.receive(\.recurringTicked)
         await store.finish()
     }
 
@@ -156,5 +159,81 @@ struct MainTabFeatureTests {
             $0.selectedTab = .settings
             #expect($0.isAccessoryVisible == false) // settings.path 非空
         }
+    }
+
+    // MARK: - 週期交易自動入帳（health-audit A2）
+
+    private struct TickStubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("a tick that recorded something refreshes the dashboard and the transactions tab")
+    func testTickRefreshesBothTabsWhenSomethingWasRecorded() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.ledgerClient.tick = { 2 }
+            // dashboard 的 pulledToRefresh 會打六條 effect
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.balances           = { [:] }
+            $0.ledgerClient.listAll            = { _ in [] }
+            $0.ledgerClient.listCategories     = { _ in [] }
+            $0.insightsClient.todayStats       = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
+            $0.insightsClient.weeklySparkline  = { _ in [] }
+            $0.insightsClient.generateInsights = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+        await store.receive(\.dashboard.pulledToRefresh)
+        await store.receive(\.transactions.task)
+        await store.finish()
+    }
+
+    @Test("a tick that recorded nothing does not refresh the tabs")
+    func testTickWithZeroDoesNotRefresh() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.tick = { 0 }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+        // 沒有任何 dashboard / transactions 的重載：若 reducer 送了，未覆寫的
+        // ledgerClient.listAll 等會以 unimplemented 讓這條測試失敗。
+        await store.finish()
+    }
+
+    @Test("returning to the foreground runs the tick again")
+    func testScenePhaseActiveRunsTick() async {
+        let ticks = LockIsolated(0)
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.tick = { ticks.withValue { $0 += 1 }; return 0 }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.scenePhaseBecameActive)
+        await store.receive(\.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+        await store.finish()
+        #expect(ticks.value == 1)
+    }
+
+    @Test("a failing tick surfaces recurringTickFailed and refreshes nothing")
+    func testTickFailure() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.tick = { throw TickStubError() }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.recurringTickRequested)
+        await store.receive(\.recurringTickFailed)
+        await store.finish()
     }
 }

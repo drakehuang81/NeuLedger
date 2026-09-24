@@ -38,6 +38,9 @@ struct LedgerClientRecurringTests {
         private var _scheduled: [RecurringTransaction.ID] = []
         private var _scheduledDates: [RecurringTransaction.ID: Date] = [:]
         private var _cancelled: [RecurringTransaction.ID] = []
+        /// fix round 2 / F9：設定後，`scheduleRecurringReminder` 對這個 id 會拋錯，
+        /// 用來注入「單一範本 materialise 收尾時失敗」的情境。預設 nil，既有測試不受影響。
+        private var _failingID: RecurringTransaction.ID?
 
         func recordSchedule(_ id: RecurringTransaction.ID, _ date: Date) {
             lock.lock(); _scheduled.append(id); _scheduledDates[id] = date; lock.unlock()
@@ -54,7 +57,15 @@ struct LedgerClientRecurringTests {
         var cancelled: [RecurringTransaction.ID] {
             lock.lock(); defer { lock.unlock() }; return _cancelled
         }
+        var failingID: RecurringTransaction.ID? {
+            get { lock.lock(); defer { lock.unlock() }; return _failingID }
+            set { lock.lock(); _failingID = newValue; lock.unlock() }
+        }
     }
+
+    /// fix round 2 / F9：`scheduleRecurringReminder` 對 `NotificationSpy.failingID`
+    /// 拋出，用來驗證 per-template 錯誤隔離（F2）。
+    struct ReminderFailure: Error {}
 
     let container: ModelContainer
     let spy = NotificationSpy()
@@ -100,6 +111,7 @@ struct LedgerClientRecurringTests {
             // live store, and prove tick routes through the Client record path.
             $0.planningClient.evaluateAfterTransaction = { evaluatedSpy.record($0.id) }
             $0.notificationAdapter.scheduleRecurringReminder = { id, date, _, _ in
+                if id == spy.failingID { throw ReminderFailure() }
                 spy.recordSchedule(id, date)
             }
             $0.notificationAdapter.cancelRecurringReminder = { id in
@@ -351,6 +363,43 @@ struct LedgerClientRecurringTests {
         #expect(counts.sorted() == [0, 4])
         let txns = try await sut.listAll(TransactionFilter())
         #expect(txns.count == 4, "重疊的 tick 不得重複入帳")
+    }
+
+    // MARK: - tick per-template 錯誤隔離（fix round 2 / F9）
+
+    @Test("a template that fails mid-materialisation does not stop the other templates")
+    func testTickIsolatesPerTemplateFailures() async throws {
+        // 會失敗的範本 A：直接寫 store，跳過 createRecurring 的排程——
+        // failingID 設好後走 sut.createRecurring 會在建立階段就先拋錯。
+        let failingId = UUID()
+        let startA = monthsBefore(1)
+        var failing = makeTemplate(id: failingId, nextDueDate: startA, frequency: .monthly)
+        failing.anchorDate = startA
+        let store = RecurringTransactionStore()
+        try await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            try await store.add(failing)
+        }
+
+        // 健康的範本 B：唯一到期日是昨天，日期不與 A 的兩期重疊，方便斷言。
+        let healthyId = UUID()
+        let startB = fixedNow.addingTimeInterval(-86400)
+        var healthy = makeTemplate(id: healthyId, nextDueDate: startB, frequency: .monthly)
+        healthy.anchorDate = startB
+        try await sut.createRecurring(healthy)
+
+        // A 收尾重排提醒時拋錯。沒有 per-template 隔離時，這個錯誤會直接穿出 tick()。
+        spy.failingID = failingId
+
+        let count = try await sut.tick()
+
+        // A 補 2 期（一個月前、今天），B 補 1 期（昨天）。
+        #expect(count == 3, "一個範本失敗不得吃掉其他範本的筆數")
+        let dates = try await sut.listAll(TransactionFilter()).map(\.transaction.date).sorted()
+        #expect(dates.count == 3)
+        #expect(dates.contains(startB), "健康的範本仍必須被補記")
+        #expect(dates.contains(startA))
     }
 
     // MARK: - 暫停即取消提醒（health-audit A5）

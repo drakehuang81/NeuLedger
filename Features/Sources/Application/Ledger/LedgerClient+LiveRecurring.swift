@@ -146,6 +146,18 @@ extension LedgerClient {
     /// 區域變數，正確性就押在 swift-dependencies 的快取行為上——而測試每個
     /// suite 都會重新求值 `liveValue` 一次，區域變數形式會各自拿到獨立的閘門，
     /// 完全擋不住並行。`static let` 才能保證整個 process 共用同一顆。
+    ///
+    /// **測試端的涵蓋範圍（fix round 1 / F10）**：因為這是 process-wide 單例，
+    /// `LedgerClientRecurringTests` 靠 `@Suite(..., .serialized)` 讓 suite **內**
+    /// 每條測試序列化執行，避免同 suite 裡多條測試搶同一顆閘門互相干擾。但
+    /// `.serialized` 不跨 suite——它只防同一個 suite 內的並行，不會讓這個 suite
+    /// 跟另一個 suite 序列化。目前安全，因為整個 test target 只有
+    /// `LedgerClientRecurringTests` 會呼叫 live 的 `tick()`（`LedgerClientTests`
+    /// 的 `testTickMock` 只是覆寫 `\.ledgerClient.tick` 的純 mock，碰不到這顆
+    /// 閘門）。這個前提是易碎的：未來任何新 suite 只要建構
+    /// `LedgerClient.liveValue` 並呼叫 `tick()`，就會重新引入跨 suite 的競態，
+    /// 而且症狀會出現在跟改動看似無關的測試上——新增這類 suite 時要一併處理
+    /// （例如同樣標記 `.serialized`，或改成不共用 process-wide 閘門的測試替身）。
     static let recurringTickGate = RecurringTickGate()
 
     static func makeTick(
@@ -230,6 +242,11 @@ extension LedgerClient {
                             try await syncReminder(cursor)
                         }
                     }
+                } catch let error as CancellationError {
+                    // F11：取消要真的停下來——繼續跑完其餘範本沒有意義，而且會多佔著
+                    // 閘門。已補記的期數都已逐期落地，下次 tick 會從正確的位置接上。
+                    // 往外拋之後閘門仍會被釋放：`makeTick` 外層的 catch 會 end() 再 rethrow。
+                    throw error
                 } catch {
                     // F2：單一範本失敗不得拖垮其他範本（下次 tick 會重試這一個）。
                     // 配合 R6「tick 失敗不顯示任何東西」——沒有 UI 承接，只能靠隔離

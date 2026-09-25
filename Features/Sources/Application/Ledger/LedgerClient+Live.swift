@@ -11,9 +11,10 @@ import Domain
 /// "Application"]` — so SwiftData usage here is sanctioned, matching
 /// `TransactionClient+Live`/`AccountClient+Live`/etc.). No delegating UseCase or
 /// repository client is injected any longer: the Live value depends solely on
-/// `SwiftDataStore`×5 (Transaction/Account/Category/Tag/RecurringTransaction) +
-/// `planningClient` (§3.1 INVARIANT) + `notificationAdapter` (recurring
-/// reminders) + `userSettingsAdapter` (`.defaultAccountId`).
+/// `SwiftDataStore`×6 (Transaction/Account/Category/Tag/RecurringTransaction/
+/// Budget — the last used only by `deleteCategory`'s budget-reference guard,
+/// spec A6 裁定 R1) + `planningClient` (§3.1 INVARIANT) + `notificationAdapter`
+/// (recurring reminders) + `userSettingsAdapter` (`.defaultAccountId`).
 ///
 /// Section → implementation (plan 5a3 mapping):
 /// - Transactions → `TransactionStore` directly, with
@@ -29,7 +30,10 @@ import Domain
 /// - Catalog → `CategoryStore` + `<Tag, SDTag>` directly
 ///   (factory in `+LiveCatalog.swift`), preserving the default-category delete
 ///   guard and the many-to-many tag disassociation (handled inside
-///   `SDTag.prepareForDelete()`).
+///   `SDTag.prepareForDelete()`). `deleteCategory` also denies the delete when
+///   a `BudgetStore` row still references the category, and otherwise clears
+///   the reference from every matching `TransactionStore` row (spec A6, 裁定
+///   R1 — see `+LiveCatalog.swift`).
 /// - Recurring → `RecurringTransactionStore`
 ///   directly (factory in `+LiveRecurring.swift`). **Notification scheduling is
 ///   now owned here (new behaviour, 5a3 上收)**: `createRecurring`/
@@ -80,6 +84,8 @@ extension LedgerClient: DependencyKey {
         let categoryStore = CategoryStore()
         let tagStore = TagStore()
         let recurringStore = RecurringTransactionStore()
+        // deleteCategory 的預算擋下判斷需要它（spec A6，裁定 R1）——見 +LiveCatalog.swift。
+        let budgetStore = BudgetStore()
 
         // Domain join from id → resolved entity. Categories and accounts are
         // fetched once per call so listAll / search return enriched rows in
@@ -282,7 +288,7 @@ extension LedgerClient: DependencyKey {
             listCategories: Self.makeListCategories(categoryStore),
             createCategory: Self.makeCreateCategory(categoryStore),
             updateCategory: Self.makeUpdateCategory(categoryStore),
-            deleteCategory: Self.makeDeleteCategory(categoryStore),
+            deleteCategory: Self.makeDeleteCategory(categoryStore, budgetStore, transactionStore),
             listTags: Self.makeListTags(tagStore),
             createTag: Self.makeCreateTag(tagStore),
             updateTag: Self.makeUpdateTag(tagStore),

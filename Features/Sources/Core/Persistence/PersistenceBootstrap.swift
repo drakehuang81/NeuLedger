@@ -69,9 +69,27 @@ extension PersistenceBootstrap: DependencyKey {
         cloudKitDatabase: .private("iCloud.com.drake.NeuLedger")
     )
 
+    /// 整個 process 共用的容器 box；換容器時改的是它的內容（spec A3）。See
+    /// `ModelContainerKey.swift` for why `SwiftDataStore` depends on this box
+    /// instead of the container directly.
+    nonisolated(unsafe) public static let containerBox: ModelContainerBox = {
+        ModelContainerBox(makeInitialContainer())
+    }()
+
     /// Shared live container. On launch, restores the CloudKit-backed container if sync was
     /// previously enabled. Replaced at runtime by CloudSyncUseCase during the migration flow.
-    nonisolated(unsafe) public static var container: ModelContainer = {
+    ///
+    /// Backed by `containerBox` so assigning here immediately updates every
+    /// `SwiftDataStore` reading through the box — no cold launch required.
+    nonisolated(unsafe) public static var container: ModelContainer {
+        get { containerBox.container }
+        set { containerBox.container = newValue }
+    }
+
+    /// Builds the initial container for `containerBox`. Moved out of the
+    /// `container` property's old lazy initializer verbatim — behavior is
+    /// unchanged, only the storage mechanism (box vs. plain static var) is new.
+    private static func makeInitialContainer() -> ModelContainer {
         do {
             // Read raw UserDefaults directly here (rather than via UserSettingsAdapter)
             // because this static initializer runs before TCA dependencies resolve.
@@ -89,7 +107,7 @@ extension PersistenceBootstrap: DependencyKey {
         } catch {
             fatalError("Failed to create live ModelContainer: \(error)")
         }
-    }()
+    }
 
     public static let liveValue = PersistenceBootstrap(
         modelContainer: { PersistenceBootstrap.container }

@@ -13,7 +13,12 @@ public struct SwiftDataStore<Domain: Identifiable & Sendable,
                               SD: PersistentDomainModel>: Sendable
     where SD.DomainModel == Domain
 {
-    @Dependency(\.modelContainer) private var container
+    @Dependency(\.modelContainerBox) private var containerBox
+
+    /// The container to use for this call — always read fresh from the box
+    /// so a container swap mid-process (iCloud sync toggle, data wipe) takes
+    /// effect immediately (spec A3). See `ModelContainerKey.swift`.
+    private var container: ModelContainer { containerBox.container }
 
     public init() {}
 

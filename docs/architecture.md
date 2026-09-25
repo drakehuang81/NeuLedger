@@ -125,7 +125,19 @@ gone (each Client reads its own settings keys through `userSettingsAdapter`).
 Three building blocks; `ModelContext` never escapes them.
 
 1. **`\.modelContainer`** — the `ModelContainer` as a TCA dependency.
-   Only `SwiftDataStore` may `@Dependency(\.modelContainer)`.
+   Backed by a `ModelContainerBox` (`Core/Persistence/ModelContainerKey.swift`):
+   swift-dependencies caches a resolved dependency **per key type**, so once
+   `\.modelContainer`'s `liveValue` was read the first time, reassigning
+   `PersistenceBootstrap.container` afterwards (switching iCloud sync on, or
+   wiping data) had no effect on stores that had already resolved the
+   dependency — new data stopped reaching CloudKit until the next cold
+   launch (spec A3). The fix routes everything through a stable, mutable
+   box: `\.modelContainer`'s getter/setter stay as a **facade** so the
+   existing `$0.modelContainer = container` test override keeps working
+   unchanged, while `SwiftDataStore` — the only type allowed to
+   `@Dependency(\.modelContainerBox)` — always reads `containerBox.container`
+   fresh. Switching containers now means mutating the box's `container`
+   property, which every store sees immediately.
 2. **`PersistentDomainModel`** — protocol every SD model adopts
    (`from(_:context:)`, `applyChanges(from:context:)`, `prepareForDelete()`,
    `idPredicate(_:)`). Mapping and relationship lifecycle live here

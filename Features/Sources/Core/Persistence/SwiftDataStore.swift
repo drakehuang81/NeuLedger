@@ -6,9 +6,13 @@ import Domain
 /// Generic CRUD store over a `(Domain, SD)` pair.
 ///
 /// `SwiftDataStore` is the **only** type allowed to consume
-/// `\.modelContainer` (see `docs/architecture.md` §4.2). Repositories
-/// instantiate it with zero arguments — `SwiftDataStore<Domain, SD>()` —
-/// and call its five methods. All `ModelContext` usage stays inside.
+/// `\.modelContainerBox` (see `docs/architecture.md` §4 / §9 Anti-Patterns).
+/// `\.modelContainer` is a separate, test-override-only facade — reading it
+/// directly anywhere, including here, would silently reintroduce the stale
+/// container bug this file exists to fix (see `ModelContainerKey.swift`).
+/// Repositories instantiate it with zero arguments —
+/// `SwiftDataStore<Domain, SD>()` — and call its five methods. All
+/// `ModelContext` usage stays inside.
 public struct SwiftDataStore<Domain: Identifiable & Sendable,
                               SD: PersistentDomainModel>: Sendable
     where SD.DomainModel == Domain

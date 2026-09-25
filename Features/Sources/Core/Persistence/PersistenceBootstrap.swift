@@ -72,7 +72,10 @@ extension PersistenceBootstrap: DependencyKey {
     /// 整個 process 共用的容器 box；換容器時改的是它的內容（spec A3）。See
     /// `ModelContainerKey.swift` for why `SwiftDataStore` depends on this box
     /// instead of the container directly.
-    nonisolated(unsafe) public static let containerBox: ModelContainerBox = {
+    ///
+    /// No `nonisolated(unsafe)` needed: `ModelContainerBox` is already
+    /// `@unchecked Sendable` and this is a `static let`, not a stored `var`.
+    public static let containerBox: ModelContainerBox = {
         ModelContainerBox(makeInitialContainer())
     }()
 
@@ -81,7 +84,11 @@ extension PersistenceBootstrap: DependencyKey {
     ///
     /// Backed by `containerBox` so assigning here immediately updates every
     /// `SwiftDataStore` reading through the box — no cold launch required.
-    nonisolated(unsafe) public static var container: ModelContainer {
+    ///
+    /// No `nonisolated(unsafe)` needed: this is a computed property with no
+    /// stored backing of its own — the storage (and its own locking) lives
+    /// in `containerBox`. The modifier only makes sense on stored state.
+    public static var container: ModelContainer {
         get { containerBox.container }
         set { containerBox.container = newValue }
     }

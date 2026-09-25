@@ -243,7 +243,12 @@ extension SeedCategory {
 
 // MARK: - Seeding
 
-private extension PersistenceBootstrap {
+// Not `private` — besides the two static lazy initializers above
+// (`makeInitialContainer()`, `testContainer`), `PlatformClient+Live.swift`'s
+// `wipeAllSyncData` now calls this directly as a third call site, right
+// after it rebuilds the local container (spec A1). `internal` (the default
+// here) is enough since that call site lives in the same `Core` target.
+extension PersistenceBootstrap {
     static func seedIfNeeded(in context: ModelContext) {
         do {
             try insertMissingDefaults(SeedCategory.defaultExpenseCategories,

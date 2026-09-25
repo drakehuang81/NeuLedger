@@ -10,7 +10,21 @@ import Domain
 /// `DeeplinkClientTests`), the recurring-confirmation resolution against an
 /// in-memory store, and the preference / sync-flag round-trips lifted from
 /// the former `AppEnvironmentUseCase` and `CloudSyncUseCase`.
-@Suite("PlatformClient Live Tests")
+///
+/// `.serialized` (task 5, spec A1): `testWipeReseedsDefaultCategories` calls
+/// the real `wipeAllSyncData`, which reads and writes
+/// `PersistenceBootstrap.container` directly — the process-wide live
+/// `containerBox`, not a per-test scoped override (`wipeAllSyncData` can't be
+/// routed through `@Dependency(\.modelContainerBox)` without widening this
+/// task's file scope; see `ModelContainerKey.swift`'s "Scope 陷阱" note).
+/// No other test in this suite reads that same global today, but Swift
+/// Testing parallelises `@Test` methods within a suite by default, and this
+/// call also does real file I/O against the shared store URL — the same
+/// category of process-wide-singleton hazard that forced `.serialized` on
+/// `LedgerClientRecurringTests`. Serializing here trades a little wall-clock
+/// time for guaranteeing that mutation never interleaves with anything else
+/// in this suite, now or after a future edit.
+@Suite("PlatformClient Live Tests", .serialized)
 struct PlatformClientLiveTests {
 
     /// Fresh in-memory container holding the recurring-transaction schema.
@@ -62,12 +76,14 @@ struct PlatformClientLiveTests {
     private func sut(
         container: ModelContainer? = nil,
         settings: UserSettingsAdapter? = nil,
-        watch: WatchBridgeAdapter? = nil
+        watch: WatchBridgeAdapter? = nil,
+        cloudKit: CloudKitSyncAdapter? = nil
     ) -> PlatformClient {
         withDependencies {
             if let container { $0.modelContainer = container }
             if let settings { $0.userSettingsAdapter = settings }
             if let watch { $0.watchBridgeAdapter = watch }
+            if let cloudKit { $0.cloudKitSyncAdapter = cloudKit }
         } operation: {
             PlatformClient.liveValue
         }
@@ -324,5 +340,29 @@ struct PlatformClientLiveTests {
             @Dependency(\.platformClient) var client
             _ = client
         }
+    }
+
+    // MARK: - wipeAllSyncData re-seeding (spec A1)
+
+    @Test("wiping all data re-seeds the default categories")
+    func testWipeReseedsDefaultCategories() async throws {
+        let container = try freshContainer()
+        // `CloudKitSyncAdapter.testValue` leaves `wipeCloudRecords` unimplemented
+        // (by design — most tests should never call the real `wipeAllSyncData`
+        // path). This test exercises that path on purpose, so it needs a no-op
+        // stub here; this is unrelated to the re-seed bug this test targets.
+        var cloudKit = CloudKitSyncAdapter.testValue
+        cloudKit.wipeCloudRecords = { }
+        let client = sut(container: container, cloudKit: cloudKit)
+        try await client.wipeAllSyncData()
+
+        let store = CategoryStore()
+        let categories = try await withDependencies {
+            $0.modelContainer = PersistenceBootstrap.container
+        } operation: {
+            try await store.fetchAll()
+        }
+        #expect(categories.isEmpty == false, "抹除後必須重新 seed，否則使用者的分類清單是空的")
+        #expect(categories.contains { $0.isDefault })
     }
 }

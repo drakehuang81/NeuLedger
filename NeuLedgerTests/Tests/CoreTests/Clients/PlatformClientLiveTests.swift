@@ -11,20 +11,14 @@ import Domain
 /// in-memory store, and the preference / sync-flag round-trips lifted from
 /// the former `AppEnvironmentUseCase` and `CloudSyncUseCase`.
 ///
-/// `.serialized` (task 5, spec A1): `testWipeReseedsDefaultCategories` calls
-/// the real `wipeAllSyncData`, which reads and writes
-/// `PersistenceBootstrap.container` directly — the process-wide live
-/// `containerBox`, not a per-test scoped override (`wipeAllSyncData` can't be
-/// routed through `@Dependency(\.modelContainerBox)` without widening this
-/// task's file scope; see `ModelContainerKey.swift`'s "Scope 陷阱" note).
-/// No other test in this suite reads that same global today, but Swift
-/// Testing parallelises `@Test` methods within a suite by default, and this
-/// call also does real file I/O against the shared store URL — the same
-/// category of process-wide-singleton hazard that forced `.serialized` on
-/// `LedgerClientRecurringTests`. Serializing here trades a little wall-clock
-/// time for guaranteeing that mutation never interleaves with anything else
-/// in this suite, now or after a future edit.
-@Suite("PlatformClient Live Tests", .serialized)
+/// No `.serialized` needed: every test in this suite (including the
+/// `seedIfNeeded` coverage for spec A1 — see the comment above that test)
+/// works against a freshly created in-memory `ModelContainer` scoped to that
+/// single test, never `PersistenceBootstrap.container` (the process-wide
+/// live container). An earlier revision of this suite briefly called the
+/// real `wipeAllSyncData()`, which does mutate that global directly, and was
+/// serialized for that reason — removed, see task-5-report.md「Fix round 1」.
+@Suite("PlatformClient Live Tests")
 struct PlatformClientLiveTests {
 
     /// Fresh in-memory container holding the recurring-transaction schema.
@@ -76,14 +70,12 @@ struct PlatformClientLiveTests {
     private func sut(
         container: ModelContainer? = nil,
         settings: UserSettingsAdapter? = nil,
-        watch: WatchBridgeAdapter? = nil,
-        cloudKit: CloudKitSyncAdapter? = nil
+        watch: WatchBridgeAdapter? = nil
     ) -> PlatformClient {
         withDependencies {
             if let container { $0.modelContainer = container }
             if let settings { $0.userSettingsAdapter = settings }
             if let watch { $0.watchBridgeAdapter = watch }
-            if let cloudKit { $0.cloudKitSyncAdapter = cloudKit }
         } operation: {
             PlatformClient.liveValue
         }
@@ -342,27 +334,42 @@ struct PlatformClientLiveTests {
         }
     }
 
-    // MARK: - wipeAllSyncData re-seeding (spec A1)
+    // MARK: - Re-seeding after a wipe (spec A1)
+    //
+    // 刻意的覆蓋缺口：這裡不測「呼叫真正的 `wipeAllSyncData()` 之後分類有沒有
+    // 回來」那條端到端路徑，即使那正是這個 spec 要保證的行為。原因：
+    // `wipeAllSyncData` 讀寫的是 `PersistenceBootstrap.container` ——
+    // process-wide 的全域容器，指向 `storeURL`。而 `NeuLedgerTests` 的
+    // `TEST_HOST` 是 `NeuLedger.app`，繼承它的 `group.com.drake.NeuLedger`
+    // App Group 權限，所以那不是測試專用容器，是跟已安裝 App 共用的同一顆
+    // `default.store`。呼叫真正的實作會把裝置上的交易、帳戶、分類、預算、
+    // 標籤、週期範本、載具全部刪光，只留下重新種回的 14 筆分類——這是資料
+    // 損毀等級的風險，且目前 `storeURL` 沒有測試環境可以導向暫存目錄的注入
+    // 點，無法用 in-memory 容器規避（曾經在跑過真實 App 的模擬器上執行過一次
+    // 帶有端到端版本的這條測試，證實了這個風險——見 task-5-report.md「Fix
+    // round 1」）。
+    //
+    // 改為直接測 `seedIfNeeded(in:)` 本身：它的簽章吃外部傳入的
+    // `ModelContext`，跟全域容器完全解耦，可以在一顆乾淨的 in-memory 容器上
+    // 安全驗證「清空後重新種入 14 筆預設分類」這個行為。`wipeAllSyncData`
+    // 裡那一行 `PersistenceBootstrap.seedIfNeeded(in: ModelContext(localContainer))`
+    // 是否真的接上了，目前只能靠 code review 把關（follow-up：讓 `storeURL`
+    // 在測試環境下可注入暫存路徑，屆時才補得出安全的端到端測試）。
 
-    @Test("wiping all data re-seeds the default categories")
-    func testWipeReseedsDefaultCategories() async throws {
+    @Test("seedIfNeeded populates the default categories on an empty store")
+    func testSeedIfNeededPopulatesDefaultCategoriesOnAnEmptyStore() async throws {
         let container = try freshContainer()
-        // `CloudKitSyncAdapter.testValue` leaves `wipeCloudRecords` unimplemented
-        // (by design — most tests should never call the real `wipeAllSyncData`
-        // path). This test exercises that path on purpose, so it needs a no-op
-        // stub here; this is unrelated to the re-seed bug this test targets.
-        var cloudKit = CloudKitSyncAdapter.testValue
-        cloudKit.wipeCloudRecords = { }
-        let client = sut(container: container, cloudKit: cloudKit)
-        try await client.wipeAllSyncData()
+        let context = ModelContext(container)
 
-        let store = CategoryStore()
+        PersistenceBootstrap.seedIfNeeded(in: context)
+
         let categories = try await withDependencies {
-            $0.modelContainer = PersistenceBootstrap.container
+            $0.modelContainer = container
         } operation: {
-            try await store.fetchAll()
+            try await CategoryStore().fetchAll()
         }
-        #expect(categories.isEmpty == false, "抹除後必須重新 seed，否則使用者的分類清單是空的")
+        #expect(categories.isEmpty == false, "seedIfNeeded 必須在空的 store 上種入預設分類")
         #expect(categories.contains { $0.isDefault })
+        #expect(categories.count == 14, "14 筆預設分類（9 支出 + 5 收入）")
     }
 }

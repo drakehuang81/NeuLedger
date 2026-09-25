@@ -14,7 +14,8 @@ import Domain
 /// `SwiftDataStore`×6 (Transaction/Account/Category/Tag/RecurringTransaction/
 /// Budget — the last used only by `deleteCategory`'s budget-reference guard,
 /// spec A6 裁定 R1) + `planningClient` (§3.1 INVARIANT) + `notificationAdapter`
-/// (recurring reminders) + `userSettingsAdapter` (`.defaultAccountId`).
+/// (recurring reminders) + `userSettingsAdapter` (`.defaultAccountId` /
+/// `.watchDefaultAccountId`).
 ///
 /// Section → implementation (plan 5a3 mapping):
 /// - Transactions → `TransactionStore` directly, with
@@ -27,6 +28,17 @@ import Domain
 ///   `computeBalance`, the archive rule, the synthesized `unarchive`, and the
 ///   `balances` aggregate lifted from `AccountClient+Live`/`AccountUseCase+Live`.
 ///   `\.userSettingsAdapter` (`.defaultAccountId` key) backs the default account.
+///   **Archive/delete cascade (new behaviour, task-7 / spec A7 裁定 R2)**:
+///   recurring templates now materialise on their own (自動入帳), so a
+///   template left pointing at an archived/deleted account would keep posting
+///   to a stack the user put away. `archiveAccount` pauses every linked active
+///   template (`isActive = false`) and syncs its reminder through the shared
+///   `syncRecurringReminder` exit (§ Recurring below — cancels because the
+///   template is now inactive); `deleteAccount` denies the delete when any
+///   template still points at the account, mirroring the existing
+///   transaction-reference guard. Both paths also clear the id out of
+///   `.defaultAccountId` / `.watchDefaultAccountId` via the
+///   `clearDefaultAccountIfNeeded` helper below the `DependencyKey` extension.
 /// - Catalog → `CategoryStore` + `<Tag, SDTag>` directly
 ///   (factory in `+LiveCatalog.swift`), preserving the default-category delete
 ///   guard and the many-to-many tag disassociation (handled inside
@@ -236,6 +248,24 @@ extension LedgerClient: DependencyKey {
                 }
                 existing.isArchived = true
                 try await accountStore.update(existing)
+
+                // 週期交易現在會自動入帳，指向已封存帳戶的範本會持續往一個
+                // 使用者已經收起來的帳戶記帳——一律暫停並取消提醒（spec A7，
+                // 裁定 R2）。提醒生命週期沿用 syncRecurringReminder 這顆共用
+                // 出口（isActive == false 時內部會呼叫
+                // notificationAdapter.cancelRecurringReminder），不要另外散開
+                // 一條 cancelRecurringReminder 呼叫——那正是 health-audit A5
+                // 花力氣收斂掉的東西。
+                let linked = try await recurringStore.fetchAll().filter {
+                    $0.accountId == id && $0.isActive
+                }
+                for var template in linked {
+                    template.isActive = false
+                    try await recurringStore.update(template)
+                    try await syncRecurringReminder(template)
+                }
+
+                try await Self.clearDefaultAccountIfNeeded(id, userSettingsAdapter)
             },
             unarchiveAccount: { id in
                 guard var existing = try await accountStore.fetch(id: id) else {
@@ -253,7 +283,21 @@ extension LedgerClient: DependencyKey {
                         "Cannot delete account with associated transactions; archive it instead."
                     )
                 }
+
+                // 週期範本沒有交易那麼「靜態」——它會繼續自動入帳，刪掉帳戶會讓
+                // 它下一次 tick 就記到一個不存在的帳戶。比照交易守衛擋下來，
+                // 引導使用者改用封存（spec A7，裁定 R2）。
+                let linkedTemplates = try await recurringStore.fetchAll().filter {
+                    $0.accountId == id
+                }
+                guard linkedTemplates.isEmpty else {
+                    throw CoreError.operationDenied(
+                        "Cannot delete account with \(linkedTemplates.count) recurring template(s); archive it instead."
+                    )
+                }
+
                 try await accountStore.delete(id: id)
+                try await Self.clearDefaultAccountIfNeeded(id, userSettingsAdapter)
             },
             listAccounts: {
                 try await accountStore.fetchAll(sortBy: [SortDescriptor(\.sortOrder)])
@@ -304,5 +348,31 @@ extension LedgerClient: DependencyKey {
             // MARK: Export (internalised — see +LiveExport.swift)
             exportCSV: Self.makeExportCSV(transactionStore, categoryStore, accountStore)
         )
+    }
+}
+
+// MARK: - Accounts × Recurring 收尾 (task-7 / spec A7, 裁定 R2)
+
+extension LedgerClient {
+    /// 封存或刪除帳戶後，把指向該帳戶的「預設帳戶」設定清成 nil——iOS 端先前
+    /// 完全沒有這個守衛，`defaultAccountId()` 會直接回傳一個已刪/已封存帳戶的
+    /// 死 id。
+    ///
+    /// `.defaultAccountId`（iOS）與 `.watchDefaultAccountId`（Watch）是同一顆
+    /// `userSettingsAdapter` 上的兩個不同 `SettingsKey<String>`（見
+    /// `Domain/Adapters/UserSettingsAdapter.swift`；Watch 端讀寫走
+    /// `PlatformClient+Live.swift` 的 `watchDefaultAccountId` 系列，但底層是
+    /// 同一顆 adapter），所以這裡可以兩個一起清，不需要跨到
+    /// `PlatformClient+Live.swift`（不在這個 task 的檔案白名單內）。
+    static func clearDefaultAccountIfNeeded(
+        _ id: Account.ID,
+        _ userSettingsAdapter: UserSettingsAdapter
+    ) async throws {
+        if userSettingsAdapter.string(.defaultAccountId) == id {
+            userSettingsAdapter.setString("", .defaultAccountId)
+        }
+        if userSettingsAdapter.string(.watchDefaultAccountId) == id {
+            userSettingsAdapter.setString("", .watchDefaultAccountId)
+        }
     }
 }

@@ -24,6 +24,10 @@ struct LedgerClientLiveTests {
             SDCategory.self,
             SDBudget.self,
             SDTag.self,
+            // task-7：`archiveAccount`/`deleteAccount` 現在會查詢週期範本
+            // （見下方 Accounts × Recurring 區塊），schema 沒登記這個型別的話
+            // `recurringStore.fetchAll()` 會直接 crash，不是回傳空陣列。
+            SDRecurringTransaction.self,
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let _container = try ModelContainer(for: schema, configurations: [configuration])
@@ -353,6 +357,182 @@ struct LedgerClientLiveTests {
             try await sut.deleteAccount(id)
         }
         #expect(try await sut.listAccounts().count == 1)
+    }
+
+    // MARK: - Accounts × Recurring（task-7 / spec A7，裁定 R2）
+    //
+    // 週期交易現在會自動入帳（spec A2/A3），所以「封存/刪除帳戶」與「指向它的
+    // 週期範本」之間的殘留狀態不再只是資料整潔問題——指向已封存帳戶的範本會
+    // 持續往一個使用者已經收起來的帳戶記帳。裁定：封存時自動暫停範本並取消
+    // 提醒；刪除時把範本加進既有的「有交易就擋」守衛。兩種情況都要清掉指向
+    // 該帳戶的「預設帳戶」設定（iOS 端的 `.defaultAccountId` 與 Watch 端的
+    // `.watchDefaultAccountId`——兩者其實是同一顆 `userSettingsAdapter` 上的
+    // 不同 key，不需要動 `PlatformClient+Live.swift`）。
+
+    /// 記錄每一通經 `syncRecurringReminder` 路由的提醒呼叫。用來證明
+    /// `archiveAccount` 暫停範本時重用了 `makeSyncRecurringReminder` 這顆共用
+    /// 出口（`isActive == false` 會內部呼叫 `cancelRecurringReminder`），而不是
+    /// 自己另外散開一條取消呼叫。
+    final class ReminderSpy: @unchecked Sendable {
+        private let lock = NSLock()
+        private var _scheduled: [RecurringTransaction.ID] = []
+        private var _cancelled: [RecurringTransaction.ID] = []
+        func recordSchedule(_ id: RecurringTransaction.ID) { lock.lock(); _scheduled.append(id); lock.unlock() }
+        func recordCancel(_ id: RecurringTransaction.ID) { lock.lock(); _cancelled.append(id); lock.unlock() }
+        var scheduled: [RecurringTransaction.ID] { lock.lock(); defer { lock.unlock() }; return _scheduled }
+        var cancelled: [RecurringTransaction.ID] { lock.lock(); defer { lock.unlock() }; return _cancelled }
+    }
+
+    /// 有狀態的 `userSettingsAdapter` 假物件。suite 預設的 `testValue` 是無狀態
+    /// 的（`setString` 是 no-op、`string` 永遠回傳該 key 的 `defaultValue`），
+    /// 沒辦法驗證「寫入後讀回」——這裡需要真的驗證 `.defaultAccountId` /
+    /// `.watchDefaultAccountId` 被清成空字串。
+    final class UserSettingsSpy: @unchecked Sendable {
+        private let lock = NSLock()
+        private var storage: [String: String] = [:]
+        func string(_ key: SettingsKey<String>) -> String {
+            lock.lock(); defer { lock.unlock() }
+            return storage[key.rawValue] ?? key.defaultValue
+        }
+        func setString(_ value: String, _ key: SettingsKey<String>) {
+            lock.lock(); storage[key.rawValue] = value; lock.unlock()
+        }
+    }
+
+    /// 建一顆共用同一個 in-memory `container` 的獨立 `LedgerClient.liveValue`，
+    /// 把 `notificationAdapter` 的提醒呼叫導向 spy（不導向的話，`createRecurring`
+    /// 的排程呼叫與 `archiveAccount` 暫停範本後的取消呼叫會打中
+    /// `@DependencyClient` 沒有預設值的 unimplemented 版本而讓測試失敗），並把
+    /// `userSettingsAdapter` 換成上面的有狀態假物件。suite 既有的 `sut`（頂端
+    /// `init()`）維持不動、不覆寫這兩顆依賴——現有測試都沒有觸及週期範本或預設
+    /// 帳戶讀寫，不需要也不應該被這裡的變動影響。
+    private func makeClient(
+        reminders: ReminderSpy = ReminderSpy(),
+        settings: UserSettingsSpy = UserSettingsSpy()
+    ) -> LedgerClient {
+        withDependencies {
+            $0.persistenceBootstrap = PersistenceBootstrap(modelContainer: { container })
+            $0.modelContainer = container
+            $0.planningClient.evaluateAfterTransaction = { _ in }
+            $0.notificationAdapter.scheduleRecurringReminder = { id, _, _, _ in reminders.recordSchedule(id) }
+            $0.notificationAdapter.cancelRecurringReminder = { id in reminders.recordCancel(id) }
+            $0.userSettingsAdapter.string = { settings.string($0) }
+            $0.userSettingsAdapter.setString = { settings.setString($0, $1) }
+        } operation: {
+            LedgerClient.liveValue
+        }
+    }
+
+    private func makeTemplate(accountId: Account.ID, amount: Decimal = 100, isActive: Bool = true) -> RecurringTransaction {
+        RecurringTransaction(
+            id: UUID(), amount: amount, note: nil, categoryId: nil,
+            accountId: accountId, toAccountId: nil, type: .expense, tags: [],
+            frequency: .monthly, nextDueDate: Date(), isActive: isActive, createdAt: Date()
+        )
+    }
+
+    @Test("archiving an account pauses the recurring templates that point at it and leaves others alone")
+    func testArchiveAccountPausesItsTemplates() async throws {
+        let accountId = UUID().uuidString
+        let otherAccountId = UUID().uuidString
+        let reminders = ReminderSpy()
+        let client = makeClient(reminders: reminders)
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createAccount(Account(id: otherAccountId, name: "Other", type: .bank, icon: "b", color: "#000", sortOrder: 1, isArchived: false, createdAt: Date()))
+
+        let template1 = makeTemplate(accountId: accountId)
+        let template2 = makeTemplate(accountId: accountId, amount: 200)
+        let otherTemplate = makeTemplate(accountId: otherAccountId, amount: 50)
+        try await client.createRecurring(template1)
+        try await client.createRecurring(template2)
+        try await client.createRecurring(otherTemplate)
+
+        try await client.archiveAccount(accountId)
+
+        let templates = try await client.listRecurring()
+        #expect(templates.filter { $0.accountId == accountId }.allSatisfy { !$0.isActive },
+                "指向已封存帳戶的範本必須被暫停")
+        #expect(templates.first { $0.accountId == otherAccountId }?.isActive == true,
+                "不相關的範本不得被動到")
+
+        // 提醒取消重用 syncRecurringReminder 這顆共用出口（不是另外散開一條
+        // cancelRecurringReminder 呼叫）——兩個被暫停的範本都該收到取消。
+        #expect(Set(reminders.cancelled) == Set([template1.id, template2.id]))
+        #expect(!reminders.cancelled.contains(otherTemplate.id))
+    }
+
+    @Test("deleting an account a recurring template points at is denied")
+    func testDeleteAccountWithTemplateIsDenied() async throws {
+        let accountId = UUID().uuidString
+        let client = makeClient()
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createRecurring(makeTemplate(accountId: accountId))
+
+        await #expect(throws: CoreError.self) {
+            try await client.deleteAccount(accountId)
+        }
+        // 擋下來之後帳戶還在——跟既有「有交易就擋」的行為（testDeleteAccountWithLinkedTransactionsThrows）對稱。
+        #expect(try await client.listAccounts().count == 1)
+    }
+
+    @Test("deleting an account with no linked templates still succeeds")
+    func testDeleteAccountWithNoTemplatesSucceeds() async throws {
+        let accountId = UUID().uuidString
+        let otherAccountId = UUID().uuidString
+        let client = makeClient()
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        // 一個指向「別的」帳戶的範本不該影響這次刪除。
+        try await client.createRecurring(makeTemplate(accountId: otherAccountId))
+
+        try await client.deleteAccount(accountId)
+        #expect(try await client.listAccounts().isEmpty)
+    }
+
+    @Test("archiving the default account clears both the iOS and Watch stored defaults")
+    func testDefaultAccountIsClearedOnArchive() async throws {
+        let accountId = UUID().uuidString
+        let otherAccountId = UUID().uuidString
+        let settings = UserSettingsSpy()
+        let client = makeClient(settings: settings)
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createAccount(Account(id: otherAccountId, name: "Other", type: .bank, icon: "b", color: "#000", sortOrder: 1, isArchived: false, createdAt: Date()))
+        client.setDefaultAccountId(accountId)
+        // Watch 端沒有經由這個 Client 寫入的 API（那是 PlatformClient 的事），
+        // 但兩者共用同一顆 userSettingsAdapter，直接戳 key 模擬 Watch 已經存了值。
+        settings.setString(accountId, .watchDefaultAccountId)
+        #expect(client.defaultAccountId() == accountId)
+
+        try await client.archiveAccount(accountId)
+
+        #expect(client.defaultAccountId() == nil, "封存後預設帳戶必須被清成 nil")
+        #expect(settings.string(.watchDefaultAccountId) == "", "Watch 端的預設帳戶設定也必須被清掉")
+
+        // 反向斷言：封存一個「不是」預設帳戶的帳戶，不該動到既有的預設帳戶設定。
+        client.setDefaultAccountId(otherAccountId)
+        let thirdId = UUID().uuidString
+        try await client.createAccount(Account(id: thirdId, name: "Third", type: .bank, icon: "c", color: "#111", sortOrder: 2, isArchived: false, createdAt: Date()))
+        try await client.archiveAccount(thirdId)
+        #expect(client.defaultAccountId() == otherAccountId)
+    }
+
+    @Test("deleting the default account clears both the iOS and Watch stored defaults")
+    func testDefaultAccountIsClearedOnDelete() async throws {
+        let accountId = UUID().uuidString
+        let settings = UserSettingsSpy()
+        let client = makeClient(settings: settings)
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        client.setDefaultAccountId(accountId)
+        settings.setString(accountId, .watchDefaultAccountId)
+
+        try await client.deleteAccount(accountId)
+
+        #expect(client.defaultAccountId() == nil, "刪除後預設帳戶必須被清成 nil")
+        #expect(settings.string(.watchDefaultAccountId) == "", "Watch 端的預設帳戶設定也必須被清掉")
     }
 
     @Test("balance aggregates income, expense, and both transfer directions")

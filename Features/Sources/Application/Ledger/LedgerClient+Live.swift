@@ -90,8 +90,11 @@ extension LedgerClient: DependencyKey {
             async let allAccounts = accountStore.fetchAll()
             let categories = try await allCategories
             let accounts = try await allAccounts
-            let categoryById = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
-            let accountById = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0) })
+            // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）：
+            // 兩台裝置各自冷啟動 seed 出預設分類/帳戶後才開啟同步，是會實際
+            // 發生的情境，這裡若用「假設 key 唯一」的初始化寫法會直接 trap。
+            let categoryById = Dictionary(categories.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let accountById = Dictionary(accounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             return transactions.map { tx in
                 EnrichedTransaction(
                     transaction: tx,
@@ -192,11 +195,14 @@ extension LedgerClient: DependencyKey {
 
             // MARK: Accounts
             setupAccounts: { newAccounts in
-                let existing = (try? await accountStore.fetchAll(
+                // 讀不到既有帳戶就直接往上拋——吞成空陣列會讓下面的去重完全失效，
+                // 把所有帳戶再插一遍，接著就踩到重複 id 的問題（spec A12）。
+                let existing = try await accountStore.fetchAll(
                     sortBy: [SortDescriptor(\.sortOrder)]
-                )) ?? []
+                )
 
-                var dictionary = Dictionary(uniqueKeysWithValues: newAccounts.map { ($0.id, $0) })
+                // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
+                var dictionary = Dictionary(newAccounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
                 existing.forEach { account in
                     if dictionary[account.id] != nil {

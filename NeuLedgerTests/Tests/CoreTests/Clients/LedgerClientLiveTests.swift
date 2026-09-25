@@ -231,6 +231,38 @@ struct LedgerClientLiveTests {
         #expect(try await sut.listAll(TransactionFilter()).isEmpty)
     }
 
+    @Test("duplicate category ids from CloudKit do not crash enrichment")
+    func testDuplicateCategoriesDoNotCrash() async throws {
+        // 直接經 store 寫入兩筆同 id 的分類，模擬兩台裝置各自冷啟動 seed 出
+        // 預設分類、之後開啟 iCloud 同步而在同一台裝置上留下重複 id 的結果
+        // （spec A4）。`SwiftDataStore.add` 不做 id 去重檢查，這個情境在正式
+        // 環境確實會發生。
+        let duplicatedId = UUID()
+        let store = CategoryStore()
+        try await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            try await store.add(
+                Domain.Category(id: duplicatedId, name: "Food", icon: "fork.knife", color: "#FF0000", type: .expense)
+            )
+            try await store.add(
+                Domain.Category(id: duplicatedId, name: "Food", icon: "fork.knife", color: "#FF0000", type: .expense)
+            )
+        }
+
+        try await sut.record(
+            Transaction(amount: 100, date: Date(), categoryId: duplicatedId,
+                        accountId: UUID().uuidString, type: .expense)
+        )
+
+        // 沒有修法時這一行會在 enrich() 內的
+        // Dictionary(uniqueKeysWithValues:) 直接 trap
+        // （Fatal error: Duplicate values for key），讓整個測試程序掛掉而不是
+        // 回傳普通的 FAIL。
+        let rows = try await sut.listAll(TransactionFilter())
+        #expect(rows.count == 1)
+    }
+
     // MARK: - Accounts
 
     @Test("createAccount persists and listAccounts returns it")

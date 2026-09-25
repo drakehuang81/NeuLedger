@@ -130,7 +130,8 @@ extension InsightsClient: DependencyKey {
             },
             categoryProportions: { range in
                 let categories = try await categoryStore.fetchAll()
-                let names = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+                // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
+                let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
                 return try TransactionAnalyticsKernel.categoryProportions(
                     range: range,
                     container: persistenceBootstrap.modelContainer(),
@@ -141,7 +142,8 @@ extension InsightsClient: DependencyKey {
                 do {
                     let active = try await budgetStore.fetchAll().filter { $0.isActive }
                     let categories = try await categoryStore.fetchAll()
-                    let names = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+                    // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
+                    let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
                     return try TransactionAnalyticsKernel.budgetGauges(
                         accountId: accountId,
                         activeBudgets: active,

@@ -494,6 +494,65 @@ struct LedgerClientLiveTests {
         #expect(reminders.cancelled.contains(transferTemplate.id))
     }
 
+    @Test("archiveAccount leaves the account unarchived when the pause loop fails partway through (fix round 2 / J2)")
+    func testArchiveAccountLeavesAccountUnarchivedWhenPauseLoopFailsPartway() async throws {
+        let accountId = UUID().uuidString
+        let template1 = makeTemplate(accountId: accountId)
+        let template2 = makeTemplate(accountId: accountId, amount: 200)
+
+        // 注入點：`archiveAccount` 暫停迴圈裡每個項目是
+        // `recurringStore.update(template)` 先跑、`syncRecurringReminder(template)`
+        // 後跑，而後者對一個已經 `isActive == false` 的範本一定落進
+        // `cancelRecurringReminder` 分支。所以「第一個項目的取消回呼」精確落在
+        // 「第一個已提交、第二個還沒被 update」這個時間點——不需要製造任何真正
+        // 的併發。`templateStore` 直接拿來在那個回呼裡把「另一個還沒被處理的
+        // 範本」的 SD row 刪掉，讓第二次 `recurringStore.update` 找不到對應的
+        // row 而丟 `CoreError.notFound`，藉此模擬迴圈跑到一半失敗。
+        let templateStore = withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            RecurringTransactionStore()
+        }
+
+        // 不用 makeClient——它的 cancelRecurringReminder 是固定閉包，這裡需要
+        // 這個特製版本。
+        let client = withDependencies {
+            $0.persistenceBootstrap = PersistenceBootstrap(modelContainer: { container })
+            $0.modelContainer = container
+            $0.planningClient.evaluateAfterTransaction = { _ in }
+            $0.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
+            $0.notificationAdapter.cancelRecurringReminder = { id in
+                // 不用猜哪個先跑，對稱處理即可：把「不是這次被取消的那個」
+                // 範本的 row 刪掉，讓迴圈跑到它時失敗。
+                let otherId = id == template1.id ? template2.id : template1.id
+                try? await templateStore.delete(id: otherId)
+            }
+        } operation: {
+            LedgerClient.liveValue
+        }
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createRecurring(template1)
+        try await client.createRecurring(template2)
+
+        await #expect(throws: CoreError.self) {
+            try await client.archiveAccount(accountId)
+        }
+
+        // J2 的核心：終態（isArchived）寫在暫停迴圈之後，中途失敗不該留下
+        // 「已封存」的帳戶——使用者只要重新按一次「封存」就能補跑，不會卡進
+        // 「已封存但選單只有取消封存/刪除、沒有再封存一次」的死角。
+        let account = try await client.listAccounts().first { $0.id == accountId }
+        #expect(account?.isArchived == false, "暫停迴圈中途失敗時，帳戶不該被標成已封存")
+
+        // 鑑別力：至少一個範本真的被暫停了，證明真的是跑到一半才失敗，不是
+        // 整批都沒跑——否則就算 isArchived 被誤移回迴圈前面，這條測試也可能
+        // 誤綠。
+        let remaining = try await client.listRecurring()
+        #expect(remaining.contains { $0.isActive == false },
+                "至少一個範本應該已經被暫停過，證明迴圈真的跑到一半才失敗")
+    }
+
     @Test("deleting an account a recurring template points at is denied")
     func testDeleteAccountWithTemplateIsDenied() async throws {
         let accountId = UUID().uuidString

@@ -31,13 +31,22 @@ import Domain
 ///   **Archive/delete cascade (new behaviour, task-7 / spec A7 裁定 R2)**:
 ///   recurring templates now materialise on their own (自動入帳), so a
 ///   template left pointing at an archived/deleted account would keep posting
-///   to a stack the user put away. `archiveAccount` pauses every linked active
-///   template (`isActive = false`) and syncs its reminder through the shared
+///   to a stack the user put away. Both the pause loop and the delete guard
+///   match via `RecurringTransaction.involves(account:)` — `accountId` *or*
+///   `toAccountId` — not just `accountId`, otherwise a transfer template that
+///   only names the account as its destination slips through both guards
+///   (fix round 1 / J1). `archiveAccount` pauses every linked active template
+///   (`isActive = false`) and syncs its reminder through the shared
 ///   `syncRecurringReminder` exit (§ Recurring below — cancels because the
-///   template is now inactive); `deleteAccount` denies the delete when any
-///   template still points at the account, mirroring the existing
-///   transaction-reference guard. Both paths also clear the id out of
-///   `.defaultAccountId` / `.watchDefaultAccountId` via the
+///   template is now inactive) **before** flipping `isArchived`, so a
+///   mid-loop failure leaves the account still unarchived and re-archivable,
+///   not half-paused with no "archive again" entry point (fix round 1 / J2).
+///   `deleteAccount` denies the delete when any template still points at the
+///   account — intentionally including already-paused ones, since a paused
+///   template resumes posting the moment it's re-activated (same rule as
+///   Task 6's "even an inactive budget blocks the delete") — mirroring the
+///   existing transaction-reference guard. Both paths also clear the id out
+///   of `.defaultAccountId` / `.watchDefaultAccountId` via the
 ///   `clearDefaultAccountIfNeeded` helper below the `DependencyKey` extension.
 /// - Catalog → `CategoryStore` + `<Tag, SDTag>` directly
 ///   (factory in `+LiveCatalog.swift`), preserving the default-category delete
@@ -246,24 +255,34 @@ extension LedgerClient: DependencyKey {
                 guard var existing = try await accountStore.fetch(id: id) else {
                     throw CoreError.notFound("SDAccount")
                 }
-                existing.isArchived = true
-                try await accountStore.update(existing)
 
                 // 週期交易現在會自動入帳，指向已封存帳戶的範本會持續往一個
                 // 使用者已經收起來的帳戶記帳——一律暫停並取消提醒（spec A7，
-                // 裁定 R2）。提醒生命週期沿用 syncRecurringReminder 這顆共用
-                // 出口（isActive == false 時內部會呼叫
-                // notificationAdapter.cancelRecurringReminder），不要另外散開
-                // 一條 cancelRecurringReminder 呼叫——那正是 health-audit A5
-                // 花力氣收斂掉的東西。
+                // 裁定 R2）。`involves(account:)` 同時看 `accountId` 與
+                // `toAccountId`：只被轉帳範本當作「目的帳戶」的帳戶一樣要暫停
+                // （task-7 fix round 1 / J1——原本只看 accountId 會讓這種範本
+                // 整個漏掉，持續把錢轉進一個已經收起來的帳戶）。提醒生命週期
+                // 沿用 syncRecurringReminder 這顆共用出口（isActive == false
+                // 時內部會呼叫 notificationAdapter.cancelRecurringReminder），
+                // 不要另外散開一條 cancelRecurringReminder 呼叫——那正是
+                // health-audit A5 花力氣收斂掉的東西。
                 let linked = try await recurringStore.fetchAll().filter {
-                    $0.accountId == id && $0.isActive
+                    $0.involves(account: id) && $0.isActive
                 }
                 for var template in linked {
                     template.isActive = false
                     try await recurringStore.update(template)
                     try await syncRecurringReminder(template)
                 }
+
+                // 終態（isArchived）放在暫停迴圈之後（task-7 fix round 1 / J2，
+                // 比照 Task 6 判例：守衛/連帶清理全過才動終態）。迴圈中途失敗
+                // 的話，帳戶還沒被標成已封存，使用者只是重新按一次「封存」就能
+                // 補跑——反過來若終態先寫入，半套失敗會留下「已封存但部分範本
+                // 仍啟用中」，而已封存帳戶的選單沒有「再封存一次」的入口，只能
+                // 先取消封存再重新封存才修得好。
+                existing.isArchived = true
+                try await accountStore.update(existing)
 
                 try await Self.clearDefaultAccountIfNeeded(id, userSettingsAdapter)
             },
@@ -285,14 +304,21 @@ extension LedgerClient: DependencyKey {
                 }
 
                 // 週期範本沒有交易那麼「靜態」——它會繼續自動入帳，刪掉帳戶會讓
-                // 它下一次 tick 就記到一個不存在的帳戶。比照交易守衛擋下來，
-                // 引導使用者改用封存（spec A7，裁定 R2）。
+                // 它下一次 tick 就記到一個不存在的帳戶。比照交易守衛擋下來
+                // （spec A7，裁定 R2）。`involves(account:)` 同時看 `accountId`
+                // 與 `toAccountId`，只被轉帳範本當作目的帳戶的帳戶一樣要擋
+                // （task-7 fix round 1 / J1）。這裡**刻意**連已經被
+                // `archiveAccount` 暫停過的範本也擋——暫停不等於沒有引用，範本
+                // 一旦被重新啟用就會立刻往不存在的帳戶記帳，跟 Task 6「連停用
+                // 的預算也要擋刪除分類」是同一個道理（task-7 fix round 1 /
+                // J3）。訊息因此不能再說「請改用封存」：使用者可能就是照著
+                // UI 引導先封存過一輪，這裡要指向真正的出路。
                 let linkedTemplates = try await recurringStore.fetchAll().filter {
-                    $0.accountId == id
+                    $0.involves(account: id)
                 }
                 guard linkedTemplates.isEmpty else {
                     throw CoreError.operationDenied(
-                        "Cannot delete account with \(linkedTemplates.count) recurring template(s); archive it instead."
+                        "Cannot delete account with \(linkedTemplates.count) recurring template(s); delete or reassign them first."
                     )
                 }
 

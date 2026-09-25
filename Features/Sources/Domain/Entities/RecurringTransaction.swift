@@ -45,4 +45,13 @@ public struct RecurringTransaction: Identifiable, Equatable, Hashable, Sendable,
         }
         return frequency.occurrence(after: base, anchoredAt: anchorDate, calendar: calendar)
     }
+
+    /// 範本是否牽涉此帳戶：轉出方 `accountId` 或轉帳的轉入方 `toAccountId`。
+    ///
+    /// 與 `Transaction.involves(account:)`（`Transaction+Accounts.swift`）同一條
+    /// 規則——帳戶的封存暫停與刪除守衛都必須看兩邊，否則只被當作「目的帳戶」
+    /// 的轉帳範本會整個漏掉（task-7 fix round 1 / J1）。
+    public func involves(account id: Account.ID) -> Bool {
+        accountId == id || toAccountId == id
+    }
 }

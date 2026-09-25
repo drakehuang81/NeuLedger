@@ -369,17 +369,17 @@ struct LedgerClientLiveTests {
     // `.watchDefaultAccountId`——兩者其實是同一顆 `userSettingsAdapter` 上的
     // 不同 key，不需要動 `PlatformClient+Live.swift`）。
 
-    /// 記錄每一通經 `syncRecurringReminder` 路由的提醒呼叫。用來證明
+    /// 記錄每一通經 `syncRecurringReminder` 路由的取消呼叫。用來證明
     /// `archiveAccount` 暫停範本時重用了 `makeSyncRecurringReminder` 這顆共用
     /// 出口（`isActive == false` 會內部呼叫 `cancelRecurringReminder`），而不是
-    /// 自己另外散開一條取消呼叫。
+    /// 自己另外散開一條取消呼叫。（fix round 1 / J4：先前這裡還多帶了一個沒有
+    /// 任何測試斷言的 `scheduled` 記錄——`createRecurring` 建範本時一定會呼叫
+    /// `scheduleRecurringReminder`，但這個 suite 不驗證排程本身，只驗證暫停時
+    /// 的取消，所以拿掉了那段沒用到的記錄，只留下真正被斷言的 `cancelled`。）
     final class ReminderSpy: @unchecked Sendable {
         private let lock = NSLock()
-        private var _scheduled: [RecurringTransaction.ID] = []
         private var _cancelled: [RecurringTransaction.ID] = []
-        func recordSchedule(_ id: RecurringTransaction.ID) { lock.lock(); _scheduled.append(id); lock.unlock() }
         func recordCancel(_ id: RecurringTransaction.ID) { lock.lock(); _cancelled.append(id); lock.unlock() }
-        var scheduled: [RecurringTransaction.ID] { lock.lock(); defer { lock.unlock() }; return _scheduled }
         var cancelled: [RecurringTransaction.ID] { lock.lock(); defer { lock.unlock() }; return _cancelled }
     }
 
@@ -414,7 +414,10 @@ struct LedgerClientLiveTests {
             $0.persistenceBootstrap = PersistenceBootstrap(modelContainer: { container })
             $0.modelContainer = container
             $0.planningClient.evaluateAfterTransaction = { _ in }
-            $0.notificationAdapter.scheduleRecurringReminder = { id, _, _, _ in reminders.recordSchedule(id) }
+            // createRecurring/updateRecurring 建立啟用中範本一定會排程一次，
+            // 只要不打中 @DependencyClient 的 unimplemented 版本即可，這個
+            // suite 不斷言排程本身（見 ReminderSpy 上的 J4 說明）。
+            $0.notificationAdapter.scheduleRecurringReminder = { _, _, _, _ in }
             $0.notificationAdapter.cancelRecurringReminder = { id in reminders.recordCancel(id) }
             $0.userSettingsAdapter.string = { settings.string($0) }
             $0.userSettingsAdapter.setString = { settings.setString($0, $1) }
@@ -423,10 +426,16 @@ struct LedgerClientLiveTests {
         }
     }
 
-    private func makeTemplate(accountId: Account.ID, amount: Decimal = 100, isActive: Bool = true) -> RecurringTransaction {
+    private func makeTemplate(
+        accountId: Account.ID,
+        toAccountId: Account.ID? = nil,
+        amount: Decimal = 100,
+        type: TransactionType = .expense,
+        isActive: Bool = true
+    ) -> RecurringTransaction {
         RecurringTransaction(
             id: UUID(), amount: amount, note: nil, categoryId: nil,
-            accountId: accountId, toAccountId: nil, type: .expense, tags: [],
+            accountId: accountId, toAccountId: toAccountId, type: type, tags: [],
             frequency: .monthly, nextDueDate: Date(), isActive: isActive, createdAt: Date()
         )
     }
@@ -462,6 +471,29 @@ struct LedgerClientLiveTests {
         #expect(!reminders.cancelled.contains(otherTemplate.id))
     }
 
+    @Test("archiving an account pauses a transfer template that only names it as the destination (fix round 1 / J1)")
+    func testArchiveAccountPausesTransferTemplateTargetingItAsDestination() async throws {
+        let accountId = UUID().uuidString
+        let sourceAccountId = UUID().uuidString
+        let reminders = ReminderSpy()
+        let client = makeClient(reminders: reminders)
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createAccount(Account(id: sourceAccountId, name: "Source", type: .cash, icon: "b", color: "#000", sortOrder: 1, isArchived: false, createdAt: Date()))
+
+        // 轉帳範本的 accountId 是轉出方（sourceAccountId），accountId 完全不等於
+        // 目標帳戶——只有 toAccountId 指著它。原本只查 accountId 的 filter 會
+        // 整個漏掉這個範本。
+        let transferTemplate = makeTemplate(accountId: sourceAccountId, toAccountId: accountId, amount: 300, type: .transfer)
+        try await client.createRecurring(transferTemplate)
+
+        try await client.archiveAccount(accountId)
+
+        let paused = try await client.listRecurring().first { $0.id == transferTemplate.id }
+        #expect(paused?.isActive == false, "只被轉帳範本當作目的帳戶的帳戶被封存時，該範本也必須被暫停")
+        #expect(reminders.cancelled.contains(transferTemplate.id))
+    }
+
     @Test("deleting an account a recurring template points at is denied")
     func testDeleteAccountWithTemplateIsDenied() async throws {
         let accountId = UUID().uuidString
@@ -474,6 +506,45 @@ struct LedgerClientLiveTests {
             try await client.deleteAccount(accountId)
         }
         // 擋下來之後帳戶還在——跟既有「有交易就擋」的行為（testDeleteAccountWithLinkedTransactionsThrows）對稱。
+        #expect(try await client.listAccounts().count == 1)
+    }
+
+    @Test("deleting an account a transfer template only names as the destination is denied (fix round 1 / J1)")
+    func testDeleteAccountWithTransferTemplateTargetingItAsDestinationIsDenied() async throws {
+        let accountId = UUID().uuidString
+        let sourceAccountId = UUID().uuidString
+        let client = makeClient()
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createAccount(Account(id: sourceAccountId, name: "Source", type: .cash, icon: "b", color: "#000", sortOrder: 1, isArchived: false, createdAt: Date()))
+        try await client.createRecurring(makeTemplate(accountId: sourceAccountId, toAccountId: accountId, amount: 300, type: .transfer))
+
+        await #expect(throws: CoreError.self) {
+            try await client.deleteAccount(accountId)
+        }
+        #expect(try await client.listAccounts().count == 2)
+    }
+
+    @Test("deleting an account whose templates were already paused by archiving is still denied (fix round 1 / J3)")
+    func testDeleteAccountStillDeniedAfterItsTemplatesWerePaused() async throws {
+        // 使用者照 UI 引導先封存（範本被自動暫停）、再嘗試刪除——守衛必須連
+        // 已暫停的範本也擋，因為它一旦被重新啟用就會立刻往不存在的帳戶記帳
+        // （跟 Task 6「連停用的預算也要擋刪除分類」同一個道理）。這條測試釘住
+        // 「封存之後刪除仍被擋」這個兩個裁定交互作用出的行為，避免後人以為
+        // 「範本反正已經暫停了，擋它沒意義」而順手放寬守衛。
+        let accountId = UUID().uuidString
+        let client = makeClient()
+
+        try await client.createAccount(Account(id: accountId, name: "Target", type: .bank, icon: "a", color: "#FFF", sortOrder: 0, isArchived: false, createdAt: Date()))
+        try await client.createRecurring(makeTemplate(accountId: accountId))
+
+        try await client.archiveAccount(accountId)
+        let paused = try await client.listRecurring().first
+        #expect(paused?.isActive == false, "前置條件：範本應已被封存動作暫停")
+
+        await #expect(throws: CoreError.self) {
+            try await client.deleteAccount(accountId)
+        }
         #expect(try await client.listAccounts().count == 1)
     }
 

@@ -17,7 +17,7 @@ import Domain
 /// single test, never `PersistenceBootstrap.container` (the process-wide
 /// live container). An earlier revision of this suite briefly called the
 /// real `wipeAllSyncData()`, which does mutate that global directly, and was
-/// serialized for that reason — removed, see task-5-report.md「Fix round 1」.
+/// serialized for that reason; that call is gone, so the trait went with it.
 @Suite("PlatformClient Live Tests")
 struct PlatformClientLiveTests {
 
@@ -345,9 +345,12 @@ struct PlatformClientLiveTests {
     // `default.store`。呼叫真正的實作會把裝置上的交易、帳戶、分類、預算、
     // 標籤、週期範本、載具全部刪光，只留下重新種回的 14 筆分類——這是資料
     // 損毀等級的風險，且目前 `storeURL` 沒有測試環境可以導向暫存目錄的注入
-    // 點，無法用 in-memory 容器規避（曾經在跑過真實 App 的模擬器上執行過一次
-    // 帶有端到端版本的這條測試，證實了這個風險——見 task-5-report.md「Fix
-    // round 1」）。
+    // 點，無法用 in-memory 容器規避。
+    //
+    // 這不是推測：帶端到端版本的 `testWipeReseedsDefaultCategories` 真的在模擬器
+    // 上跑過並通過，也就是真正的 `wipeAllSyncData()` 確實對 `storeURL` 執行過一次
+    // 全表刪除。沒有人在刪除前後比對那顆 store 的內容，所以「使用者資料被清空」
+    // 是從程式碼路徑推出的後果，不是實測到的觀察值。
     //
     // 改為直接測 `seedIfNeeded(in:)` 本身：它的簽章吃外部傳入的
     // `ModelContext`，跟全域容器完全解耦，可以在一顆乾淨的 in-memory 容器上

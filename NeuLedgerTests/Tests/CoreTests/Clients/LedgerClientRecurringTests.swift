@@ -26,7 +26,7 @@ import Domain
 /// tick tests running concurrently would steal each other's gate slot and
 /// intermittently see `0` instead of their expected count — a real
 /// cross-test race, not a flaky assertion, confirmed by a failing run before
-/// this trait was added (see task-4-report.md「Fix round 1」).
+/// this trait was added.
 @Suite("LedgerClient Live (Recurring) Integration Tests", .serialized)
 struct LedgerClientRecurringTests {
 
@@ -507,6 +507,49 @@ struct LedgerClientRecurringTests {
 
         #expect(second == 0, "同一期不得被重複補記")
         #expect(try await sut.listAll(TransactionFilter()).count == afterFirst,
+                "交易總數不得增加")
+    }
+
+    @Test("the occurrence landing exactly on the catch-up window's lower bound is recorded once, and only once")
+    func testTickHandlesTheOccurrenceExactlyOnTheWindowLowerBound() async throws {
+        // `earliest = today - recurringCatchUpWindowMonths`（12 個月），窗判斷的兩處
+        // 都是 `>=`，所以「剛好等於 earliest」那一期是**窗內**。錨點與首次到期日
+        // 都取 `monthsBefore(12)`，就正好踩在 earliest 上（此 suite 的 fixedNow
+        // 就是生產碼注入的 `now`，同曆法同時區）。
+        //
+        // 這條同時釘住兩個各自獨立的 `>=` → `>` 突變，缺任何一邊都只有這條會紅：
+        // - `LedgerClient+LiveRecurring.swift` 的 `dueDate >= earliest`：寫成 `>`
+        //   會讓邊界那一期**整期漏記**（步驟 1 的 sourcePeriodDueDate 斷言變紅）。
+        // - `LedgerClient+Live.swift` 的 `due >= earliest`（去重集合的下界）：寫成
+        //   `>` 會讓邊界期被記錄卻不進集合，下次 tick 重複入帳（步驟 2 變紅）。
+        //
+        // 這條測試的鑑別力綁在「12 就是窗寬」上：窗寬改了而這裡的 12 沒跟著改，
+        // 它會靜默退化成一條普通的窗內測試、兩個突變重新全活。把前提釘住。
+        #expect(LedgerClient.recurringCatchUpWindowMonths == 12,
+                "窗寬改了就要一起改下面的 monthsBefore(12)，否則這條測試不再踩在邊界上")
+        let boundary = monthsBefore(12)
+        var template = makeTemplate(nextDueDate: boundary, frequency: .monthly)
+        template.anchorDate = boundary
+        try await sut.createRecurring(template)
+
+        // 1. 邊界那一期必須真的被記進去。
+        let first = try await sut.tick()
+        #expect(first > 0)
+
+        let afterFirst = try await sut.listAll(TransactionFilter())
+        #expect(afterFirst.contains { $0.transaction.sourcePeriodDueDate == boundary },
+                "剛好落在窗下界的那一期必須被補記——窗判斷是 `>=`，不是 `>`")
+
+        // 2. 把游標倒回邊界那一期（等同「寫回進度那一步沒有成功」）：去重集合的
+        //    下界同樣要含到邊界，否則這一期會被記第二遍。
+        var rewound = try await sut.listRecurring().first { $0.id == template.id }!
+        rewound.nextDueDate = boundary
+        try await sut.updateRecurring(rewound)
+
+        let second = try await sut.tick()
+
+        #expect(second == 0, "落在窗下界的那一期不得被重複補記")
+        #expect(try await sut.listAll(TransactionFilter()).count == afterFirst.count,
                 "交易總數不得增加")
     }
 

@@ -228,7 +228,11 @@ extension LedgerClient: DependencyKey {
                     sortBy: [SortDescriptor(\.sortOrder)]
                 )
 
-                // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
+                // 這裡的 key 來源是參數 `newAccounts`，不是 DB 列——重複 id 只會
+                // 來自呼叫端（onboarding）自己組出兩筆同 id 的帳戶，那是程式錯誤，
+                // 不是 CloudKit 同步。判斷維持不變：取第一筆仍優於
+                // `uniqueKeysWithValues` 的當場 trap——onboarding 的 bug 不該讓
+                // 使用者連 App 都進不去。
                 var dictionary = Dictionary(newAccounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
                 existing.forEach { account in
@@ -358,7 +362,7 @@ extension LedgerClient: DependencyKey {
             listCategories: Self.makeListCategories(categoryStore),
             createCategory: Self.makeCreateCategory(categoryStore),
             updateCategory: Self.makeUpdateCategory(categoryStore),
-            deleteCategory: Self.makeDeleteCategory(categoryStore, budgetStore, transactionStore),
+            deleteCategory: Self.makeDeleteCategory(categoryStore, budgetStore, transactionStore, recurringStore),
             listTags: Self.makeListTags(tagStore),
             createTag: Self.makeCreateTag(tagStore),
             updateTag: Self.makeUpdateTag(tagStore),
@@ -389,7 +393,7 @@ extension LedgerClient {
     /// `Domain/Adapters/UserSettingsAdapter.swift`；Watch 端讀寫走
     /// `PlatformClient+Live.swift` 的 `watchDefaultAccountId` 系列，但底層是
     /// 同一顆 adapter），所以這裡可以兩個一起清，不需要跨到
-    /// `PlatformClient+Live.swift`（不在這個 task 的檔案白名單內）。
+    /// `PlatformClient+Live.swift`。
     static func clearDefaultAccountIfNeeded(
         _ id: Account.ID,
         _ userSettingsAdapter: UserSettingsAdapter

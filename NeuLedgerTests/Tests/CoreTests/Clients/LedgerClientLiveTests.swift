@@ -642,11 +642,18 @@ struct LedgerClientLiveTests {
         #expect(settings.string(.watchDefaultAccountId) == "", "Watch 端的預設帳戶設定也必須被清掉")
 
         // 反向斷言：封存一個「不是」預設帳戶的帳戶，不該動到既有的預設帳戶設定。
+        // 兩個 key 都要重新設值：上面那次封存已經把 watch key 清成 ""，若不重設，
+        // 「`clearDefaultAccountIfNeeded` 的 `.watchDefaultAccountId` 少了 `if`、
+        // 無條件清空」這個突變在這裡看起來一樣是 ""，測不出來——而那個突變的實際
+        // 後果是「封存任何不相關的帳戶都會清掉 Watch 的預設帳戶」。
         client.setDefaultAccountId(otherAccountId)
+        settings.setString(otherAccountId, .watchDefaultAccountId)
         let thirdId = UUID().uuidString
         try await client.createAccount(Account(id: thirdId, name: "Third", type: .bank, icon: "c", color: "#111", sortOrder: 2, isArchived: false, createdAt: Date()))
         try await client.archiveAccount(thirdId)
         #expect(client.defaultAccountId() == otherAccountId)
+        #expect(settings.string(.watchDefaultAccountId) == otherAccountId,
+                "封存不相關的帳戶不得清掉 Watch 端的預設帳戶")
     }
 
     @Test("deleting the default account clears both the iOS and Watch stored defaults")

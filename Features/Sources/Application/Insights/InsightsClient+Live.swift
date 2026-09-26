@@ -98,9 +98,11 @@ extension InsightsClient: DependencyKey {
     }
 
     public static var liveValue: InsightsClient {
-        // Container is reached via `PersistenceBootstrap` rather than
-        // `\.modelContainer` directly — architecture.md §4.2 reserves
-        // `@Dependency(\.modelContainer)` for `SwiftDataStore` only.
+        // Container is reached via `PersistenceBootstrap` rather than the
+        // dependency directly — architecture.md §4 / §9 reserve
+        // `@Dependency(\.modelContainerBox)` for `SwiftDataStore` only
+        // (`\.modelContainer` is just a facade over that same box, so going
+        // through it would not make this any more allowed).
         @Dependency(\.persistenceBootstrap) var persistenceBootstrap
         @Dependency(\.aiAdapter) var aiAdapter
 

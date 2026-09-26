@@ -53,8 +53,17 @@ public extension DependencyValues {
     /// box、根本沒受到 production 切換影響，而綠得毫無意義。要驗證那條路徑，
     /// 得直接操作 `PersistenceBootstrap.containerBox` 本身，或讓
     /// `switchToCloudContainer()` / `wipeAllSyncData()` 改吃
-    /// `@Dependency(\.modelContainerBox)`（follow-up，這次沒有做——見
-    /// task-4-report.md）。
+    /// `@Dependency(\.modelContainerBox)`（follow-up，這次沒有做：那兩個入口是
+    /// `PersistenceBootstrap` 上的 static 方法，沒有 dependency scope 可讀，
+    /// 要改吃 box 得連帶動到所有呼叫端，超出本次的主題）。
+    ///
+    /// **覆寫順序不對稱**：上面那個 `modelContainer` setter 會**換掉整顆 box**
+    /// （`self[Key] = ModelContainerBox(X)`），而 `modelContainerBox` 的 setter
+    /// 是直接塞進你給的那一顆。所以同一個 `withDependencies` 內寫
+    /// `{ $0.modelContainerBox = B; $0.modelContainer = X }` 會**丟棄 `B`**——
+    /// 之後對 `B.container = Y` 的任何寫入，scope 內的 store 全都看不到，測試
+    /// 只會靜默變綠；反序（`modelContainer` 先、`modelContainerBox` 後）則丟棄
+    /// `X`。要注入自己的 box，同一個 scope 內就不要混用這兩種寫法。
     var modelContainer: ModelContainer {
         get { self[ModelContainerBoxKey.self].container }
         set { self[ModelContainerBoxKey.self] = ModelContainerBox(newValue) }

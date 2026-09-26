@@ -245,12 +245,15 @@ public struct TransactionsView: View {
 
     private func transactionRow(_ transaction: Domain.Transaction) -> some View {
         let amountColor = transaction.type.uiColor
+        let categoryName = TransactionsFeature.categoryDisplayName(
+            for: transaction, categoryNames: store.categoryNames
+        )
         return Button {
             store.send(.transactionTapped(transaction))
         } label: {
             TransactionRow(
                 title: transaction.note ?? transaction.type.displayName,
-                subtitle: transaction.type.displayName,
+                subtitle: categoryName,
                 amountText: transaction.signedAmountText,
                 amountColor: amountColor,
                 date: transaction.date.formatted(date: .omitted, time: .shortened),

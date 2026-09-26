@@ -2160,6 +2160,23 @@
         }
       }
     },
+    "transactions_row_uncategorized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncategorized"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未分類"
+          }
+        }
+      }
+    },
     "transaction_detail_date": {
       "extractionState": "manual",
       "localizations": {

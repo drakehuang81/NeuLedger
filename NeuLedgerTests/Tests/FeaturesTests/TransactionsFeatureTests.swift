@@ -68,7 +68,10 @@ struct TransactionsFeatureTests {
         await store.receive(\.categoriesLoaded) {
             $0.categoryNames = [foodId: "餐飲"]
         }
-        await store.skipReceivedActions()
+        // 刻意沒有 `skipReceivedActions()`：`.task` 會 merge 兩條 effect，抵達順序
+        // 不定，上面這個 `receive` 在 exhaustivity `.off` 下可能已經把佇列清空，
+        // 而 `skipReceivedActions()` 在佇列已耗盡時會誤判成失敗。`finish()` 本身
+        // 就會等所有 effect 收尾。
         await store.finish()
     }
 

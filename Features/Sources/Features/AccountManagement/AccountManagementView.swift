@@ -19,6 +19,11 @@ public struct AccountManagementView: View {
                 if store.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = store.loadError {
+                    SectionFailureView(message: error) {
+                        store.send(.task)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if store.accounts.isEmpty {
                     EmptyStateView(
                         icon: "wallet.bifold",
@@ -67,6 +72,11 @@ public struct AccountManagementView: View {
     private var accountList: some View {
         ScrollView {
             VStack(spacing: 18) {
+                if let error = store.actionError {
+                    ErrorText(error)
+                        .padding(.horizontal, 16)
+                }
+
                 netWorthHero
 
                 ForEach(activeGroups, id: \.id) { group in

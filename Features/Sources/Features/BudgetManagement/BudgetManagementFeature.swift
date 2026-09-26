@@ -12,6 +12,8 @@ public struct BudgetManagementFeature: Sendable {
     public struct State: Equatable {
         public var budgets: [Budget] = []
         public var isLoading: Bool = false
+        public var loadError: String? = nil
+        public var actionError: String? = nil
 
         @Presents public var addEdit: BudgetFormFeature.State?
         @Presents public var alert: AlertState<Action.Alert>?
@@ -24,6 +26,8 @@ public struct BudgetManagementFeature: Sendable {
     public enum Action: Sendable, Equatable {
         case task
         case budgetsLoaded([Budget])
+        case loadFailed(String)
+        case actionFailed(String)
         case addButtonTapped
         case budgetTapped(Budget)
         case deleteRequested(Budget.ID)
@@ -53,12 +57,25 @@ public struct BudgetManagementFeature: Sendable {
                 return .run { send in
                     let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
+                } catch: { error, send in
+                    await send(.loadFailed(error.localizedDescription))
                 }
                 .cancellable(id: CancelID.task)
 
             case let .budgetsLoaded(budgets):
+                state.loadError = nil
+                state.actionError = nil
                 state.isLoading = false
                 state.budgets = budgets
+                return .none
+
+            case let .loadFailed(message):
+                state.isLoading = false
+                state.loadError = message
+                return .none
+
+            case let .actionFailed(message):
+                state.actionError = message
                 return .none
 
             case .addButtonTapped:
@@ -89,6 +106,8 @@ public struct BudgetManagementFeature: Sendable {
                     try await planningClient.delete(id)
                     let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
+                } catch: { error, send in
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case .alert:
@@ -99,6 +118,8 @@ public struct BudgetManagementFeature: Sendable {
                 return .run { send in
                     let budgets = try await planningClient.listAll()
                     await send(.budgetsLoaded(budgets))
+                } catch: { error, send in
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case .addEdit(.presented(.delegate(.dismissed))):

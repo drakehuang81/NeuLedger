@@ -240,4 +240,23 @@ struct OnboardingFeatureTests {
         // that order, before completion.
         #expect(events.value == ["setupAccounts", "markOnboardingComplete"])
     }
+
+    // ── Finish failure returns to .ready with inline error (health-audit A3) ──
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("finishOnboarding failure returns to .ready with an inline error instead of hanging on .done")
+    func testFinishOnboardingFailureReturnsToReady() async {
+        let store = await TestStore(initialState: OnboardingFeature.State()) {
+            OnboardingFeature()
+        } withDependencies: {
+            $0.ledgerClient.setupAccounts = { _ in throw StubError() }
+            $0.platformClient.markOnboardingComplete = { }
+        }
+        await store.send(.finishOnboarding)
+        await store.receive(\.setupFailed) {
+            $0.setupError = "boom"
+            $0.currentStep = .ready
+        }
+    }
 }

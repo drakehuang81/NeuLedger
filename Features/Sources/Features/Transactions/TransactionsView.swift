@@ -18,6 +18,9 @@ public struct TransactionsView: View {
                 if store.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = store.loadError {
+                    SectionFailureView(message: error) { store.send(.task) }
+                        .padding(.horizontal, 22)
                 } else if store.transactions.isEmpty {
                     emptyState
                 } else {
@@ -208,6 +211,10 @@ public struct TransactionsView: View {
 
     private var transactionsList: some View {
         ScrollView {
+            if let error = store.actionError {
+                ErrorText(error)
+                    .padding(.horizontal, 22)
+            }
             if store.searchText.isEmpty {
                 LazyVStack  {
                     ForEach(groupedTransactions, id: \.date) { group in

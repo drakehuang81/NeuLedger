@@ -110,10 +110,12 @@ public struct AddTransactionView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common_cancel")) { store.send(.dismiss) }
+                        .disabled(store.isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "common_save")) { store.send(.saveTapped) }
                         .fontWeight(.semibold)
+                        .disabled(store.isSaving)
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -215,6 +217,10 @@ public struct AddTransactionView: View {
                         .font(Font.Design.caption)
                         .foregroundStyle(Color.Design.expenseRed)
                 }
+
+                if let error = store.saveError {
+                    ErrorText(error)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -254,6 +260,10 @@ public struct AddTransactionView: View {
 
                 if let error = store.accountError {
                     inlineError(error)
+                }
+
+                if let error = store.optionsError {
+                    ErrorText(error)
                 }
 
                 if store.type == .transfer {

@@ -12,6 +12,8 @@ public struct CarrierManagementFeature: Sendable {
     public struct State: Equatable {
         public var carriers: [Carrier] = []
         public var isLoading: Bool = false
+        public var loadError: String? = nil
+        public var actionError: String? = nil
         public var expandedCarrierId: Carrier.ID? = nil
         @Presents public var addEdit: AddEditCarrierFeature.State?
         @Presents public var alert: AlertState<Action.Alert>?
@@ -24,6 +26,8 @@ public struct CarrierManagementFeature: Sendable {
     public enum Action: Sendable, Equatable {
         case task
         case carriersLoaded([Carrier])
+        case loadFailed(String)
+        case actionFailed(String)
         case carrierRowTapped(Carrier.ID)
         case addTapped
         case editTapped(Carrier)
@@ -61,12 +65,25 @@ public struct CarrierManagementFeature: Sendable {
                 return .run { send in
                     let carriers = try await carrierClient.listAll()
                     await send(.carriersLoaded(carriers))
+                } catch: { error, send in
+                    await send(.loadFailed(error.localizedDescription))
                 }
                 .cancellable(id: CancelID.task)
 
             case let .carriersLoaded(carriers):
+                state.loadError = nil
+                state.actionError = nil
                 state.isLoading = false
                 state.carriers = carriers
+                return .none
+
+            case let .loadFailed(message):
+                state.isLoading = false
+                state.loadError = message
+                return .none
+
+            case let .actionFailed(message):
+                state.actionError = message
                 return .none
 
             case let .carrierRowTapped(id):
@@ -115,9 +132,10 @@ public struct CarrierManagementFeature: Sendable {
                             await carrierClient.setActiveForWidget(first.id)
                         }
                         await send(.carriersLoaded(carriers))
-                    } catch: { _, send in
+                    } catch: { error, send in
                         let carriers = (try? await carrierClient.listAll()) ?? []
                         await send(.carriersLoaded(carriers))
+                        await send(.actionFailed(error.localizedDescription))
                     },
                     .send(.delegate(.carriersChanged))
                 )
@@ -137,6 +155,8 @@ public struct CarrierManagementFeature: Sendable {
                             await carrierClient.setActiveForWidget(first.id)
                         }
                         await send(.carriersLoaded(carriers))
+                    } catch: { error, send in
+                        await send(.actionFailed(error.localizedDescription))
                     },
                     .send(.delegate(.carriersChanged))
                 )

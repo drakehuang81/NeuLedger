@@ -26,6 +26,8 @@ public struct BudgetFormFeature: Sendable {
         public var availableCategories: [Domain.Category] = []
         public var nameError: String?
         public var amountError: String?
+        public var isSaving: Bool = false
+        public var saveError: String? = nil
 
         public init(mode: Mode = .add) {
             self.mode = mode
@@ -66,6 +68,7 @@ public struct BudgetFormFeature: Sendable {
         case saveTapped
         case cancelTapped
         case savedSuccessfully
+        case saveFailed(String)
         case delegate(Delegate)
 
         @CasePathable
@@ -129,6 +132,10 @@ public struct BudgetFormFeature: Sendable {
                     return .none
                 }
 
+                guard !state.isSaving else { return .none }
+                state.isSaving = true
+                state.saveError = nil
+
                 let mode = state.mode
                 let period = state.period
                 let startDate = state.startDate
@@ -158,13 +165,21 @@ public struct BudgetFormFeature: Sendable {
                         try await planningClient.update(updated)
                     }
                     await send(.savedSuccessfully)
+                } catch: { error, send in
+                    await send(.saveFailed(error.localizedDescription))
                 }
 
             case .savedSuccessfully:
+                state.isSaving = false
                 return .run { send in
                     await send(.delegate(.saved))
                     await dismiss()
                 }
+
+            case let .saveFailed(message):
+                state.isSaving = false
+                state.saveError = message
+                return .none
 
             case .cancelTapped:
                 return .run { send in

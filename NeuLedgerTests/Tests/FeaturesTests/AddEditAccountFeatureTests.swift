@@ -61,8 +61,8 @@ struct AddEditAccountFeatureTests {
         await store.send(.typeChanged(.eWallet)) { $0.type = .eWallet }
         await store.send(.iconChanged("wallet.bifold")) { $0.icon = "wallet.bifold" }
         await store.send(.colorHexChanged("#34C759")) { $0.colorHex = "#34C759" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(created.value?.name == "現金")
@@ -90,8 +90,8 @@ struct AddEditAccountFeatureTests {
         await store.send(.nameChanged("台新銀行")) { $0.name = "台新銀行" }
         await store.send(.iconChanged("creditcard")) { $0.icon = "creditcard" }
         await store.send(.colorHexChanged("#FF2D55")) { $0.colorHex = "#FF2D55" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(updated.value?.id == original.id)
@@ -100,6 +100,37 @@ struct AddEditAccountFeatureTests {
         #expect(updated.value?.color == "#FF2D55")
         #expect(updated.value?.sortOrder == original.sortOrder)
         #expect(updated.value?.isArchived == original.isArchived)
+    }
+
+    // MARK: - Save failure inline error
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("saveTapped: create failure sets saveError, resets isSaving, does not dismiss")
+    func testSaveFailureIsVisible() async {
+        let dismissed = LockIsolated(false)
+
+        let store = await TestStore(
+            initialState: AddEditAccountFeature.State(mode: .add)
+        ) {
+            AddEditAccountFeature()
+        } withDependencies: {
+            $0.ledgerClient.createAccount = { _ in throw StubError() }
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+
+        await store.send(.nameChanged("現金")) { $0.name = "現金" }
+        await store.send(.typeChanged(.eWallet)) { $0.type = .eWallet }
+        await store.send(.iconChanged("wallet.bifold")) { $0.icon = "wallet.bifold" }
+        await store.send(.colorHexChanged("#34C759")) { $0.colorHex = "#34C759" }
+        await store.send(.saveTapped) {
+            $0.isSaving = true
+        }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "boom"
+        }
+        #expect(dismissed.value == false)
     }
 
     // MARK: - Name validation failure (empty)

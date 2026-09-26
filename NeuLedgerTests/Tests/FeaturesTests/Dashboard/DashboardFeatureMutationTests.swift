@@ -193,4 +193,35 @@ struct DashboardFeatureMutationTests {
             #expect(store.state.heroPhase == .loaded)
         }
     }
+
+    // MARK: - 入口 3c：detail(.dismiss) 期間 pendingDelete（health-audit A2）
+
+    @Test("dismissing the detail sheet during the undo window commits the delete and refreshes")
+    func testDashboardDismissDuringPendingDeleteCommits() async {
+        let tx = Transaction(amount: 100, date: Date(), accountId: UUID().uuidString, type: .expense)
+        var detail = TransactionDetailFeature.State(transaction: tx)
+        detail.pendingDelete = true
+        var initial = DashboardFeature.State()
+        initial.detail = detail
+        let deleted = LockIsolated<Transaction.ID?>(nil)
+        let store = await TestStore(initialState: initial) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.ledgerClient.delete = { deleted.setValue($0) }
+            // refreshAfterMutation 會碰到的 closure，全部給空值
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.insightsClient.weeklySparkline = { _ in Array(repeating: 0, count: 7) }
+            $0.insightsClient.generateInsights = { _ in [] }
+            $0.insightsClient.isAIAvailable = { false }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+        await store.send(.detail(.dismiss)) { $0.detail = nil }
+        await store.receive(\.pendingDeleteCommitted)
+        await store.finish()
+        #expect(deleted.value == tx.id)
+    }
 }

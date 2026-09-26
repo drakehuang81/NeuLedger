@@ -13,6 +13,8 @@ public struct AccountManagementFeature: Sendable {
         public var accounts: [Account] = []
         public var balances: [Account.ID: Decimal] = [:]
         public var isLoading: Bool = false
+        public var loadError: String? = nil
+        public var actionError: String? = nil
         @Presents public var addEdit: AddEditAccountFeature.State?
         @Presents public var alert: AlertState<Action.Alert>?
 
@@ -33,6 +35,8 @@ public struct AccountManagementFeature: Sendable {
         case task
         case accountsLoaded([Account])
         case balancesLoaded([Account.ID: Decimal])
+        case loadFailed(String)
+        case actionFailed(String)
         case addButtonTapped
         case accountTapped(Account)
         case deleteRequested(Account.ID)
@@ -73,10 +77,14 @@ public struct AccountManagementFeature: Sendable {
                 return .run { send in
                     let accounts = try await ledger.listAccounts()
                     await send(.accountsLoaded(accounts))
+                } catch: { error, send in
+                    await send(.loadFailed(error.localizedDescription))
                 }
                 .cancellable(id: CancelID.task)
 
             case let .accountsLoaded(accounts):
+                state.loadError = nil
+                state.actionError = nil
                 state.isLoading = false
                 state.accounts = accounts
                 return .run { send in
@@ -86,6 +94,15 @@ public struct AccountManagementFeature: Sendable {
 
             case let .balancesLoaded(balances):
                 state.balances = balances
+                return .none
+
+            case let .loadFailed(message):
+                state.isLoading = false
+                state.loadError = message
+                return .none
+
+            case let .actionFailed(message):
+                state.actionError = message
                 return .none
 
             case .addButtonTapped:
@@ -115,6 +132,8 @@ public struct AccountManagementFeature: Sendable {
                     } else {
                         await send(.showArchiveConfirmation(id))
                     }
+                } catch: { error, send in
+                    await send(.actionFailed(error.localizedDescription))
                 }
 
             case let .showArchiveConfirmation(id):
@@ -148,21 +167,25 @@ public struct AccountManagementFeature: Sendable {
                 return .none
 
             case let .alert(.presented(.archiveConfirmed(id))):
-                return .merge(
+                return .concatenate(
                     .run { send in
                         try await ledger.archiveAccount(id)
                         let accounts = try await ledger.listAccounts()
                         await send(.accountsLoaded(accounts))
+                    } catch: { error, send in
+                        await send(.actionFailed(error.localizedDescription))
                     },
                     .send(.delegate(.accountsChanged))
                 )
 
             case let .alert(.presented(.deleteConfirmed(id))):
-                return .merge(
+                return .concatenate(
                     .run { send in
                         try await ledger.deleteAccount(id)
                         let accounts = try await ledger.listAccounts()
                         await send(.accountsLoaded(accounts))
+                    } catch: { error, send in
+                        await send(.actionFailed(error.localizedDescription))
                     },
                     .send(.delegate(.accountsChanged))
                 )
@@ -177,21 +200,25 @@ public struct AccountManagementFeature: Sendable {
                 var updated = account
                 updated.isArchived = false
                 let toUpdate = updated
-                return .merge(
+                return .concatenate(
                     .run { send in
                         try await ledger.updateAccount(toUpdate)
                         let accounts = try await ledger.listAccounts()
                         await send(.accountsLoaded(accounts))
+                    } catch: { error, send in
+                        await send(.actionFailed(error.localizedDescription))
                     },
                     .send(.delegate(.accountsChanged))
                 )
 
             case .addEdit(.presented(.delegate(.saved))):
                 state.addEdit = nil
-                return .merge(
+                return .concatenate(
                     .run { send in
                         let accounts = try await ledger.listAccounts()
                         await send(.accountsLoaded(accounts))
+                    } catch: { error, send in
+                        await send(.actionFailed(error.localizedDescription))
                     },
                     .send(.delegate(.accountsChanged))
                 )

@@ -145,6 +145,7 @@ public struct DashboardFeature: Sendable {
         case path(StackActionOf<Destination>)
         case addTransaction(PresentationAction<AddTransactionFeature.Action>)
         case detail(PresentationAction<TransactionDetailFeature.Action>)
+        case pendingDeleteCommitted
 
         // Delegation to parent
         case delegate(Delegate)
@@ -340,6 +341,20 @@ public struct DashboardFeature: Sendable {
 
             case .detail(.presented(.delegate(.deleted))),
                  .detail(.presented(.delegate(.updated))):
+                return refreshAfterMutation(accountID: state.selectedAccountID)
+
+            case .detail(.dismiss):
+                guard let detail = state.detail, detail.pendingDelete else { return .none }
+                // 同 TransactionsFeature：Undo 視窗內關 sheet 由 parent 提交刪除。
+                let id = detail.transaction.id
+                return .run { send in
+                    try await ledger.delete(id)
+                    await send(.pendingDeleteCommitted)
+                } catch: { _, send in
+                    await send(.sectionFailed(.transactions, String(localized: "dashboard_section_load_failed", bundle: .main)))
+                }
+
+            case .pendingDeleteCommitted:
                 return refreshAfterMutation(accountID: state.selectedAccountID)
 
             case .detail:

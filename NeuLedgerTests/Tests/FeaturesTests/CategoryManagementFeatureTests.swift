@@ -26,6 +26,10 @@ struct CategoryManagementFeatureTests {
         name: "自訂支出", icon: "tag.fill", color: "#5856D6", type: .expense, sortOrder: 2, isDefault: false
     )
 
+    private struct StubError: LocalizedError {
+        var errorDescription: String? { "boom" }
+    }
+
     // MARK: - Load Categories
 
     @Test("task loads all categories sorted by sortOrder")
@@ -249,5 +253,41 @@ struct CategoryManagementFeatureTests {
             $0.addEdit = nil
         }
         // No categoriesLoaded action expected after dismissed
+    }
+
+    // MARK: - Load / Action Error Visibility (stability effect errors)
+
+    @Test("deleteConfirmed failure sets actionError and keeps the list")
+    func testDeleteFailureKeepsList() async {
+        let category = Domain.Category(name: "Food", icon: "fork.knife", color: "#FF6B6B", type: .expense, isDefault: true)
+        var initial = CategoryManagementFeature.State()
+        initial.categories = [category]
+        // deleteRequested guards on !isDefault, so a default category never reaches
+        // the alert through the normal flow — construct the alert directly to
+        // exercise the client-level rejection as defense-in-depth. Alert state must
+        // be present for .alert(.presented(...)) to route through ifLet.
+        initial.alert = AlertState {
+            TextState(String(localized: "alert_delete_category"))
+        } actions: {
+            ButtonState(role: .destructive, action: .deleteConfirmed(category.id)) {
+                TextState(String(localized: "common_delete"))
+            }
+            ButtonState(role: .cancel) {
+                TextState(String(localized: "common_cancel"))
+            }
+        } message: {
+            TextState(String(format: String(localized: "alert_delete_category_message_name %@"), category.localizedName))
+        }
+
+        let store = await TestStore(initialState: initial) {
+            CategoryManagementFeature()
+        } withDependencies: {
+            $0.ledgerClient.deleteCategory = { _ in throw StubError() }
+        }
+        await store.send(.alert(.presented(.deleteConfirmed(category.id)))) {
+            $0.alert = nil
+        }
+        await store.receive(\.actionFailed) { $0.actionError = "boom" }
+        await MainActor.run { #expect(store.state.categories.count == 1) }
     }
 }

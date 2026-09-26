@@ -31,11 +31,13 @@ struct OnboardingFeature {
         var selectedTypes: Set<AccountType> = [.cash]
         var customAccounts: [CustomAccountDraft] = []
         @Presents var customAccountSheet: CustomAccountFormFeature.State?
+        var setupError: String? = nil
     }
 
     enum Action: Equatable {
         case nextButtonTapped
         case finishOnboarding
+        case setupFailed(String)
 
         case typeToggled(AccountType)
 
@@ -90,6 +92,7 @@ struct OnboardingFeature {
                 return .none
 
             case .finishOnboarding:
+                state.setupError = nil
                 let types = state.selectedTypes.sorted(by: { $0.rawValue < $1.rawValue })
                 let customs = state.customAccounts
                 return .run { send in
@@ -98,7 +101,16 @@ struct OnboardingFeature {
                     platformClient.markOnboardingComplete()
                     try await clock.sleep(for: .milliseconds(1600))
                     await send(.delegate(.onboardingCompleted))
-                }.cancellable(id: CancelID.create)
+                } catch: { error, send in
+                    await send(.setupFailed(error.localizedDescription))
+                }
+                .cancellable(id: CancelID.create)
+
+            case let .setupFailed(message):
+                // 退回「準備好了」那一步，讓使用者看得到錯誤並能再按一次（health-audit A3）。
+                state.setupError = message
+                state.currentStep = .ready
+                return .none
 
             default:
                 return .none

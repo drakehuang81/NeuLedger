@@ -42,7 +42,7 @@ public struct BudgetFormView: View {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
-                    .disabled(!isSaveEnabled)
+                    .disabled(!isSaveEnabled || store.isSaving)
                     .accessibilityIdentifier("budget_form_save_button")
                 }
             }
@@ -125,6 +125,12 @@ public struct BudgetFormView: View {
                         .font(Font.Design.size12Monospaced)
                         .tracking(-0.1)
                         .foregroundStyle(Color.Design.textSecondary)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 10)
+                }
+
+                if let error = store.saveError {
+                    ErrorText(error)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 10)
                 }

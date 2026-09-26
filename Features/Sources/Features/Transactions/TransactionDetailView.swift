@@ -91,6 +91,7 @@ public struct TransactionDetailView: View {
                 }
             )
         )
+        .interactiveDismissDisabled(store.pendingDelete)
         .presentationDragIndicator(.visible)
         .presentationBackground {
             WarmGradientBackground(variant: .top)

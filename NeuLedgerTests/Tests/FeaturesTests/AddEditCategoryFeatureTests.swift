@@ -87,8 +87,8 @@ struct AddEditCategoryFeatureTests {
         await store.send(.iconChanged("cart.fill")) { $0.icon = "cart.fill" }
         await store.send(.colorHexChanged("#FF9500")) { $0.colorHex = "#FF9500" }
         await store.send(.typeChanged(.expense)) // stays expense
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(created.value?.name == "購物")
@@ -112,8 +112,8 @@ struct AddEditCategoryFeatureTests {
         }
 
         await store.send(.nameChanged("獎金")) { $0.name = "獎金" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(created.value?.type == .income)
@@ -138,8 +138,8 @@ struct AddEditCategoryFeatureTests {
         await store.send(.nameChanged("電影")) { $0.name = "電影" }
         await store.send(.iconChanged("film")) { $0.icon = "film" }
         await store.send(.colorHexChanged("#AF52DE")) { $0.colorHex = "#AF52DE" }
-        await store.send(.saveTapped)
-        await store.receive(\.savedSuccessfully)
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfully) { $0.isSaving = false }
         await store.receive(\.delegate.saved)
 
         #expect(updated.value?.id == original.id)
@@ -149,6 +149,37 @@ struct AddEditCategoryFeatureTests {
         #expect(updated.value?.type == original.type)
         #expect(updated.value?.sortOrder == original.sortOrder)
         #expect(updated.value?.isDefault == original.isDefault)
+    }
+
+    // MARK: - Save failure inline error
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("saveTapped: create failure sets saveError, resets isSaving, does not dismiss")
+    func testSaveFailureIsVisible() async {
+        let dismissed = LockIsolated(false)
+
+        let store = await TestStore(
+            initialState: AddEditCategoryFeature.State(mode: .add(.expense))
+        ) {
+            AddEditCategoryFeature()
+        } withDependencies: {
+            $0.ledgerClient.createCategory = { _ in throw StubError() }
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+
+        await store.send(.nameChanged("購物")) { $0.name = "購物" }
+        await store.send(.iconChanged("cart.fill")) { $0.icon = "cart.fill" }
+        await store.send(.colorHexChanged("#FF9500")) { $0.colorHex = "#FF9500" }
+        await store.send(.typeChanged(.expense))
+        await store.send(.saveTapped) {
+            $0.isSaving = true
+        }
+        await store.receive(\.saveFailed) {
+            $0.isSaving = false
+            $0.saveError = "boom"
+        }
+        #expect(dismissed.value == false)
     }
 
     // MARK: - Name validation failure

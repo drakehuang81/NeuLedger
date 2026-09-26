@@ -4,6 +4,10 @@ import ComposableArchitecture
 import Domain
 @testable import Features
 
+private struct StubError: LocalizedError {
+    var errorDescription: String? { "boom" }
+}
+
 @Suite("AddEditCarrierFeature Tests")
 struct AddEditCarrierFeatureTests {
 
@@ -284,6 +288,23 @@ struct CarrierManagementFeatureTests {
         await store.receive(\.carriersLoaded) {
             $0.isLoading = false
             $0.carriers = carriers
+        }
+    }
+
+    @Test(".task failure sets loadError and clears isLoading")
+    func testTaskFailure() async {
+        let store = await TestStore(
+            initialState: CarrierManagementFeature.State()
+        ) {
+            CarrierManagementFeature()
+        } withDependencies: {
+            $0.carrierClient.listAll = { throw StubError() }
+        }
+
+        await store.send(.task) { $0.isLoading = true }
+        await store.receive(\.loadFailed) {
+            $0.isLoading = false
+            $0.loadError = "boom"
         }
     }
 
@@ -723,6 +744,9 @@ struct CarrierManagementFeatureTests {
         await store.receive(\.carriersLoaded) {
             $0.carriers = [Self.carrierA, Self.carrierB]
         }
+
+        // catch 路徑同時送出 actionFailed，讓刪除失敗在 UI 上可見
+        await store.receive(\.actionFailed)
 
         #expect(listAllCalled.value >= 1, "catch 路徑應呼叫 listAll 回復清單")
     }

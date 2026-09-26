@@ -125,4 +125,28 @@ struct SyncSettingsFeatureTests {
             $0.migrationState = .failed("iCloud not available")
         }
     }
+
+    private struct StubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("syncNowTapped failure shows syncNowError and does not touch lastSyncedAt")
+    func testSyncNowFailure() async {
+        let before = Date(timeIntervalSince1970: 1_000)
+        var initial = SyncSettingsFeature.State()
+        initial.lastSyncedAt = before
+        let store = await TestStore(initialState: initial) {
+            SyncSettingsFeature()
+        } withDependencies: {
+            $0.platformClient.requestSyncNow = { throw StubError() }
+            $0.continuousClock = ImmediateClock()
+        }
+        await store.send(.syncNowTapped) {
+            $0.isManualSyncing = true
+            $0.syncNowError = nil
+        }
+        await store.receive(\.syncNowFailed) {
+            $0.isManualSyncing = false
+            $0.syncNowError = "boom"
+        }
+        await MainActor.run { #expect(store.state.lastSyncedAt == before) }
+    }
 }

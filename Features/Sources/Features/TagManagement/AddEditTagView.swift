@@ -47,6 +47,7 @@ public struct AddEditTagView: View {
                         store.send(.saveTapped)
                     }
                     .fontWeight(.semibold)
+                    .disabled(store.isSaving)
                 }
             }
         }
@@ -97,6 +98,10 @@ public struct AddEditTagView: View {
                     }
                 }
                 if let error = store.nameError {
+                    ErrorText(error)
+                        .padding(.horizontal, 4)
+                }
+                if let error = store.saveError {
                     ErrorText(error)
                         .padding(.horizontal, 4)
                 }

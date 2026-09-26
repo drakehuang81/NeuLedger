@@ -286,9 +286,162 @@ struct TransactionsFeatureTests {
         #expect(store.state.addTransaction?.mode == .add(.expense))
         #expect(store.state.addTransaction?.type == .expense)
     }
+
+    // MARK: - Effect error handling（health-audit A6 / A7）
+
+    private struct StubError: LocalizedError, Equatable { var errorDescription: String? { "boom" } }
+
+    @Test(".task failure sets loadError and clears isLoading")
+    func testTaskFailureSetsLoadError() async {
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in throw StubError() }
+        }
+        await store.send(.task) { $0.isLoading = true }
+        await store.receive(\.loadFailed) {
+            $0.isLoading = false
+            $0.loadError = "boom"
+        }
+    }
+
+    @Test("searchDebounced queries listAll with activeFilter + searchText (filters are not dropped)")
+    func testSearchRespectsActiveFilter() async {
+        let categoryId = UUID()
+        var initial = TransactionsFeature.State()
+        initial.activeFilter = TransactionFilter(categoryIds: [categoryId])
+        initial.searchText = "sushi"
+        let captured = LockIsolated<TransactionFilter?>(nil)
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { filter in
+                captured.setValue(filter)
+                return []
+            }
+        }
+        await store.send(.searchDebounced)
+        // .searchDebounced 不切換 isLoading（沿用既有行為），且結果為空陣列本就等於初始值，
+        // 故 receive 對 state 沒有可觀察變化 —— 依 TCA TestStore 的建議省略 trailing closure。
+        await store.receive(\.transactionsLoaded)
+        #expect(captured.value?.categoryIds == Set([categoryId]))
+        #expect(captured.value?.searchText == "sushi")
+    }
+
+    @Test("deleteConfirmed failure surfaces actionError and keeps the row")
+    func testDeleteFailureKeepsRow() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.deleteConfirmationId = Self.sampleTransaction.id
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { _ in throw StubError() }
+        }
+        await store.send(.deleteConfirmed) { $0.deleteConfirmationId = nil }
+        await store.receive(\.actionFailed) { $0.actionError = "boom" }
+        await MainActor.run { #expect(store.state.transactions.count == 1) }
+    }
+
+    @Test("transactionDeleted clears a stale actionError left by an earlier failed delete")
+    func testDeleteSuccessClearsStaleActionError() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.deleteConfirmationId = Self.sampleTransaction.id
+        initial.actionError = "stale"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { _ in }
+        }
+        await store.send(.deleteConfirmed) { $0.deleteConfirmationId = nil }
+        await store.receive(\.transactionDeleted) {
+            $0.actionError = nil
+            $0.transactions = []
+        }
+    }
+
+    @Test("a stale loadError clears when a later reload (via searchDebounced) succeeds")
+    func testStaleLoadErrorClearsOnReloadSuccess() async {
+        var initial = TransactionsFeature.State()
+        initial.loadError = "stale"
+        initial.searchText = "x"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+        }
+        await store.send(.searchDebounced)
+        await store.receive(\.transactionsLoaded) {
+            $0.isLoading = false
+            $0.loadError = nil
+            $0.transactions = [Self.sampleTransaction]
+        }
+    }
+
+    @Test("loadFailed clears when a later load succeeds")
+    func testLoadErrorClearsOnSuccess() async {
+        var initial = TransactionsFeature.State()
+        initial.loadError = "stale"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+        }
+        // .task 一送出就同步清空 loadError（不等 effect 完成），所以 send 的 closure 也要反映這個變化。
+        await store.send(.task) {
+            $0.isLoading = true
+            $0.loadError = nil
+        }
+        await store.receive(\.transactionsLoaded) {
+            $0.isLoading = false
+            $0.transactions = [Self.sampleTransaction]
+        }
+    }
+
+    // MARK: - Delete window survives sheet dismissal（health-audit A2）
+
+    @Test("dismissing the detail sheet during the undo window commits the delete")
+    func testDismissDuringPendingDeleteCommits() async {
+        var detail = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        detail.pendingDelete = true
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.detail = detail
+        let deleted = LockIsolated<Transaction.ID?>(nil)
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { deleted.setValue($0) }
+        }
+        await store.send(.detail(.dismiss)) { $0.detail = nil }
+        await store.receive(\.transactionDeleted) { $0.transactions = [] }
+        #expect(deleted.value == Self.sampleTransaction.id)
+    }
+
+    @Test("dismissing the detail sheet without a pending delete does not delete")
+    func testDismissWithoutPendingDeleteIsNoop() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.sampleTransaction)
+        let deleted = LockIsolated(false)
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.delete = { _ in deleted.setValue(true) }
+        }
+        await store.send(.detail(.dismiss)) { $0.detail = nil }
+        await store.finish()
+        #expect(deleted.value == false)
+    }
 }
 
-// MARK: - Task 6: searchDebounced → ledger.search path
+// MARK: - Task 1: searchDebounced → ledger.listAll(effectiveFilter) path（health-audit A7）
+//
+// 原本這個 suite 斷言 .searchDebounced 呼叫 ledger.search；stability-effect-errors Task 1
+// Step 4／global-constraints R4 把這條路徑改成 listAll(effectiveFilter)（search 不再丟掉
+// activeFilter）。ledger.search 這支 API 本身保留（R4），只是 TransactionsFeature 不再呼叫它，
+// 因此把這兩個測試改成 stub listAll 並斷言傳入的 filter，語意與涵蓋範圍不變，斷言強度不放寬。
 
 @Suite("TransactionsFeature — search debounced path")
 struct TransactionsSearchDebouncedTests {
@@ -300,11 +453,12 @@ struct TransactionsSearchDebouncedTests {
     )
 
     // 說明：TransactionsFeature 的 debounce 使用 RunLoop.main（不可控 scheduler），
-    // 無法用 TestClock 推進。這裡直接 send(.searchDebounced) 測試 search effect 本身，
-    // 確保 ledger.search 被正確呼叫，且結果寫入 transactionsLoaded。
-    @Test("searchDebounced calls ledger.search and loads results into state")
-    func testSearchDebouncedCallsSearchAndLoadsResults() async {
-        let searchQuery = LockIsolated<String?>(nil)
+    // 無法用 TestClock 推進。這裡直接 send(.searchDebounced) 測試 reload effect 本身，
+    // 確保 ledger.listAll 帶著 effectiveFilter（含 searchText）被正確呼叫，且結果寫入 transactionsLoaded。
+    @Test("searchDebounced calls ledger.listAll with effectiveFilter and loads results into state")
+    func testSearchDebouncedCallsListAllAndLoadsResults() async {
+        let capturedFilter = LockIsolated<TransactionFilter?>(nil)
+        let searchCalled = LockIsolated(false)
 
         var initial = TransactionsFeature.State()
         initial.searchText = "咖啡"
@@ -312,9 +466,15 @@ struct TransactionsSearchDebouncedTests {
         let store = await TestStore(initialState: initial) {
             TransactionsFeature()
         } withDependencies: {
-            $0.ledgerClient.search = { query in
-                searchQuery.setValue(query)
+            $0.ledgerClient.listAll = { filter in
+                capturedFilter.setValue(filter)
                 return [EnrichedTransaction(transaction: Self.coffeeTransaction)]
+            }
+            // regression（team-lead 裁定）：ledger.search API 雖保留（R4），但這個 feature
+            // 不該再偷偷呼叫它 —— 用 spy 釘住「search 沒被呼叫」。
+            $0.ledgerClient.search = { _ in
+                searchCalled.setValue(true)
+                return []
             }
         }
 
@@ -323,8 +483,9 @@ struct TransactionsSearchDebouncedTests {
             $0.transactions = [Self.coffeeTransaction]
         }
 
-        // spy 確認搜尋關鍵字正確傳遞
-        #expect(searchQuery.value == "咖啡")
+        // spy 確認搜尋字串是透過 effectiveFilter.searchText 正確傳遞
+        #expect(capturedFilter.value?.searchText == "咖啡")
+        #expect(searchCalled.value == false)
     }
 
     @Test("searchDebounced with no matching results clears transactions to empty")
@@ -339,10 +500,14 @@ struct TransactionsSearchDebouncedTests {
         initial.transactions = [nonMatchTx]
         initial.searchText = "無結果"
 
+        let capturedFilter = LockIsolated<TransactionFilter?>(nil)
         let store = await TestStore(initialState: initial) {
             TransactionsFeature()
         } withDependencies: {
-            $0.ledgerClient.search = { _ in return [] }   // 無符合結果
+            $0.ledgerClient.listAll = { filter in
+                capturedFilter.setValue(filter)
+                return []   // 無符合結果
+            }
         }
 
         await store.send(.searchDebounced)
@@ -350,6 +515,7 @@ struct TransactionsSearchDebouncedTests {
             $0.transactions = []   // state 改變：從有資料 → 空
             $0.isLoading = false
         }
+        #expect(capturedFilter.value?.searchText == "無結果")
     }
 }
 
@@ -381,6 +547,22 @@ struct TransactionsDetailDelegateTests {
         }
 
         await store.send(.detail(.presented(.delegate(.deleted(Self.tx1.id))))) {
+            $0.transactions = [Self.tx2]
+            $0.detail = nil
+        }
+    }
+
+    @Test("detail.delegate.deleted clears a stale actionError")
+    func testDetailDelegateDeletedClearsStaleActionError() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.tx1, Self.tx2]
+        initial.detail = TransactionDetailFeature.State(transaction: Self.tx1)
+        initial.actionError = "stale"
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        }
+        await store.send(.detail(.presented(.delegate(.deleted(Self.tx1.id))))) {
+            $0.actionError = nil
             $0.transactions = [Self.tx2]
             $0.detail = nil
         }

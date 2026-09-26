@@ -19,6 +19,10 @@ struct BudgetManagementFeatureTests {
         isActive: true
     )
 
+    private struct StubError: LocalizedError {
+        var errorDescription: String? { "boom" }
+    }
+
     // MARK: - .task
 
     @Test(".task loads budgets into state")
@@ -182,5 +186,21 @@ struct BudgetManagementFeatureTests {
             $0.budgets = []
         }
         #expect(deletedId.value == id)
+    }
+
+    // MARK: - Load Error Visibility (stability effect errors)
+
+    @Test(".task failure sets loadError and clears isLoading")
+    func testTaskFailure() async {
+        let store = await TestStore(initialState: BudgetManagementFeature.State()) {
+            BudgetManagementFeature()
+        } withDependencies: {
+            $0.planningClient.listAll = { throw StubError() }
+        }
+        await store.send(.task) { $0.isLoading = true }
+        await store.receive(\.loadFailed) {
+            $0.isLoading = false
+            $0.loadError = "boom"
+        }
     }
 }

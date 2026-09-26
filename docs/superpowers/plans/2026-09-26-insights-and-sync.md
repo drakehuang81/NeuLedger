@@ -59,7 +59,7 @@
 | `NeuLedgerWidget/CarrierWidget.swift` | 修改 | `resolveState` fallback 改讀 active id |
 | `NeuLedger/Resources/Localizable.xcstrings` | 修改 | 洞察模板 + 空狀態 + 交易列 fallback，en / zh-Hant 都填 |
 
-測試檔：`NeuLedgerTests/Tests/DomainTests/Analysis/InsightComposerTests.swift`（**新建**）、`DomainTests/Clients/InsightsClientTests.swift`、`FeaturesTests/Dashboard/DashboardFeatureInsightTests.swift`、`FeaturesTests/MainTabFeatureTests.swift`、`FeaturesTests/TransactionsFeatureTests.swift`、`CoreTests/WatchSessionDelegateTests.swift`（既有）、`CoreTests/Clients/CarrierClientLiveTests.swift`（若不存在則**新建**）。
+測試檔：`NeuLedgerTests/Tests/DomainTests/Analysis/InsightComposerTests.swift`（**新建**，含新目錄 `DomainTests/Analysis/`——已確認不存在、無同名 struct，且 `DomainTests` 的子目錄本來就鏡射生產碼的 `Domain/` 結構）、`DomainTests/Clients/InsightsClientTests.swift`、`FeaturesTests/Dashboard/DashboardFeatureInsightTests.swift`、`FeaturesTests/MainTabFeatureTests.swift`、`FeaturesTests/TransactionsFeatureTests.swift`、`CoreTests/WatchSessionDelegateTests.swift`（既有）、`CoreTests/Clients/CarrierClientLiveTests.swift`（既有）。
 
 **Task 順序的理由**：Task 1–3 三條互不相干的小修先走（各自可獨立 review、風險低）；Task 4–6 是 #7 的三層，必須依序（Domain → Application → Features，後者消費前者的型別）；Task 7 的 #17 放最後，因為它會動 `MainTabFeature` 與兩個 child 的重載入口，而 Task 3 剛改過 `TransactionsFeature` 的載入路徑。
 
@@ -178,7 +178,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -m "fix(watc
 - Modify: `Features/Sources/Core/Adapters/WidgetSyncAdapter+Live.swift:18-24`（常數）與 `liveValue`
 - Modify: `Shared/WidgetAppGroup.swift:17-25`（Key）+ 新增讀取
 - Modify: `NeuLedgerWidget/CarrierWidget.swift:52-66`（`resolveState` fallback）
-- Test: `NeuLedgerTests/Tests/CoreTests/Clients/CarrierClientLiveTests.swift`（不存在則新建）
+- Test: `NeuLedgerTests/Tests/CoreTests/Clients/CarrierClientLiveTests.swift`（**既有檔案**，`@Suite("CarrierClient Live Tests") struct CarrierClientLiveTests`；新案例加進同一個 suite，**不要**另建檔案或另取 struct 名）
 
 **Interfaces:**
 - Produces: App Group 新 key `carrierActiveId`（String），寫入端在 `WidgetSyncAdapter`，讀取端在 `WidgetAppGroup`
@@ -221,14 +221,14 @@ struct CarrierClientLiveTests {
     func testSetActiveForWidgetWritesTheActiveId() async throws {
         let spy = WidgetSyncSpy()
         let chosen = UUID()
-        let container = try freshContainer()
+        let container = try freshCarrierContainer()
 
         try await withDependencies {
             $0.modelContainer = container
-            $0.userSettingsAdapter = .init(
-                string: { _ in "" },
-                setString: { _, _ in }
-            )
+            // `UserSettingsAdapter` 是 `@DependencyClient`，所以逐一覆寫單個
+            // endpoint 即可——不要用部分 init（省略的成員會變成 unimplemented，
+            // 一旦被呼叫就直接失敗）。
+            $0.userSettingsAdapter.setString = { _, _ in }
             $0.widgetSyncAdapter.syncAllCarriers = { _ in }
             $0.widgetSyncAdapter.setActiveCarrierId = { spy.record($0) }
         } operation: {
@@ -241,7 +241,7 @@ struct CarrierClientLiveTests {
 }
 ```
 
-**注意**：`userSettingsAdapter` 的覆寫要照該型別實際的成員來寫（`UserSettingsAdapter` 的簽章見 `Features/Sources/Domain/Adapters/UserSettingsAdapter.swift`）；上面是形狀示意，成員名以原始碼為準。`freshContainer()` 若該 suite 沒有就照其他 CoreTests 的寫法建一顆 `isStoredInMemoryOnly: true` 的容器——**絕對不要**用預設 configuration（測試 host 繼承 App Group 權限，會動到真實資料庫）。
+**已核實的細節**（照抄即可，不必再查）：`setActiveForWidget` 只會用到 `userSettingsAdapter.setString`（寫 `.widgetCarrierId`，`SettingsKey<String>`，`UserSettingsAdapter.swift:78`）。`WidgetSyncAdapter` 的三個既有 endpoint 都是 `@Sendable (...) async -> Void`、都不 throw，新的 `setActiveCarrierId` 要同形。`Carrier.ID` 是 `UUID`，所以傳給 App Group 的是 `id.uuidString`（`CarrierClient+Live.swift:40` 既有寫法）。`freshCarrierContainer()` 是該 suite **既有**的 helper（`CarrierClientLiveTests.swift:11`，只裝 `SDCarrier` schema、in-memory），直接用它，不要另建容器。**絕對不要**用預設 configuration 的 `ModelContainer`（測試 host 由 `NeuLedger.app` 承載、繼承 App Group 權限，會動到與已安裝 App 共用的真實資料庫）。
 
 - [ ] **Step 3: 跑測試確認失敗**
 
@@ -359,7 +359,13 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test \
 
 - [ ] **Step 3: state 加 lookup 與載入**
 
-state 加 `public var categoryNames: [Category.ID: String] = [:]`（**存名字而不是整個 `Category`**——view 只需要名字，存 lookup 讓 view 端零查找成本）。`.task` 的 `.merge` 裡加一條 `listCategories(nil)` 的 effect，沿用既有錯誤形狀（失敗**不**擋列表：分類名只是標記，`loadError` 留給交易本身的失敗）。
+state 加 `public var categoryNames: [Category.ID: String] = [:]`（**存名字而不是整個 `Category`**——view 只需要名字，存 lookup 讓 view 端零查找成本）。
+
+**已核實的細節（照這個做，不要照我原本的描述）**：
+- `.task` 目前回傳的是**單一** effect `reload(state.effectiveFilter)`（`:103`），**沒有 `.merge`**。所以要改成 `.merge(reload(state.effectiveFilter), loadCategoriesEffect())`。
+- **`CancelID` 必須新增一個 case（例如 `loadCategories`），不要重用 `CancelID.load`。** `reload` 用的是 `.cancellable(id: CancelID.load, cancelInFlight: true)`（`:91`），若分類 effect 也掛在 `load` 上，兩條 effect 會**互相取消**——這正是上一個 PR 踩過的坑（Feature 層 `cancelInFlight` 與 Client 層閘門互相抵消，導致補記了卻不刷新）。現有 `CancelID` 只有 `load` 與 `searchDebounce`（`:78-81`）。
+- 失敗**不**擋列表：分類名只是標記，`loadError` 留給交易本身的失敗。所以分類 effect 的 `catch` 不要送 `loadFailed`——要嘛吞掉（留註解說明為什麼刻意吞）、要嘛送一個只影響 fallback 顯示的 action。
+- `reload` 每次重載都會重跑，但分類很少變；是否每次 `.task` 都重載分類由你決定，兩種都可接受，但要在註解裡說明選擇的理由。
 
 - [ ] **Step 4: view 用它**
 
@@ -373,6 +379,10 @@ TransactionRow(
 ```
 
 `transaction.categoryId` 是 optional，且「無分類」是合法狀態（上一個 PR 的刪除連鎖就會產生），所以 fallback 文案是必要的、要新增 localization key（en + zh-Hant）。**不要**用 `transaction.type.displayName` 當 fallback——那會讓「無分類」和「有分類但還沒載入」看起來一樣。
+
+**已核實**：`TransactionRow.subtitle` 是**非 optional 的 `String`**（`Common/Components/TransactionRow.swift:15`，init 參數在 `:28`），所以一定要給值、不能傳 nil。查 lookup 用 `transaction.categoryId.flatMap { store.categoryNames[$0] }`，**不要**寫 `store.categoryNames[transaction.categoryId ?? UUID()]`（那會每次 render 都配置一顆丟棄的 UUID）。
+
+**旁證這個修法方向是對的**：`TransactionRow` 自己的 preview 寫的是 `subtitle: "Food · Cash"`（`:141`）與 `"Work · Bank"`（`:153`）——也就是這個元件**原本的設計**就是「分類 · 帳戶」，目前傳型別名進去是實作沒跟上設計。是否一併帶上帳戶名不在本 task 範圍（會需要另一份 lookup），但若你覺得只放分類名在視覺上偏空，回報給我，不要自己擴大範圍。
 
 - [ ] **Step 5: 跑測試確認通過**
 
@@ -396,7 +406,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -am "fix(tra
 - Create: `Features/Sources/Domain/Entities/InsightDescriptor.swift`
 - Create: `Features/Sources/Domain/Analysis/InsightComposer.swift`
 - Modify: `Features/Sources/Domain/Clients/InsightsClient.swift:55`
-- Test: `NeuLedgerTests/Tests/DomainTests/Analysis/InsightComposerTests.swift`（新建）
+- Test: `NeuLedgerTests/Tests/DomainTests/Analysis/InsightComposerTests.swift`（新建，目錄也是新的；已確認無同名 struct）
 - Test: `NeuLedgerTests/Tests/DomainTests/Clients/InsightsClientTests.swift:117`（既有，要跟著改型別）
 
 **Interfaces:**
@@ -524,7 +534,7 @@ public struct InsightDescriptor: Equatable, Identifiable, Sendable {
 public var generateInsights: @Sendable (_ summary: SpendingSummary) async throws -> [InsightDescriptor] = { _ in [] }
 ```
 
-`InsightsClientTests.swift:117` 會編譯失敗，跟著改成 `InsightDescriptor`。
+`InsightsClientTests.swift` 的 `testGenerateInsightsMock`（`:114-129`）會編譯失敗——它建 `[InsightData(title:body:metric:metricColor:cta:)]` 當 `expected` 並斷言 `result == expected`。跟著改成 `[InsightDescriptor(kind: ...)]`，語意不變（那條測試驗的是「依賴覆寫有效」，不是內容）。
 
 - [ ] **Step 6: 跑測試確認通過**
 
@@ -618,7 +628,6 @@ private final class SummaryCapture: @unchecked Sendable {
 @Test("the summary handed to generateInsights carries real totals, not zeros")
 func testInsightsEffectBuildsARealSummary() async throws {
     let capture = SummaryCapture()
-    let foodId = UUID()
     let store = await TestStore(initialState: DashboardFeature.State()) {
         DashboardFeature()
     } withDependencies: {
@@ -628,8 +637,8 @@ func testInsightsEffectBuildsARealSummary() async throws {
         }
         $0.insightsClient.categoryProportions = { _ in
             [
-                CategoryProportion(categoryId: foodId, categoryName: "餐飲", amount: 8_400),
-                CategoryProportion(categoryId: UUID(), categoryName: "交通", amount: 11_600)
+                CategoryProportion(name: "餐飲", amount: 8_400),
+                CategoryProportion(name: "交通", amount: 11_600)
             ]
         }
         $0.insightsClient.generateInsights = { summary in
@@ -690,7 +699,7 @@ func testDescriptorIsLocalisedWithTheFormattedAmount() async throws {
 }
 ```
 
-**注意**：`CategoryProportion` 的成員名以 `Features/Sources/Domain/` 下的定義為準（上面是形狀示意）。`StatsSnapshot(today:week:savingsPercentage:)` 的簽章見 `Features/Sources/Domain/.../StatsSnapshot.swift:8`。
+**已核實的型別（照抄即可）**：`CategoryProportion` 只有三個成員 `id: String`（預設 `UUID().uuidString`）、`name: String`、`amount: Decimal`（`Domain/Analysis/Models/CategoryProportion.swift:3-13`）——**沒有** `categoryId` / `categoryName`，也**不帶** `Category.ID`。這件事有個連帶後果要注意：`categoryProportions` 回傳的東西**無法**對回 `Category.ID`，所以 `topCategoryName` 只能拿 `name`，Task 3 的 `categoryNames` lookup 與這裡是兩條獨立的路徑，不要試圖共用。`StatsSnapshot(today:week:savingsPercentage:)` 見 `Domain/.../StatsSnapshot.swift:8`。上面測試碼裡的 `foodId` 因此不需要，可以刪掉。
 
 **既有測試會編譯失敗，必須一起改**：`DashboardFeatureInsightTests.swift:12-14`、`:45-47`、`:65` 三處 `generateInsights = { _ in mock }` 的 `mock` 現在必須是 `[InsightDescriptor]`。`insightsLoaded` 的 payload **仍然是 `[InsightData]`**（Feature 負責映射），所以 `$0.insights = mock` 不再成立——要改成斷言映射後的結果，或把那幾條測試的 mock 換成描述子並相應調整期望值。
 

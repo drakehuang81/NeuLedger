@@ -57,9 +57,13 @@ struct CarrierTimelineProvider: AppIntentTimelineProvider {
             }
             return .deleted(name: selected.name.isEmpty ? selected.barcode : selected.name)
         }
-        // No explicit selection yet (fresh widget install) — fall back to the first
-        // available carrier so the widget is useful out of the box. User can still
-        // long-press → Edit Widget to choose a different one.
+        // No explicit selection yet (fresh widget install, or user hasn't long-pressed
+        // → Edit Widget) — fall back to the carrier chosen in-app (audit A9), then to
+        // the first available carrier so the widget is useful out of the box.
+        if let activeId = WidgetAppGroup.readActiveCarrierId(),
+           let match = all.first(where: { $0.id == activeId }) {
+            return .loaded(match)
+        }
         if let first = all.first {
             return .loaded(first)
         }

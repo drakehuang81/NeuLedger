@@ -22,6 +22,9 @@ enum WidgetAppGroup {
         case carrierUpdatedAt
         // New list key (JSON-encoded [CarrierEntry])
         case carrierList
+        // The in-app "active carrier for widget" choice (audit A9).
+        // Keep in sync with Core/Adapters/WidgetSyncAdapter+Live.swift's keyActiveId.
+        case carrierActiveId
     }
 
     // MARK: - Legacy single-carrier read (kept for compat)
@@ -84,6 +87,15 @@ enum WidgetAppGroup {
         guard let defaults else { return }
         guard let data = try? JSONEncoder().encode(carriers) else { return }
         defaults.set(data, forKey: Key.carrierList.rawValue)
+    }
+
+    // MARK: - Active carrier for widget (audit A9)
+
+    /// The carrier the user picked in-app for the widget to show.
+    /// `nil` when the user has never chosen one.
+    static func readActiveCarrierId() -> String? {
+        guard let defaults, let id = defaults.string(forKey: Key.carrierActiveId.rawValue), !id.isEmpty else { return nil }
+        return id
     }
 }
 

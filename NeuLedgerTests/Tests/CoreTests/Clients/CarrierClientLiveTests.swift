@@ -57,6 +57,7 @@ struct CarrierClientLiveTests {
         adapter.syncCarrier = { _, _, _ in }
         adapter.clearCarrier = {}
         adapter.syncAllCarriers = { _ in spy.recordSyncAll() }
+        adapter.setActiveCarrierId = { _ in }
         return adapter
     }
 
@@ -226,5 +227,38 @@ struct CarrierClientLiveTests {
             let client = CarrierClient.liveValue
             #expect(client.activeForWidget() == nil)
         }
+    }
+
+    // MARK: - New: widget hand-off (audit A9)
+
+    /// Records the ids passed to `widgetSyncAdapter.setActiveCarrierId`, so the
+    /// hand-off from `setActiveForWidget` into the App Group can be verified.
+    private final class ActiveIdSpy: @unchecked Sendable {
+        private let lock = NSLock()
+        private var ids: [String] = []
+        func record(_ id: String) { lock.lock(); ids.append(id); lock.unlock() }
+        var recorded: [String] { lock.lock(); defer { lock.unlock() }; return ids }
+    }
+
+    @Test("choosing a carrier for the widget writes the active id into the App Group")
+    func testSetActiveForWidgetWritesActiveIdToAppGroup() async throws {
+        let spy = ActiveIdSpy()
+        let chosen = UUID()
+        let container = try freshCarrierContainer()
+
+        await withDependencies {
+            $0.modelContainer = container
+            // `UserSettingsAdapter` 是 `@DependencyClient`，逐一覆寫單個 endpoint 即可
+            // ——不要用部分 init（省略的成員會變成 unimplemented，一旦被呼叫就直接失敗）。
+            $0.userSettingsAdapter.setString = { _, _ in }
+            $0.widgetSyncAdapter.syncAllCarriers = { _ in }
+            $0.widgetSyncAdapter.setActiveCarrierId = { spy.record($0) }
+        } operation: {
+            let client = CarrierClient.liveValue
+            await client.setActiveForWidget(chosen)
+        }
+
+        #expect(spy.recorded == [chosen.uuidString],
+                "App 內選了載具就必須把 active id 交給 App Group，否則 Widget 不會跟著變")
     }
 }

@@ -10,7 +10,7 @@ extension WidgetSyncAdapter: DependencyKey {
     //
     // Keep in sync with Shared/WidgetAppGroup.swift:
     //   static let suiteName = "group.com.drake.NeuLedger"
-    //   enum Key: String { case carrierBarcode, carrierType, carrierName, carrierUpdatedAt, carrierList }
+    //   enum Key: String { case carrierBarcode, carrierType, carrierName, carrierUpdatedAt, carrierList, carrierActiveId }
     //
     // Widget kind keeps in sync with NeuLedgerWidget/CarrierWidget.swift:
     //   let kind: String = "CarrierWidget"
@@ -21,6 +21,7 @@ extension WidgetSyncAdapter: DependencyKey {
     private static let keyName           = "carrierName"
     private static let keyUpdatedAt      = "carrierUpdatedAt"
     private static let keyList           = "carrierList"
+    private static let keyActiveId       = "carrierActiveId"
     private static let widgetKind        = "CarrierWidget"
 
     public static let liveValue = Self(
@@ -60,6 +61,11 @@ extension WidgetSyncAdapter: DependencyKey {
             }
             guard let data = try? JSONEncoder().encode(dtos) else { return }
             defaults.set(data, forKey: keyList)
+            WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+        },
+        setActiveCarrierId: { id in
+            guard let defaults = UserDefaults(suiteName: appGroupSuiteName) else { return }
+            defaults.set(id, forKey: keyActiveId)
             WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
         }
     )

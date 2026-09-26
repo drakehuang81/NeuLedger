@@ -29,6 +29,9 @@ struct NeuLedgerApp: App {
         // the very first delegate dispatch after launch.
         // TODO: Dependency injection
         WatchBootstrap.start()
+        // Composition Root: 註冊通知 delegate，讓 App 在前景時也顯示到期橫幅。
+        // （原本靠通知確認 stream 第一次存取時才建立，那條路徑已隨確認流程移除。）
+        NotificationCenterBootstrap.start()
     }
 
     // `.modelContainer(_:)` is intentionally NOT applied here: feature views
@@ -68,9 +71,6 @@ struct NeuLedgerApp: App {
         .animation(.easeInOut(duration: 0.35), value: Self.store.state)
         .onOpenURL { url in
             Self.store.send(.deepLinkReceived(url))
-        }
-        .task {
-            await Self.store.send(.task).finish()
         }
     }
 }

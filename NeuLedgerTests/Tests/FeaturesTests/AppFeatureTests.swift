@@ -53,92 +53,6 @@ struct AppFeatureTests {
         }
     }
 
-    @Test("recurringConfirmation route opens dashboard confirmation when in main")
-    func recurringConfirmationRoutesInMain() async {
-        let template = RecurringTransaction(
-            id: UUID(), amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(), isActive: true, createdAt: Date()
-        )
-        let store = await TestStore(initialState: .main(MainTabFeature.State())) {
-            AppFeature()
-        }
-        await MainActor.run { store.exhaustivity = .off }
-        await store.send(.route(.recurringConfirmation(template))) { state in
-            guard case let .main(main) = state else {
-                Issue.record("expected .main state")
-                return
-            }
-            #expect(main.selectedTab == .dashboard)
-            #expect(main.dashboard.addTransaction?.mode == .addRecurringConfirmation(template))
-        }
-    }
-
-    @Test("recurringConfirmation route is ignored when not in main")
-    func recurringConfirmationIgnoredOutsideMain() async {
-        let template = RecurringTransaction(
-            id: UUID(), amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(), isActive: true, createdAt: Date()
-        )
-        let store = await TestStore(initialState: .onboarding(OnboardingFeature.State())) {
-            AppFeature()
-        }
-        // guard case .main fails → no-op, no state change
-        await store.send(.route(.recurringConfirmation(template)))
-    }
-
-    @Test("task routes a tapped recurring confirmation")
-    func taskRoutesRecurringConfirmation() async {
-        let template = RecurringTransaction(
-            id: UUID(), amount: 15000, note: "房租",
-            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(), isActive: true, createdAt: Date()
-        )
-        let store = await TestStore(initialState: .main(MainTabFeature.State())) {
-            AppFeature()
-        } withDependencies: {
-            $0.platformClient.pendingRecurringConfirmations = {
-                AsyncStream { continuation in
-                    continuation.yield(template.id)
-                    continuation.finish()
-                }
-            }
-            $0.platformClient.resolveRecurringConfirmation = { _ in .recurringConfirmation(template) }
-        }
-        await MainActor.run { store.exhaustivity = .off }
-        await store.send(.task)
-        await store.receive(\.route) { state in
-            guard case let .main(main) = state else {
-                Issue.record("expected .main state")
-                return
-            }
-            #expect(main.dashboard.addTransaction?.mode == .addRecurringConfirmation(template))
-        }
-        await store.finish()
-    }
-
-    @Test("task ignores a confirmation that resolves to none")
-    func taskIgnoresUnresolvedConfirmation() async {
-        let store = await TestStore(initialState: .main(MainTabFeature.State())) {
-            AppFeature()
-        } withDependencies: {
-            $0.platformClient.pendingRecurringConfirmations = {
-                AsyncStream { continuation in
-                    continuation.yield(UUID())
-                    continuation.finish()
-                }
-            }
-            $0.platformClient.resolveRecurringConfirmation = { _ in .none }
-        }
-        await store.send(.task)
-        await store.receive(\.route)
-        await store.finish()
-    }
-
     // MARK: - Deep Link Tests
 
     @Test("deepLinkReceived with carrierManagement destination sets settings tab and appends path")
@@ -223,5 +137,59 @@ struct AppFeatureTests {
         }
         await store.send(.deepLinkReceived(URL(string: "neuledger://nope")!))
         await store.finish()
+    }
+
+    // MARK: - Cold-start route buffer (health-audit Features A5)
+
+    @Test("a deep link that arrives during splash is replayed once main is on screen")
+    func testDeepLinkDuringSplashIsReplayed() async {
+        let store = await TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.platformClient.canSkipOnboarding = { true }
+        }
+        // `.route(.main)` 落地後會再送出一次 replay 的 `.route(.carrierManagement)`；
+        // 這條測試只在意 replay 最終有沒有發生，不逐一斷言每個中繼 action，
+        // 所以跟 deepLinkCarrierManagementLandsInSettings 一樣關掉 exhaustivity。
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.route(.carrierManagement)) {
+            $0 = .splash(pendingRoute: .carrierManagement)
+        }
+
+        await store.send(\.splashCompleted)
+        // `.route(.main)` 先落地（state 重置為預設 MainTabFeature.State()），
+        // 接著才是 replay 送出的 `.route(.carrierManagement)`，兩個 action 分開消費。
+        await store.receive(\.route.main)
+        await store.receive(\.route.carrierManagement) { state in
+            // .main 落地後立刻 replay 暫存的 route
+            guard case let .main(main) = state else {
+                Issue.record("expected .main state")
+                return
+            }
+            #expect(main.selectedTab == .settings)
+        }
+        await store.finish()
+    }
+
+    @Test("only the latest route is buffered during splash")
+    func testSplashKeepsOnlyTheLatestPendingRoute() async {
+        let store = await TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        }
+        await store.send(.route(.carrierManagement)) {
+            $0 = .splash(pendingRoute: .carrierManagement)
+        }
+        await store.send(.route(.none)) {
+            $0 = .splash(pendingRoute: nil)
+        }
+    }
+
+    @Test("a route that arrives during onboarding is dropped")
+    func testRouteDuringOnboardingIsDropped() async {
+        let store = await TestStore(initialState: .onboarding(OnboardingFeature.State())) {
+            AppFeature()
+        }
+        await store.send(.route(.carrierManagement))     // 無 state 變化
     }
 }

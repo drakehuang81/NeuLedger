@@ -38,4 +38,29 @@ public extension BudgetPeriod {
     func next(after date: Date, calendar: Calendar = .current) -> Date {
         calendar.date(byAdding: calendarComponent, value: 1, to: date) ?? date
     }
+
+    /// 以 `anchor` 為系列起點，回傳第一個嚴格大於 `date` 的到期日。
+    ///
+    /// 一律用「anchor + n 期」計算，**不是**從上一次（可能已被月份長度 clamp 的）
+    /// 結果再往後加一期，所以 1/31 的月繳系列是 1/31 → 2/28 → 3/31 → 4/30 → 5/31，
+    /// 不會像 `next(after:)` 那樣一旦被 clamp 成 28 就永遠停在 28（health-audit A10）。
+    func occurrence(after date: Date, anchoredAt anchor: Date, calendar: Calendar = .current) -> Date {
+        guard anchor <= date else { return anchor }
+
+        let component = calendarComponent
+        // 先估算已經過了幾期，再往後找第一個嚴格大於 date 的系列日期。
+        // clamp（例如 1/31 → 2/28）會讓 dateComponents 少算一期，所以要留修正空間。
+        let elapsed = calendar.dateComponents([component], from: anchor, to: date).value(for: component) ?? 0
+        var step = max(elapsed, 0)
+
+        for _ in 0..<4 {
+            step += 1
+            if let candidate = calendar.date(byAdding: component, value: step, to: anchor), candidate > date {
+                return candidate
+            }
+        }
+
+        // 理論上到不了這裡；真的到了就退回舊行為，保證回傳值仍然大於 date。
+        return next(after: date, calendar: calendar)
+    }
 }

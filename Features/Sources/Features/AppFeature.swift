@@ -21,11 +21,13 @@ struct AppFeature {
     @CasePathable
     @dynamicMemberLookup
     enum State: Equatable {
-        case splash
+        /// 冷啟動畫面。`pendingRoute` 暫存在 `.main` 還沒落地前就抵達的 deep link，
+        /// 等 `.main` 出現後 replay（health-audit Features A5）。
+        case splash(pendingRoute: RouteLinkDestination? = nil)
         case onboarding(OnboardingFeature.State)
         case main(MainTabFeature.State)
 
-        init() { self = .splash }
+        init() { self = .splash(pendingRoute: nil) }
     }
 
     // MARK: - Action
@@ -36,27 +38,15 @@ struct AppFeature {
         case onboarding(OnboardingFeature.Action)
         case main(MainTabFeature.Action)
         case route(RouteLinkDestination)
-        case task
     }
 
     @Dependency(\.platformClient) var platformClient
-
-    private enum CancelID { case recurringSubscription }
 
     // MARK: - Body
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task:
-                return .run { send in
-                    for await id in platformClient.pendingRecurringConfirmations() {
-                        let destination = (try? await platformClient.resolveRecurringConfirmation(id)) ?? .none
-                        await send(.route(destination))
-                    }
-                }
-                .cancellable(id: CancelID.recurringSubscription)
-
             case .splashCompleted:
                 return .run { send in
                     let canSkipOnboarding = try await platformClient.canSkipOnboarding()
@@ -83,26 +73,26 @@ struct AppFeature {
             case .route(let action):
                 switch action {
                 case .carrierManagement:
-                    guard case .main(var mainState) = state else { return .none }
+                    guard case .main(var mainState) = state else {
+                        // 冷啟動途中抵達：暫存起來，等 .main 落地再 replay。
+                        if case .splash = state { state = .splash(pendingRoute: action) }
+                        return .none
+                    }
                     mainState.selectedTab = .settings
                     mainState.settings.path.append(.carrierManagement(CarrierManagementFeature.State()))
                     state = .main(mainState)
                     return .none
                 case .main:
+                    var pending: RouteLinkDestination?
+                    if case let .splash(buffered) = state { pending = buffered }
                     state = .main(MainTabFeature.State())
-                    return .none
+                    guard let pending, pending != .main else { return .none }
+                    return .send(.route(pending))
                 case .onboarding:
                     state = .onboarding(OnboardingFeature.State())
                     return .none
-                case let .recurringConfirmation(template):
-                    guard case .main(var mainState) = state else { return .none }
-                    mainState.selectedTab = .dashboard
-                    mainState.dashboard.addTransaction = AddTransactionFeature.State(
-                        mode: .addRecurringConfirmation(template)
-                    )
-                    state = .main(mainState)
-                    return .none
                 default:
+                    if case .splash = state { state = .splash(pendingRoute: nil) }
                     return .none
                 }
             default:

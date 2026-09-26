@@ -4,6 +4,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @Bindable var store: StoreOf<MainTabFeature>
+    @Environment(\.scenePhase) private var scenePhase
 
     init(store: StoreOf<MainTabFeature>) {
         self.store = store
@@ -44,6 +45,11 @@ struct MainTabView: View {
         }
         .task {
             await store.send(.task).finish()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // 回到前景時再補記一次；App 留在記憶體好幾天時，只靠 .task 不會再跑。
+            guard newPhase == .active else { return }
+            store.send(.scenePhaseBecameActive)
         }
         .tabBarMinimizeBehavior(.onScrollDown)
         .tint(Color.Design.accentOrange)

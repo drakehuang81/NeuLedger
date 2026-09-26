@@ -35,10 +35,12 @@ import Domain
 ///   now owned here (new behaviour, 5a3 上收)**: `createRecurring`/
 ///   `updateRecurring` schedule a due-date reminder via
 ///   `notificationAdapter.scheduleRecurringReminder`, `deleteRecurring` cancels
-///   it via `cancelRecurringReminder`. `tick` is internalised (SAGA collapse):
-///   it fetches due templates, materialises them through the shared
+///   it via `cancelRecurringReminder`. `tick` is triggered by `MainTabFeature`
+///   in the foreground (not a background task) and catches up **every** missed
+///   occurrence per active template — not just one — through the shared
 ///   `recordTransaction` path (preserving the budget invariant + the reactive
-///   Watch/Widget mirror), then advances `nextDueDate`.
+///   Watch/Widget mirror), advancing and persisting `nextDueDate` after each
+///   materialised occurrence, then re-syncing the reminder once per template.
 /// - Export → CSV assembly lifted verbatim from `ExportUseCase+Live`
 ///   (factory + `csvField` escaping in `+LiveExport.swift`).
 ///
@@ -64,8 +66,9 @@ import Domain
 /// The mirror post-condition is therefore "every ledger mutation produces a
 /// context save", which `LedgerClientMirrorTests` asserts by observing
 /// `.NSManagedObjectContextDidSave` exactly once per `record`/`update`/`delete`.
-/// Because `tick` routes through `recordTransaction`, each materialised recurring
-/// transaction inherits the same reactive mirror for free.
+/// Because `tick` routes every occurrence it catches up through
+/// `recordTransaction`, each materialised recurring transaction inherits the
+/// same reactive mirror for free.
 extension LedgerClient: DependencyKey {
     public static var liveValue: LedgerClient {
         @Dependency(\.planningClient) var planningClient
@@ -110,6 +113,10 @@ extension LedgerClient: DependencyKey {
             // callers to remember.
             await planningClient.evaluateAfterTransaction(transaction)
         }
+
+        // Reminder lifecycle 的單一出口：`createRecurring` / `updateRecurring`
+        // / `tick` 共用同一顆，啟用中就排程、暫停就取消（health-audit A5）。
+        let syncRecurringReminder = Self.makeSyncRecurringReminder(notificationAdapter)
 
         return LedgerClient(
             // MARK: Transactions
@@ -249,10 +256,10 @@ extension LedgerClient: DependencyKey {
 
             // MARK: Recurring (internalised — see +LiveRecurring.swift)
             listRecurring: Self.makeListRecurring(recurringStore),
-            createRecurring: Self.makeCreateRecurring(recurringStore, notificationAdapter),
-            updateRecurring: Self.makeUpdateRecurring(recurringStore, notificationAdapter),
+            createRecurring: Self.makeCreateRecurring(recurringStore, syncRecurringReminder),
+            updateRecurring: Self.makeUpdateRecurring(recurringStore, syncRecurringReminder),
             deleteRecurring: Self.makeDeleteRecurring(recurringStore, notificationAdapter),
-            tick: Self.makeTick(recurringStore, recordTransaction),
+            tick: Self.makeTick(recurringStore, recordTransaction, syncRecurringReminder),
 
             // MARK: Export (internalised — see +LiveExport.swift)
             exportCSV: Self.makeExportCSV(transactionStore, categoryStore, accountStore)

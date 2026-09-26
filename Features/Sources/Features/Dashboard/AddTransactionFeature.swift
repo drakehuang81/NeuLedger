@@ -13,7 +13,6 @@ public struct AddTransactionFeature: Sendable {
         case add(TransactionType)
         case edit(Transaction)
         case addPrefilled(ExtractedTransaction)          // opened from TabBar AI input with pre-parsed data
-        case addRecurringConfirmation(RecurringTransaction)  // confirm a due recurring template
     }
 
     // MARK: - State
@@ -95,15 +94,6 @@ public struct AddTransactionFeature: Sendable {
                 self.toAccountId = nil
                 self.categoryId = nil    // category matching handled separately via suggestCategoryTapped
                 self.date = date
-
-            case let .addRecurringConfirmation(template):
-                self.type = template.type
-                self.amountText = template.amount.formatted(.number.precision(.fractionLength(0)))
-                self.accountId = template.accountId
-                self.toAccountId = template.toAccountId
-                self.categoryId = template.categoryId
-                self.note = template.note ?? ""
-                self.date = date
             }
         }
 
@@ -140,7 +130,6 @@ public struct AddTransactionFeature: Sendable {
         public enum Delegate: Sendable, Equatable {
             case saved                                                  // add / addPrefilled mode
             case savedWithTransaction(Transaction)                      // edit mode
-            case savedRecurringConfirmation(RecurringTransaction.ID, Date) // addRecurringConfirmation mode
             case dismissed
         }
 
@@ -363,22 +352,6 @@ public struct AddTransactionFeature: Sendable {
                             type: type_
                         )
                         try await ledger.record(transaction)
-
-                    case let .addRecurringConfirmation(template):
-                        let transaction = Transaction(
-                            amount: amountValue,
-                            date: date,
-                            note: note,
-                            categoryId: categoryId,
-                            accountId: accountId,
-                            toAccountId: toAccountId,
-                            type: type_
-                        )
-                        try await ledger.record(transaction)
-                        let newNextDue = template.nextDate(after: template.nextDueDate)
-                        await send(.delegate(.savedRecurringConfirmation(template.id, newNextDue)))
-                        await dismiss()
-                        return
                     }
                     await send(.savedSuccessfully)
                 } catch: { error, send in

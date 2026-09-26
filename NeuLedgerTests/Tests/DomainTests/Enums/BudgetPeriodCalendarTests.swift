@@ -80,4 +80,83 @@ struct BudgetPeriodCalendarTests {
         let expected = BudgetPeriod.weekly.next(after: Self.d(2026, 1, 15), calendar: Self.calendar)
         #expect(template.nextDate(after: Self.d(2026, 1, 15), calendar: Self.calendar) == expected)
     }
+
+    // MARK: - occurrence(after:anchoredAt:) — health-audit A10 月底漂移
+
+    /// 固定用西曆 + UTC，避免 CI 與本機時區造成日期跳動。
+    private static var utcCalendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "UTC")!
+        return c
+    }
+
+    private static func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        utcCalendar.date(from: DateComponents(year: y, month: m, day: d, hour: 9))!
+    }
+
+    @Test("monthly series anchored on the 31st comes back to 31 instead of sticking at 28")
+    func testMonthlyAnchorDoesNotDrift() {
+        let anchor = Self.date(2026, 1, 31)
+        let cal = Self.utcCalendar
+
+        let feb = BudgetPeriod.monthly.occurrence(after: anchor, anchoredAt: anchor, calendar: cal)
+        #expect(feb == Self.date(2026, 2, 28))
+
+        let mar = BudgetPeriod.monthly.occurrence(after: feb, anchoredAt: anchor, calendar: cal)
+        #expect(mar == Self.date(2026, 3, 31))
+
+        let apr = BudgetPeriod.monthly.occurrence(after: mar, anchoredAt: anchor, calendar: cal)
+        #expect(apr == Self.date(2026, 4, 30))
+
+        let may = BudgetPeriod.monthly.occurrence(after: apr, anchoredAt: anchor, calendar: cal)
+        #expect(may == Self.date(2026, 5, 31))
+    }
+
+    @Test("yearly series anchored on Feb 29 returns to Feb 29 on the next leap year")
+    func testYearlyAnchorSurvivesLeapDay() {
+        let anchor = Self.date(2024, 2, 29)
+        let cal = Self.utcCalendar
+
+        let y2025 = BudgetPeriod.yearly.occurrence(after: anchor, anchoredAt: anchor, calendar: cal)
+        #expect(y2025 == Self.date(2025, 2, 28))
+
+        let y2026 = BudgetPeriod.yearly.occurrence(after: y2025, anchoredAt: anchor, calendar: cal)
+        #expect(y2026 == Self.date(2026, 2, 28))
+
+        let y2027 = BudgetPeriod.yearly.occurrence(after: y2026, anchoredAt: anchor, calendar: cal)
+        #expect(y2027 == Self.date(2027, 2, 28))
+
+        let y2028 = BudgetPeriod.yearly.occurrence(after: y2027, anchoredAt: anchor, calendar: cal)
+        #expect(y2028 == Self.date(2028, 2, 29))
+    }
+
+    @Test("weekly series keeps the anchor weekday across a long gap")
+    func testWeeklyAnchorAcrossLongGap() {
+        let anchor = Self.date(2026, 1, 5)          // 週一
+        let cal = Self.utcCalendar
+        let far = Self.date(2026, 3, 18)            // 十週後的週三
+
+        let next = BudgetPeriod.weekly.occurrence(after: far, anchoredAt: anchor, calendar: cal)
+        #expect(next == Self.date(2026, 3, 23))     // 下一個週一
+    }
+
+    @Test("an anchor in the future is itself the next occurrence")
+    func testFutureAnchorReturnsAnchor() {
+        let anchor = Self.date(2026, 6, 1)
+        let cal = Self.utcCalendar
+        let result = BudgetPeriod.monthly.occurrence(after: Self.date(2026, 5, 20), anchoredAt: anchor, calendar: cal)
+        #expect(result == anchor)
+    }
+
+    @Test("the returned occurrence is always strictly after the given date")
+    func testOccurrenceIsStrictlyAfter() {
+        let anchor = Self.date(2026, 1, 31)
+        let cal = Self.utcCalendar
+        var cursor = anchor
+        for _ in 0..<40 {
+            let next = BudgetPeriod.monthly.occurrence(after: cursor, anchoredAt: anchor, calendar: cal)
+            #expect(next > cursor)
+            cursor = next
+        }
+    }
 }

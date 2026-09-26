@@ -17,6 +17,8 @@ struct MainTabFeatureTests {
             $0.platformClient.accessoryMode = { .add }
             // MainTab's .task reads showAccessoryBar from platformClient
             $0.platformClient.showAccessoryBar = { false }
+            // .task 也會送 recurringTickRequested
+            $0.ledgerClient.tick = { 0 }
         }
         await MainActor.run { store.exhaustivity = .off }
         await store.send(.task)
@@ -24,6 +26,7 @@ struct MainTabFeatureTests {
         await store.receive(\.accessoryBarVisibilityLoaded) {
             $0.showAccessoryBar = false
         }
+        await store.receive(\.recurringTicked)
         await store.finish()
     }
 
@@ -92,37 +95,6 @@ struct MainTabFeatureTests {
         }
     }
 
-    // MARK: - savedRecurringConfirmation Tests
-
-    @Test("savedRecurringConfirmation calls updateRecurring with updated nextDueDate when id found")
-    func savedRecurringConfirmationUpdatesNextDueDate() async {
-        let targetId = UUID()
-        let newDate = Date(timeIntervalSince1970: 9_999_999)
-        var template = RecurringTransaction(
-            id: targetId, amount: 5000, note: "水電費",
-            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(timeIntervalSince1970: 0), isActive: true, createdAt: Date()
-        )
-
-        let updatedSpy = LockIsolated<RecurringTransaction?>(nil)
-        let store = await TestStore(initialState: MainTabFeature.State()) {
-            MainTabFeature()
-        } withDependencies: {
-            $0.ledgerClient.listRecurring = { [template] in [template] }
-            $0.ledgerClient.updateRecurring = { updated in updatedSpy.setValue(updated) }
-        }
-
-        await store.send(.dashboard(.delegate(.savedRecurringConfirmation(targetId, newDate))))
-        // Wait for the async effect to finish
-        await store.finish()
-
-        let updated = updatedSpy.value
-        #expect(updated != nil)
-        #expect(updated?.id == targetId)
-        #expect(updated?.nextDueDate == newDate)
-    }
-
     // MARK: - B3 補強：delegate 同步
 
     @Test("settings.delegate.accessoryBarVisibilityChanged syncs showAccessoryBar to MainTab state")
@@ -189,28 +161,131 @@ struct MainTabFeatureTests {
         }
     }
 
-    @Test("savedRecurringConfirmation does not call updateRecurring when id not found")
-    func savedRecurringConfirmationSkipsWhenIdNotFound() async {
-        let missingId = UUID()
-        let newDate = Date(timeIntervalSince1970: 9_999_999)
-        let otherTemplate = RecurringTransaction(
-            id: UUID(), amount: 1000, note: "其他",
-            categoryId: nil, accountId: UUID().uuidString, toAccountId: nil,
-            type: .expense, tags: [], frequency: .monthly,
-            nextDueDate: Date(timeIntervalSince1970: 0), isActive: true, createdAt: Date()
-        )
+    // MARK: - 週期交易自動入帳（health-audit A2）
 
-        let updatedSpy = LockIsolated<RecurringTransaction?>(nil)
+    private struct TickStubError: LocalizedError { var errorDescription: String? { "boom" } }
+
+    @Test("a tick that recorded something refreshes the dashboard and the transactions tab")
+    func testTickRefreshesBothTabsWhenSomethingWasRecorded() async {
         let store = await TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
         } withDependencies: {
-            $0.ledgerClient.listRecurring = { [otherTemplate] in [otherTemplate] }
-            $0.ledgerClient.updateRecurring = { updated in updatedSpy.setValue(updated) }
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.ledgerClient.tick = { 2 }
+            // dashboard 的 pulledToRefresh 會打六條 effect
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.balances           = { [:] }
+            $0.ledgerClient.listAll            = { _ in [] }
+            $0.ledgerClient.listCategories     = { _ in [] }
+            $0.insightsClient.todayStats       = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
+            $0.insightsClient.weeklySparkline  = { _ in [] }
+            $0.insightsClient.generateInsights = { _ in [] }
         }
+        await MainActor.run { store.exhaustivity = .off }
 
-        await store.send(.dashboard(.delegate(.savedRecurringConfirmation(missingId, newDate))))
+        await store.send(.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+        await store.receive(\.dashboard.pulledToRefresh)
+        await store.receive(\.transactions.task)
         await store.finish()
+    }
 
-        #expect(updatedSpy.value == nil)
+    @Test("a tick that recorded nothing does not refresh the tabs")
+    func testTickWithZeroDoesNotRefresh() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.tick = { 0 }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+        // 沒有任何 dashboard / transactions 的重載：若 reducer 送了，未覆寫的
+        // ledgerClient.listAll 等會以 unimplemented 讓這條測試失敗。
+        await store.finish()
+    }
+
+    @Test("returning to the foreground runs the tick again")
+    func testScenePhaseActiveRunsTick() async {
+        let ticks = LockIsolated(0)
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.tick = { ticks.withValue { $0 += 1 }; return 0 }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.scenePhaseBecameActive)
+        await store.receive(\.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+        await store.finish()
+        #expect(ticks.value == 1)
+    }
+
+    @Test("a failing tick surfaces recurringTickFailed and refreshes nothing")
+    func testTickFailure() async {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.ledgerClient.tick = { throw TickStubError() }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.recurringTickRequested)
+        await store.receive(\.recurringTickFailed)
+        await store.finish()
+    }
+
+    // MARK: - W1（final-fix-brief）：cancelInFlight 與 Client 層閘門互相抵消
+    //
+    // 用 gate（AsyncStream，見 AccessoryBarFeatureTests.testDismissCancelsExtraction 的既有寫法）
+    // 而不是 Task.yield() 控制第一條 tick 的完成時機：第一條卡在 gate（模擬冷啟動時仍在跑），
+    // 第二條立刻由模擬閘門回 0；確定第二條已經處理完，才放行第一條並斷言它的結果沒被吃掉。
+    // 用顯式 gate 取代 Task.yield() 是為了讓排序在系統負載高（跑整個 suite）時仍是決定性的——
+    // Task.yield() 次數在並行跑很多測試時無法保證第一條會先完成，實測在完整 suite 下會偶發假紅。
+
+    @Test("a second tick request does not cancel the first one's refresh")
+    func testSecondTickRequestDoesNotCancelTheFirstRefresh() async {
+        let calls = LockIsolated(0)
+        let (gate, gateContinuation) = AsyncStream<Void>.makeStream()
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            // 模擬 RecurringTickGate：先到者等測試放行才回傳真實筆數，後到者立刻被擋下回 0。
+            $0.ledgerClient.tick = {
+                let n = calls.withValue { c -> Int in c += 1; return c }
+                if n > 1 { return 0 }
+                for await _ in gate { break }
+                return 2
+            }
+            // dashboard 的 pulledToRefresh 會打六條 effect
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.balances           = { [:] }
+            $0.ledgerClient.listAll            = { _ in [] }
+            $0.ledgerClient.listCategories     = { _ in [] }
+            $0.insightsClient.todayStats       = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
+            $0.insightsClient.weeklySparkline  = { _ in [] }
+            $0.insightsClient.generateInsights = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        // 第一條 tick 請求：closure 卡在 gate，尚未回傳（模擬冷啟動時仍在跑的第一條 tick）。
+        await store.send(.recurringTickRequested)
+        // 第二條請求（scenePhase 回前景）：閘門擋下回 0。若 cancelInFlight 還在，這裡會先取消第一條。
+        await store.send(.scenePhaseBecameActive)
+        await store.receive(\.recurringTickRequested)
+        await store.receive(\.recurringTicked)
+
+        // 放行第一條，讓它把真正補到的筆數送出來。
+        gateContinuation.yield(())
+        gateContinuation.finish()
+
+        // 關鍵斷言：第一條的結果沒有被第二條取消掉——收得到帶正值的 recurringTicked 與後續刷新。
+        await store.receive(\.recurringTicked)
+        await store.receive(\.dashboard.pulledToRefresh)
+        await store.finish()
+        #expect(calls.value == 2, "兩次請求都要真的呼叫 tick，第二次由閘門擋下")
     }
 }

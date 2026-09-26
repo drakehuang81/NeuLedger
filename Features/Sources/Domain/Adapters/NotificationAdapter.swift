@@ -49,15 +49,6 @@ public struct NotificationAdapter: Sendable {
 
     /// Cancel the scheduled notification for a recurring transaction.
     public var cancelRecurringReminder: @Sendable (_ id: RecurringTransaction.ID) async -> Void
-
-    /// Emits a `RecurringTransaction.ID` each time the user taps a recurring-transaction notification.
-    /// The live implementation owns the UNUserNotificationCenterDelegate internally — no AppDelegate needed.
-    /// testValue emits an immediately-finishing stream to prevent test hangs.
-    public var pendingConfirmations: @Sendable () -> AsyncStream<RecurringTransaction.ID> = {
-        let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
-        continuation.finish()
-        return stream
-    }
 }
 
 // MARK: - TestDependencyKey

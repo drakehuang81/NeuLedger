@@ -137,26 +137,6 @@ struct PlatformClientTests {
         }
     }
 
-    @Test("pendingRecurringConfirmations mock override")
-    func testPendingRecurringConfirmationsMock() async {
-        let id = UUID()
-        await withDependencies {
-            $0.platformClient.pendingRecurringConfirmations = {
-                let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
-                continuation.yield(id)
-                continuation.finish()
-                return stream
-            }
-        } operation: {
-            @Dependency(\.platformClient) var client
-            var received: [RecurringTransaction.ID] = []
-            for await value in client.pendingRecurringConfirmations() {
-                received.append(value)
-            }
-            #expect(received == [id])
-        }
-    }
-
     // MARK: - Sync
 
     @Test("syncAvailable / syncEnabled mock override")
@@ -235,17 +215,6 @@ struct PlatformClientTests {
             @Dependency(\.platformClient) var client
             let result = try await client.canSkipOnboarding()
             #expect(result == true)
-        }
-    }
-
-    @Test("resolveRecurringConfirmation mock override")
-    func testResolveRecurringConfirmationMock() async throws {
-        try await withDependencies {
-            $0.platformClient.resolveRecurringConfirmation = { _ in .main }
-        } operation: {
-            @Dependency(\.platformClient) var client
-            let result = try await client.resolveRecurringConfirmation(UUID())
-            #expect(result == .main)
         }
     }
 

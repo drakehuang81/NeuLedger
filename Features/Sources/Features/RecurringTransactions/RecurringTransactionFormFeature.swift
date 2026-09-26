@@ -219,6 +219,14 @@ public struct RecurringTransactionFormFeature: Sendable {
                     updated.type = type_
                     updated.frequency = frequency
                     updated.nextDueDate = combinedDate
+                    // 只有使用者真的重新指定到期日時才重新錨定系列（health-audit A10）。
+                    // 表單在 .edit 初始化時就把 firstRunDate/notificationTime 填成既有的
+                    // nextDueDate，所以「只改金額或備註」的存檔必須保留原本的錨點——否則
+                    // 停在被 clamp 過那期（例如 1/31 系列走到 2/28）的範本會永久丟失 31 號。
+                    // 用分鐘粒度比較：combinedDate 的秒數已被歸零，精確比較會誤判。
+                    if !Calendar.current.isDate(combinedDate, equalTo: existing.nextDueDate, toGranularity: .minute) {
+                        updated.anchorDate = combinedDate
+                    }
                     template = updated
                 case .add:
                     isEdit = false
@@ -234,7 +242,8 @@ public struct RecurringTransactionFormFeature: Sendable {
                         frequency: frequency,
                         nextDueDate: combinedDate,
                         isActive: true,
-                        createdAt: now
+                        createdAt: now,
+                        anchorDate: combinedDate
                     )
                 }
 

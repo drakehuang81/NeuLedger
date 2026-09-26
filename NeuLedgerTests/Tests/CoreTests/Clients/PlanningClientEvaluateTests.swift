@@ -56,12 +56,7 @@ struct PlanningClientEvaluateTests {
             },
             isAuthorized: { true },
             scheduleRecurringReminder: { _, _, _, _ in },
-            cancelRecurringReminder: { _ in },
-            pendingConfirmations: {
-                let (stream, continuation) = AsyncStream<RecurringTransaction.ID>.makeStream()
-                continuation.finish()
-                return stream
-            }
+            cancelRecurringReminder: { _ in }
         )
     }
 

@@ -153,7 +153,6 @@ public struct DashboardFeature: Sendable {
         @CasePathable
         public enum Delegate: Sendable, Equatable {
             case seeAllTransactionsTapped
-            case savedRecurringConfirmation(RecurringTransaction.ID, Date)
         }
     }
 
@@ -327,12 +326,6 @@ public struct DashboardFeature: Sendable {
                  .addTransaction(.presented(.delegate(.savedWithTransaction(_)))):
                 return refreshAfterMutation(accountID: state.selectedAccountID)
 
-            case let .addTransaction(.presented(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))):
-                return .merge(
-                    refreshAfterMutation(accountID: state.selectedAccountID),
-                    .send(.delegate(.savedRecurringConfirmation(id, newNextDueDate)))
-                )
-
             case .addTransaction:
                 return .none
 
@@ -436,7 +429,7 @@ public struct DashboardFeature: Sendable {
 
     /// 任何帳本異動（新增 / 編輯 / 刪除交易）後的統一重載：
     /// 帳戶＋餘額、scope 交易、stats、sparkline。
-    /// 取代原本在 saved / savedRecurringConfirmation / detail-updated 三處
+    /// 取代原本在 saved / detail-updated 兩處
     /// 重複且無錯誤處理的 inline effect。
     ///
     /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）與

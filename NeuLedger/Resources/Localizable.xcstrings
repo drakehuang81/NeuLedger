@@ -5804,13 +5804,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A recurring transaction is due today."
+            "value": "A recurring transaction is due. Open NeuLedger to record it automatically."
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "您有一筆定期交易今日到期。"
+            "value": "您有一筆定期交易到期，開啟 App 即自動記帳。"
           }
         }
       }

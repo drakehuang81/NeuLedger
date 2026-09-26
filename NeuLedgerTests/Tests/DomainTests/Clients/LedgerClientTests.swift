@@ -186,10 +186,16 @@ struct LedgerClientTests {
     @Test("tick mock override")
     func testTickMock() async throws {
         try await withDependencies {
-            $0.ledgerClient.tick = { }
+            $0.ledgerClient.tick = { 0 }
         } operation: {
             @Dependency(\.ledgerClient) var client
-            try await client.tick()
+            // `#expect(try await ...)` nested inside this trailing `operation:`
+            // closure fails to compile (macro expansion loses the `throws`
+            // effect here — reproducible even with the brief's exact wording);
+            // every other call site in this file assigns to `let` first, so we
+            // match that existing pattern instead.
+            let count = try await client.tick()
+            #expect(count == 0)
         }
     }
 

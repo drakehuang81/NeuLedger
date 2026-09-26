@@ -20,7 +20,10 @@ extension SDRecurringTransaction: PersistentDomainModel {
             frequency: BudgetPeriod(rawValue: frequencyRaw) ?? .monthly,
             nextDueDate: nextDueDate,
             isActive: isActive,
-            createdAt: createdAt
+            createdAt: createdAt,
+            // 舊資料沒有錨點，讀取時就以當下的到期日回填，讓後續推進不再漂移
+            // （已經漂走的日期無法還原，只保證不再繼續漂）。
+            anchorDate: anchorDate ?? nextDueDate
         )
     }
 
@@ -44,7 +47,8 @@ extension SDRecurringTransaction: PersistentDomainModel {
             frequencyRaw: domain.frequency.rawValue,
             nextDueDate: domain.nextDueDate,
             isActive: domain.isActive,
-            createdAt: domain.createdAt
+            createdAt: domain.createdAt,
+            anchorDate: domain.anchorDate ?? domain.nextDueDate
         )
         context.insert(model)
         return model
@@ -61,6 +65,7 @@ extension SDRecurringTransaction: PersistentDomainModel {
         frequencyRaw = domain.frequency.rawValue
         nextDueDate = domain.nextDueDate
         isActive = domain.isActive
+        anchorDate = domain.anchorDate ?? domain.nextDueDate
     }
 
     static func idPredicate(_ id: RecurringTransaction.ID) -> Predicate<SDRecurringTransaction> {

@@ -329,7 +329,9 @@ func testTaskLoadsCategoryNames() async throws {
     await store.receive(\.categoriesLoaded) {
         $0.categoryNames = [foodId: "餐飲"]
     }
-    await store.skipReceivedActions()
+    // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被前面的 `receive`
+    // 耗盡時會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身
+    // 就會等所有 effect 收尾。
     await store.finish()
 }
 
@@ -344,7 +346,9 @@ func testCategoryLoadFailureDoesNotSetLoadError() async throws {
     await MainActor.run { store.exhaustivity = .off }
 
     await store.send(.task)
-    await store.skipReceivedActions()
+    // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被前面的 `receive`
+    // 耗盡時會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身
+    // 就會等所有 effect 收尾。
     // 分類名只是標記，載不到就退回 fallback 文案；loadError 留給交易本身的失敗。
     await MainActor.run {
         #expect(store.state.loadError == nil, "分類載入失敗不得擋住整張列表")
@@ -672,7 +676,9 @@ func testInsightsEffectBuildsARealSummary() async throws {
     await MainActor.run { store.exhaustivity = .off }
 
     await store.send(.task)
-    await store.skipReceivedActions()
+    // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被前面的 `receive`
+    // 耗盡時會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身
+    // 就會等所有 effect 收尾。
     await store.finish()
 
     let summary = try #require(capture.captured)
@@ -704,7 +710,9 @@ func testDescriptorIsLocalisedWithTheFormattedAmount() async throws {
     await MainActor.run { store.exhaustivity = .off }
 
     await store.send(.task)
-    await store.skipReceivedActions()
+    // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被前面的 `receive`
+    // 耗盡時會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身
+    // 就會等所有 effect 收尾。
     await store.finish()
 
     let card = try #require(await MainActor.run { store.state.insights.first })
@@ -803,7 +811,9 @@ func testSwitchingToTransactionsReloads() async throws {
         $0.selectedTab = .transactions
     }
     await store.receive(\.transactions.refreshRequested)
-    await store.skipReceivedActions()
+    // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被 `receive` 耗盡時
+    // 會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身就會等所有
+    // effect 收尾。
     await store.finish()
 }
 
@@ -831,7 +841,7 @@ func testSwitchingToDashboardReloads() async throws {
         $0.selectedTab = .dashboard
     }
     await store.receive(\.dashboard.pulledToRefresh)
-    await store.skipReceivedActions()
+    // 同上：不要 `skipReceivedActions()`。
     await store.finish()
 }
 

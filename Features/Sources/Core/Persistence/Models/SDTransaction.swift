@@ -40,6 +40,13 @@ final class SDTransaction {
     /// The date when this record was last modified.
     var updatedAt: Date = Date()
 
+    /// 產生這筆交易的週期範本 id；手動記的交易為 nil。
+    /// CloudKit 要求新增欄位必須 optional：維持 `UUID?`。
+    var sourceTemplateId: UUID?
+
+    /// 對應該範本的哪一期（該期到期日）；手動記的交易為 nil。
+    var sourcePeriodDueDate: Date?
+
     /// The tags associated with this transaction (many-to-many).
     /// Optional because CloudKit integration requires all relationships to be optional.
     @Relationship var tags: [SDTag]? = []
@@ -55,7 +62,9 @@ final class SDTransaction {
         type: String,
         aiSuggested: Bool = false,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        sourceTemplateId: UUID? = nil,
+        sourcePeriodDueDate: Date? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -68,5 +77,7 @@ final class SDTransaction {
         self.aiSuggested = aiSuggested
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.sourceTemplateId = sourceTemplateId
+        self.sourcePeriodDueDate = sourcePeriodDueDate
     }
 }

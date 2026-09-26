@@ -10,6 +10,14 @@ import Domain
 /// `DeeplinkClientTests`), the recurring-confirmation resolution against an
 /// in-memory store, and the preference / sync-flag round-trips lifted from
 /// the former `AppEnvironmentUseCase` and `CloudSyncUseCase`.
+///
+/// No `.serialized` needed: every test in this suite (including the
+/// `seedIfNeeded` coverage for spec A1 — see the comment above that test)
+/// works against a freshly created in-memory `ModelContainer` scoped to that
+/// single test, never `PersistenceBootstrap.container` (the process-wide
+/// live container). An earlier revision of this suite briefly called the
+/// real `wipeAllSyncData()`, which does mutate that global directly, and was
+/// serialized for that reason; that call is gone, so the trait went with it.
 @Suite("PlatformClient Live Tests")
 struct PlatformClientLiveTests {
 
@@ -324,5 +332,47 @@ struct PlatformClientLiveTests {
             @Dependency(\.platformClient) var client
             _ = client
         }
+    }
+
+    // MARK: - Re-seeding after a wipe (spec A1)
+    //
+    // 刻意的覆蓋缺口：這裡不測「呼叫真正的 `wipeAllSyncData()` 之後分類有沒有
+    // 回來」那條端到端路徑，即使那正是這個 spec 要保證的行為。原因：
+    // `wipeAllSyncData` 讀寫的是 `PersistenceBootstrap.container` ——
+    // process-wide 的全域容器，指向 `storeURL`。而 `NeuLedgerTests` 的
+    // `TEST_HOST` 是 `NeuLedger.app`，繼承它的 `group.com.drake.NeuLedger`
+    // App Group 權限，所以那不是測試專用容器，是跟已安裝 App 共用的同一顆
+    // `default.store`。呼叫真正的實作會把裝置上的交易、帳戶、分類、預算、
+    // 標籤、週期範本、載具全部刪光，只留下重新種回的 14 筆分類——這是資料
+    // 損毀等級的風險，且目前 `storeURL` 沒有測試環境可以導向暫存目錄的注入
+    // 點，無法用 in-memory 容器規避。
+    //
+    // 這不是推測：帶端到端版本的 `testWipeReseedsDefaultCategories` 真的在模擬器
+    // 上跑過並通過，也就是真正的 `wipeAllSyncData()` 確實對 `storeURL` 執行過一次
+    // 全表刪除。沒有人在刪除前後比對那顆 store 的內容，所以「使用者資料被清空」
+    // 是從程式碼路徑推出的後果，不是實測到的觀察值。
+    //
+    // 改為直接測 `seedIfNeeded(in:)` 本身：它的簽章吃外部傳入的
+    // `ModelContext`，跟全域容器完全解耦，可以在一顆乾淨的 in-memory 容器上
+    // 安全驗證「清空後重新種入 14 筆預設分類」這個行為。`wipeAllSyncData`
+    // 裡那一行 `PersistenceBootstrap.seedIfNeeded(in: ModelContext(localContainer))`
+    // 是否真的接上了，目前只能靠 code review 把關（follow-up：讓 `storeURL`
+    // 在測試環境下可注入暫存路徑，屆時才補得出安全的端到端測試）。
+
+    @Test("seedIfNeeded populates the default categories on an empty store")
+    func testSeedIfNeededPopulatesDefaultCategoriesOnAnEmptyStore() async throws {
+        let container = try freshContainer()
+        let context = ModelContext(container)
+
+        PersistenceBootstrap.seedIfNeeded(in: context)
+
+        let categories = try await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            try await CategoryStore().fetchAll()
+        }
+        #expect(categories.isEmpty == false, "seedIfNeeded 必須在空的 store 上種入預設分類")
+        #expect(categories.contains { $0.isDefault })
+        #expect(categories.count == 14, "14 筆預設分類（9 支出 + 5 收入）")
     }
 }

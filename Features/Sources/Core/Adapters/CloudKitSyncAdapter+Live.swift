@@ -20,6 +20,8 @@ extension CloudKitSyncAdapter: DependencyKey {
                     for: PersistenceBootstrap.schema,
                     configurations: [PersistenceBootstrap.cloudConfiguration]
                 )
+                // 這一行現在會更新共用 box，所有 `SwiftDataStore` 立即跟上
+                // （不必等下次冷啟動；spec A3，見 ModelContainerKey.swift）。
                 PersistenceBootstrap.container = cloudContainer
             }
         },

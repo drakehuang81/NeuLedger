@@ -68,10 +68,10 @@ APIs through an `XxxAdapter`.
 
 | Who | May depend on | May NOT depend on |
 |---|---|---|
-| **Feature** | Clients (any number), TCA built-ins (`\.dismiss`, `\.continuousClock`, `\.uuid`, `\.openURL`, `\.date`) | Adapters, `SwiftDataStore`, `\.modelContainer`, system APIs |
+| **Feature** | Clients (any number), TCA built-ins (`\.dismiss`, `\.continuousClock`, `\.uuid`, `\.openURL`, `\.date`) | Adapters, `SwiftDataStore`, `\.modelContainer` / `\.modelContainerBox`, system APIs |
 | **Client Live** | `SwiftDataStore`, Adapters, Domain types (incl. entity rules), another Client (§3.1 whitelist only) | `ModelContext` / SwiftData primitives, UIKit/WidgetKit/etc. directly |
 | **Adapter** | System APIs, Domain types | Other Adapters, Clients, `SwiftDataStore` |
-| **SwiftDataStore / Mapper** | `\.modelContainer`, `ModelContext` | Business logic |
+| **SwiftDataStore / Mapper** | `\.modelContainerBox` (the real access point — `\.modelContainer` is a test-override facade), `ModelContext` | Business logic |
 | **Entity rule** | Pure Swift (Foundation OK) | Anything async / throws IO |
 
 **Rationale for strict Feature → Client only:** every screen-driven mutation
@@ -124,8 +124,22 @@ gone (each Client reads its own settings keys through `userSettingsAdapter`).
 
 Three building blocks; `ModelContext` never escapes them.
 
-1. **`\.modelContainer`** — the `ModelContainer` as a TCA dependency.
-   Only `SwiftDataStore` may `@Dependency(\.modelContainer)`.
+1. **`\.modelContainerBox`** — the real access point for the `ModelContainer`
+   as a TCA dependency (`\.modelContainer` is a test-override facade, not a
+   second door — see below).
+   Backed by a `ModelContainerBox` (`Core/Persistence/ModelContainerKey.swift`):
+   swift-dependencies caches a resolved dependency **per key type**, so once
+   `\.modelContainer`'s `liveValue` was read the first time, reassigning
+   `PersistenceBootstrap.container` afterwards (switching iCloud sync on, or
+   wiping data) had no effect on stores that had already resolved the
+   dependency — new data stopped reaching CloudKit until the next cold
+   launch (spec A3). The fix routes everything through a stable, mutable
+   box: `\.modelContainer`'s getter/setter stay as a **facade** so the
+   existing `$0.modelContainer = container` test override keeps working
+   unchanged, while `SwiftDataStore` — the only type allowed to
+   `@Dependency(\.modelContainerBox)` — always reads `containerBox.container`
+   fresh. Switching containers now means mutating the box's `container`
+   property, which every store sees immediately.
 2. **`PersistentDomainModel`** — protocol every SD model adopts
    (`from(_:context:)`, `applyChanges(from:context:)`, `prepareForDelete()`,
    `idPredicate(_:)`). Mapping and relationship lifecycle live here
@@ -329,7 +343,8 @@ records:
 | Adapter calls another Adapter / a Client | Compose inside a Client Live |
 | Entity method does IO / `async throws` | That's Client logic — entities stay pure |
 | New ambiguous `XxxClient` outside §5 catalog | Decide: does it belong to an existing context? New contexts need a spec note |
-| `@Dependency(\.modelContainer)` outside `SwiftDataStore` | Instantiate `SwiftDataStore<Domain, SD>()` instead |
+| `@Dependency(\.modelContainerBox)` outside `SwiftDataStore` | Instantiate `SwiftDataStore<Domain, SD>()` instead — `modelContainerBox` is the real access point, not `\.modelContainer` |
+| `@Dependency(\.modelContainer)` outside a test override | It's a facade kept only so `$0.modelContainer = container` still works in tests; production code has no legitimate reason to read it |
 | `ModelContext` outside the §4 closed list | Move the work into a Store method or constrained extension |
 | `FetchDescriptor<SD>` / SD types crossing above Infrastructure | Return Domain types only |
 | Mapper performs business logic | Mappers translate shape only; rules go on the entity / in a Client |

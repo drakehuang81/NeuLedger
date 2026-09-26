@@ -98,9 +98,11 @@ extension InsightsClient: DependencyKey {
     }
 
     public static var liveValue: InsightsClient {
-        // Container is reached via `PersistenceBootstrap` rather than
-        // `\.modelContainer` directly — architecture.md §4.2 reserves
-        // `@Dependency(\.modelContainer)` for `SwiftDataStore` only.
+        // Container is reached via `PersistenceBootstrap` rather than the
+        // dependency directly — architecture.md §4 / §9 reserve
+        // `@Dependency(\.modelContainerBox)` for `SwiftDataStore` only
+        // (`\.modelContainer` is just a facade over that same box, so going
+        // through it would not make this any more allowed).
         @Dependency(\.persistenceBootstrap) var persistenceBootstrap
         @Dependency(\.aiAdapter) var aiAdapter
 
@@ -130,7 +132,8 @@ extension InsightsClient: DependencyKey {
             },
             categoryProportions: { range in
                 let categories = try await categoryStore.fetchAll()
-                let names = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+                // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
+                let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
                 return try TransactionAnalyticsKernel.categoryProportions(
                     range: range,
                     container: persistenceBootstrap.modelContainer(),
@@ -141,7 +144,8 @@ extension InsightsClient: DependencyKey {
                 do {
                     let active = try await budgetStore.fetchAll().filter { $0.isActive }
                     let categories = try await categoryStore.fetchAll()
-                    let names = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+                    // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
+                    let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
                     return try TransactionAnalyticsKernel.budgetGauges(
                         accountId: accountId,
                         activeBudgets: active,

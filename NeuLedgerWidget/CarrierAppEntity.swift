@@ -39,7 +39,12 @@ struct CarrierEntityQuery: EntityQuery {
     /// previously selected carrier on each widget render).
     func entities(for identifiers: [CarrierAppEntity.ID]) async throws -> [CarrierAppEntity] {
         let all = WidgetAppGroup.readAllCarriers()
-        let lookup = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        // 多裝置 CloudKit 同步可能產生同 id 的兩筆載具，取第一筆（spec A4）：
+        // 兩台裝置各自建過載具之後才開啟同步，是會實際發生的情境，而
+        // `uniqueKeysWithValues` 碰到重複 id 會**直接 trap**。這裡是 App Intents
+        // 的 entity query，當場 crash 等於 Widget 顯示「無法載入」、用 Siri／
+        // 捷徑選載具時整個 intent 失敗，每次刷新都重現，使用者沒有自救路徑。
+        let lookup = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return identifiers.compactMap { id in
             guard let entry = lookup[id] else { return nil }
             return CarrierAppEntity(

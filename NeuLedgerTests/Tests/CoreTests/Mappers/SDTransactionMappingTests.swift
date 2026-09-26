@@ -110,4 +110,54 @@ struct SDTransactionMappingTests {
         #expect(matches.count == 1)
         #expect(matches.first?.id == a.id)
     }
+
+    @Test("the recurring source fields round-trip through the SwiftData model")
+    func testRecurringSourceFieldsRoundTrip() throws {
+        let templateId = UUID()
+        let due = Date(timeIntervalSince1970: 1_767_139_200)
+        let domain = Transaction(
+            id: UUID(), amount: 18_000, date: due,
+            note: "rent", categoryId: nil, accountId: UUID().uuidString,
+            toAccountId: nil, type: .expense, tags: [],
+            aiSuggested: false, createdAt: due, updatedAt: due,
+            sourceTemplateId: templateId, sourcePeriodDueDate: due
+        )
+        let model = SDTransaction.from(domain, context: context)
+        #expect(model.sourceTemplateId == templateId)
+        #expect(model.sourcePeriodDueDate == due)
+
+        let back = model.toDomain()
+        #expect(back.sourceTemplateId == templateId)
+        #expect(back.sourcePeriodDueDate == due)
+    }
+
+    @Test("a manually recorded transaction keeps both source fields nil")
+    func testManualTransactionHasNoSource() throws {
+        let domain = Transaction(
+            amount: 120, date: Date(), accountId: UUID().uuidString, type: .expense
+        )
+        #expect(domain.sourceTemplateId == nil)
+        #expect(domain.sourcePeriodDueDate == nil)
+
+        let model = SDTransaction.from(domain, context: context)
+        #expect(model.toDomain().sourceTemplateId == nil)
+        #expect(model.toDomain().sourcePeriodDueDate == nil)
+    }
+
+    @Test("applyChanges carries the source fields")
+    func testApplyChangesCarriesSource() throws {
+        var domain = Transaction(
+            amount: 1, date: Date(), accountId: UUID().uuidString, type: .expense
+        )
+        let model = SDTransaction.from(domain, context: context)
+
+        let templateId = UUID()
+        let due = Date(timeIntervalSince1970: 1_767_139_200)
+        domain.sourceTemplateId = templateId
+        domain.sourcePeriodDueDate = due
+        model.applyChanges(from: domain, context: context)
+
+        #expect(model.sourceTemplateId == templateId)
+        #expect(model.sourcePeriodDueDate == due)
+    }
 }

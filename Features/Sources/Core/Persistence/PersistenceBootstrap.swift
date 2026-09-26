@@ -69,9 +69,34 @@ extension PersistenceBootstrap: DependencyKey {
         cloudKitDatabase: .private("iCloud.com.drake.NeuLedger")
     )
 
+    /// 整個 process 共用的容器 box；換容器時改的是它的內容（spec A3）。See
+    /// `ModelContainerKey.swift` for why `SwiftDataStore` depends on this box
+    /// instead of the container directly.
+    ///
+    /// No `nonisolated(unsafe)` needed: `ModelContainerBox` is already
+    /// `@unchecked Sendable` and this is a `static let`, not a stored `var`.
+    public static let containerBox: ModelContainerBox = {
+        ModelContainerBox(makeInitialContainer())
+    }()
+
     /// Shared live container. On launch, restores the CloudKit-backed container if sync was
     /// previously enabled. Replaced at runtime by CloudSyncUseCase during the migration flow.
-    nonisolated(unsafe) public static var container: ModelContainer = {
+    ///
+    /// Backed by `containerBox` so assigning here immediately updates every
+    /// `SwiftDataStore` reading through the box — no cold launch required.
+    ///
+    /// No `nonisolated(unsafe)` needed: this is a computed property with no
+    /// stored backing of its own — the storage (and its own locking) lives
+    /// in `containerBox`. The modifier only makes sense on stored state.
+    public static var container: ModelContainer {
+        get { containerBox.container }
+        set { containerBox.container = newValue }
+    }
+
+    /// Builds the initial container for `containerBox`. Moved out of the
+    /// `container` property's old lazy initializer verbatim — behavior is
+    /// unchanged, only the storage mechanism (box vs. plain static var) is new.
+    private static func makeInitialContainer() -> ModelContainer {
         do {
             // Read raw UserDefaults directly here (rather than via UserSettingsAdapter)
             // because this static initializer runs before TCA dependencies resolve.
@@ -89,7 +114,7 @@ extension PersistenceBootstrap: DependencyKey {
         } catch {
             fatalError("Failed to create live ModelContainer: \(error)")
         }
-    }()
+    }
 
     public static let liveValue = PersistenceBootstrap(
         modelContainer: { PersistenceBootstrap.container }
@@ -218,7 +243,12 @@ extension SeedCategory {
 
 // MARK: - Seeding
 
-private extension PersistenceBootstrap {
+// Not `private` — besides the two static lazy initializers above
+// (`makeInitialContainer()`, `testContainer`), `PlatformClient+Live.swift`'s
+// `wipeAllSyncData` now calls this directly as a third call site, right
+// after it rebuilds the local container (spec A1). `internal` (the default
+// here) is enough since that call site lives in the same `Core` target.
+extension PersistenceBootstrap {
     static func seedIfNeeded(in context: ModelContext) {
         do {
             try insertMissingDefaults(SeedCategory.defaultExpenseCategories,

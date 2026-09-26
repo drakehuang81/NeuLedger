@@ -6,14 +6,23 @@ import Domain
 /// Generic CRUD store over a `(Domain, SD)` pair.
 ///
 /// `SwiftDataStore` is the **only** type allowed to consume
-/// `\.modelContainer` (see `docs/architecture.md` §4.2). Repositories
-/// instantiate it with zero arguments — `SwiftDataStore<Domain, SD>()` —
-/// and call its five methods. All `ModelContext` usage stays inside.
+/// `\.modelContainerBox` (see `docs/architecture.md` §4 / §9 Anti-Patterns).
+/// `\.modelContainer` is a separate, test-override-only facade — reading it
+/// directly anywhere, including here, would silently reintroduce the stale
+/// container bug this file exists to fix (see `ModelContainerKey.swift`).
+/// Repositories instantiate it with zero arguments —
+/// `SwiftDataStore<Domain, SD>()` — and call its five methods. All
+/// `ModelContext` usage stays inside.
 public struct SwiftDataStore<Domain: Identifiable & Sendable,
                               SD: PersistentDomainModel>: Sendable
     where SD.DomainModel == Domain
 {
-    @Dependency(\.modelContainer) private var container
+    @Dependency(\.modelContainerBox) private var containerBox
+
+    /// The container to use for this call — always read fresh from the box
+    /// so a container swap mid-process (iCloud sync toggle, data wipe) takes
+    /// effect immediately (spec A3). See `ModelContainerKey.swift`.
+    private var container: ModelContainer { containerBox.container }
 
     public init() {}
 
@@ -21,6 +30,19 @@ public struct SwiftDataStore<Domain: Identifiable & Sendable,
     public func fetchAll(sortBy descriptors: [SortDescriptor<SD>] = []) async throws -> [Domain] {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<SD>(sortBy: descriptors)
+        return try context.fetch(descriptor).map { $0.toDomain() }
+    }
+
+    /// Returns the Domain values matching an SD-side predicate.
+    ///
+    /// 給「需要用 SD 欄位過濾、但不想把整張表讀進記憶體」的呼叫端用
+    /// （例如週期補記的去重查詢只要 `sourceTemplateId != nil` 的那些）。
+    public func fetchAll(
+        where predicate: Predicate<SD>,
+        sortBy descriptors: [SortDescriptor<SD>] = []
+    ) async throws -> [Domain] {
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<SD>(predicate: predicate, sortBy: descriptors)
         return try context.fetch(descriptor).map { $0.toDomain() }
     }
 

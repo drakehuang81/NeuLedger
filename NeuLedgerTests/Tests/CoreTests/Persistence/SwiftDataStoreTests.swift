@@ -109,4 +109,44 @@ struct SwiftDataStoreTests {
             }
         }
     }
+
+    // MARK: - Container indirection (spec A3)
+    //
+    // `\.modelContainer` used to be a plain computed property, but
+    // swift-dependencies caches the *resolved value* per key type, so the
+    // first resolution pinned the `ModelContainer` instance for the rest of
+    // the process — switching iCloud sync or wiping data only replaced
+    // `PersistenceBootstrap.container`, and already-resolved stores never
+    // saw the new container until the next cold launch. `SwiftDataStore`
+    // now depends on a `ModelContainerBox` instead: the box itself stays
+    // cached, but swapping its `container` property is visible immediately
+    // to every store that reads through it.
+    @Test("a store follows the box when its content is swapped mid-dependency")
+    func testStoreFollowsTheBox() async throws {
+        let schema = Schema([SDAccount.self])
+        let first = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let second = try ModelContainer(
+            for: schema,
+            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+        )
+        let box = ModelContainerBox(first)
+
+        try await withDependencies {
+            $0.modelContainerBox = box
+        } operation: {
+            let store = AccountStore()
+            try await store.add(Account(name: "Cash", type: .cash, icon: "banknote", color: "#FFFFFF"))
+            #expect(try await store.fetchAll().count == 1)
+
+            // 換掉 box 的內容（等同 switchToCloudContainer / wipeAllSyncData 做的事）。
+            box.container = second
+            #expect(
+                try await store.fetchAll().isEmpty,
+                "換過容器之後，store 必須讀寫新的容器"
+            )
+        }
+    }
 }

@@ -142,7 +142,10 @@ extension PlatformClient: DependencyKey {
                 //      stream half-deleted state back up to CloudKit.
                 //   2. Wipe local rows.
                 //   3. Rebuild the live ModelContainer against the local-only
-                //      configuration so the next launch starts fresh.
+                //      configuration so the next launch starts fresh, and
+                //      re-seed the default categories into it immediately
+                //      (spec A1) — see the comment at the seed call below for
+                //      why this can't be left to happen implicitly.
                 //   4. Clear preference flags last; once `hasCompletedOnboarding`
                 //      flips false the UI layer routes back to onboarding.
                 try await capturedCloudKitSyncAdapter.wipeCloudRecords()
@@ -158,13 +161,20 @@ extension PlatformClient: DependencyKey {
                     try context.delete(model: SDCarrier.self)
                     try context.save()
 
-                    // Rebuild as a local-only container so the next
-                    // `seedIfNeeded` runs without re-pulling stale cloud rows.
+                    // Rebuild as a local-only container so we don't keep
+                    // re-pulling stale cloud rows once sync is re-enabled.
                     let localContainer = try ModelContainer(
                         for: PersistenceBootstrap.schema,
                         configurations: [PersistenceBootstrap.localConfiguration]
                     )
+                    // 這一行現在會更新共用 box，所有 `SwiftDataStore` 立即跟上
+                    // （不必等下次冷啟動；spec A3，見 ModelContainerKey.swift）。
                     PersistenceBootstrap.container = localContainer
+                    // 重新指派 container 不會觸發任何 seeding——`seedIfNeeded` 只在
+                    // static lazy initializer 內被呼叫，那些在 process 生命週期中早已
+                    // 跑完。不顯式呼叫的話，使用者抹除資料後分類清單會是空的，
+                    // 直到下次冷啟動才恢復（spec A1）。
+                    PersistenceBootstrap.seedIfNeeded(in: ModelContext(localContainer))
                 }
 
                 capturedUserSettingsAdapter.setBool(false, .isSyncEnabled)

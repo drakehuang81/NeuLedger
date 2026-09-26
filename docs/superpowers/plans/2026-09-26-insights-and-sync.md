@@ -616,6 +616,8 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -am "fix(ins
 > **Ruling I：這個 task 是 #7 的單一原子切換點。** 除了下方原文之外，還要做原 Task 5 的內容：把 `InsightsClient.generateInsights` 的回傳型別改成 `[InsightDescriptor]`，並把 `InsightsClient+Live.swift` 的本體換成一行 `InsightComposer.compose(from: summary)`（刪掉三筆寫死的假資料與那段已失效的 TODO 註解）。
 > 連帶必須修到可編譯的消費端：`DashboardFeature.swift`（`:71` `insights`、`:128` `insightsLoaded`、`:476-477` 的 effect 轉發）、`InsightCarousel.swift`（`:52-58` 的成員存取）、`InsightsClientTests.swift` 的 `testGenerateInsightsMock`、`DashboardFeatureInsightTests.swift` 三處 mock（約 `:12`、`:45`、`:65`）。
 > **已核實**：其餘五個含 `generateInsights` mock 的測試檔（`MainTabFeatureTests`、`DashboardFeatureTests`、`DashboardFeatureSectionPhaseTests`、`DashboardFeatureStatsTests`、`DashboardFeatureMutationTests`）全部寫 `{ _ in [] }`，型別無關、不受影響、**不要動它們**。
+> **Task 4 review 轉移過來的風險（必須處理）**：`InsightComposer` 用 `summary.savingsPercentage != 0` 做**精確的 `Double` 比較**來決定要不要產生儲蓄率描述子。Task 4 的 reviewer 查過 `TransactionAnalyticsKernel`，確認 income 等於 expense 時 Decimal 精確減法轉 Double 恰為 0.0、不會有殘渣——**但那是 `StatsSnapshot.savingsPercentage` 既有的算法**。所以：若你讓值**直接**來自 `todayStats` 回傳的 `StatsSnapshot.savingsPercentage`，這條就安全、什麼都不用做；若你自己推導（例如用 income/expense 重算、或做任何算術），就必須改用容差比較而不是 `!= 0`，否則 `1e-18` 這種殘渣會產生一張顯示「0%」的洞察卡片。**在報告裡明說你走的是哪一條。**
+>
 > **設計選擇留給實作者裁定並在報告說明**：`state.insights` 要維持 `[InsightData]`（在 reducer 或 effect 裡映射）還是改成 `[InsightDescriptor]`（在 view 裡映射，與 Task 3 的 `categoryDisplayName` 慣例一致）。兩者皆可，但後者要連帶改 `InsightCarousel`。
 
 **Files:**
@@ -738,11 +740,16 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test \
 
 | Kind | title key | body key | metric | metricColor |
 |---|---|---|---|---|
-| `topCategory` | `dashboard_insight_top_category_title` | `dashboard_insight_top_category_body` | `"\(Int(share * 100))%"` | `.expense` |
-| `savingsRate` | `dashboard_insight_savings_title` | `dashboard_insight_savings_body` | `"\(Int(rate * 100))%"` | rate >= 0 ? `.income` : `.expense` |
+| `topCategory` | `dashboard_insight_top_category_title` | `dashboard_insight_top_category_body` | `String(format: "%.0f%%", share * 100)` | `.expense` |
+| `savingsRate` | `dashboard_insight_savings_title` | `dashboard_insight_savings_body` | `String(format: "%.0f%%", rate * 100)` | rate >= 0 ? `.income` : `.expense` |
 | `weekSpending` | `dashboard_insight_week_title` | `dashboard_insight_week_body` | `amount.twdCompact` | `.neutral` |
 
-body 的模板帶參數（分類名、`amount.twdFormatted`、百分比）。**en 與 zh-Hant 都要填**。`cta` 沿用既有的三個字串或設 `nil`——不要為了填滿而發明新的 CTA。
+body 的模板帶參數（分類名、`amount.twdFormatted`、百分比）。**en 與 zh-Hant 都要填**。
+
+**照這個 codebase 的既有慣例做，不要自創第三種寫法**（已核實）：
+- 帶參數的本地化字串：`String(format: String(localized: "key"), args...)`——見 `CarrierManagementFeature.swift:117`、`NotificationSettingsView.swift:210`。注意那些既有用法**沒有**帶 `bundle:`，但 `DashboardFeature` 裡的無參數用法帶 `bundle: .main`（`:203` 等）；兩種都存在，跟你要改的檔案裡的鄰近寫法保持一致即可。
+- 百分比：`String(format: "%.0f%%", x * 100)`——見 `CategoryDonutCard.swift:237`、`KPIStrip.swift:24`。**不要**用 `"\(Int(x * 100))%"`：`Int()` 截斷而 `%.0f` 四捨五入（0.425 會分別給 42 與 43），而這個 codebase 已經選了四捨五入。
+- 金額：`Decimal.twdFormatted`（`Common/Extensions/Decimal+Currency.swift:5`），空間受限處另有 `twdCompact`（`:15`）。**不要**自建 `NumberFormatter`。`cta` 沿用既有的三個字串或設 `nil`——不要為了填滿而發明新的 CTA。
 
 - [ ] **Step 5: 真正的空狀態（R8）**
 

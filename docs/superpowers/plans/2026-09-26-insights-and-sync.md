@@ -33,7 +33,12 @@
 - **R4 #14 只做順序修正**，`mark(_:)` 移到 `add` 成功之後；失敗時不 log。**不引入 OSLog**：全專案目前零 `os_log`／`Logger`（唯一痕跡是 `WatchSyncObserver.swift:69` 一句「future iteration」註解），引入 logging 基礎建設是另一張單，而順序才是資料遺失的根因。
 - **R5 #15 的 App Group key 要同步兩處**：`Features/Sources/Core/Adapters/WidgetSyncAdapter+Live.swift:18-24` 與 `Shared/WidgetAppGroup.swift:17-25` 各自硬編同一組常數（那是 audit #37 / PR C 的範圍）。本 PR **不統一**這兩處，但新 key 必須同時加在兩邊，並在兩邊的「keep in sync」註解裡列出來。
 - **R6 #22 只做前半**（交易列顯示分類名）。Analysis 分類名未本地化屬 PR B。
-- **R7 #17 採「切 tab 時重載」**，不是跨 tab 轉發 delegate。理由：重載同時涵蓋 CloudKit 背景同步（另一台裝置改動後切回來也會更新），轉發只涵蓋本機異動。**重載期間不得清空既有資料**——`isLoading` / phase 轉 loading 但 `transactions` / 既有 section 資料保留，避免每次切 tab 閃一下空白。
+- **R7 #17 採「切 tab 時重載」**，不是跨 tab 轉發 delegate。理由：重載同時涵蓋 CloudKit 背景同步（另一台裝置改動後切回來也會更新），轉發只涵蓋本機異動。**重載期間不得清空既有資料。** 這一條已核實過兩個 child 的現況，結論是**不能送 `.task`**：
+  - `DashboardFeature.task`（`:173-182`）把五個 phase 全設成 `.loading`，而 view 在 `.loading` 時顯示 skeleton（例如 `InsightCarousel.swift:12-13`），所以送 `.task` 會在已有資料上閃一片骨架；它還用 `cancelInFlight: false`，連續切 tab 會**疊加並行載入**。改送既有的 **`.pulledToRefresh`**（`:185-189`）——它 `cancelInFlight: true` 且**不動 phase**，正好符合本條要求。
+  - `TransactionsFeature.task`（`:100-103`）設 `isLoading = true`，而 `TransactionsView.swift:18-20` 在 `isLoading` 時用 `ProgressView` **整個取代列表**。它**沒有** `.pulledToRefresh` 之類的對應 action，所以 Task 7 必須**新增一個**（例如 `case refreshRequested`）：呼叫同一個 `reload(state.effectiveFilter)` 但**不設 `isLoading`**，讓列表在重載期間留在畫面上。
+- **R9 #7 的洞察是跨所有帳戶的，這是刻意的限制。** `insightsClient.todayStats` 不吃 `accountId`（`InsightsClient.swift` 的簽章只有 `referenceDate`），`categoryProportions` 只吃 `DateInterval`。所以即使使用者在 Dashboard 的帳戶選擇器選了某個帳戶，洞察數字仍是全部帳戶的合計。這**與既有的 StatsRow 一致**（`DashboardFeature.swift:65` 的註解已寫明那是「全域數字」，並掛著同一個 `TODO(stats-follow-up)`：要連動必須讓 `todayStats` 多一個 `accountId` 參數，屬 Domain 介面 + Application 實作的變更）。
+  **實作者不得為此擴大範圍去改 Client 介面**；也**不得**默默出貨而不留痕跡。做法：在 `insightsEffect` 旁留一行註解指向那個既有 TODO，並在 PR body 的「Behavior changes」列出這條限制。理由：這條限制本身可接受（與畫面上方的 StatsRow 同一個範圍，不會自相矛盾），但使用者可能在看現金帳戶時讀到「餐飲 NT$8,400」，那個落差必須被記錄下來、而不是留給下一個人重新發現。
+
 - **R8 假洞察的空狀態也是假的**。`InsightCarousel.swift:73-84` 的 `placeholder` 用 `dashboard_insight_loading_title`（「正在生成洞察…」）當 `.loaded && isEmpty` 的畫面。R1 之後資料不足時仍會是空陣列（例如全新使用者一筆帳都沒有），所以**必須**另給一個真正的空狀態文案，不能沿用載入中那兩個 key。
 
 ---
@@ -400,6 +405,10 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -am "fix(tra
 
 ## Task 4: Domain — 結構化洞察描述子與純挑選函式（#7 第一層）
 
+> **Ruling I（執行中裁定，優先於下方原文）：這個 task 只做「純新增」——只建 `InsightDescriptor.swift`、`InsightComposer.swift`、`InsightComposerTests.swift`。**
+> **不要**改 `InsightsClient.swift` 的簽章、**不要**動 `InsightsClient+Live.swift` 或 `InsightsClientTests.swift`（下方 Step 5 作廢，移到 Task 6）。
+> 原因：改回傳型別會讓 `DashboardFeature.swift`（`:71`、`:128`、`:476-477`）與 `InsightCarousel.swift`（`:52-58` 直接讀 `item.title`/`body`/`metric`/`metricColor`/`cta`）一起編譯不過，而要讓它們編譯就必須寫 view 端的本地化映射——那是 Task 6 的實質內容。沒有本地化的臨時映射等於再塞一批假文案。簽章改動與它的消費端是原子的，無法切開。
+
 **先讀**：`docs/audits/2026-09-23-health-audit/02-application-core.md` 的 **B9**。
 
 **Files:**
@@ -552,6 +561,8 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -am "feat(do
 
 ## Task 5: Application — 刪掉三筆寫死的假資料（#7 第二層）
 
+> **Ruling I：這個 task 併入 Task 6，不單獨派工。** 它的內容（改簽章 + 把 `generateInsights` 的本體換成一行 `InsightComposer.compose(from:)`）與 Task 6 的映射工作必須同時落地，否則樹編譯不過。派 Task 6 時把這份 brief 一起交給實作者。
+
 **Files:**
 - Modify: `Features/Sources/Application/Insights/InsightsClient+Live.swift:193-220`
 - Test: `NeuLedgerTests/Tests/DomainTests/Clients/InsightsClientTests.swift`
@@ -600,7 +611,12 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -am "fix(ins
 
 ---
 
-## Task 6: Features — 組真實 summary 並本地化（#7 第三層）
+## Task 6: Features — #7 的整個切換（原第三層 + 併入的 Task 5）
+
+> **Ruling I：這個 task 是 #7 的單一原子切換點。** 除了下方原文之外，還要做原 Task 5 的內容：把 `InsightsClient.generateInsights` 的回傳型別改成 `[InsightDescriptor]`，並把 `InsightsClient+Live.swift` 的本體換成一行 `InsightComposer.compose(from: summary)`（刪掉三筆寫死的假資料與那段已失效的 TODO 註解）。
+> 連帶必須修到可編譯的消費端：`DashboardFeature.swift`（`:71` `insights`、`:128` `insightsLoaded`、`:476-477` 的 effect 轉發）、`InsightCarousel.swift`（`:52-58` 的成員存取）、`InsightsClientTests.swift` 的 `testGenerateInsightsMock`、`DashboardFeatureInsightTests.swift` 三處 mock（約 `:12`、`:45`、`:65`）。
+> **已核實**：其餘五個含 `generateInsights` mock 的測試檔（`MainTabFeatureTests`、`DashboardFeatureTests`、`DashboardFeatureSectionPhaseTests`、`DashboardFeatureStatsTests`、`DashboardFeatureMutationTests`）全部寫 `{ _ in [] }`，型別無關、不受影響、**不要動它們**。
+> **設計選擇留給實作者裁定並在報告說明**：`state.insights` 要維持 `[InsightData]`（在 reducer 或 effect 裡映射）還是改成 `[InsightDescriptor]`（在 view 裡映射，與 Task 3 的 `categoryDisplayName` 慣例一致）。兩者皆可，但後者要連帶改 `InsightCarousel`。
 
 **Files:**
 - Modify: `Features/Sources/Features/Dashboard/DashboardFeature.swift:471-483`（`insightsEffect`）+ 新的映射函式
@@ -714,7 +730,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test \
 
 - [ ] **Step 3: 組真實 summary**
 
-`insightsEffect` 改成先取真實數字再組 summary。`monthTotal` 與 top category 由 `categoryProportions(當月 DateInterval)` 得到（總和 = monthTotal，第一筆 = top category，該 endpoint 已依金額降冪排序）；`weekTotal` 與 `savingsPercentage` 由 `todayStats(now)` 得到。當月區間用 `BudgetPeriod.monthly.dateInterval(containing:)`（**不要**自己寫 `calendar.dateInterval(of: .month,...)`——spec §5 只允許一處）。時間一律走 `@Dependency(\.date.now)`，不得裸 `Date()`。
+`insightsEffect` 改成先取真實數字再組 summary。**不要**為了帳戶範圍去改 `todayStats` 的簽章（R9）——洞察是跨帳戶的，在此留一行註解指向 `DashboardFeature.swift:269-271` 既有的 `TODO(stats-follow-up)`。`monthTotal` 與 top category 由 `categoryProportions(當月 DateInterval)` 得到（總和 = monthTotal，第一筆 = top category，該 endpoint 已依金額降冪排序）；`weekTotal` 與 `savingsPercentage` 由 `todayStats(now)` 得到。當月區間用 `BudgetPeriod.monthly.dateInterval(containing:)`（**不要**自己寫 `calendar.dateInterval(of: .month,...)`——spec §5 只允許一處）。時間一律走 `@Dependency(\.date.now)`，不得裸 `Date()`。
 
 - [ ] **Step 4: 描述子 → localized `InsightData`**
 
@@ -752,7 +768,9 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer git commit -am "feat(da
 
 **Files:**
 - Modify: `Features/Sources/Features/MainTab/MainTabFeature.swift:131-134`（`tabSelected`）
+- Modify: `Features/Sources/Features/Transactions/TransactionsFeature.swift`（新增不清空列表的 refresh action——見 R7）
 - Test: `NeuLedgerTests/Tests/FeaturesTests/MainTabFeatureTests.swift`
+- Test: `NeuLedgerTests/Tests/FeaturesTests/TransactionsFeatureTests.swift`（釘住新 action 不設 `isLoading`）
 
 現況：`case let .tabSelected(tab): state.selectedTab = tab; return .none`。兩個 child 各自只重載自己，MainTab 不做跨 tab 轉發；而 `TransactionsView.swift:43` 的 `.task` 在 `TabView` 裡只會在該 tab 內容首次建立時觸發一次。所以 Dashboard 新增 → 切到交易分頁 → 新那筆不在列表上；反向亦然。
 
@@ -777,7 +795,7 @@ func testSwitchingToTransactionsReloads() async throws {
     await store.send(.tabSelected(.transactions)) {
         $0.selectedTab = .transactions
     }
-    await store.receive(\.transactions.task)
+    await store.receive(\.transactions.refreshRequested)
     await store.skipReceivedActions()
     await store.finish()
 }
@@ -805,7 +823,7 @@ func testSwitchingToDashboardReloads() async throws {
     await store.send(.tabSelected(.dashboard)) {
         $0.selectedTab = .dashboard
     }
-    await store.receive(\.dashboard.task)
+    await store.receive(\.dashboard.pulledToRefresh)
     await store.skipReceivedActions()
     await store.finish()
 }
@@ -848,13 +866,27 @@ case let .tabSelected(tab):
     // 改動後切回來也會更新，而跨 tab 轉發 delegate 只涵蓋本機異動
     // （audit A8 的修法建議，plan R7）。
     switch tab {
-    case .dashboard:    return .send(.dashboard(.task))
-    case .transactions: return .send(.transactions(.task))
-    default:            return .none
+    // 刻意不送 `.task`：它會把 phase 轉 loading／設 isLoading，
+    // 在已經有資料的畫面上閃一片骨架或轉圈（R7）。
+    case .dashboard:    return .send(.dashboard(.pulledToRefresh))
+    case .transactions: return .send(.transactions(.refreshRequested))
+    case .settings:     return .none
     }
 ```
 
-確認兩個 child 的載入 action 在重載期間**保留既有資料**（`transactions` 不清空、section phase 轉 loading 但舊值留著）。若既有實作會清空，在此 Task 一併改掉並加測試釘住。
+`Tab` 只有 `dashboard` / `settings` / `transactions` 三個 case（`MainTabFeature.swift:8-12`），所以上面用具名的 `.settings` 而不是 `default`——日後新增 tab 時編譯器會強迫你回來處理它。child action case 名是 `case dashboard(DashboardFeature.Action)` / `case transactions(TransactionsFeature.Action)`（`:55-57`）。
+
+`TransactionsFeature` 的新 action 照這個形狀（**不要**設 `isLoading`，那是整條修法的重點）：
+
+```swift
+// 切 tab 回來時的重載：與 `.task` 的差別是**不動 `isLoading`**，
+// 所以列表在重載期間留在畫面上，不會被 ProgressView 取代（plan R7）。
+case .refreshRequested:
+    state.loadError = nil
+    return reload(state.effectiveFilter)
+```
+
+並在 `TransactionsFeatureTests` 加一條釘住它：送 `.refreshRequested` 後 `isLoading` 必須仍是 `false`，且既有的 `transactions` 不被清空。
 
 - [ ] **Step 4: 跑測試確認通過**
 

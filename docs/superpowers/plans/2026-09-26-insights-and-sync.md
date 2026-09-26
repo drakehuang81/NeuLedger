@@ -59,7 +59,7 @@
 | `NeuLedgerWidget/CarrierWidget.swift` | 修改 | `resolveState` fallback 改讀 active id |
 | `NeuLedger/Resources/Localizable.xcstrings` | 修改 | 洞察模板 + 空狀態 + 交易列 fallback，en / zh-Hant 都填 |
 
-測試檔：`NeuLedgerTests/Tests/DomainTests/Analysis/InsightComposerTests.swift`（**新建**）、`DomainTests/Clients/InsightsClientTests.swift`、`FeaturesTests/Dashboard/DashboardFeatureInsightTests.swift`、`FeaturesTests/MainTabFeatureTests.swift`、`FeaturesTests/TransactionsFeatureTests.swift`、`CoreTests/Adapters/WatchSessionDelegateTests.swift`（若不存在則**新建**）、`CoreTests/Clients/CarrierClientLiveTests.swift`（若不存在則**新建**）。
+測試檔：`NeuLedgerTests/Tests/DomainTests/Analysis/InsightComposerTests.swift`（**新建**）、`DomainTests/Clients/InsightsClientTests.swift`、`FeaturesTests/Dashboard/DashboardFeatureInsightTests.swift`、`FeaturesTests/MainTabFeatureTests.swift`、`FeaturesTests/TransactionsFeatureTests.swift`、`CoreTests/WatchSessionDelegateTests.swift`（既有）、`CoreTests/Clients/CarrierClientLiveTests.swift`（若不存在則**新建**）。
 
 **Task 順序的理由**：Task 1–3 三條互不相干的小修先走（各自可獨立 review、風險低）；Task 4–6 是 #7 的三層，必須依序（Domain → Application → Features，後者消費前者的型別）；Task 7 的 #17 放最後，因為它會動 `MainTabFeature` 與兩個 child 的重載入口，而 Task 3 剛改過 `TransactionsFeature` 的載入路徑。
 
@@ -71,7 +71,7 @@
 
 **Files:**
 - Modify: `Features/Sources/Core/Adapters/Watch/WatchSessionDelegate.swift:26-57`
-- Test: `NeuLedgerTests/Tests/CoreTests/Adapters/WatchSessionDelegateTests.swift`（不存在則新建）
+- Test: `NeuLedgerTests/Tests/CoreTests/WatchSessionDelegateTests.swift`（**既有檔案**，已有三個案例與 in-memory container + `dedupStore` 注入的 harness；新案例加進同一個 suite，不要另建檔案——`CoreTests/` 底下所有 Watch 測試都是攤平的，沒有 `Adapters/` 子目錄）
 
 **Interfaces:**
 - Consumes: `dedupStore`（既有，注入）、`TransactionStore`（Core）

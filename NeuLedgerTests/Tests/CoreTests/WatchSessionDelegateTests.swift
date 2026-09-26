@@ -135,4 +135,67 @@ struct WatchSessionDelegateTests {
         let committed = try await storedTransactions(in: container)
         #expect(committed.isEmpty)
     }
+
+    /// Thread-safe write counter for the injected `add` closure. Mirrors the
+    /// `NSLock`-guarded pattern `ProcessedDraftIdsStore` already uses.
+    private final class WriteCounter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value = 0
+
+        func increment() {
+            lock.lock(); defer { lock.unlock() }
+            value += 1
+        }
+
+        var count: Int {
+            lock.lock(); defer { lock.unlock() }
+            return value
+        }
+    }
+
+    @Test("A draft whose write fails is not marked as processed, so WatchConnectivity can resend it")
+    func failedWriteLeavesTheDraftResendable() async throws {
+        let transport = FakeTransport()
+        let dedup = makeDedupStore()
+        let draft = TransactionDraft(
+            categoryId: UUID(),
+            accountId: UUID().uuidString,
+            amount: 250
+        )
+
+        let delegate = WatchSessionDelegate(transport: transport, dedupStore: dedup, add: { _ in
+            throw CoreError.notFound("SDTransaction")
+        })
+        delegate.start()
+        transport.deliver(try! encodeDraft(draft))
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        #expect(dedup.contains(draft.id) == false, "寫入失敗的 draft 不得被標記成已處理，否則 WC 重送會被擋掉")
+    }
+
+    @Test("A draft that was written successfully is marked so a resend is ignored")
+    func successfulWriteMarksTheDraft() async throws {
+        let transport = FakeTransport()
+        let dedup = makeDedupStore()
+        let writes = WriteCounter()
+        let draft = TransactionDraft(
+            categoryId: UUID(),
+            accountId: UUID().uuidString,
+            amount: 250
+        )
+
+        let delegate = WatchSessionDelegate(transport: transport, dedupStore: dedup, add: { _ in
+            writes.increment()
+        })
+        delegate.start()
+
+        transport.deliver(try! encodeDraft(draft))
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        #expect(dedup.contains(draft.id), "寫入成功就必須標記")
+
+        // 重送同一筆
+        transport.deliver(try! encodeDraft(draft))
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        #expect(writes.count == 1, "已處理的 draft 重送不得再寫一次")
+    }
 }

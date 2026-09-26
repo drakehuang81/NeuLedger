@@ -2,6 +2,16 @@ import Foundation
 import Testing
 @testable import Domain
 
+/// 把 `Kind` 映成一個穩定、易讀的標籤,只用來比較「順序」——
+/// 用整個陣列比對而非逐一 index 取值,數量變動時失敗訊息才好讀。
+private func label(_ kind: InsightDescriptor.Kind) -> String {
+    switch kind {
+    case .topCategory: return "topCategory"
+    case .savingsRate: return "savingsRate"
+    case .weekSpending: return "weekSpending"
+    }
+}
+
 @Suite("InsightComposer")
 struct InsightComposerTests {
     @Test("the top spending category becomes a descriptor carrying its real share")
@@ -34,7 +44,22 @@ struct InsightComposerTests {
         let out = InsightComposer.compose(from: summary)
         let shares = out.compactMap { if case let .topCategory(_, _, share) = $0.kind { return share } else { return nil } }
         #expect(shares.isEmpty, "monthTotal 為 0 時沒有比例可言,不得產生 topCategory 描述子")
-        #expect(shares.allSatisfy { $0.isFinite }, "不得出現 inf / nan")
+        // 不另外檢查 isFinite——上面 isEmpty 已經涵蓋「根本不會產生 share」,
+        // 沒有 share 就沒有 inf/nan 可言,額外檢查會是對空集合的死斷言。
+    }
+
+    @Test("descriptors are ordered topCategory, savingsRate, weekSpending when all three apply")
+    func testDescriptorOrder() {
+        // 洞察卡片是可左右滑的 carousel,順序變動是使用者直接看得到的——
+        // 這裡餵一個三種描述子都會產生的 summary,釘住固定順序。
+        let summary = SpendingSummary(
+            monthTotal: 20_000, weekTotal: 3_000,
+            topCategoryName: "餐飲", topCategoryAmount: 8_400,
+            savingsPercentage: 0.28
+        )
+        let out = InsightComposer.compose(from: summary)
+        let labels = out.map { label($0.kind) }
+        #expect(labels == ["topCategory", "savingsRate", "weekSpending"])
     }
 
     @Test("the savings descriptor carries the real percentage, negative included")

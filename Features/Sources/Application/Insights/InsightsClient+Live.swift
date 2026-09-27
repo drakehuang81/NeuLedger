@@ -190,34 +190,11 @@ extension InsightsClient: DependencyKey {
                 return result
             },
 
-            // TODO: replace with FoundationModels output — currently
-            // returns 3 hard-coded entries matching the designer-
-            // supplied B1 Warm Redesign copy. Schema is stable so
-            // swapping in a real LLM call requires no reducer change.
-            generateInsights: { _ in
-                [
-                    InsightData(
-                        title: "本週支出減少 12%",
-                        body: "你比上週省下 NT$ 3,200，可以考慮加碼儲蓄",
-                        metric: "-12%",
-                        metricColor: .income,
-                        cta: "查看分析"
-                    ),
-                    InsightData(
-                        title: "餐飲花費偏高",
-                        body: "本月已花 NT$ 8,400，佔總支出 42%",
-                        metric: "42%",
-                        metricColor: .expense,
-                        cta: "設定預算"
-                    ),
-                    InsightData(
-                        title: "儲蓄率達標",
-                        body: "本月儲蓄率 28%，超出目標 5%",
-                        metric: "28%",
-                        metricColor: .accent,
-                        cta: "查看詳情"
-                    )
-                ]
+            // 真實數字一律由 Domain 的純函式算；這一層不組字串也不格式化金額
+            // （`Core` target 碰不到 `Common` 與 main bundle，見 `InsightDescriptor`
+            // 的註解）。沒有資料就回傳 []，不補任何預設卡片（audit B9）。
+            generateInsights: { summary in
+                InsightComposer.compose(from: summary)
             },
 
             // Tool-calling QA. Tool reads SwiftData directly (Insights

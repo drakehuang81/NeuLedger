@@ -91,6 +91,36 @@ struct WatchSessionDelegateTests {
         #expect(committed.first?.type == .expense)
     }
 
+    @Test("A draft delivered twice back-to-back, before the first write finishes, still commits only once")
+    func concurrentDeliveryOfTheSameDraftCommitsOnlyOnce() async throws {
+        let transport = FakeTransport()
+        let dedup = makeDedupStore()
+        let container = try makeContainer()
+        let draft = TransactionDraft(
+            categoryId: UUID(),
+            accountId: UUID().uuidString,
+            amount: 320
+        )
+
+        await withDependencies {
+            $0.modelContainer = container
+        } operation: {
+            let delegate = WatchSessionDelegate(transport: transport, dedupStore: dedup)
+            delegate.start()
+            // 兩次 deliver 之間刻意**不** await／不 sleep：`Task { }` 不會在建立
+            // 呼叫內同步執行本體，所以第二次 deliver 的 parse() 幾乎必然搶在第一個
+            // Task 開始跑之前執行——這是排程結構保證的次序，不是賭時間差。
+            // `dedupStore` 此時還沒標記（要等 add 成功才標記，這正是 A8 的修法），
+            // 真正擋下第二筆的必須是 in-flight 集合，不能是 dedupStore。
+            transport.deliver(try! encodeDraft(draft))
+            transport.deliver(try! encodeDraft(draft))
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+
+        let committed = try await storedTransactions(in: container)
+        #expect(committed.count == 1, "同一筆草稿在第一次寫入完成前又送達一次，不得寫入兩次（否則靜默遺失變成靜默重複）")
+    }
+
     @Test("Duplicate draft delivered twice only commits once")
     func duplicateDraftIsIgnored() async throws {
         let transport = FakeTransport()

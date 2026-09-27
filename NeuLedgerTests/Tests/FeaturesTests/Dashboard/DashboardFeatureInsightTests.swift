@@ -17,6 +17,22 @@ struct DashboardFeatureInsightTests {
         var captured: SpendingSummary? { lock.lock(); defer { lock.unlock() }; return value }
     }
 
+    /// 捕捉 `categoryProportions` 實際收到的查詢區間。
+    private final class RangeCapture: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value: DateInterval?
+        func record(_ r: DateInterval) { lock.lock(); value = r; lock.unlock() }
+        var captured: DateInterval? { lock.lock(); defer { lock.unlock() }; return value }
+    }
+
+    /// 數 `generateInsights` 被呼叫幾次（用來釘住 mutation 後有重載）。
+    private final class CallCounter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        func bump() { lock.lock(); count += 1; lock.unlock() }
+        var value: Int { lock.lock(); defer { lock.unlock() }; return count }
+    }
+
     @Test("Loads 3 insights and sets insightIndex to 0")
     func testLoad() async {
         let mock = [
@@ -146,6 +162,82 @@ struct DashboardFeatureInsightTests {
         #expect(summary.savingsPercentage == 0.28)
     }
 
+    /// 卡片文案說「佔**本月**支出的」，所以查詢區間必須真的是當月。
+    /// 每一處 stub 都寫成 `categoryProportions = { _ in ... }` 把 `DateInterval`
+    /// 丟掉，所以少了這條，把生產碼的 `BudgetPeriod.monthly` 改成 `.weekly` 會全綠。
+    @Test("categoryProportions is queried for the current month, not some other period")
+    func testInsightsQueryTheCurrentMonth() async throws {
+        let fixedNow = Date(timeIntervalSince1970: 1_700_000_000)
+        let capture = RangeCapture()
+        let store = await TestStore(initialState: DashboardFeature.State()) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+            $0.insightsClient.categoryProportions = { range in
+                capture.record(range)
+                return []
+            }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.insightsClient.generateInsights = { _ in [] }
+            $0.insightsClient.weeklySparkline = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        await store.finish()
+
+        let range = try #require(capture.captured)
+        #expect(
+            range == BudgetPeriod.monthly.dateInterval(containing: fixedNow),
+            "區間必須是 BudgetPeriod.monthly 對 `date.now` 算出的當月，不是週或其他期間"
+        )
+    }
+
+    /// F1：洞察在帳本異動後**必須**重載。空狀態叫使用者「記幾筆帳」，
+    /// 記了卻不動的話，比它取代掉的假資料更糟。
+    @Test("recording a transaction reloads the insights")
+    func testMutationReloadsInsights() async throws {
+        let calls = CallCounter()
+        var initial = DashboardFeature.State()
+        // 直接在 initial state 設 addTransaction，不觸發子 feature 的 .task。
+        initial.addTransaction = AddTransactionFeature.State(mode: .add(.expense))
+
+        let store = await TestStore(initialState: initial) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+            $0.insightsClient.generateInsights = { _ in
+                calls.bump()
+                return [InsightDescriptor(kind: .weekSpending(1_500))]
+            }
+            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.insightsClient.weeklySparkline = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            // AddTransactionFeature 子 reducer 需要
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.addTransaction(.presented(.delegate(.saved))))
+        await store.receive(\.insightsLoaded)
+        await store.finish()
+
+        #expect(calls.value >= 1, "refreshAfterMutation 必須重跑 insightsEffect")
+        await MainActor.run {
+            #expect(store.state.insights.count == 1, "重載後卡片要被填回去")
+            #expect(store.state.insightPhase == .loaded)
+        }
+    }
+
     /// 描述子只帶數字；標題 / 內文 / 金額格式化都在 Features 層完成。
     @Test("a descriptor becomes a card carrying the formatted amount and percentage")
     func testDescriptorIsLocalisedWithTheFormattedAmount() async throws {
@@ -177,10 +269,22 @@ struct DashboardFeatureInsightTests {
         await store.finish()
 
         let card = try #require(await MainActor.run { store.state.insights.first })
-        // 不比對整句文案（那會把測試綁死在文字上），只釘住「真實數字有出現」。
         #expect(card.metric == "42%")
-        #expect(card.body.contains(Decimal(8_400).twdFormatted),
-                "卡片內文必須帶格式化後的真實金額")
+
+        // 比對**完整代入後**的字串，而不是一堆 `contains` —— `contains` 擋不住
+        // 三個 arg 被對調（分類名 / 金額 / 百分比互換後每一條 contains 仍然成立）。
+        // 期望值用同一個 bundle 模板、但**參數順序寫死**，所以模板本身可以改文案、
+        // 也不綁 locale，而順序一改就紅。
+        let expectedBody = String(
+            format: String(localized: "dashboard_insight_top_category_body", bundle: .main),
+            "餐飲",
+            Decimal(8_400).twdFormatted,
+            "42%"
+        )
+        #expect(card.body == expectedBody,
+                "內文必須是「分類名 → 格式化金額 → 百分比」這個順序代入的結果")
+        // 順帶確認模板真的被解析、參數真的被代入（而不是三者都缺席時的假綠）。
+        #expect(card.body.contains(Decimal(8_400).twdFormatted))
         #expect(card.body.contains("餐飲"))
         #expect(card.metricColor == .expense)
         #expect(card.id == descriptors[0].id, "id 沿用描述子，不在映射時另生一組 UUID")

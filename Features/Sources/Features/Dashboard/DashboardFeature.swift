@@ -430,18 +430,24 @@ public struct DashboardFeature: Sendable {
     }
 
     /// 任何帳本異動（新增 / 編輯 / 刪除交易）後的統一重載：
-    /// 帳戶＋餘額、scope 交易、stats、sparkline。
+    /// 帳戶＋餘額、scope 交易、stats、sparkline、insights。
     /// 取代原本在 saved / detail-updated 兩處
     /// 重複且無錯誤處理的 inline effect。
     ///
-    /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）與
-    /// insights carousel（由 `loadAllSections` 的 `insightsEffect` 載入，mutation 後刻意不重載）。
+    /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）。
+    ///
+    /// **insights 必須重載。** 在洞察還是寫死假資料的年代這裡刻意排除它（重載
+    /// 捏造的數字沒有意義）；洞察改成從帳本算之後那個排除就反轉成缺陷，而且正好
+    /// 打在最需要它的人身上：全新使用者讀到空狀態的「記幾筆帳之後，這裡會出現你的
+    /// 支出洞察」，照著記了一筆，卡片卻不動。空狀態指示一個動作、做了卻沒反應，
+    /// 比它取代掉的假資料更糟。
     private func refreshAfterMutation(accountID: Account.ID?) -> Effect<Action> {
         .merge(
             accountsEffect(cancelInFlight: true),
             transactionsEffect(accountID: accountID, cancelInFlight: true),
             statsEffect(cancelInFlight: true),
-            sparklineEffect(accountID: accountID, cancelInFlight: true)
+            sparklineEffect(accountID: accountID, cancelInFlight: true),
+            insightsEffect(cancelInFlight: true)
         )
     }
 

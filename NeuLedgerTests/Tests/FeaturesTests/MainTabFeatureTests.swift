@@ -364,4 +364,23 @@ struct MainTabFeatureTests {
         await store.send(.tabSelected(.dashboard))
         await store.finish()
     }
+
+    @Test("switching to settings reloads nothing — it has no data of its own to refresh")
+    func testSwitchingToSettingsReloadsNothing() async throws {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .dashboard
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+        }
+        // 同樣要 exhaustive：`tabSelected` 的 switch 對 `.settings` 具名回 `.none`，
+        // 而沒有這條測試釘住的話，日後有人讓它也重載就不會被抓到——設定頁每次
+        // 被點到都會打一輪不必要的查詢。起點是 `.dashboard`，所以這是真的換了
+        // tab，走的不是「同 tab 不重載」那條 guard。
+        await store.send(.tabSelected(.settings)) {
+            $0.selectedTab = .settings
+        }
+        await store.finish()
+    }
 }

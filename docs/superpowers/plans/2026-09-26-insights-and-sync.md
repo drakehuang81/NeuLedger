@@ -24,6 +24,7 @@
 - **完整 test scheme 由 controller 執行，implementer 只跑 `-only-testing:` 的聚焦 suite**（完整 scheme 超過單次指令 10 分鐘上限會被轉背景，subagent 收不到通知會卡死）。兩個 xcodebuild 不得重疊。
 - 測試數以不重複測試名計算：`grep -oE "Test case '[^']+' passed" LOG | sort -u | wc -l`。**平行 clone 會把輸出行從行首截斷**，數字對不上時用逐 suite 的名稱 `comm` 比對，不要寫「浮動」。
 - 分支起點的基準：**890 條**不重複測試（developer @ 23e8f0c）。
+- **TestStore 收尾的判準**（這個 PR 踩過三次）：**斷言 state → 一定要有 `receive(...)`；斷言 spy 或只看副作用 → `finish()` 就夠。** 原因：`finish()` 只等 effect 收尾，**不會**把 received action 灌進 state；而 `skipReceivedActions()` 雖然會收下 action，卻在「佇列已被前面的 `receive` 耗盡」時誤判成失敗——`.task` merge 多條 effect 時抵達順序不定，所以那是**機率性**紅燈。`receive` 兩個問題都沒有：它收下 action，且在 exhaustivity `.off` 下會跳過中間 action 直到對上。
 
 ## Rulings（開工前已裁定，實作時不要重開）
 
@@ -710,9 +711,12 @@ func testDescriptorIsLocalisedWithTheFormattedAmount() async throws {
     await MainActor.run { store.exhaustivity = .off }
 
     await store.send(.task)
-    // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被前面的 `receive`
-    // 耗盡時會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身
-    // 就會等所有 effect 收尾。
+    // 這一行是必要的，不能只用 `finish()`：`finish()` 只等 effect 收尾，
+    // **不會把 received action 灌進 state**，所以少了它下面讀 state 會是 nil。
+    // `receive` 同時解掉兩件事——把 action 收進 state，而且在 exhaustivity `.off`
+    // 下會跳過中間的 action 直到對上，因此不受 `.task` merge 多條 effect 的
+    // 抵達順序影響，也沒有 `skipReceivedActions()` 那個「佇列已耗盡就誤判」的競態。
+    await store.receive(\.insightsLoaded)
     await store.finish()
 
     let card = try #require(await MainActor.run { store.state.insights.first })
@@ -904,6 +908,8 @@ case .refreshRequested:
 ```
 
 並在 `TransactionsFeatureTests` 加一條釘住它：送 `.refreshRequested` 後 `isLoading` 必須仍是 `false`，且既有的 `transactions` 不被清空。
+
+**套用 Global Constraints 的 TestStore 判準**：這條斷言的是 state，但它斷言的是**送出當下**的 state（`isLoading` 沒被設、`transactions` 沒被清），所以 `store.send(.refreshRequested) { ... }` 的 closure 就夠——`send` 的 closure 會套用 state 變更。**不要**在 `finish()` 之後才讀 state 來驗這件事，那會因為重載完成、`transactionsLoaded` 已回填而看不出差別（測試會因為錯誤的理由變綠）。
 
 - [ ] **Step 4: 跑測試確認通過**
 

@@ -112,6 +112,8 @@ struct TransactionsFeatureTests {
             TransactionsFeature()
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+            // refreshRequested 現在也會重載分類名（見 testRefreshRequestedReloadsCategoryNames）。
+            $0.ledgerClient.listCategories = { _ in [] }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -121,6 +123,63 @@ struct TransactionsFeatureTests {
             #expect($0.transactions == [Self.sampleTransaction])
         }
         await store.finish()
+    }
+
+    /// audit #22 的另一半：`refreshRequested` 當初只重載交易、沒重載分類名。後果是
+    /// 使用者剛把一筆交易分好類（或剛建立新分類）→ 切到別的 tab 再切回來，那一列仍然
+    /// 顯示「未分類」，要重啟 App 才會好——跟 `.task` 要修的陳舊是同一種，只是換成
+    /// 另一份 lookup。
+    @Test("refreshRequested reloads the category names too, not just the rows")
+    func testRefreshRequestedReloadsCategoryNames() async {
+        let foodId = UUID()
+        let food = Domain.Category(
+            id: foodId, name: "餐飲", icon: "fork.knife", color: "#FF6B6B",
+            type: .expense, isDefault: false
+        )
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [food] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.refreshRequested)
+        // 斷言的是 **state**，所以一定要真的把 `categoriesLoaded` 收下——`finish()` 只等
+        // effect 收尾，不會把 received action 灌進 state。刻意不用
+        // `skipReceivedActions()`：`.merge` 的抵達順序不定，佇列已被耗盡時它會誤判成失敗。
+        await store.receive(\.categoriesLoaded) {
+            $0.categoryNames = [foodId: "餐飲"]
+        }
+        await store.finish()
+    }
+
+    /// 分類 lookup 必須傳 `nil`（= 不篩型別、全部分類都要）。這個檔案裡每一個 stub 都寫
+    /// `listCategories = { _ in ... }` 把型別參數丟掉，所以把生產碼改成
+    /// `listCategories(.expense)` 會全綠——而那會讓**收入**交易的分類名查不到、
+    /// 列上退回「未分類」。這條捕獲實際傳入的參數。
+    @Test("the category lookup asks for every type, not just expenses")
+    func testCategoryLookupIsNotNarrowedToOneType() async {
+        let capturedTypes = LockIsolated<[TransactionType?]>([])
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { type in
+                capturedTypes.withValue { $0.append(type) }
+                return []
+            }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        // 只斷言 spy，不碰 state → `finish()` 就夠（同上，不用 skipReceivedActions()）。
+        await store.finish()
+
+        #expect(
+            capturedTypes.value == [TransactionType?.none],
+            "必須恰好呼叫一次且傳 nil：列表混合收入與支出，篩任一型別都會讓另一半查不到分類名"
+        )
     }
 
     // MARK: - Row display: category name lookup + fallback（audit #22）

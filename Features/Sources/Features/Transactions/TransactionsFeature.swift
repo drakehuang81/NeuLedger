@@ -149,7 +149,12 @@ public struct TransactionsFeature: Sendable {
             // 所以列表在重載期間留在畫面上，不會被 ProgressView 取代（plan R7）。
             case .refreshRequested:
                 state.loadError = nil
-                return reload(state.effectiveFilter)
+                // 分類名也要跟著重載：使用者剛把一筆交易分好類、或剛建立新分類之後，
+                // 只重載交易列表的話那一列仍顯示「未分類」，得重啟 App 才會好——
+                // 與 Task 7 要修的陳舊是同一種，只是換成另一份 lookup。
+                // 兩條 effect 的 CancelID 本來就分開（`load` / `loadCategories`），
+                // merge 不會互相取消。
+                return .merge(reload(state.effectiveFilter), loadCategoriesEffect())
 
             case let .transactionsLoaded(transactions):
                 state.isLoading = false

@@ -53,6 +53,9 @@ public struct TransactionsFeature: Sendable {
 
     public enum Action: Sendable, Equatable {
         case task
+        /// MainTab 切 tab 回來時的重載（health-audit A8）：與 `.task` 的差別是不設
+        /// `isLoading`，讓列表在重載期間留在畫面上，不被 ProgressView 取代。
+        case refreshRequested
         case transactionsLoaded([Transaction])
         case categoriesLoaded([Domain.Category])
         case loadFailed(String)
@@ -141,6 +144,12 @@ public struct TransactionsFeature: Sendable {
                 state.isLoading = true
                 state.loadError = nil
                 return .merge(reload(state.effectiveFilter), loadCategoriesEffect())
+
+            // 切 tab 回來時的重載：與 `.task` 的差別是**不動 `isLoading`**，
+            // 所以列表在重載期間留在畫面上，不會被 ProgressView 取代（plan R7）。
+            case .refreshRequested:
+                state.loadError = nil
+                return reload(state.effectiveFilter)
 
             case let .transactionsLoaded(transactions):
                 state.isLoading = false

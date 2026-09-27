@@ -94,6 +94,35 @@ struct TransactionsFeatureTests {
         await store.finish()
     }
 
+    // MARK: - refreshRequested（health-audit A8：Dashboard 與交易分頁互相同步）
+    //
+    // MainTab 切 tab 回來時送出：與 `.task` 的差別是刻意**不設 `isLoading`**，
+    // 讓列表在重載期間留在畫面上，不被 ProgressView 取代（plan R7）。斷言的是
+    // send 當下（重載完成前）的 state——finish() 之後重載已完成、
+    // transactionsLoaded 已回填 isLoading = false，屆時看不出跟 `.task` 的差別，
+    // 測試會因為錯誤的理由變綠。
+
+    @Test("refreshRequested reloads without flipping isLoading or clearing the existing list")
+    func testRefreshRequestedDoesNotSetIsLoadingOrClearList() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.loadError = "stale"
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.refreshRequested) {
+            $0.loadError = nil
+            #expect($0.isLoading == false)
+            #expect($0.transactions == [Self.sampleTransaction])
+        }
+        await store.finish()
+    }
+
     // MARK: - Row display: category name lookup + fallback（audit #22）
     //
     // 這三條直接測 TransactionsFeature.categoryDisplayName 這個純函式，不透過 TestStore——

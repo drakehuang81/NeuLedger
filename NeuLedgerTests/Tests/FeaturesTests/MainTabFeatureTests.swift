@@ -180,6 +180,9 @@ struct MainTabFeatureTests {
             $0.insightsClient.todayStats       = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
             $0.insightsClient.weeklySparkline  = { _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
+            // Task 6（commit 51b88da）幫 insightsEffect 加了這支呼叫，這條既有測試
+            // 沒跟著補 stub——carry-over 缺口，team-lead 掃過完整 scheme 後核准隨手補上。
+            $0.insightsClient.categoryProportions = { _ in [] }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -268,6 +271,9 @@ struct MainTabFeatureTests {
             $0.insightsClient.todayStats       = { _ in StatsSnapshot(today: 0, week: 0, savingsPercentage: 0) }
             $0.insightsClient.weeklySparkline  = { _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
+            // Task 6（commit 51b88da）幫 insightsEffect 加了這支呼叫，這條既有測試
+            // 沒跟著補 stub——carry-over 缺口，team-lead 掃過完整 scheme 後核准隨手補上。
+            $0.insightsClient.categoryProportions = { _ in [] }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -287,5 +293,75 @@ struct MainTabFeatureTests {
         await store.receive(\.dashboard.pulledToRefresh)
         await store.finish()
         #expect(calls.value == 2, "兩次請求都要真的呼叫 tick，第二次由閘門擋下")
+    }
+
+    // MARK: - Dashboard 與交易分頁互相同步（health-audit A8）
+    //
+    // 現況：兩個 child 各自只重載自己，MainTab 不做跨 tab 轉發；TransactionsView 的 `.task`
+    // 在 TabView 裡只會在該 tab 內容首次建立時觸發一次。結果是在 Dashboard 新增一筆 → 切到
+    // 交易分頁 → 新那筆不在列表上，反向亦然。R7：切 tab 時重載目標 tab，且刻意不送 `.task`——
+    // 它會把 phase 轉 loading／設 isLoading，在已經有資料的畫面上閃一片骨架或轉圈。
+
+    @Test("switching to the transactions tab reloads it, so a dashboard change shows up")
+    func testSwitchingToTransactionsReloads() async throws {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.tick = { 0 }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        // 起始就是 .dashboard，所以切到 .transactions 是真的換 tab
+        await store.send(.tabSelected(.transactions)) {
+            $0.selectedTab = .transactions
+        }
+        await store.receive(\.transactions.refreshRequested)
+        // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被 `receive` 耗盡時
+        // 會誤判成失敗（Task 3 為此修過三條既有測試）。`finish()` 本身就會等所有
+        // effect 收尾。
+        await store.finish()
+    }
+
+    @Test("switching back to the dashboard tab reloads it too")
+    func testSwitchingToDashboardReloads() async throws {
+        var initial = MainTabFeature.State()
+        initial.selectedTab = .transactions
+        let store = await TestStore(initialState: initial) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.insightsClient.todayStats = { _ in .zero }
+            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.generateInsights = { _ in [] }
+            $0.insightsClient.weeklySparkline = { _ in [] }
+            $0.ledgerClient.tick = { 0 }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.tabSelected(.dashboard)) {
+            $0.selectedTab = .dashboard
+        }
+        await store.receive(\.dashboard.pulledToRefresh)
+        // 同上：不要 `skipReceivedActions()`。
+        await store.finish()
+    }
+
+    @Test("re-tapping the tab you are already on does not reload")
+    func testReselectingTheSameTabDoesNotReload() async throws {
+        let store = await TestStore(initialState: MainTabFeature.State()) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+        }
+        // 這條要 exhaustive：它的全部意義就是「沒有任何 effect 被送出」。
+        await store.send(.tabSelected(.dashboard))
+        await store.finish()
     }
 }

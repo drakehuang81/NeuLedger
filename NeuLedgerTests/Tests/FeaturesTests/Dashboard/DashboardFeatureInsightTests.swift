@@ -48,7 +48,8 @@ struct DashboardFeatureInsightTests {
             $0.insightIndex = 0
             $0.insightPhase = .loaded
         }
-        await store.skipReceivedActions()
+        // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被前面的 `receive`
+        // 耗盡時會誤判成失敗。`finish()` 本身就會等所有 effect 收尾。
         await store.finish()
     }
 
@@ -132,7 +133,8 @@ struct DashboardFeatureInsightTests {
         await MainActor.run { store.exhaustivity = .off }
 
         await store.send(.task)
-        await store.skipReceivedActions()
+        // 刻意不用 `skipReceivedActions()`：它在 action 佇列已被耗盡時會誤判成
+        // 失敗（`.task` merge 多條 effect，抵達順序不定）。`finish()` 就夠了。
         await store.finish()
 
         let summary = try #require(capture.captured)
@@ -166,7 +168,12 @@ struct DashboardFeatureInsightTests {
         await MainActor.run { store.exhaustivity = .off }
 
         await store.send(.task)
-        await store.skipReceivedActions()
+        // 這條讀的是 **state**，所以必須讓 `.insightsLoaded` 真的被收下 ——
+        // `finish()` 只等 effect 收尾，不會把 received action 灌進 state
+        // （少了這一步 `store.state.insights` 會是空的）。用明確的 `receive`
+        // 而不是 `skipReceivedActions()`：後者在佇列已耗盡時會誤判成失敗，
+        // 前者在 exhaustivity = .off 下會跳過中間的 action 直到對上。
+        await store.receive(\.insightsLoaded)
         await store.finish()
 
         let card = try #require(await MainActor.run { store.state.insights.first })

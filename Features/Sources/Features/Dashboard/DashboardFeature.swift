@@ -479,9 +479,12 @@ public struct DashboardFeature: Sendable {
     /// Loads the insight carousel entries.
     ///
     /// 先組出**真實**的 `SpendingSummary` 再交給 `generateInsights`：
-    /// - `monthTotal` / top category 來自當月的 `categoryProportions`（該 endpoint
-    ///   已依金額降冪，所以 `first` 就是本月最大支出分類；`CategoryProportion`
-    ///   不帶 `Category.ID`，只能拿 `name`）。
+    /// - `monthTotal` 是當月 `categoryProportions` 的**全部**加總（含未分類那桶）——
+    ///   它是總支出，也正是文案「佔本月支出的」那個百分比的分母。
+    /// - top category 取金額最大的**已分類**項目（`isUnassigned == false` + `max(by:)`）。
+    ///   不取 `first`：那依賴「這個 endpoint 保證降冪」這個沒有測試的契約。也不比對
+    ///   名稱裡的破折號，理由見 `CategoryProportion.isUnassigned`。
+    ///   `CategoryProportion` 不帶 `Category.ID`，所以只能拿 `name`。
     /// - `weekTotal` / `savingsPercentage` 來自 `todayStats(now)`，兩者都是
     ///   **原值轉手、不做任何算術** —— `InsightComposer` 用 `savingsPercentage != 0`
     ///   判斷要不要產生儲蓄率卡片，這裡若自行重算就會留下浮點殘渣而冒出一張
@@ -498,11 +501,17 @@ public struct DashboardFeature: Sendable {
                 let monthRange = BudgetPeriod.monthly.dateInterval(containing: now)
                 let proportions = try await insightsClient.categoryProportions(monthRange)
                 let snapshot = try await insightsClient.todayStats(now)
+                // 未分類那桶不是使用者的分類——它金額最大時，首屏會出現
+                // 「「—」花了 NT$3,200，佔本月支出的 42%」，讀起來就是個 bug。
+                let topCategory = proportions
+                    .filter { !$0.isUnassigned }
+                    .max(by: { $0.amount < $1.amount })
                 let summary = SpendingSummary(
+                    // 加總**全部**（含未分類）：這是總支出，刻意不跟 top category 一起過濾。
                     monthTotal: proportions.reduce(Decimal(0)) { $0 + $1.amount },
                     weekTotal: snapshot.week,
-                    topCategoryName: proportions.first?.name,
-                    topCategoryAmount: proportions.first?.amount,
+                    topCategoryName: topCategory?.name,
+                    topCategoryAmount: topCategory?.amount,
                     savingsPercentage: snapshot.savingsPercentage
                 )
                 let descriptors = try await insightsClient.generateInsights(summary)

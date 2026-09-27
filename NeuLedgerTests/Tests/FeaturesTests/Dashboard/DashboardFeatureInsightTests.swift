@@ -57,8 +57,11 @@ struct DashboardFeatureInsightTests {
             store.exhaustivity = .off
         }
         await store.send(.task)
-        // 這條測的是「幾張卡 + index 歸零 + phase」；映射本身由
-        // testDescriptorIsLocalisedWithTheFormattedAmount 釘住。
+        // 這條測的是「幾張卡 + index 歸零 + phase」。期望值是 `mock.map(insightCard(for:))`，
+        // 也就是**被測函式算了等號兩邊**——它對映射本身恆成立，刻意如此：三種 Kind 的映射
+        // 各自由「寫死期望值」的測試釘住（topCategory →
+        // testDescriptorIsLocalisedWithTheFormattedAmount、savingsRate →
+        // testPercentIsRounded、weekSpending → testWeekSpendingCardIsCompactAndNeutral）。
         await store.receive(\.insightsLoaded) {
             $0.insights = mock.map(DashboardFeature.insightCard(for:))
             $0.insightIndex = 0
@@ -109,6 +112,8 @@ struct DashboardFeatureInsightTests {
         await store.send(.retrySection(.insight)) {
             $0.insightPhase = .loading
         }
+        // 同 testLoad：這裡測的是 retry 真的重跑了 effect，映射本身由三條字面期望值的
+        // 測試釘住（見 testLoad 的註解）。
         await store.receive(\.insightsLoaded) {
             $0.insights = mock.map(DashboardFeature.insightCard(for:))
             $0.insightIndex = 0
@@ -129,7 +134,9 @@ struct DashboardFeatureInsightTests {
             $0.insightsClient.todayStats = { _ in
                 StatsSnapshot(today: 500, week: 3_000, savingsPercentage: 0.28)
             }
-            // `categoryProportions` 依約定已按金額降冪，所以 effect 直接取 `first`。
+            // top category 的**選法**（跳過未分類、不依賴排序）由
+            // testTopCategorySkipsUnassignedAndIgnoresOrdering 釘住；這條只管
+            // 「summary 帶的是真實數字而不是 0」。
             $0.insightsClient.categoryProportions = { _ in
                 [
                     CategoryProportion(name: "交通", amount: 11_600),
@@ -156,10 +163,59 @@ struct DashboardFeatureInsightTests {
         let summary = try #require(capture.captured)
         #expect(summary.weekTotal == 3_000, "weekTotal 必須來自 todayStats，不是 0")
         #expect(summary.monthTotal == 20_000, "monthTotal 必須是 categoryProportions 的總和，不是 0")
-        #expect(summary.topCategoryName == "交通", "top category 必須來自真實資料的第一筆")
+        #expect(summary.topCategoryName == "交通", "top category 必須來自真實資料")
         #expect(summary.topCategoryAmount == 11_600)
         // 原值轉手，不重算 —— InsightComposer 用 `!= 0` 精確比較，任何算術都會留殘渣。
         #expect(summary.savingsPercentage == 0.28)
+    }
+
+    /// F2 + F3：「—」那桶是 kernel 給「沒有分類的支出」的合計，不是使用者的分類——
+    /// 它金額最大時，首屏會出現「「—」花了 NT$20,000，佔本月支出的 50%」。
+    /// 而選法也不能依賴「`categoryProportions` 保證降冪」這個零測試的契約，所以 stub
+    /// 刻意**不按金額排序**。`monthTotal` 反過來**要**含未分類那桶：文案是「佔本月
+    /// 支出的」，分母就是總支出。
+    @Test("the top category is the biggest categorised bucket, whatever the order, and never the unassigned one")
+    func testTopCategorySkipsUnassignedAndIgnoresOrdering() async throws {
+        let capture = SummaryCapture()
+        let store = await TestStore(initialState: DashboardFeature.State()) {
+            DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+            $0.insightsClient.todayStats = { _ in .zero }
+            // 金額最大的是未分類桶，且三筆刻意亂序（`first` 會拿到 8,400 的餐飲）。
+            $0.insightsClient.categoryProportions = { _ in
+                [
+                    CategoryProportion(name: "餐飲", amount: 8_400),
+                    CategoryProportion(name: "—", amount: 20_000, isUnassigned: true),
+                    CategoryProportion(name: "交通", amount: 11_600)
+                ]
+            }
+            $0.insightsClient.generateInsights = { summary in
+                capture.record(summary)
+                return []
+            }
+            $0.insightsClient.weeklySparkline = { _ in [] }
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.balances = { [:] }
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        // 只斷言 spy 捕到的 summary，不碰 state → `finish()` 就夠。
+        await store.finish()
+
+        let summary = try #require(capture.captured)
+        #expect(
+            summary.topCategoryName == "交通",
+            "必須是金額最大的**已分類**項目：不是未分類的「—」，也不是陣列第一筆"
+        )
+        #expect(summary.topCategoryAmount == 11_600)
+        #expect(
+            summary.monthTotal == 40_000,
+            "monthTotal 是總支出，含未分類那桶（8,400 + 20,000 + 11,600）"
+        )
     }
 
     /// 卡片文案說「佔**本月**支出的」，所以查詢區間必須真的是當月。
@@ -288,6 +344,35 @@ struct DashboardFeatureInsightTests {
         #expect(card.body.contains("餐飲"))
         #expect(card.metricColor == .expense)
         #expect(card.id == descriptors[0].id, "id 沿用描述子，不在映射時另生一組 UUID")
+        #expect(card.cta == nil, "CTA 點擊目前是 no-op，不放沒有作用的按鈕")
+    }
+
+    /// F1：`.weekSpending` 的映射以前**完全沒被釘住**——testLoad / testRetry 都用
+    /// `mock.map(insightCard(for:))` 當期望值（被測函式算了等號兩邊），所以把生產碼的
+    /// `metric` 從 `twdCompact` 改成 `twdFormatted`、或 `metricColor` 從 `.neutral` 改成
+    /// `.expense`，全 suite 仍然綠。這條把三個欄位都寫成**字面**期望值。
+    ///
+    /// 金額刻意取 12,000（≥ 10,000）：`twdCompact` 對 < 10,000 的值會直接退回
+    /// `twdFormatted`，用小額做這條測試抓不到 compact / formatted 被對調。
+    @Test("a weekSpending descriptor becomes a card with a compact metric and a neutral colour")
+    func testWeekSpendingCardIsCompactAndNeutral() {
+        let descriptor = InsightDescriptor(kind: .weekSpending(12_000))
+        let card = DashboardFeature.insightCard(for: descriptor)
+
+        // MetricBadge 空間有限 → badge 用 compact。字面寫出 "NT$1.2萬"：`twdCompact` 的
+        // `%.1f` 走 POSIX 小數點、單位是寫死的中文字，不隨 locale 變。
+        #expect(card.metric == "NT$1.2萬", "badge 必須是 compact 格式，不是完整金額")
+        #expect(card.metricColor == .neutral, "近 7 天支出是中性資訊，不染支出色")
+        // 內文相反：完整金額。期望值用同一個 bundle 模板、但參數寫死，所以文案可以改、
+        // 也不綁 locale，而「內文帶 twdFormatted 而不是 compact」一改就紅。
+        let expectedBody = String(
+            format: String(localized: "dashboard_insight_week_body", bundle: .main),
+            Decimal(12_000).twdFormatted
+        )
+        #expect(card.body == expectedBody)
+        #expect(card.body.contains(Decimal(12_000).twdFormatted))
+        #expect(card.title == String(localized: "dashboard_insight_week_title", bundle: .main))
+        #expect(card.id == descriptor.id, "id 沿用描述子，不在映射時另生一組 UUID")
         #expect(card.cta == nil, "CTA 點擊目前是 no-op，不放沒有作用的按鈕")
     }
 

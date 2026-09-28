@@ -230,7 +230,9 @@ enum TransactionAnalyticsKernel {
             )
         }
         if unassigned > 0 {
-            result.append(CategoryProportion(name: "—", amount: unassigned))
+            // 標記成未分類：呼叫端（Dashboard 的「最大支出分類」）要能跳過這一桶，
+            // 而不必去比對「—」這個顯示字串。
+            result.append(CategoryProportion(name: "—", amount: unassigned, isUnassigned: true))
         }
         return result.sorted(by: { $0.amount > $1.amount })
     }

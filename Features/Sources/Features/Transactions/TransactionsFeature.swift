@@ -11,6 +11,11 @@ public struct TransactionsFeature: Sendable {
     @ObservableState
     public struct State: Equatable {
         public var transactions: [Transaction] = []
+
+        /// categoryId -> 分類名稱的顯示查找表。只存名字不存整包 Category——view 只需要名字，
+        /// 存 lookup 讓 view 端零查找成本。載入失敗時保持空字典，row 端會退回 fallback 文案。
+        public var categoryNames: [Domain.Category.ID: String] = [:]
+
         public var searchText: String = ""
         public var activeFilter: TransactionFilter = TransactionFilter()
         public var isLoading: Bool = false
@@ -48,7 +53,11 @@ public struct TransactionsFeature: Sendable {
 
     public enum Action: Sendable, Equatable {
         case task
+        /// MainTab 切 tab 回來時的重載（health-audit A8）：與 `.task` 的差別是不設
+        /// `isLoading`，讓列表在重載期間留在畫面上，不被 ProgressView 取代。
+        case refreshRequested
         case transactionsLoaded([Transaction])
+        case categoriesLoaded([Domain.Category])
         case loadFailed(String)
         case actionFailed(String)
 
@@ -71,6 +80,23 @@ public struct TransactionsFeature: Sendable {
         case addTransaction(PresentationAction<AddTransactionFeature.Action>)
     }
 
+    // MARK: - Row display
+
+    /// row 顯示分類名的規則：查得到就用查到的名字；查不到（`categoryId` 是 nil、分類還沒載入
+    /// 完成、或分類已被刪除）就退回「未分類」文案——**不要**用 `transaction.type.displayName`
+    /// 當 fallback，那會讓「真的無分類」和「有分類但還沒載入」看起來一樣。
+    ///
+    /// 抽成獨立、可直接單元測試的純函式，而不是留在 view body 裡：這個 codebase 目前沒有
+    /// ViewInspector / snapshot 這類 view-level 測試工具，規則留在 view 裡等於測不到
+    /// （已跟 team-lead 回報這個殘留缺口，見 task-3-report.md）。
+    public static func categoryDisplayName(
+        for transaction: Transaction,
+        categoryNames: [Domain.Category.ID: String]
+    ) -> String {
+        transaction.categoryId.flatMap { categoryNames[$0] }
+            ?? String(localized: "transactions_row_uncategorized")
+    }
+
     // MARK: - Dependencies
 
     @Dependency(\.ledgerClient) var ledger
@@ -78,6 +104,7 @@ public struct TransactionsFeature: Sendable {
     private enum CancelID {
         case load            // 所有列表查詢共用，cancelInFlight 避免舊查詢覆蓋新結果
         case searchDebounce  // 只給 debounce 用
+        case loadCategories  // 獨立的 id——絕不能跟 load 共用，否則兩條 effect 會互相取消
     }
 
     /// 所有列表載入共用：成功 → transactionsLoaded，失敗 → loadFailed。
@@ -91,6 +118,22 @@ public struct TransactionsFeature: Sendable {
         .cancellable(id: CancelID.load, cancelInFlight: true)
     }
 
+    /// row 顯示分類名用。分類名只是標記，不是核心資料：載入失敗時刻意吞掉錯誤，
+    /// 不送 loadFailed（那是留給交易本身的失敗），也不需要另一個 fallback action——
+    /// state.categoryNames 保持空字典，view 端本來就有「未分類」的 fallback 文案。
+    /// 分類很少變動，但 `.task` 本來就會在每次進入頁面時重新整理交易列表，
+    /// 這裡選擇跟著一起重載（而不是只載一次），换取「新增/刪除分類後回到列表就是最新」，
+    /// 代價是多一次很輕量的查詢。
+    private func loadCategoriesEffect() -> Effect<Action> {
+        .run { send in
+            let categories = try await ledger.listCategories(nil)
+            await send(.categoriesLoaded(categories))
+        } catch: { _, _ in
+            // 刻意吞掉：分類名只是列表 row 的顯示標記，載入失敗不該擋住整張交易列表。
+        }
+        .cancellable(id: CancelID.loadCategories, cancelInFlight: true)
+    }
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -100,13 +143,31 @@ public struct TransactionsFeature: Sendable {
             case .task:
                 state.isLoading = true
                 state.loadError = nil
-                return reload(state.effectiveFilter)
+                return .merge(reload(state.effectiveFilter), loadCategoriesEffect())
+
+            // 切 tab 回來時的重載：與 `.task` 的差別是**不動 `isLoading`**，
+            // 所以列表在重載期間留在畫面上，不會被 ProgressView 取代（plan R7）。
+            case .refreshRequested:
+                state.loadError = nil
+                // 分類名也要跟著重載：使用者剛把一筆交易分好類、或剛建立新分類之後，
+                // 只重載交易列表的話那一列仍顯示「未分類」，得重啟 App 才會好——
+                // 與 Task 7 要修的陳舊是同一種，只是換成另一份 lookup。
+                // 兩條 effect 的 CancelID 本來就分開（`load` / `loadCategories`），
+                // merge 不會互相取消。
+                return .merge(reload(state.effectiveFilter), loadCategoriesEffect())
 
             case let .transactionsLoaded(transactions):
                 state.isLoading = false
                 state.loadError = nil
                 state.actionError = nil
                 state.transactions = transactions.sorted { $0.date > $1.date }
+                return .none
+
+            case let .categoriesLoaded(categories):
+                state.categoryNames = Dictionary(
+                    categories.map { ($0.id, $0.name) },
+                    uniquingKeysWith: { first, _ in first }
+                )
                 return .none
 
             case let .loadFailed(message):

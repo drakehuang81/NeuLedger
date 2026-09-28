@@ -52,7 +52,10 @@ public struct InsightsClient: Sendable {
     public var generateAIInsight: @Sendable (_ summary: SpendingSummary) async throws -> String
 
     /// Carousel-style list of insights for the Dashboard B1 redesign.
-    public var generateInsights: @Sendable (_ summary: SpendingSummary) async throws -> [InsightData] = { _ in [] }
+    ///
+    /// 回傳**結構化描述子**（種類 + 算好的數字），不回傳字串：字串與金額格式化
+    /// 一律留在 Features 層，見 `InsightDescriptor` 的註解（audit B9）。
+    public var generateInsights: @Sendable (_ summary: SpendingSummary) async throws -> [InsightDescriptor] = { _ in [] }
 
     /// 「用自然語言讀帳本」——自 AIUseCase 搬入（含 QueryTransactionsTool）。
     /// Tool-calling QA over the user's transaction history.

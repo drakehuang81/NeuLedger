@@ -1,3 +1,4 @@
+import Common
 import ComposableArchitecture
 import Domain
 import Foundation
@@ -269,8 +270,9 @@ public struct DashboardFeature: Sendable {
                 // TODO(stats-follow-up): StatsRow 連動 —— `insightsClient.todayStats`
                 //   需要 accountId 參數（Domain 介面 + Application 實作變更，另開單）。
                 //   屆時在此 merge statsEffect 並將 statsPhase 轉 loading。
-                // TODO(insights-follow-up): InsightCarousel 連動 —— generateInsights
-                //   實作後帶 selectedAccountID 重查。
+                // TODO(insights-follow-up): InsightCarousel 連動 —— 洞察的數字來自
+                //   `todayStats` + `categoryProportions`，兩者同樣不吃 accountId，
+                //   所以卡片目前是跨帳戶合計（R9）。與上面那張單一起解。
                 return .merge(
                     transactionsEffect(accountID: accountID, cancelInFlight: true),
                     sparklineEffect(accountID: accountID, cancelInFlight: true)
@@ -428,18 +430,24 @@ public struct DashboardFeature: Sendable {
     }
 
     /// 任何帳本異動（新增 / 編輯 / 刪除交易）後的統一重載：
-    /// 帳戶＋餘額、scope 交易、stats、sparkline。
+    /// 帳戶＋餘額、scope 交易、stats、sparkline、insights。
     /// 取代原本在 saved / detail-updated 兩處
     /// 重複且無錯誤處理的 inline effect。
     ///
-    /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）與
-    /// insights carousel（由 `loadAllSections` 的 `insightsEffect` 載入，mutation 後刻意不重載）。
+    /// 刻意不含 categories（異動罕見，AddTransaction 流程內分類已存在）。
+    ///
+    /// **insights 必須重載。** 在洞察還是寫死假資料的年代這裡刻意排除它（重載
+    /// 捏造的數字沒有意義）；洞察改成從帳本算之後那個排除就反轉成缺陷，而且正好
+    /// 打在最需要它的人身上：全新使用者讀到空狀態的「記幾筆帳之後，這裡會出現你的
+    /// 支出洞察」，照著記了一筆，卡片卻不動。空狀態指示一個動作、做了卻沒反應，
+    /// 比它取代掉的假資料更糟。
     private func refreshAfterMutation(accountID: Account.ID?) -> Effect<Action> {
         .merge(
             accountsEffect(cancelInFlight: true),
             transactionsEffect(accountID: accountID, cancelInFlight: true),
             statsEffect(cancelInFlight: true),
-            sparklineEffect(accountID: accountID, cancelInFlight: true)
+            sparklineEffect(accountID: accountID, cancelInFlight: true),
+            insightsEffect(cancelInFlight: true)
         )
     }
 
@@ -468,18 +476,116 @@ public struct DashboardFeature: Sendable {
         )
     }
 
-    /// Loads the AI insight carousel entries.
+    /// Loads the insight carousel entries.
+    ///
+    /// 先組出**真實**的 `SpendingSummary` 再交給 `generateInsights`：
+    /// - `monthTotal` 是當月 `categoryProportions` 的**全部**加總（含未分類那桶）——
+    ///   它是總支出，也正是文案「佔本月支出的」那個百分比的分母。
+    /// - top category 取金額最大的**已分類**項目（`isUnassigned == false` + `max(by:)`）。
+    ///   不取 `first`：那依賴「這個 endpoint 保證降冪」這個沒有測試的契約。也不比對
+    ///   名稱裡的破折號，理由見 `CategoryProportion.isUnassigned`。
+    ///   `CategoryProportion` 不帶 `Category.ID`，所以只能拿 `name`。
+    /// - `weekTotal` / `savingsPercentage` 來自 `todayStats(now)`，兩者都是
+    ///   **原值轉手、不做任何算術** —— `InsightComposer` 用 `savingsPercentage != 0`
+    ///   判斷要不要產生儲蓄率卡片，這裡若自行重算就會留下浮點殘渣而冒出一張
+    ///   顯示「0%」的卡片。
+    ///
+    /// R9（刻意的限制）：`todayStats` 與 `categoryProportions` 都不吃 accountId，
+    /// 所以這些數字是**跨所有帳戶**的合計，不隨 chip 選擇改變 —— 與畫面上方的
+    /// StatsRow 行為一致，見 `:270-275` 既有的 `TODO(stats-follow-up)` /
+    /// `TODO(insights-follow-up)`。
     private func insightsEffect(cancelInFlight: Bool) -> Effect<Action> {
-        .run { send in
+        .run { [now] send in
             do {
-                let summary = SpendingSummary(monthTotal: 0, weekTotal: 0)
-                let list = try await insightsClient.generateInsights(summary)
-                await send(.insightsLoaded(list))
+                // 當月區間一律走 BudgetPeriod 的唯一定義，不自行 `dateInterval(of: .month,...)`。
+                let monthRange = BudgetPeriod.monthly.dateInterval(containing: now)
+                let proportions = try await insightsClient.categoryProportions(monthRange)
+                let snapshot = try await insightsClient.todayStats(now)
+                // 未分類那桶不是使用者的分類——它金額最大時，首屏會出現
+                // 「「—」花了 NT$3,200，佔本月支出的 42%」，讀起來就是個 bug。
+                let topCategory = proportions
+                    .filter { !$0.isUnassigned }
+                    .max(by: { $0.amount < $1.amount })
+                let summary = SpendingSummary(
+                    // 加總**全部**（含未分類）：這是總支出，刻意不跟 top category 一起過濾。
+                    monthTotal: proportions.reduce(Decimal(0)) { $0 + $1.amount },
+                    weekTotal: snapshot.week,
+                    topCategoryName: topCategory?.name,
+                    topCategoryAmount: topCategory?.amount,
+                    savingsPercentage: snapshot.savingsPercentage
+                )
+                let descriptors = try await insightsClient.generateInsights(summary)
+                await send(.insightsLoaded(descriptors.map(Self.insightCard(for:))))
             } catch {
                 await send(.sectionFailed(.insight, String(localized: "dashboard_section_load_failed", bundle: .main)))
             }
         }
         .cancellable(id: CancelID.insights, cancelInFlight: cancelInFlight)
+    }
+
+    // MARK: - Insight presentation
+
+    /// `InsightDescriptor`（Domain：純數字）→ `InsightData`（畫面用：已本地化）。
+    ///
+    /// 這個映射只能在 Features 層：承載 `generateInsights` 實作的 `Core` target
+    /// 只依賴 `Domain`，碰不到 `Common` 的 `twdFormatted` 也碰不到 main bundle 的
+    /// localization（`Features/Package.swift:73-87`）。把繁中字串寫死在 Application
+    /// 層正是 audit B9 的結構性成因。
+    ///
+    /// `id` 沿用描述子的 `id`，同一批描述子映射出來的 state 才是可預測的
+    /// （不在這裡生成新 UUID）。`cta` 一律 `nil` —— CTA 點擊目前是 no-op
+    /// （`InsightCarousel.swift`），不放沒有作用的按鈕。
+    static func insightCard(for descriptor: InsightDescriptor) -> InsightData {
+        switch descriptor.kind {
+        case let .topCategory(name, amount, share):
+            let percent = percentText(share)
+            return InsightData(
+                id: descriptor.id,
+                title: String(localized: "dashboard_insight_top_category_title", bundle: .main),
+                body: String(
+                    format: String(localized: "dashboard_insight_top_category_body", bundle: .main),
+                    name,
+                    amount.twdFormatted,
+                    percent
+                ),
+                metric: percent,
+                metricColor: .expense
+            )
+
+        case let .savingsRate(rate):
+            let percent = percentText(rate)
+            return InsightData(
+                id: descriptor.id,
+                title: String(localized: "dashboard_insight_savings_title", bundle: .main),
+                body: String(
+                    format: String(localized: "dashboard_insight_savings_body", bundle: .main),
+                    percent
+                ),
+                metric: percent,
+                // 現行 `StatsSnapshot.savingsPercentage` 被 kernel 的 `max(0, ...)`
+                // 夾住，但描述子型別允許負值，所以照語意分色。
+                metricColor: rate >= 0 ? .income : .expense
+            )
+
+        case let .weekSpending(amount):
+            return InsightData(
+                id: descriptor.id,
+                title: String(localized: "dashboard_insight_week_title", bundle: .main),
+                body: String(
+                    format: String(localized: "dashboard_insight_week_body", bundle: .main),
+                    amount.twdFormatted
+                ),
+                // MetricBadge 空間有限 —— badge 用 compact（NT$1.2萬），內文用完整金額。
+                metric: amount.twdCompact,
+                metricColor: .neutral
+            )
+        }
+    }
+
+    /// 百分比四捨五入到整數位（`CategoryDonutCard.swift:237` / `KPIStrip.swift:24`
+    /// 的既有慣例；`Int()` 會截斷，這個 codebase 已選四捨五入）。
+    private static func percentText(_ ratio: Double) -> String {
+        String(format: "%.0f%%", ratio * 100)
     }
 
     /// Loads `StatsSnapshot` and routes success/failure into the

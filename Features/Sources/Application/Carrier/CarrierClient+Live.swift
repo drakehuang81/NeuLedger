@@ -38,6 +38,7 @@ extension CarrierClient: DependencyKey {
             },
             setActiveForWidget: { id in
                 userSettingsAdapter.setString(id.uuidString, .widgetCarrierId)
+                await widgetSyncAdapter.setActiveCarrierId(id.uuidString)
                 let carriers = (try? await store.fetchAll(sortBy: [SortDescriptor(\.createdAt)])) ?? []
                 await widgetSyncAdapter.syncAllCarriers(carriers)
             },

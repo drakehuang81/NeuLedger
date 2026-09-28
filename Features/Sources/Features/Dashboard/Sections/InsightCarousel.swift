@@ -10,10 +10,20 @@ struct InsightCarousel: View {
     var body: some View {
         switch store.insightPhase {
         case .idle, .loading:
-            placeholder.skeleton(when: true)
+            messageCard(
+                title: "dashboard_insight_loading_title",
+                message: "dashboard_insight_loading_body"
+            )
+            .skeleton(when: true)
         case .loaded:
             if store.insights.isEmpty {
-                placeholder
+                // R8：`.loaded` + 空陣列 = 帳本還沒有足夠資料（全新使用者一筆帳都
+                // 沒記時 `InsightComposer` 就回 []），**不是**還在載入。這裡若沿用
+                // 載入中文案，新使用者會永遠盯著一張「正在生成洞察…」。
+                messageCard(
+                    title: "dashboard_insight_empty_title",
+                    message: "dashboard_insight_empty_body"
+                )
             } else {
                 content
             }
@@ -70,12 +80,16 @@ struct InsightCarousel: View {
         }
     }
 
-    private var placeholder: some View {
+    /// 單張說明卡（載入中 / 資料不足），兩種狀態只差文案。
+    private func messageCard(
+        title: LocalizedStringKey,
+        message: LocalizedStringKey
+    ) -> some View {
         GlassContainer(cornerRadius: 22, padding: 20) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("dashboard_insight_loading_title")
+                Text(title)
                     .font(Font.Design.size16Semibold)
-                Text("dashboard_insight_loading_body")
+                Text(message)
                     .font(Font.Design.size13)
                     .foregroundStyle(.secondary)
             }

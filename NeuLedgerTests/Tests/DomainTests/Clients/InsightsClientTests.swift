@@ -2,6 +2,9 @@ import Foundation
 import Testing
 import Dependencies
 @testable import Domain
+// `InsightsClient.liveValue` 住在 Core（Application 層），
+// testLiveGenerateInsightsInventsNothing 需要它。
+@testable import Core
 
 @Suite("InsightsClient Domain Tests")
 struct InsightsClientTests {
@@ -114,9 +117,7 @@ struct InsightsClientTests {
 
     @Test("InsightsClient generateInsights mock override")
     func testGenerateInsightsMock() async throws {
-        let expected = [InsightData(
-            title: "T", body: "B", metric: "M", metricColor: .accent, cta: "C"
-        )]
+        let expected = [InsightDescriptor(kind: .savingsRate(0.28))]
         try await withDependencies {
             $0.insightsClient.generateInsights = { _ in expected }
         } operation: {
@@ -126,6 +127,29 @@ struct InsightsClientTests {
             )
             #expect(result == expected)
         }
+    }
+
+    /// audit B9：`generateInsights` 的 live 實作曾經回傳三筆寫死的假金額
+    /// （「省下 NT$ 3,200」等），與使用者的帳本無關。現在它只是
+    /// `InsightComposer.compose(from:)`，所以「沒有資料 → 沒有卡片」、
+    /// 「有資料 → 數字完全來自 summary」。
+    ///
+    /// 這一條刻意打 live 實作而不是 mock：假資料當初就是躲在 live 裡的。
+    /// `generateInsights` 是純函式路徑（不碰 SwiftData），所以不需要 container。
+    @Test("liveValue.generateInsights derives everything from the summary and invents nothing")
+    func testLiveGenerateInsightsInventsNothing() async throws {
+        let live = InsightsClient.liveValue
+
+        let empty = try await live.generateInsights(SpendingSummary(monthTotal: 0, weekTotal: 0))
+        #expect(empty.isEmpty, "全 0 的 summary 不得產生任何洞察——寫死的假資料就是這樣被看見的")
+
+        let weekOnly = try await live.generateInsights(
+            SpendingSummary(monthTotal: 0, weekTotal: 3_000)
+        )
+        #expect(
+            weekOnly.map(\.kind) == [.weekSpending(3_000)],
+            "只有週支出的 summary 只能產生一張週支出卡片，數字必須是 summary 給的那個"
+        )
     }
 
     @Test("InsightsClient answerFinancialQuestion mock override")

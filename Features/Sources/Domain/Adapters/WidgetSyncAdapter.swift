@@ -22,6 +22,10 @@ public struct WidgetSyncAdapter: Sendable {
     /// `CarrierManagementFeature` so configurable widgets can resolve their
     /// bound carrier by ID.
     public var syncAllCarriers: @Sendable (_ carriers: [Carrier]) async -> Void
+
+    /// 把「App 內選了哪一張載具給 Widget 顯示」寫進 App Group，讓 Widget
+    /// 在使用者沒有長按編輯小工具時也能跟著變（audit A9）。
+    public var setActiveCarrierId: @Sendable (_ id: String) async -> Void
 }
 
 extension WidgetSyncAdapter: TestDependencyKey {

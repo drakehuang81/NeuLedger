@@ -129,8 +129,22 @@ struct MainTabFeature {
                 return .none
 
             case let .tabSelected(tab):
+                // 同一個 tab 再點一次不重載（否則每次點都打一輪查詢）。
+                guard tab != state.selectedTab else {
+                    state.selectedTab = tab
+                    return .none
+                }
                 state.selectedTab = tab
-                return .none
+                // 切 tab 就重載目標 tab：這同時涵蓋 CloudKit 背景同步——另一台裝置
+                // 改動後切回來也會更新，而跨 tab 轉發 delegate 只涵蓋本機異動
+                // （audit A8 的修法建議，plan R7）。
+                switch tab {
+                // 刻意不送 `.task`：它會把 phase 轉 loading／設 isLoading，
+                // 在已經有資料的畫面上閃一片骨架或轉圈（R7）。
+                case .dashboard:    return .send(.dashboard(.pulledToRefresh))
+                case .transactions: return .send(.transactions(.refreshRequested))
+                case .settings:     return .none
+                }
 
             // MARK: Accessory routing (depends on selectedTab — a tab-shell concern)
             case .accessory(.delegate(.contextActionRequested)):

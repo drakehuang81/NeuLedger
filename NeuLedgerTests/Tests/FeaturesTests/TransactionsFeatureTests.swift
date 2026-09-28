@@ -3,6 +3,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Features
 import Domain
+import Core
 
 @Suite("TransactionsFeature Tests")
 struct TransactionsFeatureTests {
@@ -30,7 +31,13 @@ struct TransactionsFeatureTests {
             TransactionsFeature()
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
+        // .task 現在 merge 了兩條 effect（交易列表 + 分類名），兩者完成順序不保證；
+        // 用 .off 只斷言我們關心的那條，non-exhaustive 模式下 receive 會自己找到它、
+        // 其餘（categoriesLoaded）不必顯式斷言就會被略過（不要再呼叫
+        // skipReceivedActions()——若 receive 已經把佇列耗盡，那會因為「沒東西可略過」而失敗）。
+        await MainActor.run { store.exhaustivity = .off }
 
         await store.send(.task) {
             $0.isLoading = true
@@ -39,6 +46,182 @@ struct TransactionsFeatureTests {
             $0.isLoading = false
             $0.transactions = [Self.sampleTransaction]
         }
+        await store.finish()
+    }
+
+    @Test("loading the list also loads the category names the rows need")
+    func testTaskLoadsCategoryNames() async throws {
+        let foodId = UUID()
+        let food = Domain.Category(
+            id: foodId, name: "餐飲", icon: "fork.knife", color: "#FF6B6B",
+            type: .expense, isDefault: false
+        )
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [food] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        await store.receive(\.categoriesLoaded) {
+            $0.categoryNames = [foodId: "餐飲"]
+        }
+        // 刻意沒有 `skipReceivedActions()`：`.task` 會 merge 兩條 effect，抵達順序
+        // 不定，上面這個 `receive` 在 exhaustivity `.off` 下可能已經把佇列清空，
+        // 而 `skipReceivedActions()` 在佇列已耗盡時會誤判成失敗。`finish()` 本身
+        // 就會等所有 effect 收尾。
+        await store.finish()
+    }
+
+    @Test("a failure loading the categories does not block the list itself")
+    func testCategoryLoadFailureDoesNotSetLoadError() async throws {
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in throw CoreError.notFound("SDCategory") }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        await store.skipReceivedActions()
+        // 分類名只是標記，載不到就退回 fallback 文案；loadError 留給交易本身的失敗。
+        await MainActor.run {
+            #expect(store.state.loadError == nil, "分類載入失敗不得擋住整張列表")
+        }
+        await store.finish()
+    }
+
+    // MARK: - refreshRequested（health-audit A8：Dashboard 與交易分頁互相同步）
+    //
+    // MainTab 切 tab 回來時送出：與 `.task` 的差別是刻意**不設 `isLoading`**，
+    // 讓列表在重載期間留在畫面上，不被 ProgressView 取代（plan R7）。斷言的是
+    // send 當下（重載完成前）的 state——finish() 之後重載已完成、
+    // transactionsLoaded 已回填 isLoading = false，屆時看不出跟 `.task` 的差別，
+    // 測試會因為錯誤的理由變綠。
+
+    @Test("refreshRequested reloads without flipping isLoading or clearing the existing list")
+    func testRefreshRequestedDoesNotSetIsLoadingOrClearList() async {
+        var initial = TransactionsFeature.State()
+        initial.transactions = [Self.sampleTransaction]
+        initial.loadError = "stale"
+
+        let store = await TestStore(initialState: initial) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+            // refreshRequested 現在也會重載分類名（見 testRefreshRequestedReloadsCategoryNames）。
+            $0.ledgerClient.listCategories = { _ in [] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.refreshRequested) {
+            $0.loadError = nil
+            #expect($0.isLoading == false)
+            #expect($0.transactions == [Self.sampleTransaction])
+        }
+        await store.finish()
+    }
+
+    /// audit #22 的另一半：`refreshRequested` 當初只重載交易、沒重載分類名。後果是
+    /// 使用者剛把一筆交易分好類（或剛建立新分類）→ 切到別的 tab 再切回來，那一列仍然
+    /// 顯示「未分類」，要重啟 App 才會好——跟 `.task` 要修的陳舊是同一種，只是換成
+    /// 另一份 lookup。
+    @Test("refreshRequested reloads the category names too, not just the rows")
+    func testRefreshRequestedReloadsCategoryNames() async {
+        let foodId = UUID()
+        let food = Domain.Category(
+            id: foodId, name: "餐飲", icon: "fork.knife", color: "#FF6B6B",
+            type: .expense, isDefault: false
+        )
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { _ in [food] }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.refreshRequested)
+        // 斷言的是 **state**，所以一定要真的把 `categoriesLoaded` 收下——`finish()` 只等
+        // effect 收尾，不會把 received action 灌進 state。刻意不用
+        // `skipReceivedActions()`：`.merge` 的抵達順序不定，佇列已被耗盡時它會誤判成失敗。
+        await store.receive(\.categoriesLoaded) {
+            $0.categoryNames = [foodId: "餐飲"]
+        }
+        await store.finish()
+    }
+
+    /// 分類 lookup 必須傳 `nil`（= 不篩型別、全部分類都要）。這個檔案裡每一個 stub 都寫
+    /// `listCategories = { _ in ... }` 把型別參數丟掉，所以把生產碼改成
+    /// `listCategories(.expense)` 會全綠——而那會讓**收入**交易的分類名查不到、
+    /// 列上退回「未分類」。這條捕獲實際傳入的參數。
+    @Test("the category lookup asks for every type, not just expenses")
+    func testCategoryLookupIsNotNarrowedToOneType() async {
+        let capturedTypes = LockIsolated<[TransactionType?]>([])
+        let store = await TestStore(initialState: TransactionsFeature.State()) {
+            TransactionsFeature()
+        } withDependencies: {
+            $0.ledgerClient.listAll = { _ in [] }
+            $0.ledgerClient.listCategories = { type in
+                capturedTypes.withValue { $0.append(type) }
+                return []
+            }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.task)
+        // 只斷言 spy，不碰 state → `finish()` 就夠（同上，不用 skipReceivedActions()）。
+        await store.finish()
+
+        #expect(
+            capturedTypes.value == [TransactionType?.none],
+            "必須恰好呼叫一次且傳 nil：列表混合收入與支出，篩任一型別都會讓另一半查不到分類名"
+        )
+    }
+
+    // MARK: - Row display: category name lookup + fallback（audit #22）
+    //
+    // 這三條直接測 TransactionsFeature.categoryDisplayName 這個純函式，不透過 TestStore——
+    // 它是 view 拿掉查找／fallback 規則後留下的可測試單元。注意：這條規則本身可測，但
+    // TransactionsView.transactionRow 是否真的呼叫了它（而不是繼續寫死
+    // transaction.type.displayName）不在這組測試的覆蓋範圍內——這個 codebase 目前沒有
+    // ViewInspector / snapshot 這類 view-level 測試工具，view body 裡的接線本身測不到，
+    // 已回報給 team-lead（task-3-report.md 的 concern）。
+
+    @Test("categoryDisplayName returns the looked-up name when the category is known")
+    func testCategoryDisplayNameReturnsLookupWhenKnown() {
+        let categoryId = UUID()
+        var tx = Self.sampleTransaction
+        tx.categoryId = categoryId
+
+        let result = TransactionsFeature.categoryDisplayName(
+            for: tx, categoryNames: [categoryId: "餐飲"]
+        )
+        #expect(result == "餐飲")
+    }
+
+    @Test("categoryDisplayName falls back to the uncategorized label, not the transaction type, when there is no category")
+    func testCategoryDisplayNameFallsBackWhenNoCategoryId() {
+        var tx = Self.sampleTransaction
+        tx.categoryId = nil
+
+        let result = TransactionsFeature.categoryDisplayName(for: tx, categoryNames: [:])
+        #expect(result == String(localized: "transactions_row_uncategorized"))
+        // 突變驗證關心的正是這條：fallback 不能悄悄變回 type.displayName，
+        // 那會讓「真的無分類」和「有分類但還沒載入」看起來一樣。
+        #expect(result != tx.type.displayName)
+    }
+
+    @Test("categoryDisplayName falls back when the categoryId isn't in the lookup yet (not loaded, or the category was deleted)")
+    func testCategoryDisplayNameFallsBackWhenNotInLookup() {
+        var tx = Self.sampleTransaction
+        tx.categoryId = UUID() // 不在 categoryNames 裡——分類還沒載入完成，或已被刪除
+
+        let result = TransactionsFeature.categoryDisplayName(for: tx, categoryNames: [:])
+        #expect(result == String(localized: "transactions_row_uncategorized"))
     }
 
     // MARK: - Search
@@ -297,12 +480,18 @@ struct TransactionsFeatureTests {
             TransactionsFeature()
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in throw StubError() }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
+        // .task 現在也 merge 了分類名 effect；用 .off 只斷言列表失敗這條
+        // （不呼叫 skipReceivedActions()——理由同 testTaskLoadsTransactions）。
+        await MainActor.run { store.exhaustivity = .off }
+
         await store.send(.task) { $0.isLoading = true }
         await store.receive(\.loadFailed) {
             $0.isLoading = false
             $0.loadError = "boom"
         }
+        await store.finish()
     }
 
     @Test("searchDebounced queries listAll with activeFilter + searchText (filters are not dropped)")
@@ -387,7 +576,12 @@ struct TransactionsFeatureTests {
             TransactionsFeature()
         } withDependencies: {
             $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: Self.sampleTransaction)] }
+            $0.ledgerClient.listCategories = { _ in [] }
         }
+        // .task 現在也 merge 了分類名 effect，跟另一條 effect 完成順序不保證，用 .off 只斷言
+        // transactionsLoaded（不呼叫 skipReceivedActions()——理由同 testTaskLoadsTransactions）。
+        await MainActor.run { store.exhaustivity = .off }
+
         // .task 一送出就同步清空 loadError（不等 effect 完成），所以 send 的 closure 也要反映這個變化。
         await store.send(.task) {
             $0.isLoading = true
@@ -397,6 +591,7 @@ struct TransactionsFeatureTests {
             $0.isLoading = false
             $0.transactions = [Self.sampleTransaction]
         }
+        await store.finish()
     }
 
     // MARK: - Delete window survives sheet dismissal（health-audit A2）

@@ -39,12 +39,41 @@ extension PersistenceBootstrap: DependencyKey {
     /// same URL inside this container so toggling sync never moves the file.
     private static let appGroupID = "group.com.drake.NeuLedger"
 
+    /// Whether this process is a test runner.
+    ///
+    /// `XCTestConfigurationFilePath` is set by the test harness in the runner
+    /// process; verified empirically under this project's Swift Testing setup
+    /// (`XCTestBundlePath` / `XCTestSessionIdentifier` are present too, but one
+    /// signal is enough and this is the conventional one). Never true in a
+    /// shipped build — the app target is launched without it.
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     /// Shared SwiftData store URL inside the app group container.
     /// Falling back to the per-app Application Support directory keeps the
     /// app runnable even if the entitlement is misconfigured (the data won't
     /// be reachable by the widget in that case, but the main app still works).
+    ///
+    /// **Under tests this redirects to a per-run temporary directory**, and that
+    /// is a data-safety guard rather than tidiness. `NeuLedgerTests` is hosted by
+    /// `NeuLedger.app`, so it inherits the `group.com.drake.NeuLedger`
+    /// entitlement — meaning the App Group path below is the *same*
+    /// `default.store` the installed app uses. A test that reaches the real
+    /// `wipeAllSyncData()` therefore deletes the user's actual ledger, and it
+    /// does so while PASSING. That happened during the data-integrity PR: an
+    /// end-to-end wipe test ran on a simulator and wiped the store shared with
+    /// the installed app. That test was removed, but removal only fixed the one
+    /// caller; this redirect fixes the mechanism, so the next test to call a
+    /// destructive persistence path can no longer reach real data.
     private static let storeURL: URL = {
         let filename = "default.store"
+        if isRunningTests {
+            let dir = URL.temporaryDirectory
+                .appending(path: "NeuLedgerTests-\(ProcessInfo.processInfo.processIdentifier)", directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir.appending(path: filename, directoryHint: .notDirectory)
+        }
         if let groupURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupID
         ) {

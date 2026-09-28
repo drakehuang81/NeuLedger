@@ -81,13 +81,19 @@ enum TransactionAnalyticsKernel {
                 income += tx.amount
             }
         }
-        let savings: Double
+        // 沒有收入就沒有分母，儲蓄率無從定義——回 `nil` 而不是 0，讓畫面能把
+        // 「這期沒有收入」跟「這期剛好收支相抵」分開講。
+        //
+        // 也不再 `max(0, ...)`：夾制會把入不敷出的人的儲蓄率壓成 0，而 0 在
+        // `InsightComposer` 眼中等同「沒資料」，結果是**最需要看到這個數字的人
+        // 反而完全看不到那張卡**。負值照實回傳。
+        let savings: Double?
         if income > 0 {
             let saved = NSDecimalNumber(decimal: income - expense).doubleValue
             let inc = NSDecimalNumber(decimal: income).doubleValue
-            savings = max(0, saved / inc)
+            savings = saved / inc
         } else {
-            savings = 0
+            savings = nil
         }
         return StatsSnapshot(today: todayTotal, week: weekTotal, savingsPercentage: savings)
     }

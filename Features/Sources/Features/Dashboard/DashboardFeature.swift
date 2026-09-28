@@ -66,7 +66,8 @@ public struct DashboardFeature: Sendable {
         // Stats（全域數字 —— TODO(stats-follow-up): 連動需 todayStats 增加 accountId 參數）
         public var todaySpending: Decimal = 0
         public var weekSpending: Decimal = 0
-        public var savingsPercentage: Double = 0
+        /// `nil` = 這期沒有收入紀錄、儲蓄率算不出來（不是 0%）。可以是負值。
+        public var savingsPercentage: Double?
 
         // Insight carousel（populated by Slice 7）
         public var insights: [InsightData] = []
@@ -125,7 +126,7 @@ public struct DashboardFeature: Sendable {
         // B1 Warm Redesign — section-scoped actions
         case weeklySpendingComputed([Decimal])
         case accountChipSelected(Account.ID?)
-        case statsComputed(today: Decimal, week: Decimal, savings: Double)
+        case statsComputed(today: Decimal, week: Decimal, savings: Double?)
         case insightsLoaded([InsightData])
         case insightIndexChanged(Int)
         case transactionRowToggled(Transaction.ID)
@@ -486,9 +487,9 @@ public struct DashboardFeature: Sendable {
     ///   名稱裡的破折號，理由見 `CategoryProportion.isUnassigned`。
     ///   `CategoryProportion` 不帶 `Category.ID`，所以只能拿 `name`。
     /// - `weekTotal` / `savingsPercentage` 來自 `todayStats(now)`，兩者都是
-    ///   **原值轉手、不做任何算術** —— `InsightComposer` 用 `savingsPercentage != 0`
-    ///   判斷要不要產生儲蓄率卡片，這裡若自行重算就會留下浮點殘渣而冒出一張
-    ///   顯示「0%」的卡片。
+    ///   **原值轉手、不做任何算術** —— `InsightComposer` 用 `savingsPercentage`
+    ///   是不是 `nil` 判斷要不要產生儲蓄率卡片，這裡若自行重算，`nil`（沒有收入）
+    ///   就會被算成某個數字而冒出一張卡。
     ///
     /// R9（刻意的限制）：`todayStats` 與 `categoryProportions` 都不吃 accountId，
     /// 所以這些數字是**跨所有帳戶**的合計，不隨 chip 選擇改變 —— 與畫面上方的
@@ -553,6 +554,22 @@ public struct DashboardFeature: Sendable {
             )
 
         case let .savingsRate(rate):
+            // 負儲蓄率換一整套文案，不是把負號塞進同一句。「你留下了 -15%」
+            // 在中英文都不成話；入不敷出要講「多花了多少」，而 badge 仍然顯示
+            // 帶負號的原始數字，讓卡片標題與數字對得起來。
+            guard rate >= 0 else {
+                let overspend = percentText(-rate)
+                return InsightData(
+                    id: descriptor.id,
+                    title: String(localized: "dashboard_insight_overspend_title", bundle: .main),
+                    body: String(
+                        format: String(localized: "dashboard_insight_overspend_body", bundle: .main),
+                        overspend
+                    ),
+                    metric: percentText(rate),
+                    metricColor: .expense
+                )
+            }
             let percent = percentText(rate)
             return InsightData(
                 id: descriptor.id,
@@ -562,9 +579,7 @@ public struct DashboardFeature: Sendable {
                     percent
                 ),
                 metric: percent,
-                // 現行 `StatsSnapshot.savingsPercentage` 被 kernel 的 `max(0, ...)`
-                // 夾住，但描述子型別允許負值，所以照語意分色。
-                metricColor: rate >= 0 ? .income : .expense
+                metricColor: .income
             )
 
         case let .weekSpending(amount):

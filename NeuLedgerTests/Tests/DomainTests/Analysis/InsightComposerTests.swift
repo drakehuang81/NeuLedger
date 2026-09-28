@@ -78,4 +78,25 @@ struct InsightComposerTests {
         let negRate = negative.compactMap { if case let .savingsRate(r) = $0.kind { return r } else { return nil } }.first
         #expect(negRate.map { abs($0 + 0.15) < 0.0001 } == true, "負儲蓄率不得被過濾掉")
     }
+
+    @Test("沒有收入紀錄（nil）時不產生儲蓄率描述子")
+    func testNilSavingsProducesNoDescriptor() {
+        let out = InsightComposer.compose(from: SpendingSummary(
+            monthTotal: 10_000, weekTotal: 1_000, savingsPercentage: nil
+        ))
+        #expect(out.contains { label($0.kind) == "savingsRate" } == false,
+                "分母是 0 時儲蓄率沒有定義，不能拿一個數字來充數")
+        #expect(out.isEmpty == false, "其餘描述子不受影響")
+    }
+
+    @Test("剛好收支相抵（0）仍然產生描述子")
+    func testZeroSavingsStillProducesADescriptor() {
+        // 舊實作用 `savingsPercentage != 0` 過濾，把「收支相抵」跟「沒有資料」
+        // 當成同一件事。0 是一個真實的結果,該講出來。
+        let out = InsightComposer.compose(from: SpendingSummary(
+            monthTotal: 10_000, weekTotal: 1_000, savingsPercentage: 0
+        ))
+        let rate = out.compactMap { if case let .savingsRate(r) = $0.kind { return r } else { return nil } }.first
+        #expect(rate == 0)
+    }
 }

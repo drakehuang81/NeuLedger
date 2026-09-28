@@ -39,12 +39,41 @@ extension PersistenceBootstrap: DependencyKey {
     /// same URL inside this container so toggling sync never moves the file.
     private static let appGroupID = "group.com.drake.NeuLedger"
 
+    /// Whether this process is a test runner.
+    ///
+    /// `XCTestConfigurationFilePath` is set by the test harness in the runner
+    /// process; verified empirically under this project's Swift Testing setup
+    /// (`XCTestBundlePath` / `XCTestSessionIdentifier` are present too, but one
+    /// signal is enough and this is the conventional one). Never true in a
+    /// shipped build — the app target is launched without it.
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     /// Shared SwiftData store URL inside the app group container.
     /// Falling back to the per-app Application Support directory keeps the
     /// app runnable even if the entitlement is misconfigured (the data won't
     /// be reachable by the widget in that case, but the main app still works).
+    ///
+    /// **Under tests this redirects to a per-run temporary directory**, and that
+    /// is a data-safety guard rather than tidiness. `NeuLedgerTests` is hosted by
+    /// `NeuLedger.app`, so it inherits the `group.com.drake.NeuLedger`
+    /// entitlement — meaning the App Group path below is the *same*
+    /// `default.store` the installed app uses. A test that reaches the real
+    /// `wipeAllSyncData()` therefore deletes the user's actual ledger, and it
+    /// does so while PASSING. That happened during the data-integrity PR: an
+    /// end-to-end wipe test ran on a simulator and wiped the store shared with
+    /// the installed app. That test was removed, but removal only fixed the one
+    /// caller; this redirect fixes the mechanism, so the next test to call a
+    /// destructive persistence path can no longer reach real data.
     private static let storeURL: URL = {
         let filename = "default.store"
+        if isRunningTests {
+            let dir = URL.temporaryDirectory
+                .appending(path: "NeuLedgerTests-\(ProcessInfo.processInfo.processIdentifier)", directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir.appending(path: filename, directoryHint: .notDirectory)
+        }
         if let groupURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupID
         ) {
@@ -105,10 +134,19 @@ extension PersistenceBootstrap: DependencyKey {
             let isCloudKitAvailable = FileManager.default.ubiquityIdentityToken != nil
 
             if isSyncEnabled && isCloudKitAvailable {
-                return try ModelContainer(for: schema, configurations: [cloudConfiguration])
+                let c = try ModelContainer(for: schema, configurations: [cloudConfiguration])
+                // 同步開著的這台正是會長出重複 seed 列的那一台，而這條路徑（維持
+                // 原行為）不呼叫 `seedIfNeeded`——所以去重不能掛在 seeding 裡面，
+                // 必須在這裡獨立跑一次，否則整條防線在最需要它的設定下一行都不會執行。
+                deduplicateSeedCategories(in: ModelContext(c))
+                return c
             } else {
                 let c = try ModelContainer(for: schema, configurations: [localConfiguration])
-                seedIfNeeded(in: ModelContext(c))
+                let context = ModelContext(c)
+                // 先修既有資料再補缺的：使用者關掉同步之後，同步期間長出來的重複列
+                // 仍然留在本地 store 裡。
+                deduplicateSeedCategories(in: context)
+                seedIfNeeded(in: context)
                 return c
             }
         } catch {
@@ -280,5 +318,88 @@ extension PersistenceBootstrap {
                 type: type.rawValue, sortOrder: index, isDefault: true
             ))
         }
+    }
+}
+
+// MARK: - Duplicate seed repair
+
+extension PersistenceBootstrap {
+    /// 把共用同一個 seed id 的多筆 `SDCategory` 收斂成一筆，回傳刪掉的列數。
+    ///
+    /// **為什麼會有重複列**（health-audit #8 / spec A4 的後半）：`SeedCategory`
+    /// 的 id 是固定常數，兩台裝置各自冷啟動時各自 seed 出一份，之後才開啟同步。
+    /// CloudKit mirroring 以 store object ID 產生 CKRecord name，所以兩台的
+    /// 「Food」是兩筆不同的 CKRecord，同步後同一台裝置上會出現兩筆
+    /// `id` 相同的列。`seedIfNeeded` 的 fetch-by-id 檢查只防得住「再插第三筆」，
+    /// 移除不了已經存在的那一筆——分類選單因此永久並列兩個同名分類。
+    ///
+    /// **為什麼不用 `#Unique`**（審計裡提到的另一條路）：CloudKit mirroring 有一組
+    /// schema 限制，其中包含不接受 unique constraint。這一條沒有在本專案實測過，
+    /// 但同一組限制的另一條——「每個屬性都必須有預設值」——在這個 schema 裡看得到
+    /// 實證：`SDCategory` 連 `id` 都寫成 `var id: UUID = UUID()`。掃描去重不論那條
+    /// 限制是否成立都可行，所以走這條。
+    ///
+    /// **為什麼只掃 seed id**：使用者自建分類拿的是隨機 UUID，兩台裝置不可能撞同一個
+    /// id，所以非 seed 的重複 id 只可能來自我們自己的程式錯誤，不是同步產物——那種列
+    /// 沒有任何機制可以重建，誤刪就是永久損失，因此刻意不碰。相對地 seed 列永遠可以
+    /// 被 `seedIfNeeded` 重新種回來，這正是把範圍收在這裡的理由（見下面的收斂性）。
+    ///
+    /// **為什麼直接 `context.delete` 是安全的**：`SDTransaction` / `SDBudget` /
+    /// `SDRecurringTransaction` 都用裸 `UUID?` 引用分類，而留下來的那一筆帶著
+    /// **同一個 id**，所以引用全部照樣對得上。這裡刻意不走 `deleteCategory` 的
+    /// 清引用規則（spec A6）——那條規則是為「這個 id 從此不存在」而寫的，在這裡
+    /// 套用反而會把好好的交易清成無分類。
+    ///
+    /// **收斂性**：留哪一筆完全由列上的欄位值決定（見 `survivorOrder`），所以
+    /// 兩台裝置看到同一組列時會算出同一個答案，不會互刪對方留下的那筆。唯一的例外
+    /// 是兩筆欄位值完全相同——此時兩台可能各自刪掉不同的那筆，刪除同步回來後該 id
+    /// 會一筆不剩；因為範圍收在 seed id，下一次冷啟動的 `seedIfNeeded` 會把它種回來，
+    /// 期間交易的 `categoryId` 不變，重種後自動重新對上。
+    @discardableResult
+    static func deduplicateSeedCategories(in context: ModelContext) -> Int {
+        var deletedCount = 0
+        do {
+            for seed in SeedCategory.defaultExpenseCategories + SeedCategory.defaultIncomeCategories {
+                let seedID = seed.id
+                let rows = try context.fetch(
+                    FetchDescriptor<SDCategory>(predicate: #Predicate { $0.id == seedID })
+                )
+                guard rows.count > 1 else { continue }
+
+                let ordered = rows.sorted {
+                    survivorOrder($0, seed: seed) < survivorOrder($1, seed: seed)
+                }
+                for duplicate in ordered.dropFirst() {
+                    context.delete(duplicate)
+                    deletedCount += 1
+                }
+            }
+            if context.hasChanges {
+                try context.save()
+            }
+        } catch {
+            print("Failed to deduplicate seeded categories: \(error)")
+        }
+        return deletedCount
+    }
+
+    /// 排序鍵：值最小的那一筆就是留下來的那一筆。
+    ///
+    /// 第一個鍵是「是否仍與 seed 定義完全相同」，被使用者改過的那一筆（0）排在
+    /// 原封不動的那一筆（1）前面——預設分類的 name / icon / color 是可編輯的
+    /// （`AddEditCategoryFeature` 只鎖 `type`），而使用者的編輯只存在於他動手的
+    /// 那一台裝置上。其餘的鍵純粹是為了在雙方都被改過（或都沒被改過）時仍然有一個
+    /// 兩台裝置都算得出來的固定答案。
+    ///
+    /// 第一個鍵用 `Int` 不用 `Bool`：`Bool` 沒有 conform `Comparable`，
+    /// tuple 的 `<` 會直接編不過。
+    private static func survivorOrder(
+        _ row: SDCategory,
+        seed: SeedCategory
+    ) -> (Int, String, String, String, String, Int) {
+        let isPristine = row.name == seed.name
+            && row.icon == seed.icon
+            && row.color == seed.color
+        return (isPristine ? 1 : 0, row.name, row.icon, row.color, row.type, row.sortOrder)
     }
 }

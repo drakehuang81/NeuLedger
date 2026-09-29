@@ -155,7 +155,9 @@ extension InsightsClient: DependencyKey {
                     let active = try await budgetStore.fetchAll().filter { $0.isActive }
                     let categories = try await categoryStore.fetchAll()
                     // 多裝置 CloudKit 同步可能產生同 id 的兩筆列，取第一筆（spec A4）。
-                    let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+                    // 用 localizedName，與 categoryProportions（上方 :144）一致——否則
+                    // zh-Hant 使用者會在同一頁看到圓餅圖「餐飲」、預算儀表「Food」。
+                    let names = Dictionary(categories.map { ($0.id, $0.localizedName) }, uniquingKeysWith: { first, _ in first })
                     return try TransactionAnalyticsKernel.budgetGauges(
                         accountId: accountId,
                         activeBudgets: active,

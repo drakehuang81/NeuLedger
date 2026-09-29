@@ -303,11 +303,41 @@ struct InsightsClientLiveTests {
         let result = try await sut(container).categoryProportions(range, nil)
         #expect(result.count == 2)
         #expect(result[0].id == food.id.uuidString)
+        // 這條斷言在預設的 en 模擬器上無鑑別力——seed 分類「Food」的 en 在地化值
+        // 就是 "Food"，跟未 localise 的 `name` 相同，兩種實作都會過。真正有鑑別力
+        // 的是下面 `result[1].name` 那條：舊 kernel 硬編 "—"，en/zh-Hant 都不是
+        // "—"。已用 `-testLanguage zh-Hant -testRegion TW` 額外驗證過這條在有
+        // 鑑別力的語系下是真的通過（`food.localizedName` → "餐飲"）。
         #expect(result[0].name == food.localizedName)   // zh-Hant → "餐飲"，en → "Food"
         #expect(result[0].amount == 300)
+        #expect(result[0].isUnassigned == false, "真實分類不可被誤標成未分類")
         #expect(result[1].id == CategoryProportion.uncategorizedId)
         #expect(result[1].name == String(localized: "analysis_other_category", bundle: .main))
         #expect(result[1].amount == 120)
+        // C3：Dashboard 的「本月最大支出分類」靠這個旗標跳過未分類桶
+        // （`filter { !$0.isUnassigned }`）。拿掉生產碼的 `isUnassigned: true`
+        // 不會讓任何其他測試變紅（init 預設值就是 `false`），所以這裡必須釘住。
+        #expect(result[1].isUnassigned == true)
+    }
+
+    @Test("categoryProportions scoped to an account excludes other accounts' expenses")
+    func testCategoryProportionsAccountScope() async throws {
+        let container = try freshContainer()
+        let ctx = ModelContext(container)
+        let food = Category(name: "Food", icon: "fork.knife", color: "#FF6B6B", type: .expense, isDefault: true)
+        SDCategory.from(food, context: ctx)
+        try ctx.save()
+
+        let now = Date()
+        let range = BudgetPeriod.monthly.dateInterval(containing: now)
+        let a = UUID().uuidString
+        let b = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: a, categoryId: food.id), into: container)
+        try insert(expenseTx(amount: 120, date: now, accountId: b, categoryId: food.id), into: container)
+
+        let onlyA = try await sut(container).categoryProportions(range, a)
+        #expect(onlyA.count == 1)
+        #expect(onlyA[0].amount == 300)   // 不是 420（沒篩）也不是 120（篩反）
     }
 
     // MARK: - isAIAvailable (reflects AIAdapter)

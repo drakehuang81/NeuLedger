@@ -334,10 +334,18 @@ struct InsightsClientLiveTests {
         let b = UUID().uuidString
         try insert(expenseTx(amount: 300, date: now, accountId: a, categoryId: food.id), into: container)
         try insert(expenseTx(amount: 120, date: now, accountId: b, categoryId: food.id), into: container)
+        // b 帳戶的未分類支出：讓 `count` 這條斷言真的有鑑別力。少了它，帳戶篩選
+        // 若被寫成只套用在「有分類」那條分支上，結果仍然只有一桶、仍然是 300，
+        // 測試照樣綠——而未分類那一桶其實已經漏進來了。
+        try insert(expenseTx(amount: 77, date: now, accountId: b, categoryId: nil), into: container)
+
+        let all = try await sut(container).categoryProportions(range, nil)
+        #expect(all.count == 2, "前提：不篩帳戶時確實有兩桶（Food 420 + 未分類 77）")
 
         let onlyA = try await sut(container).categoryProportions(range, a)
-        #expect(onlyA.count == 1)
+        #expect(onlyA.count == 1, "b 帳戶的未分類支出不得漏進來")
         #expect(onlyA[0].amount == 300)   // 不是 420（沒篩）也不是 120（篩反）
+        #expect(onlyA.contains { $0.isUnassigned } == false)
     }
 
     // MARK: - isAIAvailable (reflects AIAdapter)

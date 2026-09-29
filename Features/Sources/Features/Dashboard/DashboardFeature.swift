@@ -498,7 +498,7 @@ public struct DashboardFeature: Sendable {
     /// 數字目前仍是**跨所有帳戶**的合計，不隨 chip 選擇改變 —— 與畫面上方的
     /// StatsRow 行為一致。要做到帳戶連動，只剩 `todayStats` 需要補
     /// accountId 參數（Domain 介面 + Application 實作），`categoryProportions`
-    /// 這端已經就緒，把 `nil` 換成 `accountID` 即可。見 `:270-278` 既有的
+    /// 這端已經就緒，把 `nil` 換成 `accountID` 即可。見 `:271-278` 既有的
     /// `TODO(stats-follow-up)` / `TODO(insights-follow-up)`。
     private func insightsEffect(cancelInFlight: Bool) -> Effect<Action> {
         .run { [now] send in

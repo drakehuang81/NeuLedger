@@ -182,7 +182,7 @@ struct MainTabFeatureTests {
             $0.insightsClient.generateInsights = { _ in [] }
             // Task 6（commit 51b88da）幫 insightsEffect 加了這支呼叫，這條既有測試
             // 沒跟著補 stub——carry-over 缺口，team-lead 掃過完整 scheme 後核准隨手補上。
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -273,7 +273,7 @@ struct MainTabFeatureTests {
             $0.insightsClient.generateInsights = { _ in [] }
             // Task 6（commit 51b88da）幫 insightsEffect 加了這支呼叫，這條既有測試
             // 沒跟著補 stub——carry-over 缺口，team-lead 掃過完整 scheme 後核准隨手補上。
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
         }
         await MainActor.run { store.exhaustivity = .off }
 
@@ -338,7 +338,7 @@ struct MainTabFeatureTests {
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.ledgerClient.listCategories = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.ledgerClient.tick = { 0 }

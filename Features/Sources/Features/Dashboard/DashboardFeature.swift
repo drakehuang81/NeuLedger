@@ -500,7 +500,7 @@ public struct DashboardFeature: Sendable {
             do {
                 // 當月區間一律走 BudgetPeriod 的唯一定義，不自行 `dateInterval(of: .month,...)`。
                 let monthRange = BudgetPeriod.monthly.dateInterval(containing: now)
-                let proportions = try await insightsClient.categoryProportions(monthRange)
+                let proportions = try await insightsClient.categoryProportions(monthRange, nil)
                 let snapshot = try await insightsClient.todayStats(now)
                 // 未分類那桶不是使用者的分類——它金額最大時，首屏會出現
                 // 「「—」花了 NT$3,200，佔本月支出的 42%」，讀起來就是個 bug。

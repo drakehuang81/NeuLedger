@@ -4,6 +4,10 @@ public struct CategoryProportion: Equatable, Sendable, Identifiable {
     public let id: String
     public let name: String
     public let amount: Decimal
+
+    /// 未分類支出桶的固定 id；Analysis drill-down 靠它判斷「不帶 categoryIds 篩選」。
+    public static let uncategorizedId = "uncategorized"
+
     /// 這一桶是「沒有分類的支出」的合計，不是使用者建立的分類。
     ///
     /// 給呼叫端跳過它用（例如 Dashboard 的「本月最大支出分類」）。刻意用旗標而不是

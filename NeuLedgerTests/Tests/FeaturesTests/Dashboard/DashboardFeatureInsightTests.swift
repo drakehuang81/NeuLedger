@@ -47,7 +47,7 @@ struct DashboardFeatureInsightTests {
             $0.insightsClient.generateInsights = { _ in mock }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.ledgerClient.listAll = { _ in [] }
             $0.ledgerClient.balances = { [:] }
             $0.ledgerClient.listActiveAccounts = { [] }
@@ -105,7 +105,7 @@ struct DashboardFeatureInsightTests {
             // insightsEffect 現在要讀 `now` 才能算出當月區間，
             // 並且會先查 categoryProportions / todayStats 才組 summary。
             $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.insightsClient.generateInsights = { _ in mock }
         }
@@ -137,7 +137,7 @@ struct DashboardFeatureInsightTests {
             // top category 的**選法**（跳過未分類、不依賴排序）由
             // testTopCategorySkipsUnassignedAndIgnoresOrdering 釘住；這條只管
             // 「summary 帶的是真實數字而不是 0」。
-            $0.insightsClient.categoryProportions = { _ in
+            $0.insightsClient.categoryProportions = { _, _ in
                 [
                     CategoryProportion(name: "交通", amount: 11_600),
                     CategoryProportion(name: "餐飲", amount: 8_400)
@@ -183,7 +183,7 @@ struct DashboardFeatureInsightTests {
             $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
             $0.insightsClient.todayStats = { _ in .zero }
             // 金額最大的是未分類桶，且三筆刻意亂序（`first` 會拿到 8,400 的餐飲）。
-            $0.insightsClient.categoryProportions = { _ in
+            $0.insightsClient.categoryProportions = { _, _ in
                 [
                     CategoryProportion(name: "餐飲", amount: 8_400),
                     CategoryProportion(name: "—", amount: 20_000, isUnassigned: true),
@@ -229,7 +229,7 @@ struct DashboardFeatureInsightTests {
             DashboardFeature()
         } withDependencies: {
             $0.date = .constant(fixedNow)
-            $0.insightsClient.categoryProportions = { range in
+            $0.insightsClient.categoryProportions = { range, _ in
                 capture.record(range)
                 return []
             }
@@ -270,7 +270,7 @@ struct DashboardFeatureInsightTests {
                 calls.bump()
                 return [InsightDescriptor(kind: .weekSpending(1_500))]
             }
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.ledgerClient.listAll = { _ in [] }
@@ -306,7 +306,7 @@ struct DashboardFeatureInsightTests {
             $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
             $0.insightsClient.generateInsights = { _ in descriptors }
             $0.insightsClient.todayStats = { _ in .zero }
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.weeklySparkline = { _ in [] }
             $0.ledgerClient.listAll = { _ in [] }
             $0.ledgerClient.balances = { [:] }

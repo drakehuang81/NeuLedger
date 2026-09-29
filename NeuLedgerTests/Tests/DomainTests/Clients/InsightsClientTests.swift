@@ -44,10 +44,10 @@ struct InsightsClientTests {
         let day = Date()
         let expected = [DailyTrend(date: day, amount: 350)]
         try await withDependencies {
-            $0.insightsClient.dailyBars = { _ in expected }
+            $0.insightsClient.dailyBars = { _, _ in expected }
         } operation: {
             @Dependency(\.insightsClient) var client
-            let result = try await client.dailyBars(DateInterval(start: day, duration: 86_400))
+            let result = try await client.dailyBars(DateInterval(start: day, duration: 86_400), nil)
             #expect(result == expected)
         }
     }
@@ -56,10 +56,10 @@ struct InsightsClientTests {
     func testCategoryProportionsMock() async throws {
         let expected = [CategoryProportion(name: "食物", amount: 500)]
         try await withDependencies {
-            $0.insightsClient.categoryProportions = { _ in expected }
+            $0.insightsClient.categoryProportions = { _, _ in expected }
         } operation: {
             @Dependency(\.insightsClient) var client
-            let result = try await client.categoryProportions(DateInterval(start: Date(), duration: 86_400))
+            let result = try await client.categoryProportions(DateInterval(start: Date(), duration: 86_400), nil)
             #expect(result == expected)
         }
     }

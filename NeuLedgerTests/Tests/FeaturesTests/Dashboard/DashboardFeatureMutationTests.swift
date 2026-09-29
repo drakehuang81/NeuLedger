@@ -60,7 +60,7 @@ struct DashboardFeatureMutationTests {
             $0.insightsClient.detailStats      = { _ in TransactionInsight(kind: .fallback(monthlyCategoryCount: 0)) }
             // insights 也在 refreshAfterMutation 路徑中：洞察改成從帳本算之後，
             // 記一筆帳就必須重載卡片，所以 insightsEffect 兩個 endpoint 都要 stub。
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
         }
     }
@@ -183,7 +183,7 @@ struct DashboardFeatureMutationTests {
             $0.ledgerClient.listActiveAccounts = { [] }
             $0.insightsClient.todayStats = { _ in .zero }
             $0.insightsClient.weeklySparkline = { _ in Array(repeating: 0, count: 7) }
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
             $0.insightsClient.isAIAvailable = { false }
         }

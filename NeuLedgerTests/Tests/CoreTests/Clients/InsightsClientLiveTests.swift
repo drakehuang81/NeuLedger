@@ -231,6 +231,85 @@ struct InsightsClientLiveTests {
         #expect(gauges.first?.spentAmount == 300)
     }
 
+    // MARK: - Analysis projections (financialSummary / dailyBars / categoryProportions)
+
+    private func incomeTx(amount: Decimal, date: Date, accountId: String) -> SDTransaction {
+        SDTransaction(
+            id: UUID(), amount: amount, date: date, note: "",
+            categoryId: nil, accountId: accountId, toAccountId: nil,
+            type: TransactionType.income.rawValue,
+            aiSuggested: false, createdAt: date, updatedAt: date
+        )
+    }
+
+    @Test("financialSummary sums income/expense in range, excludes transfers, scopes to account")
+    func testFinancialSummary() async throws {
+        let container = try freshContainer()
+        let now = Date()
+        let range = BudgetPeriod.monthly.dateInterval(containing: now)
+        let a = UUID().uuidString
+        let b = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: a), into: container)
+        try insert(expenseTx(amount: 120, date: now, accountId: b), into: container)
+        try insert(incomeTx(amount: 5000, date: now, accountId: a), into: container)
+        let transfer = SDTransaction(
+            id: UUID(), amount: 999, date: now, note: "",
+            categoryId: nil, accountId: a, toAccountId: b,
+            type: TransactionType.transfer.rawValue,
+            aiSuggested: false, createdAt: now, updatedAt: now
+        )
+        try insert(transfer, into: container)
+        try insert(expenseTx(amount: 777, date: range.start.addingTimeInterval(-60), accountId: a), into: container)
+
+        let client = sut(container)
+        let all = try await client.financialSummary(range, nil)
+        #expect(all == FinancialSummary(totalIncome: 5000, totalExpense: 420))
+        let onlyA = try await client.financialSummary(range, a)
+        #expect(onlyA == FinancialSummary(totalIncome: 5000, totalExpense: 300))
+    }
+
+    @Test("dailyBars scoped to account only counts that account's expenses")
+    func testDailyBarsAccountScope() async throws {
+        let container = try freshContainer()
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let range = BudgetPeriod.monthly.dateInterval(containing: today)
+        let a = UUID().uuidString
+        let b = UUID().uuidString
+        try insert(expenseTx(amount: 100, date: today.addingTimeInterval(3600), accountId: a), into: container)
+        try insert(expenseTx(amount: 50, date: today.addingTimeInterval(7200), accountId: b), into: container)
+
+        let client = sut(container)
+        let all = try await client.dailyBars(range, nil)
+        #expect(all == [DailyTrend(date: today, amount: 150)])
+        let onlyA = try await client.dailyBars(range, a)
+        #expect(onlyA == [DailyTrend(date: today, amount: 100)])
+    }
+
+    @Test("categoryProportions resolves seed names via localizedName and buckets uncategorized under the stable id")
+    func testCategoryProportionsNamesAndUncategorized() async throws {
+        let container = try freshContainer()
+        let ctx = ModelContext(container)
+        let food = Category(name: "Food", icon: "fork.knife", color: "#FF6B6B", type: .expense, isDefault: true)
+        SDCategory.from(food, context: ctx)
+        try ctx.save()
+
+        let now = Date()
+        let range = BudgetPeriod.monthly.dateInterval(containing: now)
+        let acct = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: acct, categoryId: food.id), into: container)
+        try insert(expenseTx(amount: 120, date: now, accountId: acct, categoryId: nil), into: container)
+
+        let result = try await sut(container).categoryProportions(range, nil)
+        #expect(result.count == 2)
+        #expect(result[0].id == food.id.uuidString)
+        #expect(result[0].name == food.localizedName)   // zh-Hant → "餐飲"，en → "Food"
+        #expect(result[0].amount == 300)
+        #expect(result[1].id == CategoryProportion.uncategorizedId)
+        #expect(result[1].name == String(localized: "analysis_other_category", bundle: .main))
+        #expect(result[1].amount == 120)
+    }
+
     // MARK: - isAIAvailable (reflects AIAdapter)
 
     @Test("isAIAvailable reflects AIAdapter availability — true")

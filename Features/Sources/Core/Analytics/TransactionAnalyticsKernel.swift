@@ -98,6 +98,28 @@ enum TransactionAnalyticsKernel {
         return StatsSnapshot(today: todayTotal, week: weekTotal, savingsPercentage: savings)
     }
 
+    /// 區間內收入 / 支出總額（排除轉帳），可限定帳戶。
+    static func financialSummary(
+        range: DateInterval,
+        accountId: Account.ID?,
+        container: ModelContainer
+    ) throws -> FinancialSummary {
+        let start = range.start
+        let end = range.end
+        let rows = try fetch(
+            container: container,
+            predicate: #Predicate<SDTransaction> { tx in tx.date >= start && tx.date < end },
+            sortBy: []
+        )
+        let scoped = rows.map(scalarTransaction).filter { tx in
+            accountId.map { tx.involves(account: $0) } ?? true
+        }
+        return FinancialSummary(
+            totalIncome: scoped.total(of: .income),
+            totalExpense: scoped.total(of: .expense)
+        )
+    }
+
     /// Same-category monthly average / prior amount / transfer
     /// activity context for a single transaction.
     static func detailStats(
@@ -174,9 +196,10 @@ enum TransactionAnalyticsKernel {
     }
 
     /// Per-day expense bars over an arbitrary interval. Days with no
-    /// expenses are omitted.
+    /// expenses are omitted. Optionally scoped to a single account.
     static func dailyBars(
         range: DateInterval,
+        accountId: Account.ID?,
         container: ModelContainer
     ) throws -> [DailyTrend] {
         let cal = Calendar.current
@@ -192,6 +215,7 @@ enum TransactionAnalyticsKernel {
         )
         var sums: [Date: Decimal] = [:]
         for tx in rows {
+            if let accountId, tx.accountId != accountId { continue }
             let day = cal.startOfDay(for: tx.date)
             sums[day, default: 0] += tx.amount
         }
@@ -202,11 +226,14 @@ enum TransactionAnalyticsKernel {
 
     /// Category-share rollup over an arbitrary interval, sorted by
     /// amount descending. Transactions with no category fall into a
-    /// single "—" bucket.
+    /// single unassigned bucket (`CategoryProportion.uncategorizedId`).
+    /// Optionally scoped to a single account.
     static func categoryProportions(
         range: DateInterval,
+        accountId: Account.ID?,
         container: ModelContainer,
-        categoryNamesById: [UUID: String]
+        categoryNamesById: [UUID: String],
+        unassignedName: String
     ) throws -> [CategoryProportion] {
         let start = range.start
         let end = range.end
@@ -222,6 +249,7 @@ enum TransactionAnalyticsKernel {
         var sums: [UUID: Decimal] = [:]
         var unassigned: Decimal = 0
         for tx in rows {
+            if let accountId, tx.accountId != accountId { continue }
             if let catId = tx.categoryId {
                 sums[catId, default: 0] += tx.amount
             } else {
@@ -237,8 +265,13 @@ enum TransactionAnalyticsKernel {
         }
         if unassigned > 0 {
             // 標記成未分類：呼叫端（Dashboard 的「最大支出分類」）要能跳過這一桶，
-            // 而不必去比對「—」這個顯示字串。
-            result.append(CategoryProportion(name: "—", amount: unassigned, isUnassigned: true))
+            // 而不必去比對顯示字串（該字串現在也走在地化，見 `unassignedName`）。
+            result.append(CategoryProportion(
+                id: CategoryProportion.uncategorizedId,
+                name: unassignedName,
+                amount: unassigned,
+                isUnassigned: true
+            ))
         }
         return result.sorted(by: { $0.amount > $1.amount })
     }

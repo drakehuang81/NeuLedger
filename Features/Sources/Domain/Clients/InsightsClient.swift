@@ -27,13 +27,18 @@ public struct InsightsClient: Sendable {
     /// reference day), optionally scoped to a single account.
     public var weeklySparkline: @Sendable (_ accountId: Account.ID?) async throws -> [Decimal] = { _ in Array(repeating: 0, count: 7) }
 
+    /// 區間內收入 / 支出總額（排除轉帳），可限定帳戶。Analysis KPI 用。
+    public var financialSummary: @Sendable (_ range: DateInterval, _ accountId: Account.ID?) async throws -> FinancialSummary = { _, _ in FinancialSummary(totalIncome: 0, totalExpense: 0) }
+
     /// Per-day expense bars over an arbitrary interval. Returned in
-    /// ascending date order; days with no expenses are omitted.
-    public var dailyBars: @Sendable (_ range: DateInterval) async throws -> [DailyTrend] = { _ in [] }
+    /// ascending date order; days with no expenses are omitted. Optionally
+    /// scoped to a single account.
+    public var dailyBars: @Sendable (_ range: DateInterval, _ accountId: Account.ID?) async throws -> [DailyTrend] = { _, _ in [] }
 
     /// Category-by-category expense shares over an arbitrary interval.
-    /// Returned sorted by amount descending.
-    public var categoryProportions: @Sendable (_ range: DateInterval) async throws -> [CategoryProportion] = { _ in [] }
+    /// Returned sorted by amount descending. Optionally scoped to a
+    /// single account.
+    public var categoryProportions: @Sendable (_ range: DateInterval, _ accountId: Account.ID?) async throws -> [CategoryProportion] = { _, _ in [] }
 
     /// Gauge-ready metrics for every currently-active budget.
     /// Optionally scoped to budgets relevant to the given account

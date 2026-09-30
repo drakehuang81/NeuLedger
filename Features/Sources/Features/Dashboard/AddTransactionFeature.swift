@@ -217,6 +217,14 @@ public struct AddTransactionFeature: Sendable {
             case let .typeChanged(type):
                 state.type = type
                 state.categoryId = nil
+                // 離開轉帳時一併清掉目的帳戶。少了這一行，使用者「選轉帳 → 挑目的帳戶
+                // → 改回支出」之後，那個目的帳戶會留在 state 裡，存出一筆**帶著
+                // `toAccountId` 的支出**。「支出／收入沒有 `toAccountId`」是這個
+                // codebase 多處默認的前提（例如 kernel 的帳戶範圍篩選就靠它決定
+                // 單向比對是否足夠），違反它會讓同一筆錢在不同畫面上被算進不同帳戶。
+                if type != .transfer {
+                    state.toAccountId = nil
+                }
                 return .none
 
             case let .accountSelected(id):
@@ -284,7 +292,11 @@ public struct AddTransactionFeature: Sendable {
                 let note = state.note.isEmpty ? Optional<String>.none : state.note
                 let categoryId = state.categoryId
                 let accountId = state.accountId!
-                let toAccountId = state.toAccountId
+                // 型別守衛獨立於上面的 `typeChanged` 清除而存在，不是重複：
+                // 編輯一筆**既有的**壞資料列時，`init(transaction:)` 會把它原本的
+                // `toAccountId` 讀進 state，使用者不碰型別直接儲存就會把問題原封寫回去。
+                // 這裡是四個建構點共用的唯一取值處，擋在這裡一次涵蓋。
+                let toAccountId = state.type == .transfer ? state.toAccountId : nil
                 let type_ = state.type
                 let recurringFrequency_ = state.recurringFrequency
 

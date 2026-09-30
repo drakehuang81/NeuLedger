@@ -40,18 +40,18 @@ struct AnalysisTopBar: View {
 
     private var periodSegmented: some View {
         HStack(spacing: 4) {
-            ForEach(AnalysisFeature.State.Period.allCases) { period in
+            ForEach(BudgetPeriod.allCases, id: \.self) { period in
                 periodPill(period)
             }
         }
     }
 
-    private func periodPill(_ period: AnalysisFeature.State.Period) -> some View {
+    private func periodPill(_ period: BudgetPeriod) -> some View {
         let isSelected = store.selectedPeriod == period
         return Button {
             store.send(.periodChanged(period))
         } label: {
-            Text(period.displayName)
+            Text(period.analysisLabel)
                 .font(Font.Design.size11Medium.monospacedDigit())
                 .foregroundStyle(
                     isSelected ? Color.Design.textInverse : Color.Design.textSecondary
@@ -102,20 +102,20 @@ struct AnalysisTopBar: View {
 
     /// Returns an uppercase eyebrow label for the current period — e.g. "MAY 2026",
     /// "WEEK 19", or "2026".
-    private func eyebrowLabel(for period: AnalysisFeature.State.Period) -> String {
+    private func eyebrowLabel(for period: BudgetPeriod) -> String {
         let now = Date()
         let cal = Calendar.current
         switch period {
-        case .week:
+        case .weekly:
             let week = cal.component(.weekOfYear, from: now)
             // Localized "WEEK 19" — kept simple/uppercase to match the design eyebrow.
             return String(format: "%@ %d", String(localized: "analysis_eyebrow_week").uppercased(), week)
-        case .month:
+        case .monthly:
             let f = DateFormatter()
             f.locale = .current
             f.setLocalizedDateFormatFromTemplate("MMM yyyy")
             return f.string(from: now).uppercased()
-        case .year:
+        case .yearly:
             let f = DateFormatter()
             f.locale = .current
             f.setLocalizedDateFormatFromTemplate("yyyy")

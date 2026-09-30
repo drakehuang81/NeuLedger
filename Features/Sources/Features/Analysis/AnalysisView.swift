@@ -21,6 +21,15 @@ public struct AnalysisView: View {
 
                     if store.isLoading {
                         loadingContent
+                    } else if let error = store.loadError {
+                        // 這個分支必須排在空狀態之前：載入失敗時 `hasData` 也是 false，
+                        // 少了它，畫面會把「載入失敗」講成「你沒有任何資料」。
+                        GlassContainer(cornerRadius: 16, padding: 14) {
+                            SectionFailureView(message: error) {
+                                store.send(.loadData)
+                            }
+                        }
+                        .padding(.top, 60)
                     } else if !store.hasData {
                         EmptyStateView(
                             icon: "chart.pie.fill",

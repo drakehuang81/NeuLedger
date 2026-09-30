@@ -118,7 +118,7 @@ struct AnalysisFeatureTests {
         }
     }
 
-    @Test("loadData with zero income and zero expense clears state (empty period)")
+    @Test("a period with no income, no expense and no rows still lands on the empty state")
     func testLoadDataEmptyPeriod() async {
         var initial = AnalysisFeature.State()
         initial.summary = Self.sampleSummary
@@ -131,13 +131,68 @@ struct AnalysisFeatureTests {
         await store.send(.loadData) { $0.isLoading = true }
         await store.receive(\.loadedData) {
             $0.isLoading = false
-            $0.summary = nil
+            // 拿掉哨兵 guard 之後，成功載入一律帶回 summary（就算全是 0）。
+            $0.summary = FinancialSummary(totalIncome: 0, totalExpense: 0)
             $0.categoryProportions = []
             $0.dailyTrends = []
             $0.insight = nil
         }
-        // 空期間不是錯誤——`loadError` 必須維持 nil，畫面才會落在空狀態而不是失敗狀態。
-        await MainActor.run { #expect(store.state.loadError == nil) }
+        await MainActor.run {
+            // 三個訊號全空才算空 → 畫面仍然落在空狀態。
+            #expect(store.state.hasData == false)
+            // 空期間不是錯誤——`loadError` 必須維持 nil，才不會畫成失敗狀態。
+            #expect(store.state.loadError == nil)
+        }
+    }
+
+    @Test("a period whose only rows are zero-amount expenses is not reported as empty")
+    func testLoadDataZeroAmountRowsAreNotEmpty() async {
+        // M1：舊版拿 `totalIncome > 0 || totalExpense > 0` 當空期間的哨兵，
+        // 於是「只記了一筆 0 元支出」會被說成「你沒有任何資料」——`0` 同時身兼
+        // 「這期真的是 0」與「這期沒有交易」兩個意思。現在只要投影層給得出列就算有資料。
+        let zeroRowProportions = [CategoryProportion(id: Self.categoryId.uuidString, name: "飲食", amount: 0)]
+        let zeroRowTrends = [DailyTrend(date: Self.calendar.startOfDay(for: Self.now), amount: 0)]
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in FinancialSummary(totalIncome: 0, totalExpense: 0) }
+            $0.insightsClient.categoryProportions = { _, _ in zeroRowProportions }
+            $0.insightsClient.dailyBars = { _, _ in zeroRowTrends }
+        }
+        await store.send(.loadData) { $0.isLoading = true }
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            $0.summary = FinancialSummary(totalIncome: 0, totalExpense: 0)
+            $0.categoryProportions = zeroRowProportions
+            $0.dailyTrends = zeroRowTrends
+        }
+        // 鑑別點：把哨兵 guard 放回去，這一批就會被丟掉（summary 變 nil、投影清空），
+        // 下面三個斷言會一起變紅。
+        await MainActor.run {
+            #expect(store.state.hasData)
+            #expect(store.state.summary != nil)
+            #expect(store.state.categoryProportions.isEmpty == false)
+        }
+    }
+
+    @Test("a projection failure keeps the independently-loaded budget section visible")
+    func testProjectionFailureKeepsBudgetSection() async {
+        // M3：預算儀表由自己的 effect 載入。投影失敗時它必須留在 state 裡，而且
+        // `showsBudgetSection` **不得**參考 `loadError` / `hasData` / `isLoading`——
+        // 否則一份好好的預算進度會被一塊失敗橫幅整區蓋掉。
+        let metrics = [BudgetGaugeMetrics(id: "b1", categoryName: "飲食", spentAmount: 400, totalBudget: 1000)]
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in throw URLError(.badServerResponse) }
+            $0.insightsClient.budgetGauges = { _ in metrics }
+        }
+        await store.send(.loadData) { $0.isLoading = true }
+        // 兩條 effect 到達順序不定，用 predicate 版 receive 各收一次。
+        await store.receive(Self.isLoadDataOutcome)
+        await store.receive(Self.isLoadDataOutcome)
+        await MainActor.run {
+            #expect(store.state.loadError == Self.loadFailureMessage)   // 投影區塊是失敗狀態
+            #expect(store.state.hasData == false)
+            #expect(store.state.budgetMetrics == metrics)               // 儀表資料沒被清掉
+            #expect(store.state.showsBudgetSection)                     // 而且照樣要畫出來
+        }
     }
 
     // MARK: - C5：載入失敗必須外顯
@@ -405,7 +460,9 @@ struct AnalysisFeatureTests {
             Transaction(amount: 300, date: Self.now, note: "午餐", categoryId: Self.categoryId, accountId: Self.accountId, type: .expense),
         ]
         let capturedFilter = LockIsolated<TransactionFilter?>(nil)
-        var initial = AnalysisFeature.State()
+        // F2：期間**刻意用非預設值**。用 `.monthly`（= State 的預設）會讓
+        // 「讀 state.selectedPeriod」與「硬編 .monthly」兩種實作長得一樣。
+        var initial = AnalysisFeature.State(selectedPeriod: .weekly)
         initial.selectedAccountId = Self.accountId
         let store = await Self.makeStore(initial) {
             $0.ledgerClient.listAll = { filter in
@@ -421,7 +478,7 @@ struct AnalysisFeatureTests {
         #expect(f?.categoryIds == Set([Self.categoryId]))
         #expect(f?.accountIds == Set([Self.accountId]))
         #expect(f?.types == Set([.expense]))
-        #expect(f?.dateRange == BudgetPeriod.monthly.closedRange(containing: Self.now, calendar: Self.calendar))
+        #expect(f?.dateRange == BudgetPeriod.weekly.closedRange(containing: Self.now, calendar: Self.calendar))
     }
 
     // R2（既有 bug）：未分類桶的 id 是 `CategoryProportion.uncategorizedId`，
@@ -429,10 +486,13 @@ struct AnalysisFeatureTests {
     // 等於完全不帶分類篩選——點圓餅圖的「其他」會列出該期間的**每一筆支出**。
     // 下面兩條測試在修復前都會收到兩筆（含已分類的那筆）而變紅。
 
-    @Test("categoryTapped on the unassigned bucket drills into uncategorized expenses only")
+    @Test("categoryTapped honours the isUnassigned flag even when the bucket id is a valid UUID")
     func testCategoryTappedUncategorized() async {
+        // F1：id **刻意是合法 UUID**，所以 `UUID(uuidString:) == nil` 那一半為假，
+        // 只有 `proportion.isUnassigned` 能讓 drill-down 收斂。
+        // 用 `uncategorizedId` 當 id 的話兩條測試會退化成同一條（OR 的另一半早就為真）。
         let proportion = CategoryProportion(
-            id: CategoryProportion.uncategorizedId,
+            id: UUID().uuidString,
             name: "其他",
             amount: 150,
             isUnassigned: true
@@ -455,8 +515,8 @@ struct AnalysisFeatureTests {
 
     @Test("categoryTapped treats a non-UUID bucket id as unassigned even without the flag")
     func testCategoryTappedNonUUIDBucketIdWithoutFlag() async {
-        // 防守用：`isUnassigned` 是 PR #39 之後才有的欄位、預設 false，舊的呼叫點
-        // 可能只帶 id。id 不是 UUID 就一定不是真的分類，同樣要收斂。
+        // 這條守 OR 的**另一半**：`isUnassigned` 是 PR #39 之後才有的欄位、預設 false，
+        // 舊的呼叫點可能只帶 id。id 不是 UUID 就一定不是真的分類，同樣要收斂。
         let proportion = CategoryProportion(id: CategoryProportion.uncategorizedId, name: "其他", amount: 150)
         let uncategorized = Transaction(amount: 150, date: Self.now, note: "雜支", accountId: Self.accountId, type: .expense)
         let categorized = Transaction(amount: 300, date: Self.now, note: "午餐", categoryId: Self.categoryId, accountId: Self.accountId, type: .expense)

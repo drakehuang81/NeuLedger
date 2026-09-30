@@ -40,6 +40,11 @@ public struct AnalysisView: View {
                     } else {
                         loadedContent
                     }
+
+                    // 預算儀表**刻意**在上面那組分支之外。它由自己的 effect
+                    // （`CancelID.budgets`）獨立載入，投影失敗、或這一期沒有收支，
+                    // 都不該讓一份已經成功載入的預算進度整區消失。
+                    budgetSection
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 14)
@@ -82,6 +87,28 @@ public struct AnalysisView: View {
         }
     }
 
+    @ViewBuilder
+    private var budgetSection: some View {
+        if store.showsBudgetSection {
+            GlassContainer(cornerRadius: 16, padding: 14) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(String(localized: "analysis_budget_progress"))
+                        .font(Font.Design.size9Medium.monospacedDigit())
+                        .textCase(.uppercase)
+                        .tracking(1.2)
+                        .foregroundStyle(Color.Design.textSecondary)
+                    ForEach(store.budgetMetrics) { metric in
+                        BudgetGauge(
+                            total: metric.totalBudget,
+                            used: metric.spentAmount,
+                            label: metric.categoryName
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     private var loadedContent: some View {
         VStack(spacing: 16) {
             KPIStrip(summary: store.summary)
@@ -93,25 +120,6 @@ public struct AnalysisView: View {
                     proportions: store.categoryProportions
                 ) { proportion in
                     store.send(.categoryTapped(proportion))
-                }
-            }
-
-            if !store.budgetMetrics.isEmpty {
-                GlassContainer(cornerRadius: 16, padding: 14) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(String(localized: "analysis_budget_progress"))
-                            .font(Font.Design.size9Medium.monospacedDigit())
-                            .textCase(.uppercase)
-                            .tracking(1.2)
-                            .foregroundStyle(Color.Design.textSecondary)
-                        ForEach(store.budgetMetrics) { metric in
-                            BudgetGauge(
-                                total: metric.totalBudget,
-                                used: metric.spentAmount,
-                                label: metric.categoryName
-                            )
-                        }
-                    }
                 }
             }
 

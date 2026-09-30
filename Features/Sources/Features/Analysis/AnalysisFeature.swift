@@ -38,8 +38,31 @@ public struct AnalysisFeature: Sendable {
         /// 空狀態——等於對使用者說「你沒有任何資料」，而且沒有重試出口。
         public var loadError: String?
 
+        /// 這一期有沒有東西可以分析。
+        ///
+        /// 刻意**不**只看金額：`0` 同時代表「這期真的是 0」與「這期沒有交易」，
+        /// 拿它當空狀態的哨兵會把「只記了一筆 0 元支出」也說成沒有資料。
+        /// 只要投影層給出任何一筆支出（圓餅或長條有列），就算有資料。
+        ///
+        /// 已知限制：只有轉帳的期間仍會落在空狀態。三個投影都排除轉帳，
+        /// 投影層給不出「這期到底有沒有交易」這個訊號（見 task-7-report.md §18）。
+        /// 預算儀表不受這裡影響——它在 `AnalysisView` 是獨立區塊。
         public var hasData: Bool {
-            summary != nil
+            guard let summary else { return false }
+            return summary.totalIncome > 0
+                || summary.totalExpense > 0
+                || !categoryProportions.isEmpty
+                || !dailyTrends.isEmpty
+        }
+
+        /// 預算儀表要不要畫。
+        ///
+        /// **刻意不看 `isLoading` / `loadError` / `hasData`**：它由自己的 effect
+        /// （`CancelID.budgets`）獨立載入，投影失敗或這一期沒有收支，都不該讓一份
+        /// 已經成功載入的預算進度消失。抽成具名屬性是為了讓這個決定測得到——
+        /// 比照 `StatsRow` 把會誤導使用者的判斷抽成純函式的做法。
+        public var showsBudgetSection: Bool {
+            !budgetMetrics.isEmpty
         }
 
         public init(selectedPeriod: BudgetPeriod = .monthly, selectedAccountId: Account.ID? = nil) {
@@ -54,7 +77,7 @@ public struct AnalysisFeature: Sendable {
         case accountSelected(Account.ID?)
         case periodChanged(BudgetPeriod)
         case loadData
-        case loadedData(TaskResult<AnalysisData?>)
+        case loadedData(TaskResult<AnalysisData>)
         case budgetMetricsLoaded([BudgetGaugeMetrics])
         case categoryTapped(CategoryProportion)
         case categoryTransactionsLoaded(categoryName: String, [Transaction])
@@ -118,12 +141,6 @@ public struct AnalysisFeature: Sendable {
                             async let proportionsTask = insightsClient.categoryProportions(interval, selectedAccountId)
                             async let trendsTask = insightsClient.dailyBars(interval, selectedAccountId)
                             let (summary, proportions, trends) = try await (summaryTask, proportionsTask, trendsTask)
-
-                            // 收入與支出皆為 0 視為空期間（只有轉帳也算空）。
-                            guard summary.totalIncome > 0 || summary.totalExpense > 0 else {
-                                await send(.loadedData(.success(nil)))
-                                return
-                            }
 
                             var insight: InsightDetail? = nil
                             if insightsClient.isAIAvailable() {
@@ -213,13 +230,6 @@ public struct AnalysisFeature: Sendable {
             case let .loadedData(.success(data)):
                 state.isLoading = false
                 state.loadError = nil
-                guard let data else {
-                    state.summary = nil
-                    state.categoryProportions = []
-                    state.dailyTrends = []
-                    state.insight = nil
-                    return .none
-                }
                 state.summary = data.summary
                 state.categoryProportions = data.categoryProportions
                 state.dailyTrends = data.dailyTrends
@@ -227,8 +237,12 @@ public struct AnalysisFeature: Sendable {
                 return .none
 
             case .loadedData(.failure):
-                // 失敗必須外顯。留著上一次的數字（比清成 0 誠實），但畫面改走
-                // `SectionFailureView`，使用者才知道看到的是舊資料而不是「沒有資料」。
+                // 失敗必須外顯，否則畫面會落到「你沒有任何資料」的空狀態——那是假話。
+                //
+                // 投影區塊（KPI／長條／圓餅／AIDock）整區換成 `SectionFailureView`；
+                // 保留的 `summary` 等欄位**不會**被顯示，留著只是避免無謂的清除，
+                // 重試成功就整批覆蓋。預算儀表在 `AnalysisView` 是獨立區塊，
+                // 由自己的 effect 載入，不受這條失敗影響。
                 state.isLoading = false
                 state.loadError = String(localized: "analysis_load_failed", bundle: .main)
                 return .none

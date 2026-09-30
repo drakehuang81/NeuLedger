@@ -260,12 +260,29 @@ struct InsightsClientLiveTests {
         )
         try insert(transfer, into: container)
         try insert(expenseTx(amount: 777, date: range.start.addingTimeInterval(-60), accountId: a), into: container)
+        // F3：第二筆收入，而且**在另一個帳戶**。少了它，`totalIncome` 在「不篩」與
+        // 「篩帳戶 a」兩種情形下都是 5000，收入側有沒有套帳戶範圍根本分不出來。
+        try insert(incomeTx(amount: 800, date: now, accountId: b), into: container)
+        // M2：一筆「支出卻帶著 toAccountId」的格式錯誤列。使用者先選轉帳、挑好目的帳戶，
+        // 再把類型切回支出就會存出這種列（`AddTransactionFeature.typeChanged` 沒有清
+        // `toAccountId`，已另開 follow-up）。它在語意上屬於**來源**帳戶 a；
+        // 若 `financialSummary` 用 `involves(account:)` 雙向比對，它會被算進帳戶 b，
+        // 而圓餅圖／長條圖是單向的 → 同一頁「有支出、空圖表」。下面 onlyB 就是這條的鑑別點。
+        let strayToAccount = SDTransaction(
+            id: UUID(), amount: 60, date: now, note: "",
+            categoryId: nil, accountId: a, toAccountId: b,
+            type: TransactionType.expense.rawValue,
+            aiSuggested: false, createdAt: now, updatedAt: now
+        )
+        try insert(strayToAccount, into: container)
 
         let client = sut(container)
         let all = try await client.financialSummary(range, nil)
-        #expect(all == FinancialSummary(totalIncome: 5000, totalExpense: 420))
+        #expect(all == FinancialSummary(totalIncome: 5800, totalExpense: 480))
         let onlyA = try await client.financialSummary(range, a)
-        #expect(onlyA == FinancialSummary(totalIncome: 5000, totalExpense: 300))
+        #expect(onlyA == FinancialSummary(totalIncome: 5000, totalExpense: 360))
+        let onlyB = try await client.financialSummary(range, b)
+        #expect(onlyB == FinancialSummary(totalIncome: 800, totalExpense: 120))
     }
 
     @Test("dailyBars scoped to account only counts that account's expenses")

@@ -112,7 +112,14 @@ enum TransactionAnalyticsKernel {
             sortBy: []
         )
         let scoped = rows.map(scalarTransaction).filter { tx in
-            accountId.map { tx.involves(account: $0) } ?? true
+            // 單向比對，與 `dailyBars` / `categoryProportions` 同一種拼法。
+            //
+            // 一筆收入／支出在語意上屬於它的**來源**帳戶，不屬於一個殘留的目的欄位。
+            // 用 `involves(account:)` 會把「支出卻帶著 toAccountId」的格式錯誤列算進
+            // 目的帳戶，而圓餅圖與長條圖是單向的 → 同一頁會出現「本月支出 NT$500」
+            // 配一張空圓餅圖。那種列的根因在 `AddTransactionFeature.typeChanged`
+            // 沒有清掉 `toAccountId`（另開 follow-up），這裡先不讓它污染 KPI。
+            accountId.map { tx.accountId == $0 } ?? true
         }
         return FinancialSummary(
             totalIncome: scoped.total(of: .income),

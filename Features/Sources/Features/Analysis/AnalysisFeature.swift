@@ -152,10 +152,12 @@ public struct AnalysisFeature: Sendable {
                                 insight: insight
                             ))))
                         } catch {
-                            // 被 `CancelID.load` 的 cancelInFlight 取消**不是**載入失敗。
-                            // 照送失敗會讓連續切期間變成：接手的 effect 已經寫好新資料，
-                            // 遲到的取消錯誤再把錯誤橫幅蓋上去——使用者在正確的數字上看到「無法載入」。
-                            guard !(error is CancellationError) else { return }
+                            // 這裡**不需要**特別處理 `CancellationError`：`cancelInFlight` 取消這條
+                            // effect 之後，TCA 的 `Send.callAsFunction` 自己會
+                            // `guard !Task.isCancelled else { return }`（Effect.swift:207），
+                            // 被取消的 effect 送什麼都不會進佇列。加 guard 是 no-op；
+                            // 真要加還會反過來吃掉「client 自己丟 CancellationError 但 task 沒被取消」
+                            // 這種該讓使用者看到的失敗。已用突變驗證過（見 task-7-report.md §10）。
                             await send(.loadedData(.failure(error)))
                         }
                     }

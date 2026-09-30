@@ -160,17 +160,6 @@ struct AnalysisFeatureTests {
         }
     }
 
-    // 沒有測試釘住的兩件事，寫在這裡免得下一個人以為它們被覆蓋了：
-    //
-    // 1. `CancelID.load` 本身（「連續兩次 loadData 只有第二次的結果寫進 state」）。
-    // 2. 主 effect 的 `catch` 對 `CancellationError` 的 guard（取消不算載入失敗）。
-    //
-    // 兩者都需要斷言「**沒有**第二個 action 抵達」，而 TestStore 表達不出來：
-    // non-exhaustive 的 `receive` 只等到一個相符的 action，多出來的留在佇列裡不會變紅；
-    // exhaustive 模式的未接收 action 是在 `deinit` 才報，Swift Testing 下不會歸到該測試。
-    // 兩種寫法都實測過（拿掉實作仍然通過），所以刻意不留一條名不符實的測試。
-    // 詳見 task-7-report.md §4.1。
-
     @Test("loadData clears a stale loadError before refetching")
     func testLoadDataClearsPreviousError() async {
         var initial = AnalysisFeature.State()
@@ -303,28 +292,82 @@ struct AnalysisFeatureTests {
         }
     }
 
-    @Test("consecutive loadData: cancelInFlight keeps only the second budget result")
-    func testLoadDataCancelInFlightBudgetEffect() async {
-        let first = [BudgetGaugeMetrics(id: "first", categoryName: "a", spentAmount: 1, totalBudget: 10)]
-        let second = [BudgetGaugeMetrics(id: "second", categoryName: "b", spentAmount: 2, totalBudget: 20)]
-        let callCount = LockIsolated(0)
+    // MARK: - cancelInFlight（兩條 effect 各一條 cancel id）
+    //
+    // 鑑別力的來源要挑對，這裡踩過兩個坑：
+    //
+    // 1. **懸停點必須可取消。** `withCheckedContinuation { _ in }` 在 task 被取消時
+    //    **不會**被 resume，effect 於是永遠掛住——有沒有 `.cancellable` 都一樣掛住，
+    //    測試恆紅、零鑑別力。要用 `Task.sleep`，它在取消時丟 `CancellationError`。
+    //
+    // 2. **不能靠 `finish()` 的 timeout 當鑑別點。** `TestStore` 的 timeout 與未接收 action
+    //    都走 `reportIssueHelper`，而它受 exhaustivity 管制：`.off`
+    //    （`showSkippedAssertions: false`）下訊息被**完全靜音**，測試照樣綠。
+    //    所以鑑別點放在 stub 自己記下「我被取消了」，再用 Swift Testing 的 `#expect` 斷言，
+    //    `#expect` 不經過 TCA 的 exhaustivity 開關。
+    //
+    // 兩條都用**參數**（而不是呼叫次序）區分第一條與第二條 effect，
+    // 所以不依賴「第一次 send 有沒有來得及讓 effect 起跑」這種時序假設。
+
+    @Test("consecutive loadData: CancelID.load tears down the superseded projection effect")
+    func testLoadDataCancelInFlightMainEffect() async {
+        let weeklyRange = BudgetPeriod.weekly.dateInterval(containing: Self.now, calendar: Self.calendar)
+        let secondSummary = FinancialSummary(totalIncome: 222, totalExpense: 222)
+        let firstEffectCancelled = LockIsolated(false)
         let store = await Self.makeStore() {
-            $0.insightsClient.budgetGauges = { _ in
-                let n = callCount.withValue { $0 += 1; return $0 }
-                return n == 1 ? first : second
+            $0.insightsClient.financialSummary = { range, _ in
+                guard range == weeklyRange else { return secondSummary }
+                do {
+                    // 懸停到被取消為止。5 秒遠大於整條測試的耗時，所以「沒被取消」
+                    // 絕不可能在斷言之前把旗標設起來。
+                    try await Task.sleep(for: .seconds(5))
+                } catch {
+                    firstEffectCancelled.setValue(true)
+                    throw error
+                }
+                return FinancialSummary(totalIncome: 111, totalExpense: 111)
             }
         }
-        await store.send(.loadData)
-        await store.send(.loadData)
-        // 只收「第一個抵達的 budgetMetricsLoaded」。cancelInFlight 有效時第一次的
-        // effect 被取消、一筆都不送，所以這裡收到的必然是第二次的 `second`；
-        // 拿掉 cancelInFlight，第一次的 `first` 會先抵達而讓這個斷言變紅。
-        await store.receive(\.budgetMetricsLoaded) { $0.budgetMetrics = second }
-        await store.finish()
-        await MainActor.run {
-            #expect(callCount.value == 2)
-            #expect(store.state.budgetMetrics.map(\.id) == ["second"])
+        await store.send(.periodChanged(.weekly)) { $0.selectedPeriod = .weekly }
+        await store.send(.periodChanged(.yearly)) { $0.selectedPeriod = .yearly }
+        // 只會收到第二次的結果：第一條 effect 被取消之後，TCA 的 `Send` 會
+        // `guard !Task.isCancelled`（Effect.swift:207），它送什麼都不會進佇列。
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            $0.summary = secondSummary
         }
+        await store.finish(timeout: .seconds(1))
+        // 鑑別點：拿掉 `.cancellable(id: CancelID.load, cancelInFlight: true)`，
+        // 第一條 effect 會一路睡到 5 秒後才結束，這裡必然還是 false。
+        #expect(firstEffectCancelled.value)
+    }
+
+    @Test("consecutive accountSelected: CancelID.budgets tears down the superseded budget effect")
+    func testLoadDataCancelInFlightBudgetEffect() async {
+        let accountA = UUID().uuidString
+        let accountB = UUID().uuidString
+        let second = [BudgetGaugeMetrics(id: "second", categoryName: "飲食", spentAmount: 2, totalBudget: 20)]
+        let firstEffectCancelled = LockIsolated(false)
+        let store = await Self.makeStore() {
+            $0.insightsClient.budgetGauges = { account in
+                guard account == accountA else { return second }
+                do {
+                    try await Task.sleep(for: .seconds(5))
+                } catch {
+                    firstEffectCancelled.setValue(true)
+                    throw error
+                }
+                return [BudgetGaugeMetrics(id: "first", categoryName: "x", spentAmount: 1, totalBudget: 10)]
+            }
+        }
+        await store.send(.accountSelected(accountA)) { $0.selectedAccountId = accountA }
+        await store.send(.accountSelected(accountB)) { $0.selectedAccountId = accountB }
+        // 同理只會收到第二次的結果。被取消的第一條即使走到 `?? []` 也送不出去，
+        // 所以 `try?` 不會把預算區塊抹成空的。
+        await store.receive(\.budgetMetricsLoaded) { $0.budgetMetrics = second }
+        await store.finish(timeout: .seconds(1))
+        // 鑑別點同上，針對 `CancelID.budgets`。
+        #expect(firstEffectCancelled.value)
     }
 
     // MARK: - Category drill-down

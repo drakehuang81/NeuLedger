@@ -131,6 +131,13 @@ public struct AnalysisFeature: Sendable {
             case .loadData:
                 state.isLoading = true
                 state.loadError = nil
+                // 區間語意在這次改寫中變了，刻意記下來：舊版的 `dateRange(for:)` 回的是
+                // `start...now`（到「此刻」為止），現在是 `BudgetPeriod` 的**整個期間**
+                // （到期末為止）。差別只在「未來日期的交易」——例如週期範本提前物化、
+                // 或使用者把日期填到未來的那幾筆。舊版看不到它們，現在看得到。
+                //
+                // 選擇後者是為了與專案裡其他用 `BudgetPeriod` 的地方（預算已花、Watch）
+                // 一致：同一個「本月」在不同畫面上不該是兩個不同的區間。
                 let interval = state.selectedPeriod.dateInterval(containing: now, calendar: calendar)
                 let periodName = state.selectedPeriod.analysisLabel
                 let selectedAccountId = state.selectedAccountId

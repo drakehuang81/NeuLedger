@@ -370,6 +370,32 @@ struct AnalysisFeatureTests {
         #expect(firstEffectCancelled.value)
     }
 
+    @Test("a CancellationError thrown while the task is alive is still surfaced as a failure")
+    func testThrownCancellationErrorIsStillSurfacedAsFailure() async {
+        // 這條守的是一個決定：主 effect 的 `catch` **不要**特別處理 `CancellationError`。
+        //
+        // 真的被 `cancelInFlight` 取消時不需要 guard——TCA 的 `Send` 自己會
+        // `guard !Task.isCancelled else { return }`（Effect.swift:207），
+        // 被取消的 effect 送什麼都進不了佇列（上面兩條 cancel 測試就是靠這個性質成立的）。
+        //
+        // 但「client 自己丟 `CancellationError` 而 task 還活著」是另一回事：這時 action
+        // 送得出去，而那是一個**真的失敗**，必須讓使用者看到（`loadError` 有值 + 重試出口），
+        // 不能被 guard 靜靜吃掉，變成「轉圈停下、數字沒變、什麼都沒說」。
+        //
+        // 附註：`Effect.swift:108` 也有一個 `catch is CancellationError { return }`，
+        // 但它只攔「從 operation **傳播出去**」的錯誤；我們的 `do/catch` 在 operation
+        // 內部、是最內層，所以會先接到——這條測試本身就是這個事實的證據
+        // （加回 guard 會讓它變紅）。
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in throw CancellationError() }
+        }
+        await store.send(.loadData) { $0.isLoading = true }
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            $0.loadError = Self.loadFailureMessage
+        }
+    }
+
     // MARK: - Category drill-down
 
     @Test("categoryTapped fetches expenses scoped to category + account + period closedRange")

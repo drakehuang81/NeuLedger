@@ -39,13 +39,23 @@ public struct WatchRecordFeature: Sendable {
         public var step: Step
         public var accountPickerForCategoryId: UUID?
 
+        /// A send is in flight. Blocks a second `confirmTapped` so a
+        /// double tap cannot queue two transactions with different ids.
+        public var isSending: Bool
+
+        /// Why the last send attempt never left the Watch. Non-nil means
+        /// the draft is still held and the user can retry.
+        public var sendFailure: WatchSendFailure?
+
         public init(
             categories: [Domain.Category] = [],
             accounts: [Account] = [],
             defaultAccountId: Account.ID? = nil,
             draft: Draft? = nil,
             step: Step = .category,
-            accountPickerForCategoryId: UUID? = nil
+            accountPickerForCategoryId: UUID? = nil,
+            isSending: Bool = false,
+            sendFailure: WatchSendFailure? = nil
         ) {
             self.categories = categories
             self.accounts = accounts
@@ -53,6 +63,8 @@ public struct WatchRecordFeature: Sendable {
             self.draft = draft
             self.step = step
             self.accountPickerForCategoryId = accountPickerForCategoryId
+            self.isSending = isSending
+            self.sendFailure = sendFailure
         }
 
         public var activeCategory: Domain.Category? {
@@ -86,6 +98,7 @@ public struct WatchRecordFeature: Sendable {
         case confirmTapped
         case cancelTapped
         case draftSent
+        case sendFailed(WatchSendFailure)
     }
 
     private static let amountCap: Decimal = 9_999_999
@@ -132,6 +145,7 @@ public struct WatchRecordFeature: Sendable {
             case let .categoryTapped(id):
                 state.draft = Draft(categoryId: id, accountIdOverride: nil)
                 state.step = .amount
+                state.sendFailure = nil
                 return .none
 
             case let .categoryLongPressed(id):
@@ -147,6 +161,7 @@ public struct WatchRecordFeature: Sendable {
                 state.accountPickerForCategoryId = nil
                 state.draft = Draft(categoryId: categoryId, accountIdOverride: accountId)
                 state.step = .amount
+                state.sendFailure = nil
                 return .none
 
             case let .amountDigit(digit):
@@ -171,6 +186,13 @@ public struct WatchRecordFeature: Sendable {
             case .confirmTapped:
                 guard let draft = state.draft,
                       let accountId = state.activeAccountId else { return .none }
+                // On failure the user stays on the confirm screen, so the
+                // button remains live — without this guard a double tap
+                // would send two transactions with different ids, which
+                // the `TransactionDraft.id` de-duplication cannot catch.
+                guard state.isSending == false else { return .none }
+                state.isSending = true
+                state.sendFailure = nil
                 let nowDate = now
                 let transaction = Transaction(
                     id: UUID(),
@@ -181,18 +203,34 @@ public struct WatchRecordFeature: Sendable {
                     type: .expense
                 )
                 return .run { send in
-                    try? await ledgerClient.record(transaction)
-                    await send(.draftSent)
+                    do {
+                        try await ledgerClient.record(transaction)
+                        await send(.draftSent)
+                    } catch {
+                        await send(.sendFailed(error as? WatchSendFailure ?? .unknown))
+                    }
                 }
 
             case .cancelTapped:
                 state.draft = nil
                 state.step = .category
+                state.isSending = false
+                state.sendFailure = nil
                 return .none
 
             case .draftSent:
                 state.draft = nil
                 state.step = .category
+                state.isSending = false
+                state.sendFailure = nil
+                return .none
+
+            case let .sendFailed(failure):
+                // The draft and the step are deliberately left untouched:
+                // the record never left the Watch, so the user must be
+                // able to see why and press confirm again.
+                state.isSending = false
+                state.sendFailure = failure
                 return .none
             }
         }

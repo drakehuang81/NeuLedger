@@ -12,7 +12,13 @@ struct WatchLedgerClientTests {
 
     final class FakeGateway: WatchDraftSender, @unchecked Sendable {
         let sent = LockIsolated<[TransactionDraft]>([])
-        func send(draft: TransactionDraft) {
+        /// When set, the gateway refuses to queue and throws this.
+        let sendError: Error?
+
+        init(sendError: Error? = nil) { self.sendError = sendError }
+
+        func send(draft: TransactionDraft) throws {
+            if let sendError { throw sendError }
             sent.withValue { $0.append(draft) }
         }
     }
@@ -139,8 +145,14 @@ struct WatchLedgerClientTests {
         #expect(sent.first?.accountId == tx.accountId)
     }
 
-    @Test("record drops a transaction whose categoryId is nil")
-    func recordDropsTransactionWithNilCategory() async throws {
+    // MARK: - A1：record 不再靜默吞掉失敗
+    //
+    // 這條測試原本叫 `recordDropsTransactionWithNilCategory`，斷言「不該
+    // 丟錯，只是 no-op」——它把 A1 的 bug 寫成了規格。沒有分類的草稿在
+    // iPhone 端永遠變不出交易，所以現在必須讓呼叫端知道。
+
+    @Test("record surfaces a missing category instead of silently dropping the draft")
+    func recordThrowsWhenCategoryIsMissing() async throws {
         let gateway = FakeGateway()
         let client = WatchLedgerClient.watchLive(cache: makeEmptyCache(), gateway: gateway)
 
@@ -152,8 +164,28 @@ struct WatchLedgerClientTests {
             type: .expense
         )
 
-        // Should not throw, just no-op.
-        try await client.record(tx)
+        await #expect(throws: WatchSendFailure.missingCategory) {
+            try await client.record(tx)
+        }
+        #expect(gateway.sent.value.isEmpty)
+    }
+
+    @Test("record propagates a gateway failure instead of swallowing it")
+    func recordPropagatesGatewayFailure() async throws {
+        let gateway = FakeGateway(sendError: WatchSendFailure.sessionUnsupported)
+        let client = WatchLedgerClient.watchLive(cache: makeEmptyCache(), gateway: gateway)
+
+        let tx = Transaction(
+            amount: 250,
+            date: Date(),
+            categoryId: UUID(),
+            accountId: "acct-1",
+            type: .expense
+        )
+
+        await #expect(throws: WatchSendFailure.sessionUnsupported) {
+            try await client.record(tx)
+        }
         #expect(gateway.sent.value.isEmpty)
     }
 }

@@ -7,7 +7,9 @@ import Domain
 /// `WatchSessionGateway`. Lets the client be unit-tested with a fake
 /// without pulling the full gateway into tests.
 public protocol WatchDraftSender: Sendable {
-    func send(draft: TransactionDraft)
+    /// Throws `WatchSendFailure` when the draft never made it onto the
+    /// WatchConnectivity queue.
+    func send(draft: TransactionDraft) throws
 }
 
 extension WatchSessionGateway: WatchDraftSender {}
@@ -64,7 +66,12 @@ extension WatchLedgerClient {
                 (cache.load()?.categories ?? []).filter { $0.type == type }
             },
             record: { transaction in
-                guard let categoryId = transaction.categoryId else { return }
+                // Surfaced rather than dropped: a category-less draft can
+                // never become a transaction on the iPhone, so swallowing
+                // it here is exactly the silent data loss we're fixing.
+                guard let categoryId = transaction.categoryId else {
+                    throw WatchSendFailure.missingCategory
+                }
                 let draft = TransactionDraft(
                     id: transaction.id,
                     categoryId: categoryId,
@@ -72,7 +79,7 @@ extension WatchLedgerClient {
                     amount: transaction.amount,
                     date: transaction.date
                 )
-                gateway.send(draft: draft)
+                try gateway.send(draft: draft)
             }
         )
     }

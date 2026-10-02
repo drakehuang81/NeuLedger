@@ -7,8 +7,12 @@ import WatchKit
 #endif
 
 /// Screen 3: shows the assembled draft and lets the user confirm or
-/// cancel. Confirm fires a `.success` haptic (optimistic — we don't
-/// wait for the iPhone to ack).
+/// cancel.
+///
+/// Haptics are deliberately *not* optimistic. The tap plays a neutral
+/// `.click` to acknowledge the press; a send that never left the Watch
+/// plays `.failure` and keeps the draft on screen for a retry. Claiming
+/// `.success` on tap is the bug this screen used to have.
 struct ConfirmView: View {
 
     let store: StoreOf<WatchRecordFeature>
@@ -19,6 +23,12 @@ struct ConfirmView: View {
             actions
         }
         .padding(.horizontal, 6)
+        .onChange(of: store.sendFailure) { _, failure in
+            guard failure != nil else { return }
+            #if canImport(WatchKit)
+            WKInterfaceDevice.current().play(.failure)
+            #endif
+        }
     }
 
     private var summary: some View {
@@ -45,21 +55,41 @@ struct ConfirmView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
+    @ViewBuilder
+    private var failureBanner: some View {
+        if let failure = store.sendFailure {
+            Text(failure.localizedMessage)
+                .font(Font.Design.caption)
+                .foregroundStyle(Color.Design.accentRed)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+        }
+    }
+
     private var actions: some View {
         VStack(spacing: 6) {
+            failureBanner
+
             Button {
                 store.send(.confirmTapped)
                 #if canImport(WatchKit)
-                WKInterfaceDevice.current().play(.success)
+                // Neutral acknowledgement only — success is reported by
+                // leaving this screen, failure by the banner above.
+                WKInterfaceDevice.current().play(.click)
                 #endif
             } label: {
-                Text(String(localized: "watch_confirm_button"))
+                Text(String(
+                    localized: store.sendFailure == nil
+                        ? "watch_confirm_button"
+                        : "watch_retry_button"
+                ))
                     .font(Font.Design.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
             .tint(Color.Design.accentOrange)
+            .disabled(store.isSending)
 
             Button {
                 store.send(.cancelTapped)

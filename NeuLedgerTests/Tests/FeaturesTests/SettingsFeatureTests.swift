@@ -710,7 +710,20 @@ struct SettingsSeedRandomDataTests {
 
         await store.send(.seedRandomDataTapped)
 
-        await store.receive(\.seedRandomDataCompleted) {
+        // 這條 effect 的工作量由 `Int.random` 決定：2...5 個帳戶 × 30...60 筆交易，
+        // 最多約 305 次 `await` 依賴呼叫，全部要塞進這一個 receive 的 timeout 內。
+        // TCA 的預設是 1 秒（`TestStore.timeout = 1 * NSEC_PER_SEC`），而它量的是
+        // wall-clock，所以在完整 scheme 併發跑近千條測試時，這個數字是在斷言一件
+        // 測試無法保證的事。改成明確的 10 秒（與 SyncSettingsFeatureTests 同一個 idiom）。
+        //
+        // 這**不是** race：`seedRandomDataTapped → seedRandomDataCompleted →
+        // accountsLoaded` 是單一串行鏈，沒有 merge/concatenate，順序由生產端保證。
+        // 純粹是「量 × 併發負載」對上一個過緊的等待上限。
+        //
+        // 實測（閒置機器、單獨跑這個 suite）：send 46.9ms、這條 receive 6.5ms
+        // （當次抽到 2 帳戶 / 85 筆）。最壞量（305 筆）外推約 23ms，所以 10 秒是
+        // 數百倍的餘裕；放寬 timeout 不會讓任何錯的斷言變成通過，只影響失敗時要等多久。
+        await store.receive(\.seedRandomDataCompleted, timeout: .seconds(10)) {
             // exhaustive=off：只需確認 isSeedingRandomData=false；result 為隨機字串直接接受
             $0.isSeedingRandomData = false
         }

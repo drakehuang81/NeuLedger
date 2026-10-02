@@ -27,6 +27,23 @@ struct AccountManagementFeatureTests {
         var errorDescription: String? { "boom" }
     }
 
+    /// `.concatenate(重載, .send(.delegate(.accountsChanged)))` 只保證 `accountsLoaded`
+    /// 排在 `delegate.accountsChanged` 前面。但 reducer 處理 `accountsLoaded` 時又另起一條
+    /// **並行** effect 去載餘額（`AccountManagementFeature.swift` 的 `case .accountsLoaded`），
+    /// 那條 effect 與 concatenate 的第二段互不等待，所以 `delegate.accountsChanged` 與
+    /// `balancesLoaded` 的相對順序**沒有定義**，由 scheduler 的負載決定。
+    ///
+    /// 生產端不在乎誰先到，所以要修的是測試：用這個 predicate 收兩次，只斷言「兩條都到」。
+    /// 兩條以外沒有第三個候選 action（一次重載只會有一個 `accountsLoaded`，因此只會有一條
+    /// 餘額 effect），所以「收兩次」等價於「這兩條各到一次」——少送任何一條，第二次 receive
+    /// 就會 timeout，鑑別力沒有變差。
+    private static func isReloadAftermath(_ action: AccountManagementFeature.Action) -> Bool {
+        switch action {
+        case .delegate(.accountsChanged), .balancesLoaded: return true
+        default: return false
+        }
+    }
+
     // MARK: - Load Accounts
 
     @Test("task loads all accounts and then fetches balances")
@@ -229,11 +246,15 @@ struct AccountManagementFeatureTests {
             $0.accounts = [Self.bankAccount]
         }
 
-        await store.receive(\.delegate.accountsChanged)
-
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.bankAccount.id: 5000]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.bankAccount.id: 5000])
+            store.exhaustivity = .on
         }
+        await store.finish()
 
         #expect(deletedId.value == id)
     }
@@ -282,11 +303,15 @@ struct AccountManagementFeatureTests {
             $0.accounts = afterArchive
         }
 
-        await store.receive(\.delegate.accountsChanged)
-
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.bankAccount.id: 0]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.bankAccount.id: 0])
+            store.exhaustivity = .on
         }
+        await store.finish()
 
         #expect(archivedId.value == id)
     }
@@ -314,11 +339,15 @@ struct AccountManagementFeatureTests {
             $0.accounts = [Self.cashAccount]
         }
 
-        await store.receive(\.delegate.accountsChanged)
-
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.cashAccount.id: 0]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.cashAccount.id: 0])
+            store.exhaustivity = .on
         }
+        await store.finish()
 
         #expect(calledUpdate.value?.isArchived == false)
         #expect(calledUpdate.value?.id == id)
@@ -345,10 +374,15 @@ struct AccountManagementFeatureTests {
         await store.receive(\.accountsLoaded) {
             $0.accounts = [Self.cashAccount]
         }
-        await store.receive(\.delegate.accountsChanged)
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.cashAccount.id: 0]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.cashAccount.id: 0])
+            store.exhaustivity = .on
         }
+        await store.finish()
     }
 
     @Test("addEdit saved notifies parent via delegate.accountsChanged")
@@ -370,10 +404,15 @@ struct AccountManagementFeatureTests {
         await store.receive(\.accountsLoaded) {
             $0.accounts = [Self.cashAccount]
         }
-        await store.receive(\.delegate.accountsChanged)
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.cashAccount.id: 1000]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.cashAccount.id: 1000])
+            store.exhaustivity = .on
         }
+        await store.finish()
     }
 
     @Test("addEdit dismissed clears sheet without notifying parent or reloading accounts")
@@ -419,10 +458,15 @@ struct AccountManagementFeatureTests {
             $0.isLoading = false
             $0.accounts = [Self.bankAccount]
         }
-        await store.receive(\.delegate.accountsChanged)
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.bankAccount.id: 5000]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.bankAccount.id: 5000])
+            store.exhaustivity = .on
         }
+        await store.finish()
     }
 
     @Test("archiveConfirmed notifies parent via delegate.accountsChanged")
@@ -457,10 +501,15 @@ struct AccountManagementFeatureTests {
             $0.isLoading = false
             $0.accounts = afterArchive
         }
-        await store.receive(\.delegate.accountsChanged)
-        await store.receive(\.balancesLoaded) {
-            $0.balances = [Self.bankAccount.id: 0]
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances == [Self.bankAccount.id: 0])
+            store.exhaustivity = .on
         }
+        await store.finish()
     }
 
     // MARK: - accountTapped (edit entry)
@@ -525,8 +574,15 @@ struct AccountManagementFeatureTests {
             $0.isLoading = false
             $0.accounts = [archived]
         }
-        await store.receive(\.delegate.accountsChanged)
-        await store.receive(\.balancesLoaded)
+        // 順序不定：delegate.accountsChanged / balancesLoaded —— 見 isReloadAftermath。
+        await MainActor.run { store.exhaustivity = .off }
+        await store.receive(Self.isReloadAftermath)
+        await store.receive(Self.isReloadAftermath)
+        await MainActor.run {
+            #expect(store.state.balances.isEmpty)
+            store.exhaustivity = .on
+        }
+        await store.finish()
     }
 
     @Test("deleteRequested failure sets actionError instead of a dead button")

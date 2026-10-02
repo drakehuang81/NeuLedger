@@ -21,6 +21,26 @@ struct DashboardFeatureScopeTests {
 
     // MARK: - Bug 1 + 轉帳雙向
 
+    /// `.accountChipSelected` 回傳 `.merge(transactionsEffect, sparklineEffect)` ——
+    /// 兩條互不等待的 `.run`，所以 `transactionsUpdated` 與 `weeklySpendingComputed`
+    /// 的相對順序**沒有定義**。這些 store 是 non-exhaustive 的，而 non-exhaustive 的
+    /// `receive(\.X)` 會把排在 X 前面的其他 action **吃掉並套用**；於是當順序反過來時，
+    /// 第一個 `receive(\.transactionsUpdated)` 會先吞掉 `weeklySpendingComputed`，
+    /// 第二個 receive 就永遠等不到而 timeout。
+    ///
+    /// 改用這個 predicate 收兩次，順序無關。兩條以外沒有第三個候選（merge 只有兩條分支，
+    /// 失敗路徑會改送 `sectionFailed`，不在 predicate 內），所以「收兩次」等價於
+    /// 「兩條各到一次」；state 由 `store.finish()` 之後的 `#expect` 一次驗完。
+    ///
+    /// 與 `DashboardFeatureChipTests.isChipReloadOutcome` 同一個改法。
+    private static func isChipReloadOutcome(_ action: DashboardFeature.Action) -> Bool {
+        switch action {
+        case .transactionsUpdated, .weeklySpendingComputed: return true
+        default: return false
+        }
+    }
+
+
     @Test("Selecting an account re-queries scoped transactions, including incoming transfers")
     func testChipSelectReloadsScopedTransactions() async {
         let base = Date(timeIntervalSince1970: 2_000_000)
@@ -58,17 +78,16 @@ struct DashboardFeatureScopeTests {
             $0.heroPhase = .loading
             $0.transactionsPhase = .loading
         }
-        await store.receive(\.transactionsUpdated) {
-            $0.recentTransactions = [txA, transferIn]   // txB 被排除；轉入包含
-            $0.earliestTransactionDate = transferIn.date
-            $0.transactionsPhase = .loaded
-        }
-        await store.receive(\.weeklySpendingComputed) {
-            $0.weeklySpending = [0, 0, 0, 0, 0, 0, 0]
-            $0.heroPhase = .loaded
-        }
+        // 順序不定：transactionsUpdated / weeklySpendingComputed —— 見 isChipReloadOutcome。
+        await store.receive(Self.isChipReloadOutcome)
+        await store.receive(Self.isChipReloadOutcome)
         await store.finish()
         await MainActor.run {
+            #expect(store.state.recentTransactions == [txA, transferIn])   // txB 被排除；轉入包含
+            #expect(store.state.earliestTransactionDate == transferIn.date)
+            #expect(store.state.transactionsPhase == .loaded)
+            #expect(store.state.weeklySpending == [0, 0, 0, 0, 0, 0, 0])
+            #expect(store.state.heroPhase == .loaded)
             #expect(store.state.filteredBalance == 300)         // computed：選中帳戶餘額
         }
     }

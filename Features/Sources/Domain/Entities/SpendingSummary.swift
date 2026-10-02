@@ -31,8 +31,9 @@ public struct SpendingSummary: Equatable, Sendable {
     /// The total amount of the highest-spend category.
     public var topCategoryAmount: Decimal?
 
-    /// The savings percentage (0.0 - 1.0) for the period.
-    public var savingsPercentage: Double
+    /// 期間內的儲蓄率。`nil` = 沒有收入紀錄、算不出來（不是 0）；負值 = 入不敷出。
+    /// 語意與 `StatsSnapshot.savingsPercentage` 相同，見該處說明。
+    public var savingsPercentage: Double?
 
     public init(
         totalIncome: Decimal,
@@ -43,7 +44,7 @@ public struct SpendingSummary: Equatable, Sendable {
         weekTotal: Decimal = 0,
         topCategoryName: String? = nil,
         topCategoryAmount: Decimal? = nil,
-        savingsPercentage: Double = 0
+        savingsPercentage: Double? = nil
     ) {
         self.totalIncome = totalIncome
         self.totalExpense = totalExpense
@@ -62,7 +63,7 @@ public struct SpendingSummary: Equatable, Sendable {
         weekTotal: Decimal,
         topCategoryName: String? = nil,
         topCategoryAmount: Decimal? = nil,
-        savingsPercentage: Double = 0
+        savingsPercentage: Double? = nil
     ) {
         self.totalIncome = 0
         self.totalExpense = 0

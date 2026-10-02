@@ -82,7 +82,48 @@ struct InsightsClientLiveTests {
         let snap = try await client.todayStats(Date())
         #expect(snap.today == 200)
         #expect(snap.week == 300)
-        #expect(abs(snap.savingsPercentage - 0.7) < 0.001)
+        let rate = try #require(snap.savingsPercentage, "有收入紀錄時儲蓄率必須算得出來")
+        #expect(abs(rate - 0.7) < 0.001)
+    }
+
+    @Test("todayStats 在支出大於收入時回報負儲蓄率，不夾成 0")
+    func testTodayStatsReportsNegativeSavings() async throws {
+        let container = try freshContainer()
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let acct = UUID().uuidString
+        let d3 = cal.date(byAdding: .day, value: -3, to: today)!
+        try insert(expenseTx(amount: 1_500, date: d3, accountId: acct), into: container)
+        let ctx = ModelContext(container)
+        ctx.insert(SDTransaction(
+            id: UUID(), amount: 1_000, date: d3, note: "",
+            categoryId: nil, accountId: acct, toAccountId: nil,
+            type: TransactionType.income.rawValue,
+            aiSuggested: false, createdAt: d3, updatedAt: d3
+        ))
+        try ctx.save()
+
+        let snap = try await sut(container).todayStats(Date())
+
+        // 舊實作是 `max(0, saved / inc)`，這裡會拿到 0；而 0 在 InsightComposer
+        // 眼中等同「沒資料」，於是入不敷出的人連卡片都看不到。
+        let rate = try #require(snap.savingsPercentage)
+        #expect(abs(rate - (-0.5)) < 0.001, "(1000 - 1500) / 1000 = -0.5")
+    }
+
+    @Test("todayStats 在期間內沒有任何收入時回報 nil，不是 0")
+    func testTodayStatsReportsNilSavingsWithoutIncome() async throws {
+        let container = try freshContainer()
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let acct = UUID().uuidString
+        try insert(expenseTx(amount: 200, date: today, accountId: acct), into: container)
+
+        let snap = try await sut(container).todayStats(Date())
+
+        #expect(snap.today == 200, "前提：這筆支出確實落在統計窗內")
+        #expect(snap.savingsPercentage == nil,
+                "分母是 0，儲蓄率沒有定義——回 0 會被畫面讀成「一毛都沒存下來」")
     }
 
     // MARK: - weeklySparkline (migrated from TransactionClientWeeklyTests)

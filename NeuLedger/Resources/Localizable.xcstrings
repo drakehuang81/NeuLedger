@@ -953,6 +953,40 @@
         }
       }
     },
+    "dashboard_insight_overspend_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overspent, last 7 days"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近 7 天入不敷出"
+          }
+        }
+      }
+    },
+    "dashboard_insight_overspend_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You spent %@ more than the income you recorded over the last 7 days."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近 7 天你花掉的比記錄的收入多 %@。"
+          }
+        }
+      }
+    },
     "dashboard_insight_top_category_body": {
       "extractionState": "manual",
       "localizations": {

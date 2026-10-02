@@ -388,4 +388,18 @@ struct DashboardFeatureInsightTests {
         #expect(card.metric == "43%")
         #expect(card.metricColor == .income)
     }
+
+    @Test("負儲蓄率換成入不敷出的文案，不是把負號塞進同一句")
+    func testNegativeSavingsUsesTheOverspendCopy() {
+        let positive = DashboardFeature.insightCard(for: InsightDescriptor(kind: .savingsRate(0.15)))
+        let negative = DashboardFeature.insightCard(for: InsightDescriptor(kind: .savingsRate(-0.15)))
+
+        #expect(negative.title != positive.title, "標題必須換掉——「儲蓄率」配一個負數讀不通")
+        #expect(negative.body != positive.body)
+        #expect(negative.body.contains("-") == false,
+                "內文講的是「多花了 15%」，負號不該出現在句子裡")
+        #expect(negative.body.contains("15%"), "內文要帶絕對值")
+        #expect(negative.metric == "-15%", "badge 仍然顯示帶負號的原始數字")
+        #expect(negative.metricColor == .expense)
+    }
 }

@@ -24,6 +24,8 @@ struct KPIStrip: View {
             return String(format: "%.0f%%", (net / income) * 100)
         }()
 
+        let negativeSavings = (summary?.totalIncome ?? 0) > 0 && net < 0
+
         HStack(spacing: 6) {
             kpiCard(
                 key: "analysis_kpi_expense",
@@ -46,7 +48,11 @@ struct KPIStrip: View {
             kpiCard(
                 key: "analysis_kpi_savings_rate",
                 value: savingsRate,
-                valueColor: Color.Design.textPrimary,
+                // 與 Dashboard 的 StatsRow 同一條規則：負儲蓄率走紅色。
+                // 這個 KPI 本來就沒有被 kernel 的夾制蓋到（它自己從
+                // `FinancialSummary` 算），所以一直看得到負值，只是顏色
+                // 跟隔壁的淨額卡不一致。
+                valueColor: negativeSavings ? Color.Design.expenseRed : Color.Design.textPrimary,
                 showCurrencyPrefix: false
             )
         }

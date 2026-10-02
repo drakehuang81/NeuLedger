@@ -99,6 +99,10 @@ struct DashboardFeatureSectionPhaseTests {
         }
         await store.receive(\.statsComputed) {
             $0.statsPhase = .loaded
+            // 初始 state 的儲蓄率是 nil（還沒算），stub 回 0（真的收支相抵），
+            // 兩者不同所以這是一次真實的 state 變化。改成可選值之前，這兩個
+            // 情況都是 0，這行變化是隱形的。
+            $0.savingsPercentage = 0
         }
     }
 

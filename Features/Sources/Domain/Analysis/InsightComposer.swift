@@ -21,9 +21,11 @@ public enum InsightComposer {
             descriptors.append(InsightDescriptor(kind: .topCategory(name: name, amount: amount, share: share)))
         }
 
-        // savingsRate:負儲蓄率必須照樣產生描述子,只有恰好等於 0(無意義)才略過。
-        if summary.savingsPercentage != 0 {
-            descriptors.append(InsightDescriptor(kind: .savingsRate(summary.savingsPercentage)))
+        // savingsRate:只有 `nil`(沒有收入紀錄、算不出來)才略過。負值必須照樣產生
+        // 描述子——入不敷出正是最該被看到的情況;恰好 0 也照樣產生,那代表「收支
+        // 相抵」,是一個真實的結果,不是沒資料。
+        if let rate = summary.savingsPercentage {
+            descriptors.append(InsightDescriptor(kind: .savingsRate(rate)))
         }
 
         if summary.weekTotal > 0 {

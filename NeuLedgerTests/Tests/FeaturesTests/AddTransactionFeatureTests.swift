@@ -963,3 +963,88 @@ struct AddTransactionNoteDebounceTests {
         }
     }
 }
+
+// MARK: - 轉帳目的帳戶不得外洩到非轉帳交易
+
+/// 釘住「支出／收入沒有 `toAccountId`」這個不變量。
+///
+/// 這個前提被 codebase 多處默認——例如 `TransactionAnalyticsKernel` 的帳戶範圍
+/// 篩選，就是因為「支出沒有目的帳戶」才敢用單向比對。一旦存出帶著 `toAccountId`
+/// 的支出，同一筆錢會在不同畫面上被算進不同帳戶（KPI 說有、圓餅圖說沒有）。
+@Suite("AddTransactionFeature — 轉帳目的帳戶外洩")
+struct AddTransactionTransferLeakTests {
+
+    private static let account1 = Account(
+        id: "00000000-0000-0000-0000-000000000001",
+        name: "現金", type: .cash, icon: "banknote", color: "#34C759"
+    )
+    private static let account2 = Account(
+        id: "00000000-0000-0000-0000-000000000002",
+        name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6"
+    )
+
+    @Test("從轉帳切到支出時，目的帳戶要被清掉")
+    func typeChangedAwayFromTransferClearsDestination() async {
+        var initial = AddTransactionFeature.State(mode: .add(.expense))
+        initial.type = .transfer
+        initial.toAccountId = Self.account2.id
+
+        let store = await TestStore(initialState: initial) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+        }
+
+        await store.send(.typeChanged(.expense)) {
+            $0.type = .expense
+            $0.categoryId = nil
+            $0.toAccountId = nil
+        }
+    }
+
+    @Test("編輯一筆既有的壞資料列時，儲存不得把 toAccountId 原封寫回去")
+    func savingANonTransferNeverPersistsDestination() async {
+        // 這是型別守衛獨立存在的理由：使用者沒有碰型別，所以 `typeChanged` 的清除
+        // 不會發生；壞資料是由 `init(transaction:)` 直接讀進 state 的。
+        let leaked = Transaction(
+            id: UUID(uuidString: "BBBBBBBB-0000-0000-0000-000000000001")!,
+            amount: 100,
+            date: Date(timeIntervalSince1970: 0),
+            note: "",
+            categoryId: nil,
+            accountId: Self.account1.id,
+            toAccountId: Self.account2.id,   // ← 一筆「帶著目的帳戶的支出」
+            type: .expense
+        )
+        var state = AddTransactionFeature.State(mode: .edit(leaked))
+        state.amountText = "250"
+        state.accountId = Self.account1.id
+
+        #expect(state.toAccountId == Self.account2.id, "前提：壞資料確實被讀進 state")
+
+        let updatedCapture: LockIsolated<Transaction?> = LockIsolated(nil)
+        let store = await TestStore(initialState: state) {
+            AddTransactionFeature()
+        } withDependencies: {
+            $0.ledgerClient.listActiveAccounts = { [Self.account1] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.defaultAccountId = { nil }
+            $0.captureClient.isAvailable = { false }
+            $0.ledgerClient.update = { updatedCapture.setValue($0) }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(\.savedSuccessfullyWithTransaction)
+        await store.finish()
+
+        #expect(updatedCapture.value?.amount == 250, "前提：確實走到了儲存")
+        #expect(
+            updatedCapture.value?.toAccountId == nil,
+            "支出不得帶目的帳戶——就算 state 裡本來就有"
+        )
+    }
+}

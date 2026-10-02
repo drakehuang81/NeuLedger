@@ -231,6 +231,140 @@ struct InsightsClientLiveTests {
         #expect(gauges.first?.spentAmount == 300)
     }
 
+    // MARK: - Analysis projections (financialSummary / dailyBars / categoryProportions)
+
+    private func incomeTx(amount: Decimal, date: Date, accountId: String) -> SDTransaction {
+        SDTransaction(
+            id: UUID(), amount: amount, date: date, note: "",
+            categoryId: nil, accountId: accountId, toAccountId: nil,
+            type: TransactionType.income.rawValue,
+            aiSuggested: false, createdAt: date, updatedAt: date
+        )
+    }
+
+    @Test("financialSummary sums income/expense in range, excludes transfers, scopes to account")
+    func testFinancialSummary() async throws {
+        let container = try freshContainer()
+        let now = Date()
+        let range = BudgetPeriod.monthly.dateInterval(containing: now)
+        let a = UUID().uuidString
+        let b = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: a), into: container)
+        try insert(expenseTx(amount: 120, date: now, accountId: b), into: container)
+        try insert(incomeTx(amount: 5000, date: now, accountId: a), into: container)
+        let transfer = SDTransaction(
+            id: UUID(), amount: 999, date: now, note: "",
+            categoryId: nil, accountId: a, toAccountId: b,
+            type: TransactionType.transfer.rawValue,
+            aiSuggested: false, createdAt: now, updatedAt: now
+        )
+        try insert(transfer, into: container)
+        try insert(expenseTx(amount: 777, date: range.start.addingTimeInterval(-60), accountId: a), into: container)
+        // F3：第二筆收入，而且**在另一個帳戶**。少了它，`totalIncome` 在「不篩」與
+        // 「篩帳戶 a」兩種情形下都是 5000，收入側有沒有套帳戶範圍根本分不出來。
+        try insert(incomeTx(amount: 800, date: now, accountId: b), into: container)
+        // M2：一筆「支出卻帶著 toAccountId」的格式錯誤列。使用者先選轉帳、挑好目的帳戶，
+        // 再把類型切回支出就會存出這種列（`AddTransactionFeature.typeChanged` 沒有清
+        // `toAccountId`，已另開 follow-up）。它在語意上屬於**來源**帳戶 a；
+        // 若 `financialSummary` 用 `involves(account:)` 雙向比對，它會被算進帳戶 b，
+        // 而圓餅圖／長條圖是單向的 → 同一頁「有支出、空圖表」。下面 onlyB 就是這條的鑑別點。
+        let strayToAccount = SDTransaction(
+            id: UUID(), amount: 60, date: now, note: "",
+            categoryId: nil, accountId: a, toAccountId: b,
+            type: TransactionType.expense.rawValue,
+            aiSuggested: false, createdAt: now, updatedAt: now
+        )
+        try insert(strayToAccount, into: container)
+
+        let client = sut(container)
+        let all = try await client.financialSummary(range, nil)
+        #expect(all == FinancialSummary(totalIncome: 5800, totalExpense: 480))
+        let onlyA = try await client.financialSummary(range, a)
+        #expect(onlyA == FinancialSummary(totalIncome: 5000, totalExpense: 360))
+        let onlyB = try await client.financialSummary(range, b)
+        #expect(onlyB == FinancialSummary(totalIncome: 800, totalExpense: 120))
+    }
+
+    @Test("dailyBars scoped to account only counts that account's expenses")
+    func testDailyBarsAccountScope() async throws {
+        let container = try freshContainer()
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let range = BudgetPeriod.monthly.dateInterval(containing: today)
+        let a = UUID().uuidString
+        let b = UUID().uuidString
+        try insert(expenseTx(amount: 100, date: today.addingTimeInterval(3600), accountId: a), into: container)
+        try insert(expenseTx(amount: 50, date: today.addingTimeInterval(7200), accountId: b), into: container)
+
+        let client = sut(container)
+        let all = try await client.dailyBars(range, nil)
+        #expect(all == [DailyTrend(date: today, amount: 150)])
+        let onlyA = try await client.dailyBars(range, a)
+        #expect(onlyA == [DailyTrend(date: today, amount: 100)])
+    }
+
+    @Test("categoryProportions resolves seed names via localizedName and buckets uncategorized under the stable id")
+    func testCategoryProportionsNamesAndUncategorized() async throws {
+        let container = try freshContainer()
+        let ctx = ModelContext(container)
+        let food = Category(name: "Food", icon: "fork.knife", color: "#FF6B6B", type: .expense, isDefault: true)
+        SDCategory.from(food, context: ctx)
+        try ctx.save()
+
+        let now = Date()
+        let range = BudgetPeriod.monthly.dateInterval(containing: now)
+        let acct = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: acct, categoryId: food.id), into: container)
+        try insert(expenseTx(amount: 120, date: now, accountId: acct, categoryId: nil), into: container)
+
+        let result = try await sut(container).categoryProportions(range, nil)
+        #expect(result.count == 2)
+        #expect(result[0].id == food.id.uuidString)
+        // 這條斷言在預設的 en 模擬器上無鑑別力——seed 分類「Food」的 en 在地化值
+        // 就是 "Food"，跟未 localise 的 `name` 相同，兩種實作都會過。真正有鑑別力
+        // 的是下面 `result[1].name` 那條：舊 kernel 硬編 "—"，en/zh-Hant 都不是
+        // "—"。已用 `-testLanguage zh-Hant -testRegion TW` 額外驗證過這條在有
+        // 鑑別力的語系下是真的通過（`food.localizedName` → "餐飲"）。
+        #expect(result[0].name == food.localizedName)   // zh-Hant → "餐飲"，en → "Food"
+        #expect(result[0].amount == 300)
+        #expect(result[0].isUnassigned == false, "真實分類不可被誤標成未分類")
+        #expect(result[1].id == CategoryProportion.uncategorizedId)
+        #expect(result[1].name == String(localized: "analysis_other_category", bundle: .main))
+        #expect(result[1].amount == 120)
+        // C3：Dashboard 的「本月最大支出分類」靠這個旗標跳過未分類桶
+        // （`filter { !$0.isUnassigned }`）。拿掉生產碼的 `isUnassigned: true`
+        // 不會讓任何其他測試變紅（init 預設值就是 `false`），所以這裡必須釘住。
+        #expect(result[1].isUnassigned == true)
+    }
+
+    @Test("categoryProportions scoped to an account excludes other accounts' expenses")
+    func testCategoryProportionsAccountScope() async throws {
+        let container = try freshContainer()
+        let ctx = ModelContext(container)
+        let food = Category(name: "Food", icon: "fork.knife", color: "#FF6B6B", type: .expense, isDefault: true)
+        SDCategory.from(food, context: ctx)
+        try ctx.save()
+
+        let now = Date()
+        let range = BudgetPeriod.monthly.dateInterval(containing: now)
+        let a = UUID().uuidString
+        let b = UUID().uuidString
+        try insert(expenseTx(amount: 300, date: now, accountId: a, categoryId: food.id), into: container)
+        try insert(expenseTx(amount: 120, date: now, accountId: b, categoryId: food.id), into: container)
+        // b 帳戶的未分類支出：讓 `count` 這條斷言真的有鑑別力。少了它，帳戶篩選
+        // 若被寫成只套用在「有分類」那條分支上，結果仍然只有一桶、仍然是 300，
+        // 測試照樣綠——而未分類那一桶其實已經漏進來了。
+        try insert(expenseTx(amount: 77, date: now, accountId: b, categoryId: nil), into: container)
+
+        let all = try await sut(container).categoryProportions(range, nil)
+        #expect(all.count == 2, "前提：不篩帳戶時確實有兩桶（Food 420 + 未分類 77）")
+
+        let onlyA = try await sut(container).categoryProportions(range, a)
+        #expect(onlyA.count == 1, "b 帳戶的未分類支出不得漏進來")
+        #expect(onlyA[0].amount == 300)   // 不是 420（沒篩）也不是 120（篩反）
+        #expect(onlyA.contains { $0.isUnassigned } == false)
+    }
+
     // MARK: - isAIAvailable (reflects AIAdapter)
 
     @Test("isAIAvailable reflects AIAdapter availability — true")

@@ -1277,6 +1277,70 @@ git commit -m "refactor: Budget.spent(in:) is the single source for period spend
 
 # PR B — Analysis 改走 Insights（分支 `fix/aggregation-b-analysis-insights`，自 PR A merge 後的 `developer` 開）
 
+### ⚠️ Task 6–7 執行前的校正（2026-09-29，PR B 開工時寫）
+
+這份計劃寫於 2026-09-22。之後有四個 PR 落地（#36 穩定性、#37 週期交易、#38 資料完整性、
+#39 假資料／同步）加上兩批 follow-up，其中三個直接動到 Task 6–7 要碰的檔案。下面每一條都是
+**照計劃原文抄會出事**的地方，執行時以本節為準。
+
+**C1（範圍）Task 6 不是只改三個檔案，它跟 `DashboardFeature` 是同一個不可分割的單位。**
+計劃 Step 7 寫「此時 `AnalysisFeatureTests` 仍編得過（它還沒呼叫這三個 endpoint）」——
+這句話在 2026-09-22 是對的。但 PR #39 讓 `DashboardFeature.swift:503` 開始呼叫
+`insightsClient.categoryProportions(monthRange)`，簽章一加 `accountId` 這行就編不過。
+**簽章改動與它的每一個消費端是原子的**，不能分成兩個 task。Task 6 的檔案清單要加上
+`DashboardFeature.swift`（呼叫點補 `nil`）與全部 8 個測試檔的 stub（共 23 處，arity 改變，
+編譯器會全部抓出來）。
+
+**C2（會把已修好的 crash 放回去）Step 6 的 `Dictionary(uniqueKeysWithValues:)` 不可用。**
+PR #38 把全專案六處這個 trap 換成 `uniquingKeysWith: { first, _ in first }`，
+`InsightsClient+Live.swift` 現在就是修好的狀態。原因是 CloudKit 多裝置同步後會出現兩筆
+`id` 相同的 `SDCategory`，`uniqueKeysWithValues` 當場 trap。改寫 Live wiring 時**一律**用
+`uniquingKeysWith:`，不要照抄計劃片段。
+
+**C3（會靜默破壞一條已上線的規則）未分類桶必須保留 `isUnassigned: true`。**
+計劃 Step 5 把未分類桶換成只帶 `id` 與 `name` 的建構；但 `CategoryProportion.isUnassigned`
+是 PR #39 之後才有的欄位、預設 `false`，而 `DashboardFeature` 用 `filter { !$0.isUnassigned }`
+來避免把「—」那一桶說成「本月最大支出分類」。照抄會讓那條規則失效，而且**不會有任何測試變紅**
+（Dashboard 的測試餵的是自己造的 proportion）。正確寫法三個欄位都要給：
+
+```swift
+        if unassigned > 0 {
+            result.append(CategoryProportion(
+                id: CategoryProportion.uncategorizedId,
+                name: unassignedName,          // 見 C4
+                amount: unassigned,
+                isUnassigned: true             // ← 不可省
+            ))
+        }
+```
+
+**C4（層次裁定）未分類桶的顯示名由 Live 層傳入，kernel 不做在地化。**
+現況 kernel 硬編 `"—"`，而真實分類的名字本來就是 Application 層透過 `categoryNamesById`
+傳進去的。為了只留一條命名路徑，`categoryProportions` 再加一個 `unassignedName: String`
+參數，由 `InsightsClient+Live.swift` 傳
+`String(localized: "analysis_other_category", bundle: .main)`。
+
+> 附註：這條**不是**因為 Application 層不能做在地化——那是錯的。該層有 8 處在用
+> `String(localized:…, bundle: .main)`（`InsightsClient+Live` 6 處、`NotificationAdapter+Live`、
+> `CaptureClient+Live`）。真正的規則是**必須顯式帶 `bundle: .main`**，不帶會查 SPM 模組的
+> resource bundle、靜默回傳 key 本身。這裡選擇由 Live 傳入純粹是「命名只走一條路」。
+
+**C5（計劃沒寫、但審計要求）Task 7 要補 `CancelID.load` 與錯誤外顯。**
+計劃早於 2026-09-23 的健康體檢。現況 `AnalysisFeature` 只有 `CancelID.budgets`，
+`loadData` 本身沒有 cancel id，連續切期間／切帳戶會有多條 effect 競態；而
+`.loadedData(.failure)` 只做 `state.isLoading = false`，**錯誤整個被吞掉**，`State` 裡
+沒有任何錯誤欄位，使用者看到的是轉圈停下來、數字沒變、沒有任何說明。Task 7 要一併：
+`CancelID` 加 `load`、`loadData` 的 effect 掛 `.cancellable(id: CancelID.load, cancelInFlight: true)`、
+`State` 加錯誤欄位並在畫面上出口（比照 `DashboardFeature` 的 `SectionFailureView` 慣例）。
+
+**C6（carry-over 裁定）`dailyBars` / `categoryProportions` 的帳戶篩選用單向比對即可。**
+PR A 的 final review 留下「單向 `tx.accountId != aid` vs `involves(account:)`」這個未決問題。
+這兩個 endpoint 的 predicate 都已經限定 `type == expense`，而支出沒有 `toAccountId`，
+所以兩種寫法在這裡**結果完全相同**。維持單向比對，不必為此改動；`weeklySparkline`
+自己那份篩選仍是未決項，不在 Task 6–7 範圍。
+
+---
+
 ### Task 6: `InsightsClient` 介面擴充與 Kernel 帳戶範圍 / 在地化名稱
 
 **Files:**

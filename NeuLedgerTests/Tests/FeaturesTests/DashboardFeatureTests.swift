@@ -96,7 +96,7 @@ struct DashboardFeatureTests {
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
             // insightsEffect 先查當月 categoryProportions 才組 summary；
             // InsightsClient 是 @DependencyClient，沒 stub 就是執行期 unimplemented。
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {
@@ -167,7 +167,7 @@ struct DashboardFeatureTests {
             $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
             // insightsEffect 先查當月 categoryProportions 才組 summary；
             // InsightsClient 是 @DependencyClient，沒 stub 就是執行期 unimplemented。
-            $0.insightsClient.categoryProportions = { _ in [] }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
             $0.insightsClient.generateInsights = { _ in [] }
         }
         await MainActor.run {

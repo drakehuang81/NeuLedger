@@ -647,6 +647,23 @@
         }
       }
     },
+    "analysis_load_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to load analytics"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法載入分析資料"
+          }
+        }
+      }
+    },
     "analysis_no_data_title": {
       "extractionState": "manual",
       "localizations": {

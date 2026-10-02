@@ -19,23 +19,7 @@ public struct AnalysisFeature: Sendable {
 
     @ObservableState
     public struct State: Equatable, Sendable {
-        public enum Period: String, Equatable, CaseIterable, Identifiable, Sendable {
-            case week
-            case month
-            case year
-
-            public var id: Self { self }
-
-            var displayName: String {
-                switch self {
-                case .week: return String(localized: "analysis_period_week")
-                case .month: return String(localized: "analysis_period_month")
-                case .year: return String(localized: "analysis_period_year")
-                }
-            }
-        }
-
-        public var selectedPeriod: Period = .month
+        public var selectedPeriod: BudgetPeriod = .monthly
         public var selectedAccountId: Account.ID? = nil
         public var accounts: [Account] = []
         public var isLoading: Bool = false
@@ -48,11 +32,40 @@ public struct AnalysisFeature: Sendable {
         public var categoryDrilldown: CategoryDrilldownState?
         public var aiAssistant: AIAssistantFeature.State = .init()
 
+        /// 最近一次載入失敗的訊息；重新載入時清空。View 用 `SectionFailureView` 顯示。
+        ///
+        /// 沒有這個欄位以前，失敗只會把 `isLoading` 放掉，畫面接著落到 `!hasData` 的
+        /// 空狀態——等於對使用者說「你沒有任何資料」，而且沒有重試出口。
+        public var loadError: String?
+
+        /// 這一期有沒有東西可以分析。
+        ///
+        /// 刻意**不**只看金額：`0` 同時代表「這期真的是 0」與「這期沒有交易」，
+        /// 拿它當空狀態的哨兵會把「只記了一筆 0 元支出」也說成沒有資料。
+        /// 只要投影層給出任何一筆支出（圓餅或長條有列），就算有資料。
+        ///
+        /// 已知限制：只有轉帳的期間仍會落在空狀態。三個投影都排除轉帳，
+        /// 投影層給不出「這期到底有沒有交易」這個訊號（見 task-7-report.md §18）。
+        /// 預算儀表不受這裡影響——它在 `AnalysisView` 是獨立區塊。
         public var hasData: Bool {
-            summary != nil
+            guard let summary else { return false }
+            return summary.totalIncome > 0
+                || summary.totalExpense > 0
+                || !categoryProportions.isEmpty
+                || !dailyTrends.isEmpty
         }
 
-        public init(selectedPeriod: Period = .month, selectedAccountId: Account.ID? = nil) {
+        /// 預算儀表要不要畫。
+        ///
+        /// **刻意不看 `isLoading` / `loadError` / `hasData`**：它由自己的 effect
+        /// （`CancelID.budgets`）獨立載入，投影失敗或這一期沒有收支，都不該讓一份
+        /// 已經成功載入的預算進度消失。抽成具名屬性是為了讓這個決定測得到——
+        /// 比照 `StatsRow` 把會誤導使用者的判斷抽成純函式的做法。
+        public var showsBudgetSection: Bool {
+            !budgetMetrics.isEmpty
+        }
+
+        public init(selectedPeriod: BudgetPeriod = .monthly, selectedAccountId: Account.ID? = nil) {
             self.selectedPeriod = selectedPeriod
             self.selectedAccountId = selectedAccountId
         }
@@ -62,9 +75,9 @@ public struct AnalysisFeature: Sendable {
         case task
         case accountsLoaded([Account])
         case accountSelected(Account.ID?)
-        case periodChanged(State.Period)
+        case periodChanged(BudgetPeriod)
         case loadData
-        case loadedData(TaskResult<AnalysisData?>)
+        case loadedData(TaskResult<AnalysisData>)
         case budgetMetricsLoaded([BudgetGaugeMetrics])
         case categoryTapped(CategoryProportion)
         case categoryTransactionsLoaded(categoryName: String, [Transaction])
@@ -82,10 +95,13 @@ public struct AnalysisFeature: Sendable {
     // MARK: - Dependencies
 
     @Dependency(\.ledgerClient) var ledger
-    @Dependency(\.planningClient) var planningClient
     @Dependency(\.insightsClient) var insightsClient
+    @Dependency(\.date.now) var now
+    @Dependency(\.calendar) var calendar
 
-    private enum CancelID { case budgets }
+    /// `load` 與 `budgets` 必須是**兩個**不同的 id：共用會讓 `.merge` 出去的兩條 effect
+    /// 在啟動時互相取消，最後只剩其中一條跑完。
+    private enum CancelID { case load, budgets }
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -114,124 +130,92 @@ public struct AnalysisFeature: Sendable {
 
             case .loadData:
                 state.isLoading = true
-                let period = state.selectedPeriod
+                state.loadError = nil
+                // 區間語意在這次改寫中變了，刻意記下來：舊版的 `dateRange(for:)` 回的是
+                // `start...now`（到「此刻」為止），現在是 `BudgetPeriod` 的**整個期間**
+                // （到期末為止）。差別只在「未來日期的交易」——例如週期範本提前物化、
+                // 或使用者把日期填到未來的那幾筆。舊版看不到它們，現在看得到。
+                //
+                // 選擇後者是為了與專案裡其他用 `BudgetPeriod` 的地方（預算已花、Watch）
+                // 一致：同一個「本月」在不同畫面上不該是兩個不同的區間。
+                let interval = state.selectedPeriod.dateInterval(containing: now, calendar: calendar)
+                let periodName = state.selectedPeriod.analysisLabel
                 let selectedAccountId = state.selectedAccountId
                 return .merge(
-                    .run { [ledger, insightsClient] send in
+                    .run { [insightsClient] send in
                         do {
-                        let dateRange = Self.dateRange(for: period)
-                        let filter = TransactionFilter(
-                            accountIds: selectedAccountId.map { Set([$0]) },
-                            dateRange: dateRange
-                        )
-                        let transactions = try await ledger.listAll(filter).map(\.transaction)
+                            async let summaryTask = insightsClient.financialSummary(interval, selectedAccountId)
+                            async let proportionsTask = insightsClient.categoryProportions(interval, selectedAccountId)
+                            async let trendsTask = insightsClient.dailyBars(interval, selectedAccountId)
+                            let (summary, proportions, trends) = try await (summaryTask, proportionsTask, trendsTask)
 
-                        guard !transactions.isEmpty else {
-                            await send(.loadedData(.success(nil)))
-                            return
-                        }
-
-                        // Summary (exclude transfers)
-                        let totalIncome = transactions
-                            .filter { $0.type == .income }
-                            .reduce(Decimal.zero) { $0 + $1.amount }
-                        let totalExpense = transactions
-                            .filter { $0.type == .expense }
-                            .reduce(Decimal.zero) { $0 + $1.amount }
-                        let summary = FinancialSummary(
-                            totalIncome: totalIncome,
-                            totalExpense: totalExpense
-                        )
-
-                        // Category proportions (expenses only)
-                        let categories = try await ledger.listCategories(nil)
-                        let categoryMap = Dictionary(
-                            categories.map { ($0.id, $0.name) },
-                            uniquingKeysWith: { first, _ in first }
-                        )
-                        // Key: categoryId string (or "uncategorized"), Value: (name, amount)
-                        var categoryTotals: [String: (name: String, amount: Decimal)] = [:]
-                        for txn in transactions where txn.type == .expense {
-                            let key: String
-                            let name: String
-                            if let catId = txn.categoryId {
-                                key = catId.uuidString
-                                name = categoryMap[catId] ?? String(localized: "analysis_other_category")
-                            } else {
-                                key = "uncategorized"
-                                name = String(localized: "analysis_other_category")
-                            }
-                            let existing = categoryTotals[key] ?? (name: name, amount: .zero)
-                            categoryTotals[key] = (name: existing.name, amount: existing.amount + txn.amount)
-                        }
-                        let proportions = categoryTotals
-                            .sorted { $0.value.amount > $1.value.amount }
-                            .map { CategoryProportion(id: $0.key, name: $0.value.name, amount: $0.value.amount) }
-
-                        // Daily trends (expenses only)
-                        let cal = Calendar.current
-                        var dailyTotals: [Date: Decimal] = [:]
-                        for txn in transactions where txn.type == .expense {
-                            let day = cal.startOfDay(for: txn.date)
-                            dailyTotals[day, default: .zero] += txn.amount
-                        }
-                        let trends = dailyTotals
-                            .sorted { $0.key < $1.key }
-                            .map { DailyTrend(date: $0.key, amount: $0.value) }
-
-                        // AI insight
-                        var insight: InsightDetail? = nil
-                        if insightsClient.isAIAvailable() {
-                            let breakdownByName = Dictionary(
-                                categoryTotals.values.map { ($0.name, $0.amount) },
-                                uniquingKeysWith: { lhs, rhs in lhs + rhs }
-                            )
-                            let spendingSummary = SpendingSummary(
-                                totalIncome: totalIncome,
-                                totalExpense: totalExpense,
-                                categoryBreakdown: breakdownByName,
-                                periodDescription: period.displayName
-                            )
-                            if let text = try? await insightsClient.generateAIInsight(spendingSummary) {
-                                insight = InsightDetail(
-                                    title: String(localized: "analysis_ai_insight_title"),
-                                    description: text
+                            var insight: InsightDetail? = nil
+                            if insightsClient.isAIAvailable() {
+                                let breakdown = Dictionary(
+                                    proportions.map { ($0.name, $0.amount) },
+                                    uniquingKeysWith: { $0 + $1 }
                                 )
+                                let spendingSummary = SpendingSummary(
+                                    totalIncome: summary.totalIncome,
+                                    totalExpense: summary.totalExpense,
+                                    categoryBreakdown: breakdown,
+                                    periodDescription: periodName
+                                )
+                                if let text = try? await insightsClient.generateAIInsight(spendingSummary) {
+                                    insight = InsightDetail(
+                                        title: String(localized: "analysis_ai_insight_title", bundle: .main),
+                                        description: text
+                                    )
+                                }
                             }
-                        }
 
-                        let data = AnalysisData(
-                            summary: summary,
-                            categoryProportions: proportions,
-                            dailyTrends: trends,
-                            insight: insight
-                        )
-                        await send(.loadedData(.success(data)))
+                            await send(.loadedData(.success(AnalysisData(
+                                summary: summary,
+                                categoryProportions: proportions,
+                                dailyTrends: trends,
+                                insight: insight
+                            ))))
                         } catch {
+                            // 這裡**不需要**特別處理 `CancellationError`：`cancelInFlight` 取消這條
+                            // effect 之後，TCA 的 `Send.callAsFunction` 自己會
+                            // `guard !Task.isCancelled else { return }`（Effect.swift:207），
+                            // 被取消的 effect 送什麼都不會進佇列。加 guard 是 no-op；
+                            // 真要加還會反過來吃掉「client 自己丟 CancellationError 但 task 沒被取消」
+                            // 這種該讓使用者看到的失敗。已用突變驗證過（見 task-7-report.md §10）。
                             await send(.loadedData(.failure(error)))
                         }
-                    },
-                    .run { [planningClient, ledger] send in
-                        let metrics = await Self.computeBudgetMetrics(
-                            planningClient: planningClient,
-                            ledger: ledger,
-                            accountId: selectedAccountId
-                        )
+                    }
+                    .cancellable(id: CancelID.load, cancelInFlight: true),
+                    .run { [insightsClient] send in
+                        let metrics = (try? await insightsClient.budgetGauges(selectedAccountId)) ?? []
                         await send(.budgetMetricsLoaded(metrics))
                     }
                     .cancellable(id: CancelID.budgets, cancelInFlight: true)
                 )
 
             case let .categoryTapped(proportion):
+                // 未分類桶的 id 是 `CategoryProportion.uncategorizedId`（非 UUID 字串）。
+                // 舊版直接 `UUID(uuidString:)` 拿 nil 就讓 `categoryIds` 也是 nil，等於
+                // **完全不帶分類篩選**——點圓餅圖的「其他」會列出該期間的每一筆支出，
+                // 而 sheet 標題還寫著「其他」。
+                //
+                // `TransactionFilter` 目前無法表達「categoryId 為 nil」（`categoryIds` 是
+                // `Set<Category.ID>?`，空集合的語意是「一筆都不符合」），所以這裡分成兩條路：
+                // 已分類桶照常靠 filter；未分類桶取回後在這一層自行收斂。
                 let categoryId = UUID(uuidString: proportion.id)
+                let isUnassignedBucket = proportion.isUnassigned || categoryId == nil
                 let filter = TransactionFilter(
                     categoryIds: categoryId.map { Set([$0]) },
+                    accountIds: state.selectedAccountId.map { Set([$0]) },
                     types: [.expense],
-                    dateRange: Self.dateRange(for: state.selectedPeriod)
+                    dateRange: state.selectedPeriod.closedRange(containing: now, calendar: calendar)
                 )
                 let name = proportion.name
                 return .run { [ledger] send in
-                    let transactions = ((try? await ledger.listAll(filter)) ?? []).map(\.transaction)
+                    var transactions = ((try? await ledger.listAll(filter)) ?? []).map(\.transaction)
+                    if isUnassignedBucket {
+                        transactions = transactions.filter { $0.categoryId == nil }
+                    }
                     await send(.categoryTransactionsLoaded(categoryName: name, transactions))
                 }
 
@@ -252,13 +236,7 @@ public struct AnalysisFeature: Sendable {
 
             case let .loadedData(.success(data)):
                 state.isLoading = false
-                guard let data else {
-                    state.summary = nil
-                    state.categoryProportions = []
-                    state.dailyTrends = []
-                    state.insight = nil
-                    return .none
-                }
+                state.loadError = nil
                 state.summary = data.summary
                 state.categoryProportions = data.categoryProportions
                 state.dailyTrends = data.dailyTrends
@@ -266,7 +244,14 @@ public struct AnalysisFeature: Sendable {
                 return .none
 
             case .loadedData(.failure):
+                // 失敗必須外顯，否則畫面會落到「你沒有任何資料」的空狀態——那是假話。
+                //
+                // 投影區塊（KPI／長條／圓餅／AIDock）整區換成 `SectionFailureView`；
+                // 保留的 `summary` 等欄位**不會**被顯示，留著只是避免無謂的清除，
+                // 重試成功就整批覆蓋。預算儀表在 `AnalysisView` 是獨立區塊，
+                // 由自己的 effect 載入，不受這條失敗影響。
                 state.isLoading = false
+                state.loadError = String(localized: "analysis_load_failed", bundle: .main)
                 return .none
 
             case .aiAssistant:
@@ -275,101 +260,6 @@ public struct AnalysisFeature: Sendable {
         }
         Scope(state: \.aiAssistant, action: \.aiAssistant) {
             AIAssistantFeature()
-        }
-    }
-
-    // MARK: - Budget Metrics Computation
-
-    static func computeBudgetMetrics(
-        planningClient: PlanningClient,
-        ledger: LedgerClient,
-        accountId: Account.ID? = nil
-    ) async -> [BudgetGaugeMetrics] {
-        do {
-            let activeBudgets = try await planningClient.listActive()
-            guard !activeBudgets.isEmpty else { return [] }
-
-            var filteredBudgets = activeBudgets
-            if let accountId {
-                let accountFilter = TransactionFilter(
-                    accountIds: Set([accountId]),
-                    types: [.expense]
-                )
-                if let fetchedTransactions = try? await ledger.listAll(accountFilter).map(\.transaction) {
-                    let relevantCategoryIds = Set(fetchedTransactions.compactMap(\.categoryId))
-                    filteredBudgets = activeBudgets.filter { budget in
-                        guard let catId = budget.categoryId else { return true }
-                        return relevantCategoryIds.contains(catId)
-                    }
-                }
-                // If fetch fails, filteredBudgets stays as activeBudgets (no filtering)
-            }
-
-            let categories = try await ledger.listCategories(nil)
-            let categoryMap = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-
-            var metrics: [BudgetGaugeMetrics] = []
-
-            for budget in filteredBudgets {
-                let dateRange = currentPeriodRange(for: budget.period)
-                let filter = TransactionFilter(
-                    categoryIds: budget.categoryId.map { Set([$0]) },
-                    types: [.expense],
-                    dateRange: dateRange
-                )
-                let transactions = try await ledger.listAll(filter).map(\.transaction)
-                let spent = transactions.reduce(Decimal.zero) { $0 + $1.amount }
-
-                let label: String
-                if let catId = budget.categoryId, let catName = categoryMap[catId] {
-                    label = catName
-                } else {
-                    label = budget.name
-                }
-
-                metrics.append(BudgetGaugeMetrics(
-                    id: budget.id.uuidString,
-                    categoryName: label,
-                    spentAmount: spent,
-                    totalBudget: budget.amount
-                ))
-            }
-
-            return metrics
-        } catch {
-            return []
-        }
-    }
-
-    private static func currentPeriodRange(for period: BudgetPeriod) -> ClosedRange<Date> {
-        let cal = Calendar.current
-        let now = Date()
-        switch period {
-        case .weekly:
-            let start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
-            return start...now
-        case .monthly:
-            let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-            return start...now
-        case .yearly:
-            let start = cal.date(from: cal.dateComponents([.year], from: now)) ?? now
-            return start...now
-        }
-    }
-
-    static func dateRange(for period: State.Period) -> ClosedRange<Date> {
-        let cal = Calendar.current
-        let now = Date()
-        switch period {
-        case .week:
-            let start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
-            return start...now
-        case .month:
-            let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-            return start...now
-        case .year:
-            let start = cal.date(from: cal.dateComponents([.year], from: now)) ?? now
-            return start...now
         }
     }
 }

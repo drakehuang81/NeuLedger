@@ -272,8 +272,10 @@ public struct DashboardFeature: Sendable {
                 //   需要 accountId 參數（Domain 介面 + Application 實作變更，另開單）。
                 //   屆時在此 merge statsEffect 並將 statsPhase 轉 loading。
                 // TODO(insights-follow-up): InsightCarousel 連動 —— 洞察的數字來自
-                //   `todayStats` + `categoryProportions`，兩者同樣不吃 accountId，
-                //   所以卡片目前是跨帳戶合計（R9）。與上面那張單一起解。
+                //   `todayStats` + `categoryProportions`。`categoryProportions`
+                //   已經吃 accountId 了，但 `insightsEffect`（見下方 R9）刻意傳
+                //   `nil`；`todayStats` 還沒有 accountId 參數。兩者都補上、並在
+                //   這裡把 accountID 傳進 `insightsEffect` 之後才能解掉。
                 return .merge(
                     transactionsEffect(accountID: accountID, cancelInFlight: true),
                     sparklineEffect(accountID: accountID, cancelInFlight: true)
@@ -491,19 +493,24 @@ public struct DashboardFeature: Sendable {
     ///   是不是 `nil` 判斷要不要產生儲蓄率卡片，這裡若自行重算，`nil`（沒有收入）
     ///   就會被算成某個數字而冒出一張卡。
     ///
-    /// R9（刻意的限制）：`todayStats` 與 `categoryProportions` 都不吃 accountId，
-    /// 所以這些數字是**跨所有帳戶**的合計，不隨 chip 選擇改變 —— 與畫面上方的
-    /// StatsRow 行為一致，見 `:270-275` 既有的 `TODO(stats-follow-up)` /
-    /// `TODO(insights-follow-up)`。
+    /// R9（刻意的限制）：`categoryProportions` 現在**吃** accountId 了，但這裡
+    /// 刻意傳 `nil`；`todayStats` 則還沒有 accountId 參數，無從傳起。所以這些
+    /// 數字目前仍是**跨所有帳戶**的合計，不隨 chip 選擇改變 —— 與畫面上方的
+    /// StatsRow 行為一致。要做到帳戶連動，只剩 `todayStats` 需要補
+    /// accountId 參數（Domain 介面 + Application 實作），`categoryProportions`
+    /// 這端已經就緒，把 `nil` 換成 `accountID` 即可。見 `:271-278` 既有的
+    /// `TODO(stats-follow-up)` / `TODO(insights-follow-up)`。
     private func insightsEffect(cancelInFlight: Bool) -> Effect<Action> {
         .run { [now] send in
             do {
                 // 當月區間一律走 BudgetPeriod 的唯一定義，不自行 `dateInterval(of: .month,...)`。
                 let monthRange = BudgetPeriod.monthly.dateInterval(containing: now)
-                let proportions = try await insightsClient.categoryProportions(monthRange)
+                let proportions = try await insightsClient.categoryProportions(monthRange, nil)
                 let snapshot = try await insightsClient.todayStats(now)
                 // 未分類那桶不是使用者的分類——它金額最大時，首屏會出現
-                // 「「—」花了 NT$3,200，佔本月支出的 42%」，讀起來就是個 bug。
+                // 「「其他」花了 NT$3,200，佔本月支出的 42%」，讀起來就是個 bug
+                // （未分類桶的顯示名稱現在走在地化，見 `analysis_other_category`，
+                // 不再是硬編的「—」，但一樣要被下面這個 filter 跳過）。
                 let topCategory = proportions
                     .filter { !$0.isUnassigned }
                     .max(by: { $0.amount < $1.amount })

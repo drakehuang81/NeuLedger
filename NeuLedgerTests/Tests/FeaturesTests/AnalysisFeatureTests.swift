@@ -4,6 +4,8 @@ import ComposableArchitecture
 import Domain
 @testable import Features
 
+/// Analysis 改為完全透過 `insightsClient` 取投影後的 reducer 測試。
+/// 彙總正確性由 `InsightsClientLiveTests` 負責；這裡只驗 reducer 的協調與參數傳遞。
 @Suite("AnalysisFeature Tests")
 struct AnalysisFeatureTests {
 
@@ -12,628 +14,572 @@ struct AnalysisFeatureTests {
     private static let categoryId = UUID()
     private static let accountId = UUID().uuidString
 
-    private static let sampleCategory = Category(
-        id: categoryId,
-        name: "飲食",
-        icon: "fork.knife",
-        color: "red",
-        type: .expense
-    )
+    private static var calendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Taipei")!
+        return cal
+    }
+    private static let now: Date = calendar.date(from: DateComponents(year: 2026, month: 1, day: 15, hour: 12))!
 
-    /// Fixed anchor date for deterministic tests (start of a specific day).
-    private static let day1: Date = {
-        var comps = DateComponents()
-        comps.year = 2026; comps.month = 1; comps.day = 15
-        return Calendar.current.date(from: comps)!
-    }()
-
-    private static let sampleTransactions: [Transaction] = [
-        Transaction(amount: 300, date: day1, note: "午餐", categoryId: categoryId, accountId: accountId, type: .expense),
-        Transaction(amount: 200, date: day1, note: "咖啡", categoryId: categoryId, accountId: accountId, type: .expense),
-        Transaction(amount: 5000, date: day1, note: "薪資", accountId: accountId, type: .income),
-        Transaction(amount: 1000, date: day1, note: "轉帳", accountId: accountId, toAccountId: UUID().uuidString, type: .transfer),
+    private static let sampleSummary = FinancialSummary(totalIncome: 5000, totalExpense: 500)
+    private static let sampleProportions = [
+        CategoryProportion(id: categoryId.uuidString, name: "飲食", amount: 500)
     ]
+    private static let sampleTrends = [DailyTrend(date: calendar.startOfDay(for: now), amount: 500)]
 
-    // MARK: - Period Changed
+    /// C5：`.loadedData(.failure)` 寫進 state 的訊息。這裡刻意用**同一個 key** 算出期望值，
+    /// 所以斷言測的是「有沒有把錯誤外顯」而不是文案內容——實作若退回成只清 `isLoading`
+    /// （`loadError` 留在 nil），相關測試就會變紅。
+    private static let loadFailureMessage = String(localized: "analysis_load_failed", bundle: .main)
 
-    @Test("periodChanged updates selectedPeriod and triggers data reload")
-    func testPeriodChanged() async {
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.periodChanged(.week)) { $0.selectedPeriod = .week }
-        // loadData and its downstream effects are fired — exhaustivity.off skips them
+    /// 所有 loadData 路徑會碰到的 closure 一次覆寫；個別測試再覆蓋需要的部分。
+    ///
+    /// `financialSummary` 一定要在這裡顯式 stub：它在 `InsightsClient` 有顯式預設值
+    /// （`0/0`），`@DependencyClient` 不會為它產生 unimplemented，而 `KPIStrip` 對
+    /// 「`totalIncome <= 0` → 儲蓄率不可得」有專門分支——忘了接線會長得像一個正常的空狀態，
+    /// 不會有任何測試變紅。
+    private static func baseDependencies(_ deps: inout DependencyValues) {
+        deps.date = .constant(now)
+        deps.calendar = calendar
+        deps.insightsClient.financialSummary = { _, _ in sampleSummary }
+        deps.insightsClient.categoryProportions = { _, _ in sampleProportions }
+        deps.insightsClient.dailyBars = { _, _ in sampleTrends }
+        deps.insightsClient.budgetGauges = { _ in [] }
+        deps.insightsClient.isAIAvailable = { false }
     }
 
-    // MARK: - loadData: Happy Path
-
-    @Test("loadData computes correct summary, proportions, and trends; excludes transfers")
-    func testLoadDataHappyPath() async {
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
+    private static func makeStore(
+        _ initial: AnalysisFeature.State = AnalysisFeature.State(),
+        _ configure: @escaping @Sendable (inout DependencyValues) -> Void = { _ in }
+    ) async -> TestStoreOf<AnalysisFeature> {
+        let store = await TestStore(initialState: initial) {
             AnalysisFeature()
         } withDependencies: {
-            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
-            $0.insightsClient.isAIAvailable = { false }
+            baseDependencies(&$0)
+            configure(&$0)
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
+        await MainActor.run { store.exhaustivity = .off }
+        return store
+    }
 
+    // MARK: - Period / account selection
+
+    @Test("periodChanged updates selectedPeriod and reloads")
+    func testPeriodChanged() async {
+        let store = await Self.makeStore()
+        await store.send(.periodChanged(.weekly)) { $0.selectedPeriod = .weekly }
+        await store.receive(\.loadData) { $0.isLoading = true }
+    }
+
+    @Test("accountSelected updates selectedAccountId and reloads")
+    func testAccountSelected() async {
+        let store = await Self.makeStore()
+        await store.send(.accountSelected(Self.accountId)) { $0.selectedAccountId = Self.accountId }
+        await store.receive(\.loadData) { $0.isLoading = true }
+    }
+
+    @Test("loadData passes the full calendar interval of the selected period and the selected account to every projection")
+    func testLoadDataPassesIntervalAndAccount() async {
+        let captured = LockIsolated<[(DateInterval, Account.ID?)]>([])
+        var initial = AnalysisFeature.State(selectedPeriod: .weekly)
+        initial.selectedAccountId = Self.accountId
+        let store = await Self.makeStore(initial) {
+            $0.insightsClient.financialSummary = { r, a in captured.withValue { $0.append((r, a)) }; return Self.sampleSummary }
+            $0.insightsClient.categoryProportions = { r, a in captured.withValue { $0.append((r, a)) }; return [] }
+            $0.insightsClient.dailyBars = { r, a in captured.withValue { $0.append((r, a)) }; return [] }
+        }
+        await store.send(.loadData)
+        await store.receive(\.loadedData)
+
+        let expected = BudgetPeriod.weekly.dateInterval(containing: Self.now, calendar: Self.calendar)
+        #expect(captured.value.count == 3)
+        #expect(captured.value.allSatisfy { $0.0 == expected && $0.1 == Self.accountId })
+    }
+
+    // MARK: - loadData outcomes
+
+    @Test("loadData stores summary, proportions, trends from insightsClient")
+    func testLoadDataHappyPath() async {
+        let store = await Self.makeStore()
         await store.send(.loadData) { $0.isLoading = true }
-
         await store.receive(\.loadedData) {
             $0.isLoading = false
-            $0.summary = FinancialSummary(totalIncome: 5000, totalExpense: 500)
-            $0.categoryProportions = [
-                CategoryProportion(id: Self.categoryId.uuidString, name: "飲食", amount: 500)
-            ]
-            $0.dailyTrends = [DailyTrend(date: Self.day1, amount: 500)]
+            $0.loadError = nil
+            $0.summary = Self.sampleSummary
+            $0.categoryProportions = Self.sampleProportions
+            $0.dailyTrends = Self.sampleTrends
             $0.insight = nil
         }
+        // F7：KPI 的值必須是被接線過來的非零數字，不是安靜的 0/0 預設值。
+        await MainActor.run {
+            #expect(store.state.summary?.totalIncome == 5000)
+            #expect(store.state.summary?.totalExpense == 500)
+            #expect(store.state.hasData)
+        }
     }
 
-    // MARK: - loadData: Empty Transactions
-
-    @Test("loadData with empty transactions clears state and sets hasData to false")
-    func testLoadDataEmptyTransactions() async {
-        var initialState = AnalysisFeature.State()
-        initialState.summary = FinancialSummary(totalIncome: 100, totalExpense: 50)
-
-        let store = await TestStore(initialState: initialState) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
+    @Test("a period with no income, no expense and no rows still lands on the empty state")
+    func testLoadDataEmptyPeriod() async {
+        var initial = AnalysisFeature.State()
+        initial.summary = Self.sampleSummary
+        initial.categoryProportions = Self.sampleProportions
+        let store = await Self.makeStore(initial) {
+            $0.insightsClient.financialSummary = { _, _ in FinancialSummary(totalIncome: 0, totalExpense: 0) }
+            $0.insightsClient.categoryProportions = { _, _ in [] }
+            $0.insightsClient.dailyBars = { _, _ in [] }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
         await store.send(.loadData) { $0.isLoading = true }
-
         await store.receive(\.loadedData) {
             $0.isLoading = false
-            $0.summary = nil
+            // 拿掉哨兵 guard 之後，成功載入一律帶回 summary（就算全是 0）。
+            $0.summary = FinancialSummary(totalIncome: 0, totalExpense: 0)
             $0.categoryProportions = []
             $0.dailyTrends = []
             $0.insight = nil
         }
+        await MainActor.run {
+            // 三個訊號全空才算空 → 畫面仍然落在空狀態。
+            #expect(store.state.hasData == false)
+            // 空期間不是錯誤——`loadError` 必須維持 nil，才不會畫成失敗狀態。
+            #expect(store.state.loadError == nil)
+        }
     }
 
-    // MARK: - loadData: Failure
-
-    @Test("loadedData failure sets isLoading to false and leaves other state unchanged")
-    func testLoadedDataFailure() async {
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in throw URLError(.badServerResponse) }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
+    @Test("a period whose only rows are zero-amount expenses is not reported as empty")
+    func testLoadDataZeroAmountRowsAreNotEmpty() async {
+        // M1：舊版拿 `totalIncome > 0 || totalExpense > 0` 當空期間的哨兵，
+        // 於是「只記了一筆 0 元支出」會被說成「你沒有任何資料」——`0` 同時身兼
+        // 「這期真的是 0」與「這期沒有交易」兩個意思。現在只要投影層給得出列就算有資料。
+        let zeroRowProportions = [CategoryProportion(id: Self.categoryId.uuidString, name: "飲食", amount: 0)]
+        let zeroRowTrends = [DailyTrend(date: Self.calendar.startOfDay(for: Self.now), amount: 0)]
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in FinancialSummary(totalIncome: 0, totalExpense: 0) }
+            $0.insightsClient.categoryProportions = { _, _ in zeroRowProportions }
+            $0.insightsClient.dailyBars = { _, _ in zeroRowTrends }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.loadData) { $0.isLoading = true }
-        await store.receive(\.loadedData) { $0.isLoading = false }
-    }
-
-    // MARK: - AI Insight
-
-    @Test("loadData generates AI insight when available")
-    func testLoadDataAIInsightAvailable() async {
-        let insightText = "本月消費偏高，建議減少外食。"
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
-            $0.insightsClient.isAIAvailable = { true }
-            $0.insightsClient.generateAIInsight = { _ in insightText }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
         await store.send(.loadData) { $0.isLoading = true }
         await store.receive(\.loadedData) {
             $0.isLoading = false
+            $0.summary = FinancialSummary(totalIncome: 0, totalExpense: 0)
+            $0.categoryProportions = zeroRowProportions
+            $0.dailyTrends = zeroRowTrends
+        }
+        // 鑑別點：把哨兵 guard 放回去，這一批就會被丟掉（summary 變 nil、投影清空），
+        // 下面三個斷言會一起變紅。
+        await MainActor.run {
+            #expect(store.state.hasData)
+            #expect(store.state.summary != nil)
+            #expect(store.state.categoryProportions.isEmpty == false)
+        }
+    }
+
+    @Test("a projection failure keeps the independently-loaded budget section visible")
+    func testProjectionFailureKeepsBudgetSection() async {
+        // M3：預算儀表由自己的 effect 載入。投影失敗時它必須留在 state 裡，而且
+        // `showsBudgetSection` **不得**參考 `loadError` / `hasData` / `isLoading`——
+        // 否則一份好好的預算進度會被一塊失敗橫幅整區蓋掉。
+        let metrics = [BudgetGaugeMetrics(id: "b1", categoryName: "飲食", spentAmount: 400, totalBudget: 1000)]
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in throw URLError(.badServerResponse) }
+            $0.insightsClient.budgetGauges = { _ in metrics }
+        }
+        await store.send(.loadData) { $0.isLoading = true }
+        // 兩條 effect 到達順序不定，用 predicate 版 receive 各收一次。
+        await store.receive(Self.isLoadDataOutcome)
+        await store.receive(Self.isLoadDataOutcome)
+        await MainActor.run {
+            #expect(store.state.loadError == Self.loadFailureMessage)   // 投影區塊是失敗狀態
+            #expect(store.state.hasData == false)
+            #expect(store.state.budgetMetrics == metrics)               // 儀表資料沒被清掉
+            #expect(store.state.showsBudgetSection)                     // 而且照樣要畫出來
+        }
+    }
+
+    // MARK: - C5：載入失敗必須外顯
+
+    @Test("loadedData failure surfaces a retryable error instead of a fake empty state")
+    func testLoadedDataFailureSurfacesError() async {
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in throw URLError(.badServerResponse) }
+        }
+        await store.send(.loadData) { $0.isLoading = true }
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            // 修復前：這裡只有 `isLoading = false`，`loadError` 永遠是 nil，
+            // 畫面於是落到 `!hasData` 的空狀態，對使用者說「你沒有任何資料」。
+            $0.loadError = Self.loadFailureMessage
+        }
+        await MainActor.run {
+            #expect(store.state.loadError != nil)
+            #expect(store.state.hasData == false)
+        }
+    }
+
+    @Test("loadData clears a stale loadError before refetching")
+    func testLoadDataClearsPreviousError() async {
+        var initial = AnalysisFeature.State()
+        initial.loadError = "上一次失敗留下的訊息"
+        let store = await Self.makeStore(initial)
+        await store.send(.loadData) {
+            $0.isLoading = true
+            $0.loadError = nil
+        }
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            $0.summary = Self.sampleSummary
+        }
+        await MainActor.run { #expect(store.state.loadError == nil) }
+    }
+
+    // MARK: - AI insight
+
+    @Test("loadData generates AI insight from the projections when available")
+    func testLoadDataAIInsightAvailable() async {
+        let insightText = "本月消費偏高，建議減少外食。"
+        let capturedSummary = LockIsolated<SpendingSummary?>(nil)
+        let store = await Self.makeStore() {
+            $0.insightsClient.isAIAvailable = { true }
+            $0.insightsClient.generateAIInsight = { summary in
+                capturedSummary.setValue(summary)
+                return insightText
+            }
+        }
+        await store.send(.loadData)
+        await store.receive(\.loadedData) {
             $0.insight = InsightDetail(
                 id: $0.insight?.id ?? "",
-                title: String(localized: "analysis_ai_insight_title"),
+                title: String(localized: "analysis_ai_insight_title", bundle: .main),
                 description: insightText
             )
         }
+        #expect(capturedSummary.value?.totalExpense == 500)
+        #expect(capturedSummary.value?.totalIncome == 5000)
+        #expect(capturedSummary.value?.categoryBreakdown == ["飲食": 500])
+        #expect(capturedSummary.value?.periodDescription == BudgetPeriod.monthly.analysisLabel)
     }
 
-    @Test("loadData sets insight to nil when generateInsight throws")
+    @Test("loadData keeps data and sets insight nil when generateAIInsight throws")
     func testLoadDataAIInsightFailsGracefully() async {
         struct AIError: Error {}
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in Self.sampleTransactions.map { EnrichedTransaction(transaction: $0) } }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
+        let store = await Self.makeStore() {
             $0.insightsClient.isAIAvailable = { true }
             $0.insightsClient.generateAIInsight = { _ in throw AIError() }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.loadData) { $0.isLoading = true }
+        await store.send(.loadData)
         await store.receive(\.loadedData) {
             $0.isLoading = false
             $0.insight = nil
-            // Other data is still populated
-            $0.summary = FinancialSummary(totalIncome: 5000, totalExpense: 500)
+            $0.summary = Self.sampleSummary
         }
+        // AI 失敗不是載入失敗：資料還在，不該把畫面推去失敗狀態。
+        await MainActor.run { #expect(store.state.loadError == nil) }
     }
 
-    // MARK: - Budget Metrics
+    // MARK: - Budget gauges
 
-    @Test("budgetMetricsLoaded updates budgetMetrics state")
+    @Test("budgetMetricsLoaded stores metrics")
     func testBudgetMetricsLoaded() async {
-        let metrics = [
-            BudgetGaugeMetrics(id: "b1", categoryName: "飲食", spentAmount: 400, totalBudget: 1000)
-        ]
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        }
-
+        let metrics = [BudgetGaugeMetrics(id: "b1", categoryName: "飲食", spentAmount: 400, totalBudget: 1000)]
+        let store = await TestStore(initialState: AnalysisFeature.State()) { AnalysisFeature() }
         await store.send(.budgetMetricsLoaded(metrics)) { $0.budgetMetrics = metrics }
     }
 
-    @Test("loadData computes budget metrics with categoryName resolved from category map")
-    func testLoadDataBudgetMetrics() async {
-        let budget = Budget(
-            name: "餐費預算",
-            amount: 1000,
-            categoryId: Self.categoryId,
-            period: .monthly,
-            startDate: Date()
-        )
-        let budgetTxns = [
-            Transaction(amount: 400, date: Date(), categoryId: Self.categoryId, accountId: Self.accountId, type: .expense)
-        ]
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in budgetTxns.map { EnrichedTransaction(transaction: $0) } }
-            $0.planningClient.listActive = { [budget] }
-            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
-            $0.insightsClient.isAIAvailable = { false }
+    @Test("loadData asks insightsClient.budgetGauges with the selected account and keeps its category names")
+    func testLoadDataBudgetGaugesAccount() async {
+        let metrics = [BudgetGaugeMetrics(id: "b1", categoryName: "飲食", spentAmount: 400, totalBudget: 1000)]
+        let capturedAccount = LockIsolated<Account.ID?>(nil)
+        var initial = AnalysisFeature.State()
+        initial.selectedAccountId = Self.accountId
+        let store = await Self.makeStore(initial) {
+            $0.insightsClient.budgetGauges = { account in
+                capturedAccount.setValue(account)
+                return metrics
+            }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
         await store.send(.loadData)
-        await store.receive(\.budgetMetricsLoaded) {
-            $0.budgetMetrics = [
-                BudgetGaugeMetrics(
-                    id: budget.id.uuidString,
-                    categoryName: "飲食",   // resolved from categoryMap, not budget.name
-                    spentAmount: 400,
-                    totalBudget: 1000
-                )
-            ]
+        await store.receive(\.budgetMetricsLoaded) { $0.budgetMetrics = metrics }   // 收到 metrics 即證明有被呼叫
+        #expect(capturedAccount.value == Self.accountId)
+        // R3：預算儀表的分類名是 client 給的，reducer 不得改寫（zh-Hant 下圓餅圖與
+        // 儀表用不同命名來源就會變成「餐飲」對「Food」）。
+        await MainActor.run {
+            #expect(store.state.budgetMetrics.first?.categoryName == "飲食")
         }
     }
 
-    // MARK: - Category Drill-down
-
-    @Test("categoryTapped fetches filtered transactions and sets drilldown state")
-    func testCategoryTapped() async {
-        let categoryId = UUID()
-        let proportion = CategoryProportion(id: categoryId.uuidString, name: "飲食", amount: 500)
-        let expectedTransactions: [Transaction] = [
-            Transaction(amount: 300, date: Date(), note: "午餐", categoryId: categoryId, accountId: UUID().uuidString, type: .expense),
-            Transaction(amount: 200, date: Date(), note: "晚餐", categoryId: categoryId, accountId: UUID().uuidString, type: .expense),
-        ]
-
-        var initialState = AnalysisFeature.State()
-        initialState.summary = FinancialSummary(totalIncome: 0, totalExpense: 500)
-        initialState.categoryProportions = [proportion]
-
-        let store = await TestStore(initialState: initialState) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in expectedTransactions.map { EnrichedTransaction(transaction: $0) } }
+    @Test("budgetGauges failure yields empty metrics")
+    func testBudgetGaugesFailure() async {
+        struct GaugeError: Error {}
+        var initial = AnalysisFeature.State()
+        initial.budgetMetrics = [BudgetGaugeMetrics(id: "stale", categoryName: "x", spentAmount: 1, totalBudget: 2)]
+        let store = await Self.makeStore(initial) {
+            $0.insightsClient.budgetGauges = { _ in throw GaugeError() }
         }
+        await store.send(.loadData)
+        await store.receive(\.budgetMetricsLoaded) { $0.budgetMetrics = [] }
+    }
 
+    /// `loadData` 的兩條 effect 到達順序不確定，而 non-exhaustive 的 `receive(\.X)` 會把
+    /// 排在前面的其他 action **吃掉並套用**——先 `receive(\.loadedData)` 再
+    /// `receive(\.budgetMetricsLoaded)` 在順序反過來時，第二個 receive 會永遠等不到而 timeout。
+    /// 所以這裡用「兩個都收」的 predicate 版 receive，收兩次，順序無關。
+    private static func isLoadDataOutcome(_ action: AnalysisFeature.Action) -> Bool {
+        switch action {
+        case .loadedData, .budgetMetricsLoaded: return true
+        default: return false
+        }
+    }
+
+    @Test("loadData sends both loadedData and budgetMetricsLoaded")
+    func testLoadDataBothEffectsArrive() async {
+        let metrics = [BudgetGaugeMetrics(id: "b1", categoryName: "飲食", spentAmount: 400, totalBudget: 1000)]
+        let store = await Self.makeStore() {
+            $0.insightsClient.budgetGauges = { _ in metrics }
+        }
+        await store.send(.loadData)
+        // 少送任何一條，第二次 receive 就會 timeout——這是這條測試的鑑別點。
+        await store.receive(Self.isLoadDataOutcome)
+        await store.receive(Self.isLoadDataOutcome)
+        await store.finish()
+        await MainActor.run {
+            #expect(store.state.isLoading == false)
+            #expect(store.state.summary == Self.sampleSummary)
+            #expect(store.state.budgetMetrics == metrics)
+        }
+    }
+
+    // MARK: - cancelInFlight（兩條 effect 各一條 cancel id）
+    //
+    // 鑑別力的來源要挑對，這裡踩過兩個坑：
+    //
+    // 1. **懸停點必須可取消。** `withCheckedContinuation { _ in }` 在 task 被取消時
+    //    **不會**被 resume，effect 於是永遠掛住——有沒有 `.cancellable` 都一樣掛住，
+    //    測試恆紅、零鑑別力。要用 `Task.sleep`，它在取消時丟 `CancellationError`。
+    //
+    // 2. **不能靠 `finish()` 的 timeout 當鑑別點。** `TestStore` 的 timeout 與未接收 action
+    //    都走 `reportIssueHelper`，而它受 exhaustivity 管制：`.off`
+    //    （`showSkippedAssertions: false`）下訊息被**完全靜音**，測試照樣綠。
+    //    所以鑑別點放在 stub 自己記下「我被取消了」，再用 Swift Testing 的 `#expect` 斷言，
+    //    `#expect` 不經過 TCA 的 exhaustivity 開關。
+    //
+    // 兩條都用**參數**（而不是呼叫次序）區分第一條與第二條 effect，
+    // 所以不依賴「第一次 send 有沒有來得及讓 effect 起跑」這種時序假設。
+
+    @Test("consecutive loadData: CancelID.load tears down the superseded projection effect")
+    func testLoadDataCancelInFlightMainEffect() async {
+        let weeklyRange = BudgetPeriod.weekly.dateInterval(containing: Self.now, calendar: Self.calendar)
+        let secondSummary = FinancialSummary(totalIncome: 222, totalExpense: 222)
+        let firstEffectCancelled = LockIsolated(false)
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { range, _ in
+                guard range == weeklyRange else { return secondSummary }
+                do {
+                    // 懸停到被取消為止。5 秒遠大於整條測試的耗時，所以「沒被取消」
+                    // 絕不可能在斷言之前把旗標設起來。
+                    try await Task.sleep(for: .seconds(5))
+                } catch {
+                    firstEffectCancelled.setValue(true)
+                    throw error
+                }
+                return FinancialSummary(totalIncome: 111, totalExpense: 111)
+            }
+        }
+        await store.send(.periodChanged(.weekly)) { $0.selectedPeriod = .weekly }
+        await store.send(.periodChanged(.yearly)) { $0.selectedPeriod = .yearly }
+        // 只會收到第二次的結果：第一條 effect 被取消之後，TCA 的 `Send` 會
+        // `guard !Task.isCancelled`（Effect.swift:207），它送什麼都不會進佇列。
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            $0.summary = secondSummary
+        }
+        await store.finish(timeout: .seconds(1))
+        // 鑑別點：拿掉 `.cancellable(id: CancelID.load, cancelInFlight: true)`，
+        // 第一條 effect 會一路睡到 5 秒後才結束，這裡必然還是 false。
+        #expect(firstEffectCancelled.value)
+    }
+
+    @Test("consecutive accountSelected: CancelID.budgets tears down the superseded budget effect")
+    func testLoadDataCancelInFlightBudgetEffect() async {
+        let accountA = UUID().uuidString
+        let accountB = UUID().uuidString
+        let second = [BudgetGaugeMetrics(id: "second", categoryName: "飲食", spentAmount: 2, totalBudget: 20)]
+        let firstEffectCancelled = LockIsolated(false)
+        let store = await Self.makeStore() {
+            $0.insightsClient.budgetGauges = { account in
+                guard account == accountA else { return second }
+                do {
+                    try await Task.sleep(for: .seconds(5))
+                } catch {
+                    firstEffectCancelled.setValue(true)
+                    throw error
+                }
+                return [BudgetGaugeMetrics(id: "first", categoryName: "x", spentAmount: 1, totalBudget: 10)]
+            }
+        }
+        await store.send(.accountSelected(accountA)) { $0.selectedAccountId = accountA }
+        await store.send(.accountSelected(accountB)) { $0.selectedAccountId = accountB }
+        // 同理只會收到第二次的結果。被取消的第一條即使走到 `?? []` 也送不出去，
+        // 所以 `try?` 不會把預算區塊抹成空的。
+        await store.receive(\.budgetMetricsLoaded) { $0.budgetMetrics = second }
+        await store.finish(timeout: .seconds(1))
+        // 鑑別點同上，針對 `CancelID.budgets`。
+        #expect(firstEffectCancelled.value)
+    }
+
+    @Test("a CancellationError thrown while the task is alive is still surfaced as a failure")
+    func testThrownCancellationErrorIsStillSurfacedAsFailure() async {
+        // 這條守的是一個決定：主 effect 的 `catch` **不要**特別處理 `CancellationError`。
+        //
+        // 真的被 `cancelInFlight` 取消時不需要 guard——TCA 的 `Send` 自己會
+        // `guard !Task.isCancelled else { return }`（Effect.swift:207），
+        // 被取消的 effect 送什麼都進不了佇列（上面兩條 cancel 測試就是靠這個性質成立的）。
+        //
+        // 但「client 自己丟 `CancellationError` 而 task 還活著」是另一回事：這時 action
+        // 送得出去，而那是一個**真的失敗**，必須讓使用者看到（`loadError` 有值 + 重試出口），
+        // 不能被 guard 靜靜吃掉，變成「轉圈停下、數字沒變、什麼都沒說」。
+        //
+        // 附註：`Effect.swift:108` 也有一個 `catch is CancellationError { return }`，
+        // 但它只攔「從 operation **傳播出去**」的錯誤；我們的 `do/catch` 在 operation
+        // 內部、是最內層，所以會先接到——這條測試本身就是這個事實的證據
+        // （加回 guard 會讓它變紅）。
+        let store = await Self.makeStore() {
+            $0.insightsClient.financialSummary = { _, _ in throw CancellationError() }
+        }
+        await store.send(.loadData) { $0.isLoading = true }
+        await store.receive(\.loadedData) {
+            $0.isLoading = false
+            $0.loadError = Self.loadFailureMessage
+        }
+    }
+
+    // MARK: - Category drill-down
+
+    @Test("categoryTapped fetches expenses scoped to category + account + period closedRange")
+    func testCategoryTapped() async {
+        let proportion = Self.sampleProportions[0]
+        let expected: [Transaction] = [
+            Transaction(amount: 300, date: Self.now, note: "午餐", categoryId: Self.categoryId, accountId: Self.accountId, type: .expense),
+        ]
+        let capturedFilter = LockIsolated<TransactionFilter?>(nil)
+        // F2：期間**刻意用非預設值**。用 `.monthly`（= State 的預設）會讓
+        // 「讀 state.selectedPeriod」與「硬編 .monthly」兩種實作長得一樣。
+        var initial = AnalysisFeature.State(selectedPeriod: .weekly)
+        initial.selectedAccountId = Self.accountId
+        let store = await Self.makeStore(initial) {
+            $0.ledgerClient.listAll = { filter in
+                capturedFilter.setValue(filter)
+                return expected.map { EnrichedTransaction(transaction: $0) }
+            }
+        }
+        await store.send(.categoryTapped(proportion))
+        await store.receive(\.categoryTransactionsLoaded) {
+            $0.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(categoryName: "飲食", transactions: expected)
+        }
+        let f = capturedFilter.value
+        #expect(f?.categoryIds == Set([Self.categoryId]))
+        #expect(f?.accountIds == Set([Self.accountId]))
+        #expect(f?.types == Set([.expense]))
+        #expect(f?.dateRange == BudgetPeriod.weekly.closedRange(containing: Self.now, calendar: Self.calendar))
+    }
+
+    // R2（既有 bug）：未分類桶的 id 是 `CategoryProportion.uncategorizedId`，
+    // 不是 UUID。舊版 `UUID(uuidString:)` 拿到 nil 就讓 `categoryIds` 也是 nil，
+    // 等於完全不帶分類篩選——點圓餅圖的「其他」會列出該期間的**每一筆支出**。
+    // 下面兩條測試在修復前都會收到兩筆（含已分類的那筆）而變紅。
+
+    @Test("categoryTapped honours the isUnassigned flag even when the bucket id is a valid UUID")
+    func testCategoryTappedUncategorized() async {
+        // F1：id **刻意是合法 UUID**，所以 `UUID(uuidString:) == nil` 那一半為假，
+        // 只有 `proportion.isUnassigned` 能讓 drill-down 收斂。
+        // 用 `uncategorizedId` 當 id 的話兩條測試會退化成同一條（OR 的另一半早就為真）。
+        let proportion = CategoryProportion(
+            id: UUID().uuidString,
+            name: "其他",
+            amount: 150,
+            isUnassigned: true
+        )
+        let uncategorized = Transaction(amount: 150, date: Self.now, note: "雜支", accountId: Self.accountId, type: .expense)
+        let categorized = Transaction(amount: 300, date: Self.now, note: "午餐", categoryId: Self.categoryId, accountId: Self.accountId, type: .expense)
+        let store = await Self.makeStore() {
+            $0.ledgerClient.listAll = { _ in
+                [uncategorized, categorized].map { EnrichedTransaction(transaction: $0) }
+            }
+        }
         await store.send(.categoryTapped(proportion))
         await store.receive(\.categoryTransactionsLoaded) {
             $0.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(
-                categoryName: "飲食",
-                transactions: expectedTransactions
+                categoryName: "其他",
+                transactions: [uncategorized]
             )
         }
     }
 
-    @Test("categoryTapped with uncategorized id uses nil categoryIds in filter")
-    func testCategoryTappedUncategorized() async {
-        let proportion = CategoryProportion(id: "uncategorized", name: "其他", amount: 150)
-
-        let capturedFilter = LockIsolated<TransactionFilter?>(nil)
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { filter in
-                capturedFilter.setValue(filter)
-                return []
+    @Test("categoryTapped treats a non-UUID bucket id as unassigned even without the flag")
+    func testCategoryTappedNonUUIDBucketIdWithoutFlag() async {
+        // 這條守 OR 的**另一半**：`isUnassigned` 是 PR #39 之後才有的欄位、預設 false，
+        // 舊的呼叫點可能只帶 id。id 不是 UUID 就一定不是真的分類，同樣要收斂。
+        let proportion = CategoryProportion(id: CategoryProportion.uncategorizedId, name: "其他", amount: 150)
+        let uncategorized = Transaction(amount: 150, date: Self.now, note: "雜支", accountId: Self.accountId, type: .expense)
+        let categorized = Transaction(amount: 300, date: Self.now, note: "午餐", categoryId: Self.categoryId, accountId: Self.accountId, type: .expense)
+        let store = await Self.makeStore() {
+            $0.ledgerClient.listAll = { _ in
+                [uncategorized, categorized].map { EnrichedTransaction(transaction: $0) }
             }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
         await store.send(.categoryTapped(proportion))
-        await store.receive(\.categoryTransactionsLoaded)
-
-        #expect(capturedFilter.value?.categoryIds == nil)
+        await store.receive(\.categoryTransactionsLoaded) {
+            $0.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(
+                categoryName: "其他",
+                transactions: [uncategorized]
+            )
+        }
     }
 
-    @Test("categoryTapped fetch failure results in empty transactions drilldown")
+    @Test("categoryTapped fetch failure results in empty drilldown")
     func testCategoryTappedFetchFailure() async {
         struct FetchError: Error {}
         let proportion = CategoryProportion(id: UUID().uuidString, name: "飲食", amount: 300)
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
+        let store = await Self.makeStore() {
             $0.ledgerClient.listAll = { _ in throw FetchError() }
         }
-
         await store.send(.categoryTapped(proportion))
         await store.receive(\.categoryTransactionsLoaded) {
-            $0.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(
-                categoryName: "飲食",
-                transactions: []
-            )
+            $0.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(categoryName: "飲食", transactions: [])
         }
     }
 
-    @Test("categoryDrilldownDismissed clears drilldown state")
+    @Test("categoryDrilldownDismissed clears drilldown")
     func testCategoryDrilldownDismissed() async {
-        var initialState = AnalysisFeature.State()
-        initialState.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(
-            categoryName: "飲食",
-            transactions: []
-        )
-
-        let store = await TestStore(initialState: initialState) {
-            AnalysisFeature()
-        }
-
+        var initial = AnalysisFeature.State()
+        initial.categoryDrilldown = AnalysisFeature.CategoryDrilldownState(categoryName: "飲食", transactions: [])
+        let store = await TestStore(initialState: initial) { AnalysisFeature() }
         await store.send(.categoryDrilldownDismissed) { $0.categoryDrilldown = nil }
     }
 
-    // MARK: - Edge Cases
+    // MARK: - task
 
-    @Test("loadData groups uncategorized transactions under uncategorized proportion")
-    func testLoadDataUncategorizedTransactions() async {
-        let txns = [
-            Transaction(amount: 150, date: Self.day1, accountId: Self.accountId, type: .expense)
-            // categoryId is nil → "uncategorized"
-        ]
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in txns.map { EnrichedTransaction(transaction: $0) } }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.loadData)
-        await store.receive(\.loadedData) {
-            let proportion = $0.categoryProportions.first
-            #expect(proportion?.id == "uncategorized")
-            #expect(proportion?.amount == 150)
-        }
-    }
-
-    @Test("computeBudgetMetrics falls back to budget name when budget has no categoryId")
-    func testBudgetMetricsNoCategoryId() async {
-        let budget = Budget(
-            name: "總支出預算",
-            amount: 5000,
-            categoryId: nil,   // global budget
-            period: .monthly,
-            startDate: Date()
-        )
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.planningClient.listActive = { [budget] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.loadData)
-        await store.receive(\.budgetMetricsLoaded) {
-            #expect($0.budgetMetrics.first?.categoryName == "總支出預算")
-        }
-    }
-
-    // MARK: - Account Filter
-
-    @Test("task loads active accounts into state")
+    @Test("task loads active accounts")
     func testTaskLoadsAccounts() async {
         let accounts = [
             Account(name: "現金", type: .cash, icon: "banknote", color: "#34C759", sortOrder: 0),
-            Account(name: "銀行", type: .bank, icon: "building.columns", color: "#3478F6", sortOrder: 1),
         ]
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
+        let store = await Self.makeStore() {
             $0.ledgerClient.listActiveAccounts = { accounts }
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
         await store.send(.task)
         await store.receive(\.accountsLoaded) { $0.accounts = accounts }
     }
 
-    // MARK: - AI Assistant availability
-
     @Test("task forwards aiAssistant.task so the availability gate can resolve")
     func testTaskForwardsAIAssistantTask() async {
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
+        let store = await Self.makeStore() {
             $0.ledgerClient.listActiveAccounts = { [] }
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.planningClient.listActive = { [] }
             $0.insightsClient.isAIAvailable = { true }
+            // `isAIAvailable = true` 會讓 `.task` 併發觸發的 loadData 走進 AI 分支。
+            // `generateAIInsight` 在 `InsightsClient` 沒有預設值 → 未 stub 就是 unimplemented，
+            // 會在 store 還活著時記一筆 issue（是否來得及發生取決於排程，所以以前是 flaky）。
+            $0.insightsClient.generateAIInsight = { _ in "ok" }
         }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
         await store.send(.task)
-        // 修復前：.task 只 merge accounts 載入與 .loadData，永遠等不到這個 receive
-        await store.receive(\.aiAssistant.task) {
-            $0.aiAssistant.isAvailable = true
-        }
-    }
-
-    @Test("accountSelected updates selectedAccountId and triggers loadData")
-    func testAccountSelected() async {
-        let accountId = UUID().uuidString
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.accountSelected(accountId)) {
-            $0.selectedAccountId = accountId
-        }
-        // loadData is triggered — exhaustivity.off skips downstream
-    }
-
-    @Test("loadData passes accountIds filter when selectedAccountId is set")
-    func testLoadDataPassesAccountFilter() async {
-        let accountId = UUID().uuidString
-        var initial = AnalysisFeature.State()
-        initial.selectedAccountId = accountId
-
-        let capturedFilter = LockIsolated<TransactionFilter?>(nil)
-        let store = await TestStore(initialState: initial) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { filter in
-                capturedFilter.setValue(filter)
-                return []
-            }
-            $0.planningClient.listActive = { [] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.loadData)
-        await store.receive(\.loadedData)
-
-        #expect(capturedFilter.value?.accountIds == Set([accountId]))
-    }
-
-    // MARK: - B3 補強：loadData 兩條並發 effect 協調
-
-    // MARK: - B3 補強：loadData 兩條並發 effect 協調（驗證兩條都到齊）
-    //
-    // loadData 用 .merge() 同時發起兩條 effect：
-    //   ① 主資料 effect → .loadedData(.success(data))
-    //   ② budget effect → .budgetMetricsLoaded(metrics)
-    // 兩條到達順序不確定，用各自獨立的 receive 驗證 + exhaustivity = .off 處理任意順序。
-    @Test("loadData sends both loadedData and budgetMetricsLoaded — both effects arrive")
-    func testLoadDataBothEffectsArrive() async {
-        let budget = Budget(
-            name: "餐費預算", amount: 1000,
-            categoryId: Self.categoryId, period: .monthly, startDate: Date()
-        )
-        let txn = Transaction(
-            amount: 300, date: Self.day1, note: "午餐",
-            categoryId: Self.categoryId, accountId: Self.accountId, type: .expense
-        )
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [EnrichedTransaction(transaction: txn)] }
-            $0.planningClient.listActive = { [budget] }
-            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        // 兩條並發 effect 到達順序不確定 → exhaustivity = .off
-        await MainActor.run { store.exhaustivity = .off }
-
-        await store.send(.loadData)
-
-        // 各自 receive 兩條，順序無要求（exhaustivity = .off）
-        await store.receive(\.loadedData)
-        await store.receive(\.budgetMetricsLoaded)
-
-        // 等待所有 effect 靜默結束
-        await store.finish()
-
-        // 最終 state 驗證：兩條 effect 都寫入正確值
-        await MainActor.run {
-            #expect(store.state.isLoading == false)
-            #expect(store.state.summary == FinancialSummary(totalIncome: 0, totalExpense: 300))
-            #expect(store.state.budgetMetrics.count == 1)
-            #expect(store.state.budgetMetrics.first?.id == budget.id.uuidString)
-        }
-    }
-
-    // MARK: - B3 補強：loadData cancelInFlight 取消前一個 budget effect
-    //
-    // AnalysisFeature.loadData 的 budget effect 帶 .cancellable(id: CancelID.budgets, cancelInFlight: true)。
-    // 此測試驗證：連續兩次 loadData 後，最終 state 中的 budgetMetrics 是「第二次」的結果。
-    //
-    // 鑑別力設計：用 LockIsolated 計數器讓 listActive 每次回傳「不同 id」的 budget。
-    //   - 第一次 loadData → planningClient.listActive 回傳 firstBudget
-    //   - 第二次 loadData → 回傳 secondBudget（不同 id）
-    // 若 cancelInFlight 正確運作，最終 budgetMetrics 只會是 secondBudget；
-    // 若 cancelInFlight 失效（兩條 budget effect 都跑完且後者先回），斷言會抓到 firstBudget 殘留。
-    //
-    // 注意：使用 exhaustivity = .off 是必要的，因為兩條 .merge effect 順序不確定，
-    // 且第一次 budget effect 被取消時 TestStore 不會收到其對應 action。
-    @Test("consecutive loadData: cancelInFlight ensures final budgetMetrics is the second invocation's result")
-    func testLoadDataCancelInFlightBudgetEffect() async {
-        let firstBudget = Budget(
-            name: "第一次預算", amount: 1000,
-            categoryId: Self.categoryId, period: .monthly, startDate: Date()
-        )
-        let secondBudget = Budget(
-            name: "第二次預算", amount: 2000,
-            categoryId: Self.categoryId, period: .monthly, startDate: Date()
-        )
-        // 計數器：第一次呼叫回傳 firstBudget，第二次（含之後）回傳 secondBudget
-        let listActiveCallCount = LockIsolated(0)
-
-        let store = await TestStore(initialState: AnalysisFeature.State()) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [] }
-            $0.planningClient.listActive = {
-                let n = listActiveCallCount.withValue { count -> Int in
-                    count += 1
-                    return count
-                }
-                return n == 1 ? [firstBudget] : [secondBudget]
-            }
-            $0.ledgerClient.listCategories = { _ in [Self.sampleCategory] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        // exhaustivity = .off：不要求每個被取消/順序不確定的 action 都被 receive
-        await MainActor.run { store.exhaustivity = .off }
-
-        // 第一次 loadData — 啟動 budget effect（listActive → firstBudget）
-        await store.send(.loadData)
-        // 立即送第二次 loadData — cancelInFlight 應取消第一次 budget effect 並重新啟動（listActive → secondBudget）
-        await store.send(.loadData)
-
-        // 收到最後一次 loadData 的兩個下游 action（順序不確定）
-        await store.receive(\.loadedData)
-        await store.receive(\.budgetMetricsLoaded)
-
-        await store.finish()
-
-        // 鑑別斷言：最終 budgetMetrics 必須是「第二次」的 secondBudget，而非 firstBudget。
-        // 這才真正驗證 cancelInFlight 把第一次的結果丟棄、只保留第二次。
-        await MainActor.run {
-            #expect(store.state.budgetMetrics.count == 1)
-            #expect(store.state.budgetMetrics.first?.id == secondBudget.id.uuidString)
-            #expect(store.state.budgetMetrics.first?.id != firstBudget.id.uuidString)
-        }
-    }
-
-    @Test("computeBudgetMetrics filters budgets to account-relevant categories")
-    func testBudgetMetricsAccountFilter() async {
-        let accountId = UUID().uuidString
-        let relevantCategoryId = UUID()
-        let irrelevantCategoryId = UUID()
-
-        let relevantBudget = Budget(
-            name: "飲食預算", amount: 1000,
-            categoryId: relevantCategoryId, period: .monthly, startDate: Date()
-        )
-        let irrelevantBudget = Budget(
-            name: "交通預算", amount: 500,
-            categoryId: irrelevantCategoryId, period: .monthly, startDate: Date()
-        )
-        let accountTxn = Transaction(
-            amount: 200, date: Date(),
-            categoryId: relevantCategoryId, accountId: accountId, type: .expense
-        )
-
-        var initial = AnalysisFeature.State()
-        initial.selectedAccountId = accountId
-
-        let store = await TestStore(initialState: initial) {
-            AnalysisFeature()
-        } withDependencies: {
-            $0.ledgerClient.listAll = { _ in [accountTxn].map { EnrichedTransaction(transaction: $0) } }
-            $0.planningClient.listActive = { [relevantBudget, irrelevantBudget] }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.insightsClient.isAIAvailable = { false }
-        }
-        await MainActor.run {
-            store.exhaustivity = .off
-        }
-
-        await store.send(.loadData)
-        await store.receive(\.budgetMetricsLoaded) {
-            #expect($0.budgetMetrics.count == 1)
-            #expect($0.budgetMetrics.first?.id == relevantBudget.id.uuidString)
-        }
+        await store.receive(\.aiAssistant.task) { $0.aiAssistant.isAvailable = true }
     }
 }

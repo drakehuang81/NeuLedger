@@ -105,6 +105,7 @@ public struct WatchRecordFeature: Sendable {
 
     @Dependency(\.watchLedgerClient) var ledgerClient
     @Dependency(\.date.now) var now
+    @Dependency(\.watchCacheEvents) var cacheEvents
 
     public init() {}
 
@@ -113,7 +114,7 @@ public struct WatchRecordFeature: Sendable {
             switch action {
 
             case .task:
-                return .run { [ledgerClient] send in
+                return .run { [ledgerClient, cacheEvents] send in
                     @Sendable func load() async {
                         async let categories = (try? await ledgerClient.categories(.expense)) ?? []
                         async let accounts = (try? await ledgerClient.activeAccounts()) ?? []
@@ -129,9 +130,9 @@ public struct WatchRecordFeature: Sendable {
                     // Re-load whenever the iPhone snapshot lands in the
                     // cache, so the empty cold-start screen self-heals once
                     // the first WC context arrives.
-                    for await _ in NotificationCenter.default.notifications(
-                        named: WatchCacheStore.didUpdateNotification
-                    ) {
+                    // 走注入的事件流而不是直接訂閱 `NotificationCenter.default`
+                    // ——理由見 `WatchCacheEvents`。
+                    for await _ in cacheEvents.updates() {
                         await load()
                     }
                 }

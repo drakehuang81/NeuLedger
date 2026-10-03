@@ -45,6 +45,7 @@ public struct WatchCarrierFeature: Sendable {
     }
 
     @Dependency(\.watchCarrierClient) var carrierClient
+    @Dependency(\.watchCacheEvents) var cacheEvents
 
     public init() {}
 
@@ -53,13 +54,12 @@ public struct WatchCarrierFeature: Sendable {
             switch action {
 
             case .task:
-                return .run { [carrierClient] send in
+                return .run { [carrierClient, cacheEvents] send in
                     await send(.carriersUpdated(carrierClient.carriers()))
                     // Re-load whenever a fresh iPhone snapshot lands, same
-                    // pattern as WatchRecordFeature.task.
-                    for await _ in NotificationCenter.default.notifications(
-                        named: WatchCacheStore.didUpdateNotification
-                    ) {
+                    // pattern as WatchRecordFeature.task. 走注入的事件流而不是
+                    // 直接訂閱 `NotificationCenter.default`——理由見 `WatchCacheEvents`。
+                    for await _ in cacheEvents.updates() {
                         await send(.carriersUpdated(carrierClient.carriers()))
                     }
                 }

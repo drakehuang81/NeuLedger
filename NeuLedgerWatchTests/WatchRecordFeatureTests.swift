@@ -355,56 +355,47 @@ struct WatchRecordFeatureTests {
         #expect(recordCalled.value == false)
     }
 
-    // MARK: - Task 5: .task self-heal reload via NotificationCenter
+    // MARK: - Task 5: .task 的自我修復重載
 
-    // MARK: - Task 5: .task self-heal reload via NotificationCenter
+    // 事件流現在是注入的（見 `WatchCacheEvents`），測試自己握著 continuation：
+    // 要它發才發。改之前這條測試訂閱的是 process 全域的 `NotificationCenter`，
+    // 而 `WatchSessionGatewayTests/inboundContextWritesCache()` 經由
+    // `WatchCacheStore.save()` 也會發同一個通知——於是原版只好讓 stub 永遠回
+    // 真資料、再開 `exhaustivity = .off` 來容忍「別的測試打進來的 .loaded」。
+    // 那等於放棄了「究竟收到幾次」這個斷言。
     //
-    // NOTE: This test verifies that the `.task` effect's for-await loop over
-    // `NotificationCenter.default.notifications(named: WatchCacheStore.didUpdateNotification)`
-    // wakes up and re-runs `load()` when a cache-update notification arrives.
-    //
-    // Isolation constraint: `WatchSessionGatewayTests/inboundContextWritesCache()` also
-    // posts this notification (via `WatchCacheStore.save()`). To avoid cross-test
-    // interference, this test always returns real data (not empty) so ANY load — whether
-    // triggered by the cold-start `await load()` or by a spurious notification from a
-    // parallel test — results in a consistent `.loaded` action. The test then verifies
-    // the store keeps receiving `.loaded` each time the notification fires (including
-    // our own explicit post), confirming the subscription loop is wired up.
-    @Test("task self-heals by reloading when WatchCacheStore.didUpdateNotification fires")
+    // 現在不需要那些繞路：串流是這條測試專屬的，所以可以維持 exhaustive，
+    // 並且真的斷言「冷啟動一次 + 快照落地一次 = 恰好兩次 .loaded」。
+    @Test("task self-heals by reloading when a fresh snapshot lands")
     func taskSelfHealsOnCacheUpdate() async {
+        let (stream, continuation) = AsyncStream<Void>.makeStream()
+
         let store = TestStore(initialState: WatchRecordFeature.State()) {
             WatchRecordFeature()
         } withDependencies: {
-            // Always return real data so the result is deterministic regardless of
-            // which notification triggers the reload.
             $0.watchLedgerClient.categories = { @Sendable type in
                 type == .expense ? [Self.foodCategory] : []
             }
             $0.watchLedgerClient.activeAccounts = { @Sendable in
                 [Self.cashAccount]
             }
+            $0.watchCacheEvents = WatchCacheEvents(updates: { stream })
         }
-        store.exhaustivity = .off  // ignore spurious .loaded from parallel tests
 
-        // Start the long-lived task
         let task = await store.send(.task)
 
-        // First .loaded from the cold-start `await load()` call
+        // 冷啟動那一次 load()
         await store.receive(\.loaded) {
             $0.categories = [Self.foodCategory]
             $0.accounts = [Self.cashAccount]
             $0.defaultAccountId = Self.cashAccount.id
         }
 
-        // Simulate iPhone snapshot arriving: post the notification.
-        // The .task effect's for-await loop must wake and re-run load().
-        await Task.yield()
-        NotificationCenter.default.post(name: WatchCacheStore.didUpdateNotification, object: nil)
-
-        // The for-await subscription must send a second .loaded — proving the
-        // notification-driven reload path is wired up in the .task effect.
+        // 模擬 iPhone 的快照落地：for-await 迴圈必須醒來並重跑 load()。
+        continuation.yield()
         await store.receive(\.loaded)
 
+        continuation.finish()
         await task.cancel()
     }
 

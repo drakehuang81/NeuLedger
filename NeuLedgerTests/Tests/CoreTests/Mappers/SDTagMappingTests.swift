@@ -11,7 +11,7 @@ struct SDTagMappingTests {
 
     init() throws {
         let schema = Schema([SDTag.self, SDTransaction.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         self.container = try ModelContainer(for: schema, configurations: [configuration])
         self.context = ModelContext(container)
     }

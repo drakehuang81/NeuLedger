@@ -14,7 +14,7 @@ struct SwiftDataStoreTests {
     /// equality assertions.
     private func freshAccountContainer() throws -> ModelContainer {
         let schema = Schema([SDAccount.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 
@@ -126,11 +126,11 @@ struct SwiftDataStoreTests {
         let schema = Schema([SDAccount.self])
         let first = try ModelContainer(
             for: schema,
-            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+            configurations: [PersistenceBootstrap.inMemoryConfiguration(for: schema)]
         )
         let second = try ModelContainer(
             for: schema,
-            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+            configurations: [PersistenceBootstrap.inMemoryConfiguration(for: schema)]
         )
         let box = ModelContainerBox(first)
 

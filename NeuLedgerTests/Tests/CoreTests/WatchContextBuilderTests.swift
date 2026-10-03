@@ -24,7 +24,7 @@ struct WatchContextBuilderTests {
             SDBudget.self,
             SDTag.self,
         ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         let container = try ModelContainer(for: schema, configurations: [configuration])
 
         try await withDependencies {

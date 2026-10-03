@@ -158,14 +158,43 @@ extension PersistenceBootstrap: DependencyKey {
         modelContainer: { PersistenceBootstrap.container }
     )
 
+    /// An in-memory `ModelConfiguration` with CloudKit mirroring explicitly off.
+    ///
+    /// **`cloudKitDatabase: .none` is load-bearing, not defensive.** That
+    /// parameter defaults to `.automatic`, which means "mirror to the primary
+    /// CloudKit container named in the app's entitlements" — and this app's
+    /// entitlements do name one (`iCloud.com.drake.NeuLedger`). A test host
+    /// built from those entitlements therefore gets an
+    /// `NSCloudKitMirroringDelegate` attached to every in-memory store, even
+    /// though no test asks for sync. Mirroring setup then fails (there is no
+    /// iCloud account in the simulator), CoreData's recovery path removes the
+    /// store, and the next fetch or save reaches a store that is no longer
+    /// there: `-[NSSQLDefaultConnectionManager handleStoreRequest:]` raises
+    /// `NSInternalInconsistencyException` ("No eligible connection available").
+    ///
+    /// That is an **Objective-C exception, so `try`/`catch` cannot see it** —
+    /// it goes straight to `abort()`, killing the test host before any test
+    /// runs. The failure surfaces only as
+    /// `Early unexpected exit ... (Crash: NeuLedger)` with zero tests
+    /// executed, which names neither CloudKit nor this file.
+    ///
+    /// iOS 26.5 tolerated the same configuration, so the whole suite was green
+    /// locally while Xcode Cloud (on iOS 27) failed every run. Any new
+    /// in-memory container must come through here rather than calling
+    /// `ModelConfiguration(schema:isStoredInMemoryOnly:)` directly.
+    public static func inMemoryConfiguration(for schema: Schema) -> ModelConfiguration {
+        ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
+        )
+    }
+
     /// In-memory `ModelContainer` shared by `PersistenceBootstrap.testValue` and
     /// `\.modelContainer`'s testValue. Created once per process so tests
     /// running in the same target share seeded default data.
     public static let testContainer: ModelContainer = {
-        let configuration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: true
-        )
+        let configuration = inMemoryConfiguration(for: schema)
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             seedIfNeeded(in: ModelContext(container))

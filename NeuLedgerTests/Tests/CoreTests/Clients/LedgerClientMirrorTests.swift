@@ -97,7 +97,7 @@ struct LedgerClientMirrorTests {
             SDBudget.self,
             SDTag.self,
         ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         let _container = try ModelContainer(for: schema, configurations: [configuration])
         self.container = _container
         self.coordinator = Self.captureCoordinator(_container)

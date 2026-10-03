@@ -37,7 +37,7 @@ struct LedgerClientCatalogTests {
             SDTag.self,
             SDRecurringTransaction.self,
         ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         let _container = try ModelContainer(for: schema, configurations: [configuration])
         self.container = _container
 

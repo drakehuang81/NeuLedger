@@ -11,7 +11,7 @@ struct CarrierClientLiveTests {
     /// Fresh in-memory container holding only the `SDCarrier` schema.
     private func freshCarrierContainer() throws -> ModelContainer {
         let schema = Schema([SDCarrier.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 

@@ -27,7 +27,7 @@ struct InsightsClientLiveTests {
             SDBudget.self,
             SDTag.self,
         ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 

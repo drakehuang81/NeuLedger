@@ -11,7 +11,7 @@ struct SDRecurringTransactionMappingTests {
 
     init() throws {
         let schema = Schema([SDRecurringTransaction.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = PersistenceBootstrap.inMemoryConfiguration(for: schema)
         self.container = try ModelContainer(for: schema, configurations: [configuration])
         self.context = ModelContext(container)
     }

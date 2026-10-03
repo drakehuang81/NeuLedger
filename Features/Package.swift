@@ -35,11 +35,11 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            exact: "1.23.2"
+            exact: "1.26.2"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-dependencies",
-            exact: "1.11.0"
+            exact: "1.17.1"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-case-paths",

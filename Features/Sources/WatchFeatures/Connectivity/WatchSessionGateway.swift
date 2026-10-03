@@ -24,9 +24,17 @@ public final class WatchSessionGateway: @unchecked Sendable {
         }
     }
 
-    public func send(draft: TransactionDraft) {
-        guard let data = try? JSONEncoder().encode(draft) else { return }
-        transport.sendUserInfo([
+    /// Queues a draft for the iPhone. Throws `WatchSendFailure` when the
+    /// draft could not be queued at all — the caller must keep the draft
+    /// alive so the user can retry.
+    public func send(draft: TransactionDraft) throws {
+        let data: Data
+        do {
+            data = try JSONEncoder().encode(draft)
+        } catch {
+            throw WatchSendFailure.encodingFailed
+        }
+        try transport.sendUserInfo([
             "op": "addTx",
             "payload": data
         ])

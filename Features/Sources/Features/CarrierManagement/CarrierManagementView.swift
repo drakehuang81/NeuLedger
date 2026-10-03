@@ -261,6 +261,24 @@ public struct CarrierManagementView: View {
                     .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
                     .padding(.horizontal, 6)
                     .padding(.bottom, 4)
+            } else {
+                // 編碼器拒絕了存起來的條碼（`generateBarcode` 用 `.ascii` 編碼，
+                // 誤貼到中文或全形符號就會回 nil）。沒有這個分支的話整張條碼卡
+                // 直接消失，使用者看到一段留白——既沒有錯誤訊息，也看不到原始
+                // 號碼可以手動輸入。Watch 端（`CarrierBarcodeView.swift:50`）與
+                // Widget（`CarrierWidget.swift:180`）本來就有這層降級，三套實作
+                // 裡只有這裡漏了。
+                Text(carrier.barcode)
+                    .font(Font.Design.size20Monospaced)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .foregroundStyle(Color.Design.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 140)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, 4)
             }
         }
         .padding(.bottom, 14)

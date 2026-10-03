@@ -59,7 +59,7 @@ struct TodayExpenseComplicationView: View {
 
     private var circularBody: some View {
         VStack(spacing: 0) {
-            Text("今日")
+            Text("complication_today")
                 .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(.secondary)
             Text(displayAmount)
@@ -74,23 +74,23 @@ struct TodayExpenseComplicationView: View {
             .widgetLabel {
                 if let progress = entry.monthBudgetProgress {
                     Gauge(value: progress.clamped(to: 0...1), in: 0...1) {
-                        Text("月")
+                        Text("complication_month")
                     }
                 } else {
-                    Text("今日支出")
+                    Text("complication_today_spending")
                 }
             }
     }
 
     private var rectangularBody: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("今日支出")
+            Text("complication_today_spending")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.secondary)
-            Text("NT$ \(displayAmount)")
+            Text(String(format: String(localized: "complication_amount"), displayAmount))
                 .font(.system(size: 18, weight: .semibold).monospacedDigit())
             if entry.todayCount > 0 {
-                Text("\(entry.todayCount) 筆交易")
+                Text(String(format: String(localized: "complication_transaction_count"), entry.todayCount))
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
@@ -98,7 +98,7 @@ struct TodayExpenseComplicationView: View {
     }
 
     private var inlineBody: some View {
-        Text("今日 NT$ \(displayAmount)")
+        Text(String(format: String(localized: "complication_today_amount"), displayAmount))
     }
 }
 
@@ -117,8 +117,8 @@ struct TodayExpenseComplication: Widget {
             TodayExpenseComplicationView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("今日支出")
-        .description("顯示今日累計支出與本月預算進度。")
+        .configurationDisplayName(Text("complication_display_name"))
+        .description(Text("complication_description"))
         .supportedFamilies([
             .accessoryCircular,
             .accessoryCorner,

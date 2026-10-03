@@ -107,10 +107,13 @@ struct WatchRecordFeatureTests {
             $0.uuid = .incrementing
         }
 
-        await store.send(.confirmTapped)
+        await store.send(.confirmTapped) {
+            $0.isSending = true
+        }
         await store.receive(\.draftSent) {
             $0.draft = nil
             $0.step = .category
+            $0.isSending = false
         }
 
         let committed = added.value
@@ -403,5 +406,174 @@ struct WatchRecordFeatureTests {
         await store.receive(\.loaded)
 
         await task.cancel()
+    }
+
+    // MARK: - A1：送出失敗必須看得見，草稿必須留得住
+
+    /// 建一個停在確認頁、金額 480 的 store，`record` 行為由呼叫端決定。
+    private func makeConfirmStore(
+        record: @escaping @Sendable (Transaction) async throws -> Void
+    ) -> TestStoreOf<WatchRecordFeature> {
+        TestStore(
+            initialState: WatchRecordFeature.State(
+                categories: [Self.foodCategory],
+                accounts: [Self.cashAccount],
+                defaultAccountId: Self.cashAccount.id,
+                draft: WatchRecordFeature.Draft(
+                    categoryId: Self.foodCategory.id,
+                    accountIdOverride: nil,
+                    amount: 480
+                ),
+                step: .confirm
+            )
+        ) {
+            WatchRecordFeature()
+        } withDependencies: {
+            $0.watchLedgerClient.record = record
+            $0.date.now = Date(timeIntervalSince1970: 1_700_000_000)
+        }
+    }
+
+    @Test("A failed send keeps the draft, stays on confirm, and surfaces the failure")
+    func failedSendKeepsDraftAndSurfacesFailure() async {
+        let attempts = LockIsolated(0)
+        let store = makeConfirmStore { _ in
+            attempts.withValue { $0 += 1 }
+            throw WatchSendFailure.sessionNotActivated
+        }
+
+        await store.send(.confirmTapped) {
+            $0.isSending = true
+        }
+        await store.receive(\.sendFailed) {
+            $0.isSending = false
+            $0.sendFailure = .sessionNotActivated
+        }
+
+        // 修好之前這裡會是 draft == nil / step == .category：使用者以為
+        // 記帳成功，那筆交易卻從未離開手錶。
+        #expect(store.state.draft?.amount == 480)
+        #expect(store.state.step == .confirm)
+        #expect(store.state.sendFailure == .sessionNotActivated)
+        #expect(attempts.value == 1)
+    }
+
+    @Test("An unmodelled error still surfaces as a failure rather than a silent success")
+    func unmodelledErrorSurfacesAsUnknown() async {
+        struct Boom: Error {}
+        let store = makeConfirmStore { _ in throw Boom() }
+
+        await store.send(.confirmTapped) {
+            $0.isSending = true
+        }
+        await store.receive(\.sendFailed) {
+            $0.isSending = false
+            $0.sendFailure = .unknown
+        }
+
+        #expect(store.state.draft?.amount == 480)
+        #expect(store.state.step == .confirm)
+    }
+
+    @Test("After a failure the user can press confirm again and the retry goes through")
+    func retryAfterFailureSucceeds() async {
+        let attempts = LockIsolated(0)
+        let store = makeConfirmStore { _ in
+            let attempt = attempts.withValue { $0 += 1; return $0 }
+            if attempt == 1 { throw WatchSendFailure.encodingFailed }
+        }
+
+        await store.send(.confirmTapped) {
+            $0.isSending = true
+        }
+        await store.receive(\.sendFailed) {
+            $0.isSending = false
+            $0.sendFailure = .encodingFailed
+        }
+
+        // 草稿還在，所以再按一次確認就能重試。
+        await store.send(.confirmTapped) {
+            $0.isSending = true
+            $0.sendFailure = nil
+        }
+        await store.receive(\.draftSent) {
+            $0.draft = nil
+            $0.step = .category
+            $0.isSending = false
+        }
+
+        #expect(attempts.value == 2)
+    }
+
+    @Test("A missing category surfaces as a failure and is never reported as sent")
+    func missingCategoryIsNotReportedAsSent() async {
+        let store = makeConfirmStore { _ in
+            throw WatchSendFailure.missingCategory
+        }
+
+        await store.send(.confirmTapped) {
+            $0.isSending = true
+        }
+        await store.receive(\.sendFailed) {
+            $0.isSending = false
+            $0.sendFailure = .missingCategory
+        }
+
+        #expect(store.state.draft?.amount == 480)
+        #expect(store.state.step == .confirm)
+    }
+
+    @Test("A second confirm while a send is already in flight is ignored")
+    func confirmWhileSendingIsIgnored() async {
+        let attempts = LockIsolated(0)
+        let store = TestStore(
+            initialState: WatchRecordFeature.State(
+                categories: [Self.foodCategory],
+                accounts: [Self.cashAccount],
+                defaultAccountId: Self.cashAccount.id,
+                draft: WatchRecordFeature.Draft(
+                    categoryId: Self.foodCategory.id,
+                    accountIdOverride: nil,
+                    amount: 480
+                ),
+                step: .confirm,
+                isSending: true
+            )
+        ) {
+            WatchRecordFeature()
+        } withDependencies: {
+            $0.watchLedgerClient.record = { @Sendable _ in
+                attempts.withValue { $0 += 1 }
+            }
+        }
+
+        // 失敗時使用者留在確認頁，按鈕還活著 —— 連點不能送出兩筆。
+        await store.send(.confirmTapped)
+
+        #expect(attempts.value == 0)
+        #expect(store.state.isSending == true)
+    }
+
+    @Test("Starting a new draft clears a stale failure banner")
+    func newDraftClearsStaleFailure() async {
+        let store = TestStore(
+            initialState: WatchRecordFeature.State(
+                categories: [Self.foodCategory],
+                accounts: [Self.cashAccount],
+                defaultAccountId: Self.cashAccount.id,
+                sendFailure: .sessionNotActivated
+            )
+        ) {
+            WatchRecordFeature()
+        }
+
+        await store.send(.categoryTapped(Self.foodCategory.id)) {
+            $0.draft = WatchRecordFeature.Draft(
+                categoryId: Self.foodCategory.id,
+                accountIdOverride: nil
+            )
+            $0.step = .amount
+            $0.sendFailure = nil
+        }
     }
 }

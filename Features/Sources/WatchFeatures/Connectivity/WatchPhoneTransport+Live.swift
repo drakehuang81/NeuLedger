@@ -32,8 +32,18 @@ public final class LiveWatchPhoneTransport: NSObject, WatchPhoneTransport, WCSes
         WCSession.default.activate()
     }
 
-    public func sendUserInfo(_ payload: [String: Any]) {
-        guard WCSession.isSupported() else { return }
+    public func sendUserInfo(_ payload: [String: Any]) throws {
+        guard WCSession.isSupported() else {
+            throw WatchSendFailure.sessionUnsupported
+        }
+        // `transferUserInfo` raises on a session that has not finished
+        // activating, so this guard is both an error report and a crash
+        // guard. It is *not* a reachability check: an unreachable or
+        // unpaired iPhone still gets the payload off the queue later,
+        // which is why `isReachable` is deliberately not consulted here.
+        guard WCSession.default.activationState == .activated else {
+            throw WatchSendFailure.sessionNotActivated
+        }
         WCSession.default.transferUserInfo(payload)
     }
 

@@ -95,10 +95,13 @@ struct WatchAppFeatureTests {
         // Confirm paging is locked at confirm step
         #expect(store.state.isPagingLocked)
 
-        await store.send(.record(.confirmTapped))
+        await store.send(.record(.confirmTapped)) {
+            $0.record.isSending = true
+        }
         await store.receive(\.record.draftSent) {
             $0.record.draft = nil
             $0.record.step = .category
+            $0.record.isSending = false
         }
 
         // After draftSent, step is .category → isPagingLocked must be false

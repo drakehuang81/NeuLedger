@@ -101,6 +101,72 @@
           "stringUnit" : { "state" : "translated", "value" : "尚無載具\n請在 iPhone 上新增電子發票載具" }
         }
       }
+    },
+    "watch_retry_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Try Again" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "再試一次" }
+        }
+      }
+    },
+    "watch_send_error_unsupported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "This watch can't send to iPhone" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "此手錶無法傳送至 iPhone" }
+        }
+      }
+    },
+    "watch_send_error_not_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not connected yet — tap again in a moment" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "尚未連上 iPhone\n請稍候再試一次" }
+        }
+      }
+    },
+    "watch_send_error_encoding" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Couldn't prepare this record" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "無法封裝這筆記帳" }
+        }
+      }
+    },
+    "watch_send_error_no_category" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Pick a category first" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "請先選擇分類" }
+        }
+      }
+    },
+    "watch_send_error_generic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not saved — your entry is kept, try again" }
+        },
+        "zh-Hant" : {
+          "stringUnit" : { "state" : "translated", "value" : "尚未送出\n草稿已保留，請再試一次" }
+        }
+      }
     }
   },
   "version" : "1.0"

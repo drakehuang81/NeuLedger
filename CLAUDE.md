@@ -58,10 +58,14 @@ xcodebuild test -project NeuLedger.xcodeproj -scheme NeuLedger \
 
 | Prefix | Use | Triggers Xcode Cloud PR workflow? |
 |---|---|---|
-| `feature/<name>` | New features | ✅ Yes |
-| `fix/<name>` | Bug fixes | ✅ Yes |
-| `PR/<name>` | Misc work that should still run CI | ✅ Yes |
-| anything else (`chore/*`, `docs/*`, `experiment/*`...) | Local-only or non-CI work | ❌ No |
+| `feature/<name>` | New features（工作分支，本機驗證） | ❌ No |
+| `fix/<name>` | Bug fixes（工作分支，本機驗證） | ❌ No |
+| `PR/<name>` | **要開 PR 的分支——推上去就是請 CI 驗** | ✅ Yes |
+| anything else (`chore/*`, `docs/*`, `experiment/*`...) | Local-only | ❌ No |
+
+工作在 `feature/*` / `fix/*` 上做、在本機跑完整驗證；確定要開 PR 時另切一個
+`PR/<name>` 指到同一顆 commit 再推。**切換到 `PR/` 前綴這個動作本身就是「請 CI 驗」的意思**
+——不需要額外記得加或拿掉什麼標記。
 
 ### Xcode Cloud trigger model
 
@@ -69,7 +73,7 @@ Three workflows, each triggered by a distinct mechanism — **no `developer` pus
 
 | Workflow | Trigger | Action |
 |---|---|---|
-| **PR** | Push to `feature/*`, `fix/*`, `PR/*` | Build + Test (no archive) |
+| **PR** | Push to `PR/*`（**只有這個前綴**） | Test - iOS + Test - watchOS |
 | **TestFlight** | Push to a branch named `TestFlight*` (prefix match) | Archive + upload to TestFlight |
 | **Release** | Push to a branch named `Release*` (prefix match), or manual trigger from App Store Connect | Archive + App Store submission |
 
@@ -77,15 +81,42 @@ Three workflows, each triggered by a distinct mechanism — **no `developer` pus
 
 ### `[ci skip]` convention
 
-Xcode Cloud natively skips builds when the commit message or PR title contains any of: `[ci skip]`, `[skip ci]`, `[ci-skip]`, `[skip-ci]`, `***NO_CI***`.
+Xcode Cloud natively skips builds when the commit message or PR title contains any of:
+`[ci skip]`, `[skip ci]`, `[ci-skip]`, `[skip-ci]`, `***NO_CI***`。
 
-**Default: every commit I author gets `[ci skip]` appended to the subject line.** Xcode Cloud is opt-in, not opt-out — the user explicitly triggers CI when they want it by telling me "run CI on this one" / "讓 CI 跑" / similar. Until then, assume CI should not run.
+**預設不加。** 2026-10-03 之前的規則是「每顆 commit 都加 `[ci skip]`」，目的是避免同一個 PR
+連推數次把 Xcode Cloud 額度燒光。那條規則有兩個問題，實測後廢除：
 
-When the user opts in, drop `[ci skip]` from **that specific commit's** subject only; subsequent commits revert to the default-skip behavior unless told again.
+1. **它讓 CI 完全不會跑。** PR workflow 的觸發前綴不含 `developer`，所以 merge commit 也不觸發；
+   加上每顆 commit 都帶標記，結果是這個專案從 2026-06-05 設定 workflow 至今 **build runs = 0**。
+   本機綠成了唯一的驗證，而本機從來不跑 Watch 測試（見下節）。
+2. **它要防的情況已經被 workflow 自己解掉了。** 「自動取消建置版本」是開著的：同一分支推新版本時，
+   正在跑或排隊中的同類建置會被自動取消。所以「連推三次 = 跑三次」不成立。
+
+現在的模型是**用分支前綴表達意圖**：工作在 `feature/*` / `fix/*`（不觸發），要驗時推 `PR/*`（觸發一次）。
+
+仍然要加 `[ci skip]` 的少數情況：在 `PR/*` 分支上補一顆純文件／純註解的 commit，而且不想為它再燒一輪。
+
+**PR titles must NOT carry `[ci skip]`.** GitHub writes the PR title into the merge commit message;
+a skip marker there silently suppresses Xcode Cloud when that merge commit later becomes the HEAD of a
+`TestFlight*` / `Release*` push（this bit us on 2026-06-05）。
 
 **Never** strip `[ci skip]` from a commit someone else authored without asking.
 
-**PR titles must NOT carry `[ci skip]`.** GitHub writes the PR title into the merge commit message; a skip marker there silently suppresses Xcode Cloud when that merge commit later becomes the HEAD of a `TestFlight*` / `Release*` push (this bit us on 2026-06-05). Skip markers belong on individual commit subjects only — pushing a `fix/*` / `feature/*` branch triggers off its HEAD commit message, so the commit-level default already covers CI skipping.
+**訊息裡提到這個標記時，不要寫出完整字串。** Xcode Cloud 做的是字串比對，它不分辨你是在
+「使用」還是在「談論」那個標記。2026-10-03 實際踩過：一顆名為「取消每顆 commit 都加
+skip 標記的規則」的 commit，因為 subject 裡寫出了完整字串而被跳過建置。要提到它就改寫成
+「skip 標記」之類的講法；真的需要原文時放進 body 並拆開寫。
+
+推送前可以用這個檢查 HEAD：
+
+```bash
+git log --format='%s' -1 | grep -qE '\[(ci[ -]skip|skip[ -]ci)\]|\*\*\*NO_CI\*\*\*' \
+  && echo "含標記，不會觸發" || echo "乾淨"
+```
+
+分支已推送後才發現帶了標記時，**不要 amend + force push**（本專案禁止）——疊一顆零改動的
+觸發 commit 即可，Xcode Cloud 是看 HEAD 的訊息。
 
 ### Release / TestFlight
 

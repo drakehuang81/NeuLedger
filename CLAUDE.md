@@ -103,6 +103,21 @@ a skip marker there silently suppresses Xcode Cloud when that merge commit later
 
 **Never** strip `[ci skip]` from a commit someone else authored without asking.
 
+**訊息裡提到這個標記時，不要寫出完整字串。** Xcode Cloud 做的是字串比對，它不分辨你是在
+「使用」還是在「談論」那個標記。2026-10-03 實際踩過：一顆名為「取消每顆 commit 都加
+skip 標記的規則」的 commit，因為 subject 裡寫出了完整字串而被跳過建置。要提到它就改寫成
+「skip 標記」之類的講法；真的需要原文時放進 body 並拆開寫。
+
+推送前可以用這個檢查 HEAD：
+
+```bash
+git log --format='%s' -1 | grep -qE '\[(ci[ -]skip|skip[ -]ci)\]|\*\*\*NO_CI\*\*\*' \
+  && echo "含標記，不會觸發" || echo "乾淨"
+```
+
+分支已推送後才發現帶了標記時，**不要 amend + force push**（本專案禁止）——疊一顆零改動的
+觸發 commit 即可，Xcode Cloud 是看 HEAD 的訊息。
+
 ### Release / TestFlight
 
 I do **not** push `TestFlight*` / `Release*` branches or version tags on my own, and do **not** manually trigger workflows from App Store Connect. Those are version-cut decisions for the user — I act only on their explicit instruction.

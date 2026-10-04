@@ -19,6 +19,39 @@ struct RecurringTransactionFormFeatureTests {
         sortOrder: 1, isArchived: false, createdAt: Date()
     )
 
+    @Test("saveTapped accepts a thousands-separated amount")
+    func testSaveTappedAcceptsGroupedAmount() async {
+        let created = LockIsolated<RecurringTransaction?>(nil)
+        let store = await TestStore(
+            initialState: RecurringTransactionFormFeature.State(mode: .add)
+        ) {
+            RecurringTransactionFormFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSinceReferenceDate: 771_638_400))
+            $0.ledgerClient.listActiveAccounts = { [Self.sampleAccount] }
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.ledgerClient.createRecurring = { created.setValue($0) }
+            $0.dismiss = DismissEffect { }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.amountChanged("15,000")) { $0.amountText = "15,000" }
+        await store.send(.accountChanged(Self.sampleAccount.id)) {
+            $0.accountId = Self.sampleAccount.id
+        }
+        await store.send(.saveTapped)
+        // `receive` rather than `finish()`: the assertion below needs the
+        // effect to have actually run, and under `.off` a `finish()` timeout
+        // is silenced entirely — the test would pass on a nil capture.
+        await store.receive(\.delegate.saved)
+
+        // The plan asserts only `amountError == nil` here. Asserting the
+        // captured template instead is strictly stronger: reaching
+        // `createRecurring` at all means the amount guard passed, and the
+        // value proves it parsed as 15000 rather than something else.
+        #expect(created.value?.amount == 15000)
+    }
+
     // MARK: - Transfer support (audit A1)
 
     @Test("toAccountChanged updates toAccountId and clears transferError")

@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Common
 import Domain
 import Foundation
 
@@ -127,7 +128,7 @@ public struct BudgetFormFeature: Sendable {
                     state.nameError = String(localized: "error_budget_name_empty")
                     return .none
                 }
-                guard let amount = Decimal(string: state.amountText), amount > 0 else {
+                guard let amount = state.amountText.parsedAmountDecimal, amount > 0 else {
                     state.amountError = String(localized: "error_amount_must_be_positive")
                     return .none
                 }

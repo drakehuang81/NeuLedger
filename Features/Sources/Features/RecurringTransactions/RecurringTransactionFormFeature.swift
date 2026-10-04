@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Common
 import Domain
 import Foundation
 
@@ -165,7 +166,7 @@ public struct RecurringTransactionFormFeature: Sendable {
                 return .none
 
             case .saveTapped:
-                guard let amount = Decimal(string: state.amountText), amount > 0 else {
+                guard let amount = state.amountText.parsedAmountDecimal, amount > 0 else {
                     state.amountError = String(localized: "recurring_transaction_error_amount")
                     return .none
                 }

@@ -66,3 +66,26 @@ struct DecimalCurrencyTests {
         #expect(Decimal(-500).twdCompact == "-NT$500")
     }
 }
+
+@Suite("Decimal+Currency parts")
+struct DecimalCurrencyPartsTests {
+    @Test("twdDigits is thousands-separated integer without symbol")
+    func twdDigits() {
+        #expect(Decimal(0).twdDigits == "0")
+        #expect(Decimal(480).twdDigits == "480")
+        #expect(Decimal(12_500).twdDigits == "12,500")
+        #expect(Decimal(1_234_567).twdDigits == "1,234,567")
+    }
+
+    @Test("twdParts splits symbol and digits; sign stays on the symbol")
+    func twdParts() {
+        let positive = Decimal(1_234).twdParts
+        #expect(positive.symbol == "NT$")
+        #expect(positive.digits == "1,234")
+        let negative = Decimal(-1_234).twdParts
+        #expect(negative.symbol == "-NT$")
+        #expect(negative.digits == "1,234")
+        #expect(positive.symbol + positive.digits == Decimal(1_234).twdFormatted)
+        #expect(negative.symbol + negative.digits == Decimal(-1_234).twdFormatted)
+    }
+}

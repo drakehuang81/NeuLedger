@@ -1,4 +1,5 @@
 import Foundation
+import Common
 import Domain
 #if canImport(WidgetKit)
 import WidgetKit
@@ -45,10 +46,7 @@ public struct ComplicationEntry: TimelineEntry, Equatable, Sendable {
     /// Pre-formatted thousand-separated integer string for display.
     /// Watches show "NT$ \(displayAmount)" or just "\(displayAmount)".
     public var displayAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: todayTotal as NSDecimalNumber) ?? "0"
+        todayTotal.twdDigits
     }
 }
 #endif

@@ -37,7 +37,7 @@ struct AmountKeypadView: View {
     }
 
     private var amountDisplay: some View {
-        Text("NT$ \(formatted(store.draft?.amount ?? 0))")
+        Text("NT$ \((store.draft?.amount ?? 0).twdDigits)")
             .font(Font.Design.size22SemiboldRounded)
             .monospacedDigit()
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -65,14 +65,6 @@ struct AmountKeypadView: View {
         }
         .buttonStyle(.plain)
         .disabled(key.isDisabled(amount: store.draft?.amount ?? 0))
-    }
-
-    private func formatted(_ amount: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        return formatter.string(from: amount as NSDecimalNumber) ?? "0"
     }
 
     private enum Key: Hashable {

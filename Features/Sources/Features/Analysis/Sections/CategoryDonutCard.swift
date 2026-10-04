@@ -142,7 +142,7 @@ struct CategoryDonutCard: View {
                     Text("NT$")
                         .font(Font.Design.size8.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
-                    Text(totalAmount.twdFormatted.replacingOccurrences(of: "NT$", with: ""))
+                    Text(totalAmount.twdDigits)
                         .font(Font.Design.size13Medium.monospacedDigit())
                         .foregroundStyle(Color.Design.textPrimary)
                         .lineLimit(1)
@@ -196,7 +196,7 @@ struct CategoryDonutCard: View {
                         Text("NT$")
                             .font(Font.Design.size8.monospacedDigit())
                             .foregroundStyle(Color.Design.textSecondary)
-                        Text(proportion.amount.twdFormatted.replacingOccurrences(of: "NT$", with: ""))
+                        Text(proportion.amount.twdDigits)
                             .font(Font.Design.size12.monospacedDigit())
                             .foregroundStyle(Color.Design.textPrimary)
                     }

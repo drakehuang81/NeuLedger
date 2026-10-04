@@ -1,4 +1,5 @@
 import Foundation
+import Domain
 
 public extension Decimal {
 
@@ -18,21 +19,21 @@ public extension Decimal {
             let perDay = Self.rounded(self / 7)
             return String(
                 format: String(localized: "budget_form_breakdown_weekly", bundle: .main),
-                Self.formatted(perDay)
+                perDay.twdDigits
             )
         case .monthly:
             let perDay  = Self.rounded(self / 30)
             let perWeek = Self.rounded(self / Decimal(string: "4.33")!)
             return String(
                 format: String(localized: "budget_form_breakdown_monthly", bundle: .main),
-                Self.formatted(perDay),
-                Self.formatted(perWeek)
+                perDay.twdDigits,
+                perWeek.twdDigits
             )
         case .yearly:
             let perMonth = Self.rounded(self / 12)
             return String(
                 format: String(localized: "budget_form_breakdown_yearly", bundle: .main),
-                Self.formatted(perMonth)
+                perMonth.twdDigits
             )
         }
     }
@@ -42,12 +43,5 @@ public extension Decimal {
         var output = Decimal()
         NSDecimalRound(&output, &input, 0, .plain)
         return output
-    }
-
-    private static func formatted(_ value: Decimal) -> String {
-        let fmt = NumberFormatter()
-        fmt.numberStyle = .decimal
-        fmt.maximumFractionDigits = 0
-        return fmt.string(from: value as NSDecimalNumber) ?? "0"
     }
 }

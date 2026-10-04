@@ -29,31 +29,31 @@ struct KPIStrip: View {
         HStack(spacing: 6) {
             kpiCard(
                 key: "analysis_kpi_expense",
-                value: expense.twdFormatted,
-                valueColor: Color.Design.textPrimary,
-                showCurrencyPrefix: true
+                prefix: expense.twdParts.symbol,
+                body: expense.twdParts.digits,
+                valueColor: Color.Design.textPrimary
             )
             kpiCard(
                 key: "analysis_kpi_income",
-                value: income.twdFormatted,
-                valueColor: Color.Design.incomeGreen,
-                showCurrencyPrefix: true
+                prefix: income.twdParts.symbol,
+                body: income.twdParts.digits,
+                valueColor: Color.Design.incomeGreen
             )
             kpiCard(
                 key: "analysis_kpi_net",
-                value: net.twdFormatted,
-                valueColor: net >= 0 ? Color.Design.accentOrange : Color.Design.expenseRed,
-                showCurrencyPrefix: true
+                prefix: net.twdParts.symbol,
+                body: net.twdParts.digits,
+                valueColor: net >= 0 ? Color.Design.accentOrange : Color.Design.expenseRed
             )
             kpiCard(
                 key: "analysis_kpi_savings_rate",
-                value: savingsRate,
+                prefix: nil,
+                body: savingsRate,
                 // 與 Dashboard 的 StatsRow 同一條規則：負儲蓄率走紅色。
                 // 這個 KPI 本來就沒有被 kernel 的夾制蓋到（它自己從
                 // `FinancialSummary` 算），所以一直看得到負值，只是顏色
                 // 跟隔壁的淨額卡不一致。
-                valueColor: negativeSavings ? Color.Design.expenseRed : Color.Design.textPrimary,
-                showCurrencyPrefix: false
+                valueColor: negativeSavings ? Color.Design.expenseRed : Color.Design.textPrimary
             )
         }
     }
@@ -62,30 +62,27 @@ struct KPIStrip: View {
 
     private func kpiCard(
         key: String.LocalizationValue,
-        value: String,
-        valueColor: Color,
-        showCurrencyPrefix: Bool
+        prefix: String?,
+        body: String,
+        valueColor: Color
     ) -> some View {
-        // The Decimal+Currency formatter already produces "NT$1,234". Split the
-        // prefix so the design's small "NT$" label can render at 8pt.
-        let trimmed: (prefix: String?, body: String) = {
-            guard showCurrencyPrefix, value.hasPrefix("NT$") else { return (nil, value) }
-            return ("NT$", String(value.dropFirst(3)))
-        }()
-
-        return VStack(alignment: .leading, spacing: 3) {
+        // `twdParts` already splits the symbol from the digits, so the design's
+        // small "NT$" label renders at 8pt without string surgery here. The old
+        // `hasPrefix("NT$")` check silently failed on negative amounts, whose
+        // formatted form starts with "-" — the net card then lost its label.
+        VStack(alignment: .leading, spacing: 3) {
             Text(String(localized: key))
                 .font(Font.Design.size9Medium.monospacedDigit())
                 .textCase(.uppercase)
                 .tracking(0.8)
                 .foregroundStyle(Color.Design.textSecondary)
             HStack(alignment: .firstTextBaseline, spacing: 1) {
-                if let prefix = trimmed.prefix {
+                if let prefix {
                     Text(prefix)
                         .font(Font.Design.size9.monospacedDigit())
                         .foregroundStyle(Color.Design.textSecondary)
                 }
-                Text(trimmed.body)
+                Text(body)
                     .font(Font.Design.size14Medium.monospacedDigit())
                     .foregroundStyle(valueColor)
                     .lineLimit(1)

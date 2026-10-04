@@ -114,6 +114,7 @@ struct WatchRecordFeatureTests {
             $0.draft = nil
             $0.step = .category
             $0.isSending = false
+            $0.sendSuccessPulse = 1
         }
 
         let committed = added.value
@@ -491,6 +492,7 @@ struct WatchRecordFeatureTests {
             $0.draft = nil
             $0.step = .category
             $0.isSending = false
+            $0.sendSuccessPulse = 1
         }
 
         #expect(attempts.value == 2)
@@ -566,5 +568,87 @@ struct WatchRecordFeatureTests {
             $0.step = .amount
             $0.sendFailure = nil
         }
+    }
+
+    // MARK: - Success haptic: separating "sent" from "cancelled"
+
+    @Test("cancelTapped leaves sendSuccessPulse untouched")
+    func cancelDoesNotPulseSuccess() async {
+        let store = TestStore(
+            initialState: WatchRecordFeature.State(
+                categories: [Self.foodCategory],
+                accounts: [Self.cashAccount],
+                defaultAccountId: Self.cashAccount.id,
+                draft: WatchRecordFeature.Draft(
+                    categoryId: Self.foodCategory.id,
+                    accountIdOverride: nil,
+                    amount: 480
+                ),
+                step: .confirm
+            )
+        ) {
+            WatchRecordFeature()
+        }
+
+        // `cancelTapped` and `draftSent` reset the rest of the state
+        // identically, which is why the view needs this one field to tell
+        // them apart. Backing out of a draft must not feel like a success.
+        await store.send(.cancelTapped) {
+            $0.draft = nil
+            $0.step = .category
+        }
+
+        #expect(store.state.sendSuccessPulse == 0)
+    }
+
+    @Test("Two successful sends pulse twice")
+    func twoSendsPulseTwice() async {
+        let added = LockIsolated<[Transaction]>([])
+
+        let store = TestStore(
+            initialState: WatchRecordFeature.State(
+                categories: [Self.foodCategory],
+                accounts: [Self.cashAccount],
+                defaultAccountId: Self.cashAccount.id
+            )
+        ) {
+            WatchRecordFeature()
+        } withDependencies: {
+            $0.watchLedgerClient.record = { @Sendable tx in
+                added.withValue { $0.append(tx) }
+            }
+            $0.date.now = Date(timeIntervalSince1970: 1_700_000_000)
+            $0.uuid = .incrementing
+        }
+
+        for pulse in 1...2 {
+            await store.send(.categoryTapped(Self.foodCategory.id)) {
+                $0.draft = WatchRecordFeature.Draft(
+                    categoryId: Self.foodCategory.id,
+                    accountIdOverride: nil
+                )
+                $0.step = .amount
+            }
+            await store.send(.amountDigit(5)) {
+                $0.draft?.amount = 5
+            }
+            await store.send(.amountConfirmed) {
+                $0.step = .confirm
+            }
+            await store.send(.confirmTapped) {
+                $0.isSending = true
+            }
+            // A `Bool` would stay `true` across the second send and fire
+            // one haptic for two records; the counter has to advance each
+            // time for `onChange` to see it.
+            await store.receive(\.draftSent) {
+                $0.draft = nil
+                $0.step = .category
+                $0.isSending = false
+                $0.sendSuccessPulse = pulse
+            }
+        }
+
+        #expect(added.value.count == 2)
     }
 }

@@ -47,6 +47,19 @@ public struct WatchRecordFeature: Sendable {
         /// the draft is still held and the user can retry.
         public var sendFailure: WatchSendFailure?
 
+        /// Increments once per successful send, so the view can fire a
+        /// one-shot success haptic.
+        ///
+        /// **Why a counter and not a `Bool`.** Leaving the confirm screen is
+        /// the only thing that reports success, and `draftSent` and
+        /// `cancelTapped` used to reset state identically — the view could
+        /// not tell "sent" from "cancelled" and so played nothing. A `Bool`
+        /// would need a second action to clear it, and two sends in a row
+        /// would leave it `true` throughout, firing one haptic instead of
+        /// two. A monotonic counter changes on every success, which is
+        /// exactly what `onChange` observes.
+        public var sendSuccessPulse: Int
+
         public init(
             categories: [Domain.Category] = [],
             accounts: [Account] = [],
@@ -55,7 +68,8 @@ public struct WatchRecordFeature: Sendable {
             step: Step = .category,
             accountPickerForCategoryId: UUID? = nil,
             isSending: Bool = false,
-            sendFailure: WatchSendFailure? = nil
+            sendFailure: WatchSendFailure? = nil,
+            sendSuccessPulse: Int = 0
         ) {
             self.categories = categories
             self.accounts = accounts
@@ -65,6 +79,7 @@ public struct WatchRecordFeature: Sendable {
             self.accountPickerForCategoryId = accountPickerForCategoryId
             self.isSending = isSending
             self.sendFailure = sendFailure
+            self.sendSuccessPulse = sendSuccessPulse
         }
 
         public var activeCategory: Domain.Category? {
@@ -224,6 +239,9 @@ public struct WatchRecordFeature: Sendable {
                 state.step = .category
                 state.isSending = false
                 state.sendFailure = nil
+                // The only signal that separates this from `cancelTapped`,
+                // whose state reset is otherwise identical.
+                state.sendSuccessPulse += 1
                 return .none
 
             case let .sendFailed(failure):

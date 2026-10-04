@@ -1,5 +1,7 @@
 import Testing
 import Foundation
+import SwiftUI
+import Domain
 @testable import Common
 
 @Suite("DesignConstants Tests")
@@ -87,5 +89,35 @@ struct DecimalCurrencyPartsTests {
         #expect(negative.digits == "1,234")
         #expect(positive.symbol + positive.digits == Decimal(1_234).twdFormatted)
         #expect(negative.symbol + negative.digits == Decimal(-1_234).twdFormatted)
+    }
+}
+
+@Suite("CarrierType+UI")
+struct CarrierTypeUITests {
+    @Test("systemImageName is stable per type")
+    func icons() {
+        #expect(CarrierType.phoneBarcodeCarrier.systemImageName == "iphone")
+        #expect(CarrierType.citizenDigitalCertificate.systemImageName == "creditcard")
+    }
+
+    /// The Watch deliberately draws different glyphs: `iphone.gen3` reads
+    /// better at that size, and `person.text.rectangle` says "identity
+    /// document" where `creditcard` says "payment card" — a citizen digital
+    /// certificate is not a payment card. Centralising the mapping is the
+    /// point of this task; flattening the two platforms into one glyph set
+    /// would have been a silent visual change, so both live here instead.
+    @Test("watchSystemImageName keeps the Watch's own glyphs")
+    func watchIcons() {
+        #expect(CarrierType.phoneBarcodeCarrier.watchSystemImageName == "iphone.gen3")
+        #expect(CarrierType.citizenDigitalCertificate.watchSystemImageName == "person.text.rectangle")
+        for type in CarrierType.allCases {
+            #expect(type.watchSystemImageName != type.systemImageName)
+        }
+    }
+
+    @Test("tint uses design tokens")
+    func tints() {
+        #expect(CarrierType.phoneBarcodeCarrier.tint == Color.Design.accentOrange)
+        #expect(CarrierType.citizenDigitalCertificate.tint == Color.Design.carrierCertIndigo)
     }
 }

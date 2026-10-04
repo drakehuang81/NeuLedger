@@ -11,8 +11,11 @@ import WatchKit
 ///
 /// Haptics are deliberately *not* optimistic. The tap plays a neutral
 /// `.click` to acknowledge the press; a send that never left the Watch
-/// plays `.failure` and keeps the draft on screen for a retry. Claiming
-/// `.success` on tap is the bug this screen used to have.
+/// plays `.failure` and keeps the draft on screen for a retry. Only a
+/// send that actually left plays `.success`, and it rides on
+/// `sendSuccessPulse` rather than on the tap — claiming `.success` on tap
+/// is the bug this screen used to have, because the tap cannot know
+/// whether the send will succeed.
 struct ConfirmView: View {
 
     let store: StoreOf<WatchRecordFeature>
@@ -27,6 +30,17 @@ struct ConfirmView: View {
             guard failure != nil else { return }
             #if canImport(WatchKit)
             WKInterfaceDevice.current().play(.failure)
+            #endif
+        }
+        .onChange(of: store.sendSuccessPulse) { old, new in
+            // Leaving this screen is what reports success, so the haptic
+            // has to ride on the state change rather than on the tap —
+            // playing it in the button would make it a lie the moment a
+            // send fails. Guarding on an increase keeps a state reset
+            // (pulse back to 0) from firing a phantom success.
+            guard new > old else { return }
+            #if canImport(WatchKit)
+            WKInterfaceDevice.current().play(.success)
             #endif
         }
     }

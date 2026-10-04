@@ -102,6 +102,7 @@ struct WatchAppFeatureTests {
             $0.record.draft = nil
             $0.record.step = .category
             $0.record.isSending = false
+            $0.record.sendSuccessPulse = 1
         }
 
         // After draftSent, step is .category → isPagingLocked must be false

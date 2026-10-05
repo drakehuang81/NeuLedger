@@ -121,3 +121,24 @@ struct CarrierTypeUITests {
         #expect(CarrierType.citizenDigitalCertificate.tint == Color.Design.carrierCertIndigo)
     }
 }
+
+@Suite("Date+Relative")
+struct DateRelativeTests {
+    private static var cal: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Taipei")!
+        return c
+    }
+    private static func d(_ y: Int, _ m: Int, _ day: Int, _ h: Int) -> Date {
+        cal.date(from: DateComponents(year: y, month: m, day: day, hour: h))!
+    }
+
+    @Test("days(until:) counts calendar days, ignoring time of day")
+    func daysUntil() {
+        // 23:00 to 01:00 the next day is two hours apart but one calendar
+        // day, which is what a "due in N days" label has to say.
+        #expect(Self.d(2026, 1, 15, 23).days(until: Self.d(2026, 1, 16, 1), calendar: Self.cal) == 1)
+        #expect(Self.d(2026, 1, 15, 1).days(until: Self.d(2026, 1, 15, 23), calendar: Self.cal) == 0)
+        #expect(Self.d(2026, 1, 15, 12).days(until: Self.d(2026, 1, 10, 12), calendar: Self.cal) == -5)
+    }
+}

@@ -320,4 +320,21 @@ struct RecurringTransactionManagementFeatureTests {
             #expect(state.form?.firstRunDate == expectedDay)
         }
     }
+
+    @Test("State summary folds active items into monthly equivalents; inactive items excluded")
+    func testMonthlySummary() {
+        var state = RecurringTransactionManagementFeature.State(items: [
+            Self.sample(frequency: .monthly),                       // 15000 expense
+            Self.sample(frequency: .weekly, isActive: false),       // excluded
+        ])
+        var salary = Self.sample(frequency: .yearly)
+        salary.type = .income
+        salary.amount = 120_000                                     // 10000 / month
+        state.items.append(salary)
+
+        #expect(state.monthlyExpense == 15_000)
+        #expect(state.monthlyIncome == 10_000)
+        #expect(state.monthlyNet == -5_000)
+        #expect(state.activeCount == 2)
+    }
 }

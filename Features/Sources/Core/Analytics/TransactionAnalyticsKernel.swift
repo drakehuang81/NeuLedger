@@ -135,9 +135,12 @@ enum TransactionAnalyticsKernel {
     ) throws -> TransactionInsight {
         let cal = Calendar.current
         let now = Date()
-        guard let monthRange = cal.dateInterval(of: .month, for: now) else {
-            return TransactionInsight(kind: .fallback(monthlyCategoryCount: 0))
-        }
+        // 走 `BudgetPeriod` 的唯一定義，不自行 `dateInterval(of: .month,...)`
+        // （spec §5 的驗收條件）。原本那個 `guard let ... else { return .fallback }`
+        // 是死路徑——Gregorian calendar 對任何合法日期都有所屬月份，而
+        // `BudgetPeriod.dateInterval(containing:)` 自己也有零長度 fallback，
+        // 所以兩者行為等價。
+        let monthRange = BudgetPeriod.monthly.dateInterval(containing: now, calendar: cal)
         let monthStart = monthRange.start
         let monthEnd = monthRange.end
         let monthRows = try fetch(

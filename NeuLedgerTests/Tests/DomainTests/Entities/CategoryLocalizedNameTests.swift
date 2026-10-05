@@ -51,4 +51,10 @@ struct CategoryLocalizedNameTests {
             #expect(!result.hasPrefix("category_seed_"), "\(name) returned i18n key instead of translation")
         }
     }
+
+    @Test("seedLocalizationKey exposes the map for seed guards")
+    func testSeedLocalizationKey() {
+        #expect(Category.seedLocalizationKey(forSeedName: "Food") == "category_seed_food")
+        #expect(Category.seedLocalizationKey(forSeedName: "Nope") == nil)
+    }
 }

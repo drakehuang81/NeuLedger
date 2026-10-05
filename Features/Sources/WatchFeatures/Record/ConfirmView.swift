@@ -51,7 +51,7 @@ struct ConfirmView: View {
                 HStack(spacing: 6) {
                     Image(systemName: category.icon)
                         .foregroundStyle(Color.Design.fromHex(category.color))
-                    Text(category.name)
+                    Text(category.localizedName)
                         .font(Font.Design.body.weight(.semibold))
                 }
             }

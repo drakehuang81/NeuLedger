@@ -12,9 +12,20 @@ public extension Category {
         return String(localized: String.LocalizationValue(key), bundle: .main)
     }
 
-    /// English seed name → i18n key. Mirrors the SeedCategory entries
-    /// in `Features/Sources/Core/Persistence/PersistenceBootstrap.swift`.
-    /// Keep in sync if seeds change.
+    /// 把內部對照表開放給 seed 守門測試。
+    ///
+    /// 存在的理由是跨模組：`SeedCategory` 住在 Core、這份對照表住在 Domain，
+    /// 所以唯一能同時看見兩者的地方是 Core 的測試 target，而它需要一個
+    /// public 入口才問得到「這個 seed 名有沒有 key」。
+    static func seedLocalizationKey(forSeedName name: String) -> String? {
+        seedLocalizationMap[name]
+    }
+
+    /// Seed 英文名 → i18n key。`DatabaseSeedingTests` 的
+    /// `testSeedNamesHaveLocalizationKeys` 會在 seed 缺 key 時失敗，所以這份
+    /// 對照表不再靠「記得同步」維持——它對照的是
+    /// `Features/Sources/Core/Persistence/PersistenceBootstrap.swift` 裡的
+    /// `SeedCategory` 清單。
     private static let seedLocalizationMap: [String: String] = [
         "Food":            "category_seed_food",
         "Transport":       "category_seed_transport",

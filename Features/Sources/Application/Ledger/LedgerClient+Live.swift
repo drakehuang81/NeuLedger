@@ -376,7 +376,8 @@ extension LedgerClient: DependencyKey {
             tick: Self.makeTick(recurringStore, recordTransaction, syncRecurringReminder, alreadyMaterialisedPeriods),
 
             // MARK: Export (internalised — see +LiveExport.swift)
-            exportCSV: Self.makeExportCSV(transactionStore, categoryStore, accountStore)
+            exportCSV: Self.makeExportCSV(transactionStore, categoryStore, accountStore),
+            exportJSON: Self.makeExportJSON(transactionStore)
         )
     }
 }

@@ -69,6 +69,26 @@ extension LedgerClient {
             return url
         }
     }
+
+    static func makeExportJSON(
+        _ transactionStore: TransactionStore
+    ) -> @Sendable () async throws -> URL {
+        {
+            let transactions = try await transactionStore.fetchAll()
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(transactions)
+            // 與 exportCSV 同一規則：唯一子目錄。固定路徑在連續匯出或平行測試
+            // 下會互相覆蓋，而 `SettingsFeature` 原本那份 JSON 實作正是固定路徑。
+            let dir = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let url = dir.appendingPathComponent("NeuLedger_export.json")
+            try data.write(to: url, options: .atomic)
+            return url
+        }
+    }
 }
 
 /// RFC 4180 CSV field escaping — wraps in quotes and doubles inner

@@ -69,6 +69,7 @@ public struct LedgerClient: Sendable {
     // MARK: - Export
 
     public var exportCSV: @Sendable () async throws -> URL
+    public var exportJSON: @Sendable () async throws -> URL
 }
 
 // MARK: - TestDependencyKey

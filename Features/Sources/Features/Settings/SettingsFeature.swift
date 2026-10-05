@@ -255,44 +255,7 @@ public struct SettingsFeature: Sendable {
                 state.exportError = nil
                 return .run { [ledger] send in
                     do {
-                        let transactions = try await ledger.listAll(TransactionFilter()).map(\.transaction)
-                        let categories = try await ledger.listCategories(nil)
-                        let accounts = try await ledger.listAccounts()
-
-                        let categoryMap = Dictionary(categories.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-                        let accountMap = Dictionary(accounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-
-                        let csvHeader = [
-                            String(localized: "settings_export_csv_header_date"),
-                            String(localized: "settings_export_csv_header_type"),
-                            String(localized: "settings_export_csv_header_category"),
-                            String(localized: "settings_export_csv_header_note"),
-                            String(localized: "settings_export_csv_header_amount"),
-                            String(localized: "settings_export_csv_header_account")
-                        ].joined(separator: ",")
-                        var lines = [csvHeader]
-                        let formatter = DateFormatter()
-                        formatter.dateFormat = "yyyy/MM/dd"
-
-                        for t in transactions {
-                            let date = formatter.string(from: t.date)
-                            let type = t.type.rawValue
-                            let category = csvField(t.categoryId.flatMap { categoryMap[$0] }?.localizedName ?? "")
-                            let note = csvField(t.note ?? "")
-                            let amount: String
-                            switch t.type {
-                            case .expense: amount = "-\(t.amount)"
-                            case .income, .transfer: amount = "\(t.amount)"
-                            }
-                            let account = csvField(accountMap[t.accountId]?.name ?? "")
-                            lines.append("\(date),\(type),\(category),\(note),\(amount),\(account)")
-                        }
-
-                        let csv = lines.joined(separator: "\n")
-                        let url = FileManager.default.temporaryDirectory
-                            .appendingPathComponent("NeuLedger_export.csv")
-                        try csv.write(to: url, atomically: true, encoding: .utf8)
-                        await send(.exportCompleted(url))
+                        await send(.exportCompleted(try await ledger.exportCSV()))
                     } catch {
                         await send(.exportFailed(error.localizedDescription))
                     }
@@ -303,15 +266,7 @@ public struct SettingsFeature: Sendable {
                 state.exportError = nil
                 return .run { [ledger] send in
                     do {
-                        let transactions = try await ledger.listAll(TransactionFilter()).map(\.transaction)
-                        let encoder = JSONEncoder()
-                        encoder.outputFormatting = .prettyPrinted
-                        encoder.dateEncodingStrategy = .iso8601
-                        let data = try encoder.encode(transactions)
-                        let url = FileManager.default.temporaryDirectory
-                            .appendingPathComponent("NeuLedger_export.json")
-                        try data.write(to: url, options: .atomic)
-                        await send(.exportCompleted(url))
+                        await send(.exportCompleted(try await ledger.exportJSON()))
                     } catch {
                         await send(.exportFailed(error.localizedDescription))
                     }
@@ -479,15 +434,6 @@ public struct SettingsFeature: Sendable {
         .forEach(\.path, action: \.path)
     }
 
-    // MARK: - CSV Helpers
-
-    private func csvField(_ value: String) -> String {
-        if value.contains(",") || value.contains("\"") || value.contains("\n") {
-            let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
-            return "\"\(escaped)\""
-        }
-        return value
-    }
 }
 
 extension SettingsFeature.Destination.State: Equatable {}

@@ -91,6 +91,11 @@ public extension Color {
 
         /// Transfer 用紫（暖系，對齊設計 token `accInvest`）
         public static let transferPurple = dynamicColor(light: "#5E5CE6", dark: "#7D7AFF")
+
+        /// 自然人憑證載具的識別色；與 `transferPurple` 同色（原本是
+        /// `AddEditCarrierView` 裡裸寫的 `Color(red: 0.37, green: 0.36, blue: 0.90)`，
+        /// 那個寫法沒有深色模式變體）。
+        public static let carrierCertIndigo = transferPurple
         /// AI 標誌色（sparkles / AI suggestion badge）
         public static let aiPurple = dynamicColor(light: "#A66BF0", dark: "#BF8DFF")
 

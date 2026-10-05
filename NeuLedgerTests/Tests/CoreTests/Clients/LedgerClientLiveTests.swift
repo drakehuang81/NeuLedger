@@ -920,4 +920,46 @@ struct LedgerClientLiveTests {
         // The note containing a comma must be wrapped in quotes.
         #expect(contents.contains("\"Lunch, dinner\""))
     }
+
+    @Test("exportJSON writes an ISO8601 pretty-printed [Transaction] into a unique temp subdirectory")
+    func testExportJSON() async throws {
+        let accountId = UUID().uuidString
+        try await sut.createAccount(
+            Account(
+                id: accountId, name: "Cash", type: .cash, icon: "banknote",
+                color: "#0F0", sortOrder: 0, isArchived: false, createdAt: Date()
+            )
+        )
+        let t = Transaction(
+            id: UUID(), amount: 150, date: Date(timeIntervalSince1970: 1_700_000_000),
+            note: "午餐", categoryId: nil, accountId: accountId, toAccountId: nil,
+            type: .expense, tags: [], aiSuggested: false,
+            createdAt: Date(), updatedAt: Date()
+        )
+        try await sut.record(t)
+
+        let url = try await sut.exportJSON()
+
+        #expect(url.lastPathComponent == "NeuLedger_export.json")
+        // 唯一子目錄：父層不該直接是 temporaryDirectory，否則連續匯出會互相
+        // 覆蓋——`SettingsFeature` 原本那份 JSON 實作就是寫死在 temp 根目錄。
+        #expect(
+            url.deletingLastPathComponent().lastPathComponent
+                != FileManager.default.temporaryDirectory.lastPathComponent
+        )
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode([Transaction].self, from: Data(contentsOf: url))
+        #expect(decoded.map(\.id) == [t.id])
+        #expect(decoded.first?.note == "午餐")
+    }
+
+    @Test("two exportJSON calls never share a directory")
+    func testExportJSONUniquePaths() async throws {
+        let first = try await sut.exportJSON()
+        let second = try await sut.exportJSON()
+        #expect(first != second)
+        #expect(first.deletingLastPathComponent() != second.deletingLastPathComponent())
+    }
 }

@@ -63,10 +63,10 @@ public struct AddEditCarrierView: View {
         VStack(spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(typeColor(store.type))
+                    .fill(store.type.tint)
                     .frame(width: 80, height: 80)
-                    .shadow(color: typeColor(store.type).opacity(0.35), radius: 12, x: 0, y: 8)
-                Image(systemName: typeIcon(store.type))
+                    .shadow(color: store.type.tint.opacity(0.35), radius: 12, x: 0, y: 8)
+                Image(systemName: store.type.systemImageName)
                     .font(Font.Design.size32Semibold)
                     .foregroundStyle(.white)
                     .symbolRenderingMode(.hierarchical)
@@ -74,7 +74,7 @@ public struct AddEditCarrierView: View {
 
             Text(
                 store.name.isEmpty
-                    ? store.type.defaultName
+                    ? store.type.localizedName
                     : store.name
             )
             .font(Font.Design.size20Semibold)
@@ -109,7 +109,7 @@ public struct AddEditCarrierView: View {
 
     private func typeCard(_ type: CarrierType) -> some View {
         let isSelected = store.type == type
-        let accent = typeColor(type)
+        let accent = type.tint
         return Button {
             store.send(.typeChanged(type))
         } label: {
@@ -119,16 +119,16 @@ public struct AddEditCarrierView: View {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(accent)
                             .frame(width: 32, height: 32)
-                        Image(systemName: typeIcon(type))
+                        Image(systemName: type.systemImageName)
                             .font(Font.Design.size15Semibold)
                             .foregroundStyle(.white)
                             .symbolRenderingMode(.hierarchical)
                     }
-                    Text(type.defaultName)
+                    Text(type.localizedName)
                         .font(Font.Design.size13Semibold)
                         .foregroundStyle(Color.Design.textPrimary)
 
-                    Text(typeBarcodeFormat(type))
+                    Text(type.barcodePlaceholder)
                         .font(Font.Design.size11Monospaced)
                         .foregroundStyle(Color.Design.textSecondary)
                 }
@@ -194,7 +194,7 @@ public struct AddEditCarrierView: View {
                                 .foregroundStyle(Color.Design.textPrimary)
                                 .frame(width: 60, alignment: .leading)
                             TextField(
-                                typeBarcodeFormat(store.type),
+                                store.type.barcodePlaceholder,
                                 text: Binding(
                                     get: { store.barcode },
                                     set: { store.send(.barcodeChanged($0.uppercased())) }
@@ -238,7 +238,7 @@ public struct AddEditCarrierView: View {
                     .padding(.horizontal, 6)
                 } else {
                     // Format hint
-                    Text(barcodeFormatHint(store.type))
+                    Text(store.type.barcodeFormatHint)
                         .font(Font.Design.size11)
                         .foregroundStyle(Color.Design.textSecondary)
                         .lineSpacing(2)
@@ -272,37 +272,6 @@ public struct AddEditCarrierView: View {
         }
     }
 
-    // MARK: - Type Helpers
-
-    private func typeIcon(_ type: CarrierType) -> String {
-        switch type {
-        case .phoneBarcodeCarrier: return "iphone"
-        case .citizenDigitalCertificate: return "creditcard"
-        }
-    }
-
-    private func typeColor(_ type: CarrierType) -> Color {
-        switch type {
-        case .phoneBarcodeCarrier: return Color.Design.accentOrange
-        case .citizenDigitalCertificate: return Color(red: 0.37, green: 0.36, blue: 0.90)
-        }
-    }
-
-    private func typeBarcodeFormat(_ type: CarrierType) -> String {
-        switch type {
-        case .phoneBarcodeCarrier: return "/XXXXXXX"
-        case .citizenDigitalCertificate: return "/PXXXXXXXXXXXXXXXX"
-        }
-    }
-
-    private func barcodeFormatHint(_ type: CarrierType) -> String {
-        switch type {
-        case .phoneBarcodeCarrier:
-            return String(localized: "carrier_form_barcode_hint_phone")
-        case .citizenDigitalCertificate:
-            return String(localized: "carrier_form_barcode_hint_cert")
-        }
-    }
 }
 
 #Preview("Add") {

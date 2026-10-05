@@ -82,7 +82,7 @@ public struct AddEditCarrierFeature: Sendable {
                 guard state.canSave else { return .none }
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 let effectiveName = trimmedName.isEmpty
-                    ? state.type.defaultName
+                    ? state.type.localizedName
                     : trimmedName
                 let barcode = state.barcode
                 let type = state.type
@@ -148,14 +148,5 @@ public struct AddEditCarrierFeature: Sendable {
         }
         let matches = barcode.range(of: pattern, options: .regularExpression) != nil
         return matches ? nil : String(localized: String.LocalizationValue(errorKey))
-    }
-}
-
-extension CarrierType {
-    var defaultName: String {
-        switch self {
-        case .phoneBarcodeCarrier: return String(localized: "carrier_type_phone_barcode")
-        case .citizenDigitalCertificate: return String(localized: "carrier_type_citizen_cert")
-        }
     }
 }

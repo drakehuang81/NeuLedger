@@ -73,7 +73,7 @@ struct DailyBarsCard: View {
                     Text(
                         String(
                             format: String(localized: "analysis_daily_avg_format"),
-                            average.twdFormatted.replacingOccurrences(of: "NT$", with: "")
+                            average.twdDigits
                         )
                     )
                     .font(Font.Design.size10.monospacedDigit())
@@ -85,10 +85,7 @@ struct DailyBarsCard: View {
     }
 
     private var totalBodyText: String {
-        // total.twdFormatted is "NT$X,XXX" — strip the prefix so we can render
-        // a smaller "NT$" label next to it.
-        let formatted = total.twdFormatted
-        return formatted.hasPrefix("NT$") ? String(formatted.dropFirst(3)) : formatted
+        total.twdDigits
     }
 
     // MARK: - Bars

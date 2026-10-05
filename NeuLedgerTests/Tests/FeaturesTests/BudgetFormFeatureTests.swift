@@ -19,6 +19,33 @@ struct BudgetFormFeatureTests {
 
     // MARK: - Validation
 
+    @Test("saveTapped accepts a thousands-separated amount")
+    func testSaveTappedAcceptsGroupedAmount() async {
+        let created = LockIsolated<Budget?>(nil)
+        let store = await TestStore(
+            initialState: BudgetFormFeature.State(mode: .add)
+        ) {
+            BudgetFormFeature()
+        } withDependencies: {
+            $0.ledgerClient.listCategories = { _ in [] }
+            $0.planningClient.create = { created.setValue($0) }
+            $0.dismiss = DismissEffect { }
+        }
+        await MainActor.run { store.exhaustivity = .off }
+
+        await store.send(.nameChanged("餐費")) { $0.name = "餐費" }
+        await store.send(.amountChanged("1,000")) { $0.amountText = "1,000" }
+        await store.send(.saveTapped)
+        await store.finish()
+
+        // `Decimal(string:)` is locale-agnostic and returns nil for "1,000",
+        // which used to surface as "amount must be positive" on a perfectly
+        // valid entry. Asserting the committed amount rather than just the
+        // absence of an error keeps the test honest if saving breaks for an
+        // unrelated reason.
+        #expect(created.value?.amount == 1000)
+    }
+
     @Test("saveTapped with empty name sets nameError")
     func testSaveTappedEmptyNameSetsError() async {
         let store = await TestStore(

@@ -56,7 +56,7 @@ public struct BudgetFormView: View {
         guard !store.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
-        guard let amount = Decimal(string: store.amountText), amount > 0 else {
+        guard let amount = store.amountText.parsedAmountDecimal, amount > 0 else {
             return false
         }
         return true
@@ -139,7 +139,7 @@ public struct BudgetFormView: View {
     }
 
     private var breakdownText: String? {
-        guard let amount = Decimal(string: store.amountText), amount > 0 else { return nil }
+        guard let amount = store.amountText.parsedAmountDecimal, amount > 0 else { return nil }
         return amount.perPeriodBreakdown(store.period)
     }
 

@@ -175,39 +175,32 @@ struct SettingsFeatureTests {
 
     // MARK: - Export CSV
 
-    @Test("exportCSVTapped sets exportingFormat to .csv then completes with a URL")
+    /// 匯出的組裝與路徑規則現在歸 `LedgerClient`，所以這裡只驗 Feature 有把
+    /// client 回傳的 URL 原樣交出去。原本這條測試斷言的是
+    /// `temporaryDirectory/NeuLedger_export.csv` 這個固定路徑、並直接讀該檔驗
+    /// 內容——那同時綁死了「誰組裝」與「寫到哪」，client 一改唯一子目錄就會紅，
+    /// 而紅的原因與 Feature 的職責無關。內容與轉義由
+    /// `LedgerClientLiveTests` 的兩條 exportCSV 測試守。
+    @Test("exportCSVTapped delegates to ledgerClient.exportCSV and stores the returned URL")
     func testExportCSVSuccess() async throws {
-        let account = Self.sampleAccounts[0]
-        let category = Self.sampleCategories[0]
-        let transactions = Self.sampleTransactions(accountId: account.id, categoryId: category.id)
-
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent("NeuLedger_export.csv")
         let store = await TestStore(
             initialState: SettingsFeature.State()
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.ledgerClient.listAll = { _ in transactions.map { EnrichedTransaction(transaction: $0) } }
-            $0.ledgerClient.listCategories = { _ in Self.sampleCategories }
-            $0.ledgerClient.listAccounts = { Self.sampleAccounts }
+            $0.ledgerClient.exportCSV = { url }
         }
 
         await store.send(.exportCSVTapped) {
             $0.exportingFormat = .csv
         }
-
         await store.receive(\.exportCompleted) {
             $0.exportingFormat = nil
-            $0.exportedFileURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("NeuLedger_export.csv")
+            $0.exportedFileURL = url
         }
-
-        let savedURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("NeuLedger_export.csv")
-        let content = try String(contentsOf: savedURL, encoding: .utf8)
-        #expect(content.contains("午餐"))
-        #expect(content.contains("餐飲"))
-        #expect(content.contains("-150"))
-        #expect(content.contains("50000"))
     }
 
     @Test("exportSheetDismissed clears exportedFileURL")
@@ -230,37 +223,26 @@ struct SettingsFeatureTests {
 
     // MARK: - Export JSON
 
-    @Test("exportJSONTapped sets exportingFormat to .json then completes with a URL")
+    @Test("exportJSONTapped delegates to ledgerClient.exportJSON and stores the returned URL")
     func testExportJSONSuccess() async throws {
-        let account = Self.sampleAccounts[0]
-        let category = Self.sampleCategories[0]
-        let transactions = Self.sampleTransactions(accountId: account.id, categoryId: category.id)
-
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent("NeuLedger_export.json")
         let store = await TestStore(
             initialState: SettingsFeature.State()
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.ledgerClient.listAll = { _ in transactions.map { EnrichedTransaction(transaction: $0) } }
+            $0.ledgerClient.exportJSON = { url }
         }
 
         await store.send(.exportJSONTapped) {
             $0.exportingFormat = .json
         }
-
         await store.receive(\.exportCompleted) {
             $0.exportingFormat = nil
-            $0.exportedFileURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("NeuLedger_export.json")
+            $0.exportedFileURL = url
         }
-
-        let savedURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("NeuLedger_export.json")
-        let data = try Data(contentsOf: savedURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let decoded = try decoder.decode([Transaction].self, from: data)
-        #expect(decoded.count == 2)
     }
 
     // MARK: - Export Failure
@@ -274,9 +256,7 @@ struct SettingsFeatureTests {
         ) {
             SettingsFeature()
         } withDependencies: {
-            $0.ledgerClient.listAll = { _ in throw TestError(message: "fetch failed") }
-            $0.ledgerClient.listCategories = { _ in [] }
-            $0.ledgerClient.listAccounts = { [] }
+            $0.ledgerClient.exportCSV = { throw TestError(message: "fetch failed") }
         }
 
         await store.send(.exportCSVTapped) {
@@ -286,6 +266,27 @@ struct SettingsFeatureTests {
         await store.receive(\.exportFailed) {
             $0.exportingFormat = nil
             $0.exportError = TestError(message: "fetch failed").localizedDescription
+        }
+    }
+
+    @Test("exportJSONTapped surfaces client failure via exportFailed")
+    func testExportJSONFailure() async throws {
+        struct ExportError: Error {}
+
+        let store = await TestStore(
+            initialState: SettingsFeature.State()
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.ledgerClient.exportJSON = { throw ExportError() }
+        }
+
+        await store.send(.exportJSONTapped) {
+            $0.exportingFormat = .json
+        }
+        await store.receive(\.exportFailed) {
+            $0.exportingFormat = nil
+            $0.exportError = ExportError().localizedDescription
         }
     }
 

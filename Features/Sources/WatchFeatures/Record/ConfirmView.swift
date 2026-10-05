@@ -51,11 +51,11 @@ struct ConfirmView: View {
                 HStack(spacing: 6) {
                     Image(systemName: category.icon)
                         .foregroundStyle(Color.Design.fromHex(category.color))
-                    Text(category.name)
+                    Text(category.localizedName)
                         .font(Font.Design.body.weight(.semibold))
                 }
             }
-            Text("NT$ \(formatted(store.draft?.amount ?? 0))")
+            Text("NT$ \((store.draft?.amount ?? 0).twdDigits)")
                 .font(Font.Design.size22SemiboldRounded)
                 .monospacedDigit()
             if let account = store.activeAccount {
@@ -114,12 +114,5 @@ struct ConfirmView: View {
             }
             .buttonStyle(.bordered)
         }
-    }
-
-    private func formatted(_ amount: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: amount as NSDecimalNumber) ?? "0"
     }
 }

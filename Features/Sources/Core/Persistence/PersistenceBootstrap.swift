@@ -37,7 +37,9 @@ extension PersistenceBootstrap: DependencyKey {
     /// App Group identifier shared between the main app and widget extension.
     /// Both local and CloudKit-backed configurations point their store at the
     /// same URL inside this container so toggling sync never moves the file.
-    private static let appGroupID = "group.com.drake.NeuLedger"
+    ///
+    /// 字串本身來自 `Domain/AppGroup.swift`——改它等於改資料位置。
+    private static let appGroupID = AppGroup.suiteName
 
     /// Whether this process is a test runner.
     ///

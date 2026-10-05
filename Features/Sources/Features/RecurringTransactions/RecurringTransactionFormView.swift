@@ -165,7 +165,7 @@ public struct RecurringTransactionFormView: View {
                             Button {
                                 store.send(.categoryChanged(cat.id))
                             } label: {
-                                Label(cat.name, systemImage: cat.icon)
+                                Label(cat.localizedName, systemImage: cat.icon)
                             }
                         }
                     } label: {
@@ -181,7 +181,7 @@ public struct RecurringTransactionFormView: View {
                                                 .font(Font.Design.size11Semibold)
                                                 .foregroundStyle(.white)
                                         }
-                                    Text(cat.name)
+                                    Text(cat.localizedName)
                                         .font(Font.Design.body)
                                         .foregroundStyle(Color.Design.textPrimary)
                                 }

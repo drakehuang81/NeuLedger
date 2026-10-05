@@ -1,6 +1,7 @@
 import Foundation
 import Testing
-@testable import Domain
+@testable import Common
+import Domain
 
 @Suite("Decimal.perPeriodBreakdown Tests")
 struct DecimalPerPeriodBreakdownTests {

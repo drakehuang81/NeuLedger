@@ -1,11 +1,8 @@
 // Features/Sources/Features/CarrierManagement/CarrierManagementView.swift
 import Common
 import ComposableArchitecture
-import CoreImage
-import CoreImage.CIFilterBuiltins
 import Domain
 import SwiftUI
-import UIKit
 
 public struct CarrierManagementView: View {
     @Bindable var store: StoreOf<CarrierManagementFeature>
@@ -146,9 +143,9 @@ public struct CarrierManagementView: View {
                     // Icon badge
                     ZStack {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(carrierColor(carrier.type))
+                            .fill(carrier.type.tint)
                             .frame(width: 40, height: 40)
-                        Image(systemName: carrierIcon(carrier.type))
+                        Image(systemName: carrier.type.systemImageName)
                             .font(Font.Design.size18Semibold)
                             .foregroundStyle(.white)
                             .symbolRenderingMode(.hierarchical)
@@ -248,21 +245,18 @@ public struct CarrierManagementView: View {
             .padding(.horizontal, 14)
 
             // Barcode (Code 128)
-            if let barcodeImage = generateBarcode(from: carrier.barcode) {
-                Image(uiImage: barcodeImage)
-                    .interpolation(.none)
-                    .resizable()
-                    .scaledToFit()
+            if let modules = Code128.modules(for: carrier.barcode) {
+                Code128BarcodeView(modules: modules, orientation: .horizontal)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
                     .frame(height: 140)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.Design.barcodeSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
                     .padding(.horizontal, 6)
                     .padding(.bottom, 4)
             } else {
-                // 編碼器拒絕了存起來的條碼（`generateBarcode` 用 `.ascii` 編碼，
+                // 編碼器拒絕了存起來的條碼（`Code128.modules` 只接受 ASCII，
                 // 誤貼到中文或全形符號就會回 nil）。沒有這個分支的話整張條碼卡
                 // 直接消失，使用者看到一段留白——既沒有錯誤訊息，也看不到原始
                 // 號碼可以手動輸入。Watch 端（`CarrierBarcodeView.swift:50`）與
@@ -275,7 +269,7 @@ public struct CarrierManagementView: View {
                     .foregroundStyle(Color.Design.textSecondary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 140)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.Design.barcodeSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 4)
                     .padding(.horizontal, 6)
                     .padding(.bottom, 4)
@@ -294,36 +288,6 @@ public struct CarrierManagementView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Helpers
-
-    private func carrierIcon(_ type: CarrierType) -> String {
-        switch type {
-        case .phoneBarcodeCarrier: return "iphone"
-        case .citizenDigitalCertificate: return "creditcard"
-        }
-    }
-
-    private func carrierColor(_ type: CarrierType) -> Color {
-        switch type {
-        case .phoneBarcodeCarrier: return Color.Design.accentOrange
-        case .citizenDigitalCertificate: return Color(red: 0.37, green: 0.36, blue: 0.90)
-        }
-    }
-
-    // MARK: - Barcode Generation (Code 128)
-
-    private static let ciContext = CIContext()
-
-    private func generateBarcode(from string: String) -> UIImage? {
-        let filter = CIFilter.code128BarcodeGenerator()
-        guard let data = string.data(using: .ascii) else { return nil }
-        filter.message = data
-        filter.quietSpace = 10
-        guard let outputImage = filter.outputImage else { return nil }
-        let scaled = outputImage.transformed(by: CGAffineTransform(scaleX: 3.0, y: 3.0))
-        guard let cgImage = Self.ciContext.createCGImage(scaled, from: scaled.extent) else { return nil }
-        return UIImage(cgImage: cgImage)
-    }
 }
 
 // MARK: - Flexible Frame Helper

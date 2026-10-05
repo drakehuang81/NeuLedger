@@ -14,6 +14,30 @@ public struct RecurringTransactionManagementFeature: Sendable {
         // P1-5: Delete confirmation alert
         @Presents public var alert: AlertState<Action.Alert>?
 
+        // MARK: 摘要（computed；View 只讀）
+        //
+        // 這些原本是 `RecurringTransactionManagementView` 裡的區域變數，而且
+        // 只篩 `frequency == .monthly`——週繳與年繳的範本一筆都不算，所以卡片
+        // 上的月收／月支／淨額長期偏低。改成對所有啟用範本折算月等值。
+
+        public var activeItems: [RecurringTransaction] { items.filter(\.isActive) }
+
+        public var activeCount: Int { activeItems.count }
+
+        public var monthlyIncome: Decimal {
+            activeItems
+                .filter { $0.type == .income }
+                .reduce(Decimal.zero) { $0 + $1.monthlyEquivalentAmount }
+        }
+
+        public var monthlyExpense: Decimal {
+            activeItems
+                .filter { $0.type == .expense }
+                .reduce(Decimal.zero) { $0 + $1.monthlyEquivalentAmount }
+        }
+
+        public var monthlyNet: Decimal { monthlyIncome - monthlyExpense }
+
         public init(items: [RecurringTransaction] = []) { self.items = items }
     }
 

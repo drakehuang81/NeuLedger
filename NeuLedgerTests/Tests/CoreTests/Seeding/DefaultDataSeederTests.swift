@@ -48,4 +48,21 @@ struct DatabaseSeedingTests {
         let countAfter = try context.fetchCount(FetchDescriptor<SDCategory>())
         #expect(countAfter == 14)
     }
+
+    /// 取代 `Category+Localized` 原本那句「Keep in sync if seeds change」。
+    ///
+    /// 清單是從 `SeedCategory` 動態讀的，所以新增 seed 分類而忘記加 i18n key
+    /// 時這條會紅——不像 `CategoryLocalizedNameTests` 的硬寫清單，那邊也得
+    /// 手動補（它跨不過模組邊界：`SeedCategory` 在 Core、那個測試在 DomainTests）。
+    @Test("Every seed category name has a Domain localization key")
+    func testSeedNamesHaveLocalizationKeys() {
+        let seeds = SeedCategory.defaultExpenseCategories + SeedCategory.defaultIncomeCategories
+        #expect(!seeds.isEmpty, "seed 清單是空的，這條測試會變成空轉")
+        for seed in seeds {
+            #expect(
+                Category.seedLocalizationKey(forSeedName: seed.name) != nil,
+                "Seed '\(seed.name)' 在 Category.seedLocalizationMap 裡沒有對應 key"
+            )
+        }
+    }
 }

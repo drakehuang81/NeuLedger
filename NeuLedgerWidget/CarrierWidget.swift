@@ -1,5 +1,6 @@
 // NeuLedgerWidget/CarrierWidget.swift
 
+import Domain
 import WidgetKit
 import SwiftUI
 import UIKit

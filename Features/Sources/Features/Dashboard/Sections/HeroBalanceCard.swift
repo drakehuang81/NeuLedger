@@ -84,11 +84,7 @@ struct HeroBalanceCard: View {
 
 func daysUntilSparklineReady(earliest: Date?, now: Date) -> Int {
     guard let earliest else { return 7 }
-    let calendar = Calendar.current
-    let earliestDay = calendar.startOfDay(for: earliest)
-    let today = calendar.startOfDay(for: now)
-    let elapsed = calendar.dateComponents([.day], from: earliestDay, to: today).day ?? 0
-    return max(0, 7 - elapsed)
+    return max(0, 7 - earliest.days(until: now))
 }
 
 // MARK: - Previews

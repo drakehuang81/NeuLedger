@@ -208,15 +208,10 @@ public struct RecurringTransactionManagementView: View {
     // MARK: - Summary Card
 
     private var summaryCard: some View {
-        let activeMonthly = store.items.filter { $0.isActive && $0.frequency == .monthly }
-        let monthlyIn = activeMonthly
-            .filter { $0.type == .income }
-            .reduce(Decimal.zero) { $0 + $1.amount }
-        let monthlyOut = activeMonthly
-            .filter { $0.type == .expense }
-            .reduce(Decimal.zero) { $0 + $1.amount }
-        let net = monthlyIn - monthlyOut
-        let activeCount = store.items.filter { $0.isActive }.count
+        let monthlyIn = store.monthlyIncome
+        let monthlyOut = store.monthlyExpense
+        let net = store.monthlyNet
+        let activeCount = store.activeCount
         let totalCount = store.items.count
 
         return GlassContainer(cornerRadius: 20, padding: 18) {
@@ -443,10 +438,7 @@ public struct RecurringTransactionManagementView: View {
     }
 
     private func dueDateText(_ date: Date) -> String {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let target = calendar.startOfDay(for: date)
-        let days = calendar.dateComponents([.day], from: today, to: target).day ?? 0
+        let days = Date().days(until: date)
 
         if days == 0 {
             return String(localized: "recurring_due_today")
@@ -457,11 +449,7 @@ public struct RecurringTransactionManagementView: View {
     }
 
     private func dueDateColor(_ date: Date) -> Color {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let target = calendar.startOfDay(for: date)
-        let days = calendar.dateComponents([.day], from: today, to: target).day ?? 0
-        return days <= 3 ? Color.Design.brandAccent : Color.Design.textSecondary
+        Date().days(until: date) <= 3 ? Color.Design.brandAccent : Color.Design.textSecondary
     }
 }
 

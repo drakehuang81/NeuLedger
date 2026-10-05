@@ -1,30 +1,33 @@
 // Shared/WidgetAppGroup.swift
+import Domain
 import Foundation
 
-/// Shared App Group helper for reading and writing widget configuration
-/// between the main app and the Widget Extension.
+/// App Group 的讀取端（Widget Extension 與主 app 共同編譯）。
 ///
-/// The main app is the sole writer; the Widget Extension is read-only.
-enum WidgetAppGroup {
-    static let suiteName = "group.com.drake.NeuLedger"
+/// 常數與 DTO 的唯一來源是 `Domain/AppGroup.swift`；主 app 是唯一寫入者
+/// （`Core/Adapters/WidgetSyncAdapter+Live.swift`）。
+///
+/// 這個檔案原本自己宣告 `suiteName`、一組 `Key` enum、以及一份
+/// `struct CarrierEntry`，與 Core 那邊的複本靠註解互相提醒同步。現在
+/// `NeuLedgerWidget` target 連結了 Domain（pbxproj 的
+/// `packageProductDependencies`），所以兩邊能共用同一份定義。
+typealias CarrierEntry = CarrierWidgetEntry
 
-    private static var defaults: UserDefaults? {
-        UserDefaults(suiteName: suiteName)
+extension CarrierWidgetEntry {
+    /// Widget 顯示用的載具類型名稱。
+    ///
+    /// 原本這裡是第三份 `typeRawValue` 的 switch，而且它呼叫
+    /// `String(localized:)` 時沒帶 `bundle: .main`。改走 Domain 的
+    /// `CarrierType.localizedName`（它有帶），`carrier_type_*` 的翻譯因此
+    /// 統一由那一處負責——Widget 的字串表本來就有這兩個 key。
+    var typeDisplayName: String {
+        type?.localizedName ?? typeRawValue
     }
+}
 
-    // MARK: - Keys
-
-    private enum Key: String {
-        // Legacy single-carrier keys (kept for backward compat during transition)
-        case carrierBarcode
-        case carrierType
-        case carrierName
-        case carrierUpdatedAt
-        // New list key (JSON-encoded [CarrierEntry])
-        case carrierList
-        // The in-app "active carrier for widget" choice (audit A9).
-        // Keep in sync with Core/Adapters/WidgetSyncAdapter+Live.swift's keyActiveId.
-        case carrierActiveId
+enum WidgetAppGroup {
+    private static var defaults: UserDefaults? {
+        UserDefaults(suiteName: AppGroup.suiteName)
     }
 
     // MARK: - Legacy single-carrier read (kept for compat)
@@ -33,14 +36,14 @@ enum WidgetAppGroup {
     /// Returns `nil` if no carrier is configured or data is inconsistent.
     static func readCarrier() -> CarrierEntry? {
         guard let defaults,
-              let barcode = defaults.string(forKey: Key.carrierBarcode.rawValue),
+              let barcode = defaults.string(forKey: AppGroup.CarrierKey.barcode),
               !barcode.isEmpty,
-              let typeRaw = defaults.string(forKey: Key.carrierType.rawValue),
+              let typeRaw = defaults.string(forKey: AppGroup.CarrierKey.type),
               !typeRaw.isEmpty else {
             return nil
         }
-        let name = defaults.string(forKey: Key.carrierName.rawValue) ?? ""
-        let updatedAt = defaults.object(forKey: Key.carrierUpdatedAt.rawValue) as? Date
+        let name = defaults.string(forKey: AppGroup.CarrierKey.name) ?? ""
+        let updatedAt = defaults.object(forKey: AppGroup.CarrierKey.updatedAt) as? Date
         // Legacy entry has no ID — use a deterministic placeholder so callers can
         // still identify it; new code should prefer readAllCarriers().
         return CarrierEntry(
@@ -52,72 +55,30 @@ enum WidgetAppGroup {
         )
     }
 
-    // MARK: - Legacy single-carrier write (main app only)
+    // MARK: - Full carrier list read
 
-    /// Writes legacy single carrier configuration to App Group.
-    static func writeCarrier(barcode: String, type: String, name: String) {
-        guard let defaults else { return }
-        defaults.set(barcode, forKey: Key.carrierBarcode.rawValue)
-        defaults.set(type, forKey: Key.carrierType.rawValue)
-        defaults.set(name, forKey: Key.carrierName.rawValue)
-        defaults.set(Date(), forKey: Key.carrierUpdatedAt.rawValue)
-    }
-
-    /// Clears legacy single carrier data from App Group.
-    static func clearCarrier() {
-        guard let defaults else { return }
-        for key in [Key.carrierBarcode, .carrierType, .carrierName, .carrierUpdatedAt] {
-            defaults.removeObject(forKey: key.rawValue)
-        }
-    }
-
-    // MARK: - Full carrier list I/O (new)
-
-    /// Reads all carriers from the App Group. Returns an empty array on missing/corrupt data.
     static func readAllCarriers() -> [CarrierEntry] {
         guard let defaults,
-              let data = defaults.data(forKey: Key.carrierList.rawValue) else {
+              let data = defaults.data(forKey: AppGroup.CarrierKey.list) else {
             return []
         }
         return (try? JSONDecoder().decode([CarrierEntry].self, from: data)) ?? []
-    }
-
-    /// Writes all carriers to the App Group. Main app only.
-    static func writeAllCarriers(_ carriers: [CarrierEntry]) {
-        guard let defaults else { return }
-        guard let data = try? JSONEncoder().encode(carriers) else { return }
-        defaults.set(data, forKey: Key.carrierList.rawValue)
     }
 
     // MARK: - Active carrier for widget (audit A9)
 
     /// The carrier the user picked in-app for the widget to show.
     /// `nil` when the user has never chosen one.
+    ///
+    /// 這一顆是 commit `56a1f4a` 加的，而本次收斂的計劃沒有涵蓋它——計劃的
+    /// 整檔改寫只列了 `readCarrier` 與 `readAllCarriers`。照抄會刪掉它，而
+    /// `NeuLedgerWidget/CarrierWidget.swift` 有在呼叫，Widget 會編不過。
     static func readActiveCarrierId() -> String? {
-        guard let defaults, let id = defaults.string(forKey: Key.carrierActiveId.rawValue), !id.isEmpty else { return nil }
-        return id
-    }
-}
-
-// MARK: - CarrierEntry
-
-/// A lightweight value type representing carrier data read from App Group.
-/// Used by the Widget Extension — no dependency on Domain layer.
-struct CarrierEntry: Codable, Hashable {
-    let id: String              // UUID string (or "legacy" for migration entries)
-    let barcode: String
-    let typeRawValue: String    // "phoneBarcodeCarrier" or "citizenDigitalCertificate"
-    let name: String
-    let updatedAt: Date?
-
-    var typeDisplayName: String {
-        switch typeRawValue {
-        case "phoneBarcodeCarrier":
-            return String(localized: "carrier_type_phone_barcode")
-        case "citizenDigitalCertificate":
-            return String(localized: "carrier_type_citizen_cert")
-        default:
-            return typeRawValue
+        guard let defaults,
+              let id = defaults.string(forKey: AppGroup.CarrierKey.activeId),
+              !id.isEmpty else {
+            return nil
         }
+        return id
     }
 }

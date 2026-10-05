@@ -62,7 +62,7 @@ public struct WatchCarrierView: View {
                         store.send(.carrierTapped(carrier.id))
                     } label: {
                         HStack(spacing: 8) {
-                            Image(systemName: typeIcon(for: carrier.type))
+                            Image(systemName: carrier.type.watchSystemImageName)
                                 .foregroundStyle(Color.Design.accentOrange)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(carrier.name)
@@ -94,12 +94,5 @@ public struct WatchCarrierView: View {
                 .multilineTextAlignment(.center)
         }
         .padding()
-    }
-
-    private func typeIcon(for type: CarrierType) -> String {
-        switch type {
-        case .phoneBarcodeCarrier: "iphone.gen3"
-        case .citizenDigitalCertificate: "person.text.rectangle"
-        }
     }
 }

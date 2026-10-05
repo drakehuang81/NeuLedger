@@ -11,7 +11,10 @@ public final class WatchCacheStore: @unchecked Sendable {
 
     /// App Group identifier configured on the watchOS target.
     /// Matches the entitlement set up in Phase 2 scaffold.
-    public static let appGroupSuite = "group.com.drake.NeuLedger"
+    ///
+    /// 保留這個別名是因為既有呼叫端（含 `init` 的預設值）引用它；字串本身
+    /// 來自 `Domain/AppGroup.swift`。
+    public static let appGroupSuite = AppGroup.suiteName
 
     /// Posted on `NotificationCenter.default` whenever a fresh snapshot has
     /// been persisted. UI observers reload from the cache on receipt.

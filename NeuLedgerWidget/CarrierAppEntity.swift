@@ -1,4 +1,5 @@
 // NeuLedgerWidget/CarrierAppEntity.swift
+import Domain
 import AppIntents
 import Foundation
 

@@ -18,6 +18,7 @@
 		A2FD3EB02FC71831003B0511 /* NeuLedgerWatchComplicationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A2FD3EA32FC7182F003B0511 /* NeuLedgerWatchComplicationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A2FD3EB82FC71872003B0511 /* WatchFeatures in Frameworks */ = {isa = PBXBuildFile; productRef = A2FD3EB72FC71872003B0511 /* WatchFeatures */; };
 		BA24DB8F2F418E0E00CBA03D /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = BA24DB8E2F418E0E00CBA03D /* Core */; };
+		A2C0DE0000000000000000A1 /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = A2C0DE0000000000000000A2 /* Domain */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -219,6 +220,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2C0DE0000000000000000A1 /* Domain in Frameworks */,
 				A22663362F8376A300F95069 /* SwiftUI.framework in Frameworks */,
 				A22663342F8376A300F95069 /* WidgetKit.framework in Frameworks */,
 			);
@@ -387,6 +389,7 @@
 			);
 			name = NeuLedgerWidget;
 			packageProductDependencies = (
+				A2C0DE0000000000000000A2 /* Domain */,
 			);
 			productName = NeuLedgerWidget;
 			productReference = A22663322F8376A300F95069 /* NeuLedgerWidget.appex */;
@@ -1296,6 +1299,11 @@
 		A2FD3EB72FC71872003B0511 /* WatchFeatures */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = WatchFeatures;
+		};
+		A2C0DE0000000000000000A2 /* Domain */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BA24DB8D2F418E0E00CBA03D /* XCLocalSwiftPackageReference "Features" */;
+			productName = Domain;
 		};
 		BA24DB8E2F418E0E00CBA03D /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
